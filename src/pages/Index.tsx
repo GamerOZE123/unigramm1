@@ -1,5 +1,6 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import Post from '@/components/Post';
@@ -36,6 +37,8 @@ const samplePosts = [
 ];
 
 export default function Index() {
+  const { user } = useAuth();
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -44,6 +47,7 @@ export default function Index() {
         <main className="flex-1 border-x border-border">
           <div className="p-4 border-b border-border">
             <h2 className="text-xl font-semibold">Home</h2>
+            <p className="text-sm text-muted-foreground">Welcome back, {user?.email}!</p>
           </div>
           <div className="divide-y divide-border">
             {samplePosts.map((post) => (

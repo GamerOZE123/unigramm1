@@ -1,7 +1,10 @@
 import React from 'react';
 import { Home, Search, Bell, Mail, Bookmark, User, MoreHorizontal } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Sidebar() {
+  const { user } = useAuth();
+  
   const menuItems = [
     { icon: Home, label: 'Home', active: true },
     { icon: Search, label: 'Explore' },
@@ -32,18 +35,24 @@ export default function Sidebar() {
       
       <div className="mt-8">
         <button className="w-full bg-primary text-primary-foreground py-3 rounded-full font-semibold text-lg hover:bg-primary/90 transition-colors">
-          Tweet
+          Post
         </button>
       </div>
       
       <div className="mt-8 p-4 border border-border rounded-2xl">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-gradient-to-r from-primary to-accent rounded-full flex items-center justify-center">
-            <User className="w-5 h-5 text-white" />
+            <span className="text-sm font-bold text-white">
+              {user?.email?.charAt(0).toUpperCase() || 'U'}
+            </span>
           </div>
           <div className="flex-1">
-            <p className="font-semibold text-foreground">John Doe</p>
-            <p className="text-sm text-muted-foreground">@johndoe</p>
+            <p className="font-semibold text-foreground truncate">
+              {user?.user_metadata?.full_name || user?.email || 'User'}
+            </p>
+            <p className="text-sm text-muted-foreground truncate">
+              {user?.email}
+            </p>
           </div>
         </div>
       </div>
