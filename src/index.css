@@ -1,113 +1,58 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Unigramm Design System - Dark University Theme */
 
 @layer base {
   :root {
-    --background: 248 50% 98%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221 83% 53%;
-
-    /* Social Media Design Tokens */
-    --social-blue: 221 83% 53%;
-    --social-red: 0 84% 60%;
-    --social-green: 142 71% 45%;
-    --social-gray: 215.4 16.3% 46.9%;
+    /* Core Dark Theme */
+    --background: 210 11% 4%;
+    --foreground: 213 31% 91%;
+    
+    /* Surface Colors */
+    --card: 217 19% 8%;
+    --card-foreground: 213 31% 91%;
+    --surface: 215 16% 12%;
+    --surface-hover: 215 16% 16%;
+    
+    /* Interactive Elements */
+    --primary: 259 94% 51%;
+    --primary-foreground: 213 31% 91%;
+    --secondary: 215 16% 16%;
+    --secondary-foreground: 213 31% 91%;
+    
+    /* Accent & Status */
+    --accent: 268 83% 58%;
+    --accent-foreground: 213 31% 91%;
+    --muted: 215 16% 16%;
+    --muted-foreground: 217 10% 64%;
+    
+    /* Borders & Inputs */
+    --border: 215 16% 16%;
+    --input: 215 16% 16%;
+    --ring: 259 94% 51%;
+    
+    /* Destructive */
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 213 31% 91%;
+    
+    /* University Brand */
+    --university: 221 83% 53%;
+    --university-foreground: 213 31% 91%;
+    --success: 142 71% 45%;
+    --warning: 38 92% 50%;
     
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(221 83% 53%), hsl(262 83% 58%));
-    --gradient-subtle: linear-gradient(180deg, hsl(248 50% 98%), hsl(0 0% 100%));
+    --gradient-primary: linear-gradient(135deg, hsl(259 94% 51%) 0%, hsl(268 83% 58%) 100%);
+    --gradient-surface: linear-gradient(145deg, hsl(217 19% 8%) 0%, hsl(215 16% 12%) 100%);
     
-    /* Shadows */
-    --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-    --shadow-hover: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --radius: 0.75rem;
     
-    /* Animations */
-    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Popover & Toast */
+    --popover: 217 19% 8%;
+    --popover-foreground: 213 31% 91%;
   }
 }
 
@@ -115,8 +60,65 @@ All colors MUST be HSL.
   * {
     @apply border-border;
   }
-
+  
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+  
+  /* Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-background;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
+
+/* Component Variants */
+@layer components {
+  /* Navigation Variants */
+  .nav-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200;
+    @apply hover:bg-surface text-muted-foreground hover:text-foreground;
+  }
+  
+  .nav-item.active {
+    @apply bg-primary/10 text-primary border-r-2 border-primary;
+  }
+  
+  /* Post Card Variants */
+  .post-card {
+    @apply bg-card border border-border rounded-2xl p-4 transition-all duration-200;
+    @apply hover:border-border/60;
+  }
+  
+  /* Button Variants */
+  .btn-ghost {
+    @apply bg-transparent hover:bg-surface text-muted-foreground hover:text-foreground;
+    @apply transition-all duration-200 rounded-xl px-3 py-2;
+  }
+  
+  .btn-primary {
+    @apply bg-primary hover:bg-primary/90 text-primary-foreground;
+    @apply transition-all duration-200 rounded-xl px-6 py-2.5 font-medium;
+  }
+  
+  /* University Theme */
+  .university-gradient {
+    background: var(--gradient-primary);
+  }
+  
+  .surface-gradient {
+    background: var(--gradient-surface);
   }
 }
