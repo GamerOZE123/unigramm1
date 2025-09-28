@@ -1071,7 +1071,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_unswiped_jobs_for_student: {
+        Args: { student_user_id: string }
+        Returns: {
+          company_logo: string
+          company_name: string
+          description: string
+          job_id: string
+          job_type: string
+          location: string
+          salary_range: string
+          skills_required: string[]
+          title: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
