@@ -184,12 +184,17 @@ export const useChat = () => {
   return {
     conversations,
     messages,
+    currentMessages: messages,
     loading,
     startConversation,
     fetchConversations,
     fetchMessages,
     sendMessage,
     clearChatHistory,
-    deleteChat
+    deleteChat,
+    loadOlderMessages: async () => {}, // Placeholder
+    createConversation: startConversation,
+    clearChat: clearChatHistory,
+    refreshConversations: fetchConversations
   };
 };

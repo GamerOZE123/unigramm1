@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -9,8 +9,9 @@ interface FollowData {
   followed_id: string;
 }
 
-export const useFollowSimple = () => {
+export const useFollowSimple = (targetUserId?: string) => {
   const [loading, setLoading] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
   const { user } = useAuth();
 
   const followUser = async (targetUserId: string) => {
@@ -74,10 +75,33 @@ export const useFollowSimple = () => {
     }
   };
 
+  const toggleFollow = async () => {
+    if (!targetUserId) return;
+    
+    if (isFollowing) {
+      const success = await unfollowUser(targetUserId);
+      if (success) setIsFollowing(false);
+    } else {
+      const success = await followUser(targetUserId);
+      if (success) setIsFollowing(true);
+    }
+  };
+
+  const canFollow = user && targetUserId && user.id !== targetUserId;
+
+  useEffect(() => {
+    if (targetUserId && user) {
+      checkIsFollowing(targetUserId).then(setIsFollowing);
+    }
+  }, [targetUserId, user]);
+
   return {
     followUser,
     unfollowUser,
     checkIsFollowing,
-    loading
+    loading,
+    isFollowing,
+    toggleFollow,
+    canFollow
   };
 };
