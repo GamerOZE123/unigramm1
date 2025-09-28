@@ -39,6 +39,15 @@ const universityOptions = [
     allowedFor: ['company']
   },
   {
+    id: 'carpooling',
+    title: 'Carpooling',
+    description: 'Share rides with fellow students and save money',
+    icon: CarTaxiFront,
+    path: '/carpooling',
+    color: 'bg-purple-500',
+    allowedFor: ['student']
+  },
+  {
     id: 'marketplace',
     title: 'Marketplace',
     description: 'Buy, sell, and bid on items with fellow students',

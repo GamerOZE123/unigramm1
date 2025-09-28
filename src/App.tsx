@@ -25,6 +25,7 @@ import Holidays from '@/pages/Holidays';
 import Post from '@/pages/Post';
 import Fitness from '@/pages/Fitness';
 import Advertising from '@/pages/Advertising';
+import Carpooling from '@/pages/Carpooling';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +57,7 @@ function App() {
             <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
             <Route path="/jobs-internships" element={<ProtectedRoute><JobsInternships /></ProtectedRoute>} />
             <Route path="/advertising" element={<ProtectedRoute><Advertising /></ProtectedRoute>} />
+            <Route path="/carpooling" element={<ProtectedRoute><Carpooling /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/holidays" element={<ProtectedRoute><Holidays /></ProtectedRoute>} />
             <Route path="/fitness" element={<ProtectedRoute><Fitness /></ProtectedRoute>} />
