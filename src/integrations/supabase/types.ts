@@ -63,14 +63,17 @@ export type Database = {
         Row: {
           id: string
           title: string | null
+          user_id: string | null
         }
         Insert: {
           id?: string
           title?: string | null
+          user_id?: string | null
         }
         Update: {
           id?: string
           title?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -93,14 +96,17 @@ export type Database = {
         Row: {
           id: string
           item_name: string | null
+          user_id: string | null
         }
         Insert: {
           id?: string
           item_name?: string | null
+          user_id?: string | null
         }
         Update: {
           id?: string
           item_name?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -506,14 +512,17 @@ export type Database = {
         Row: {
           id: string
           job_title: string | null
+          user_id: string | null
         }
         Insert: {
           id?: string
           job_title?: string | null
+          user_id?: string | null
         }
         Update: {
           id?: string
           job_title?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -557,14 +566,17 @@ export type Database = {
         Row: {
           id: string
           item_name: string | null
+          user_id: string | null
         }
         Insert: {
           id?: string
           item_name?: string | null
+          user_id?: string | null
         }
         Update: {
           id?: string
           item_name?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
