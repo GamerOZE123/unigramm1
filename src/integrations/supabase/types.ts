@@ -16,33 +16,55 @@ export type Database = {
     Tables: {
       advertising_clicks: {
         Row: {
+          advertising_post_id: string | null
           click_time: string | null
           id: string
         }
         Insert: {
+          advertising_post_id?: string | null
           click_time?: string | null
           id?: string
         }
         Update: {
+          advertising_post_id?: string | null
           click_time?: string | null
           id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "advertising_clicks_advertising_post_id_fkey"
+            columns: ["advertising_post_id"]
+            isOneToOne: false
+            referencedRelation: "advertising_posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       advertising_likes: {
         Row: {
+          advertising_post_id: string | null
           id: string
           like_time: string | null
         }
         Insert: {
+          advertising_post_id?: string | null
           id?: string
           like_time?: string | null
         }
         Update: {
+          advertising_post_id?: string | null
           id?: string
           like_time?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "advertising_likes_advertising_post_id_fkey"
+            columns: ["advertising_post_id"]
+            isOneToOne: false
+            referencedRelation: "advertising_posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       advertising_post_views: {
         Row: {
@@ -61,16 +83,22 @@ export type Database = {
       }
       advertising_posts: {
         Row: {
+          content: string | null
+          created_at: string | null
           id: string
           title: string | null
           user_id: string | null
         }
         Insert: {
+          content?: string | null
+          created_at?: string | null
           id?: string
           title?: string | null
           user_id?: string | null
         }
         Update: {
+          content?: string | null
+          created_at?: string | null
           id?: string
           title?: string | null
           user_id?: string | null
@@ -249,16 +277,37 @@ export type Database = {
       }
       company_profiles: {
         Row: {
+          company_description: string | null
+          company_logo: string | null
           company_name: string | null
+          company_size: string | null
+          created_at: string | null
           id: string
+          industry: string | null
+          user_id: string | null
+          website_url: string | null
         }
         Insert: {
+          company_description?: string | null
+          company_logo?: string | null
           company_name?: string | null
+          company_size?: string | null
+          created_at?: string | null
           id?: string
+          industry?: string | null
+          user_id?: string | null
+          website_url?: string | null
         }
         Update: {
+          company_description?: string | null
+          company_logo?: string | null
           company_name?: string | null
+          company_size?: string | null
+          created_at?: string | null
           id?: string
+          industry?: string | null
+          user_id?: string | null
+          website_url?: string | null
         }
         Relationships: []
       }
@@ -480,48 +529,118 @@ export type Database = {
       }
       job_applications: {
         Row: {
+          applied_at: string | null
           id: string
           job_id: string | null
+          status: string | null
+          student_id: string | null
         }
         Insert: {
+          applied_at?: string | null
           id?: string
           job_id?: string | null
+          status?: string | null
+          student_id?: string | null
         }
         Update: {
+          applied_at?: string | null
           id?: string
           job_id?: string | null
+          status?: string | null
+          student_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "job_applications_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       job_swipes: {
         Row: {
+          created_at: string | null
           id: string
           job_id: string | null
-        }
-        Insert: {
-          id?: string
-          job_id?: string | null
-        }
-        Update: {
-          id?: string
-          job_id?: string | null
-        }
-        Relationships: []
-      }
-      jobs: {
-        Row: {
-          id: string
-          job_title: string | null
+          student_id: string | null
+          swipe_direction: string | null
           user_id: string | null
         }
         Insert: {
+          created_at?: string | null
           id?: string
-          job_title?: string | null
+          job_id?: string | null
+          student_id?: string | null
+          swipe_direction?: string | null
           user_id?: string | null
         }
         Update: {
+          created_at?: string | null
           id?: string
+          job_id?: string | null
+          student_id?: string | null
+          swipe_direction?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_swipes_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "student_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          application_deadline: string | null
+          created_at: string | null
+          description: string | null
+          experience_level: string | null
+          id: string
+          is_active: boolean | null
+          job_title: string | null
+          job_type: string | null
+          location: string | null
+          requirements: string | null
+          salary_range: string | null
+          skills_required: string[] | null
+          title: string | null
+          user_id: string | null
+        }
+        Insert: {
+          application_deadline?: string | null
+          created_at?: string | null
+          description?: string | null
+          experience_level?: string | null
+          id?: string
+          is_active?: boolean | null
           job_title?: string | null
+          job_type?: string | null
+          location?: string | null
+          requirements?: string | null
+          salary_range?: string | null
+          skills_required?: string[] | null
+          title?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          application_deadline?: string | null
+          created_at?: string | null
+          description?: string | null
+          experience_level?: string | null
+          id?: string
+          is_active?: boolean | null
+          job_title?: string | null
+          job_type?: string | null
+          location?: string | null
+          requirements?: string | null
+          salary_range?: string | null
+          skills_required?: string[] | null
+          title?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -747,6 +866,7 @@ export type Database = {
           content: string | null
           created_at: string | null
           id: string
+          image_urls: string[] | null
           title: string | null
           user_id: string | null
         }
@@ -754,6 +874,7 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           id?: string
+          image_urls?: string[] | null
           title?: string | null
           user_id?: string | null
         }
@@ -761,6 +882,7 @@ export type Database = {
           content?: string | null
           created_at?: string | null
           id?: string
+          image_urls?: string[] | null
           title?: string | null
           user_id?: string | null
         }
@@ -774,6 +896,7 @@ export type Database = {
           full_name: string | null
           id: string
           updated_at: string | null
+          user_id: string | null
           username: string | null
         }
         Insert: {
@@ -783,6 +906,7 @@ export type Database = {
           full_name?: string | null
           id: string
           updated_at?: string | null
+          user_id?: string | null
           username?: string | null
         }
         Update: {
@@ -792,6 +916,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string | null
+          user_id?: string | null
           username?: string | null
         }
         Relationships: []
@@ -954,16 +1079,64 @@ export type Database = {
       }
       student_profiles: {
         Row: {
+          certificates: string[] | null
+          created_at: string | null
+          education: string | null
+          experience_level: string | null
+          github_url: string | null
+          gpa: number | null
+          graduation_year: number | null
           id: string
+          linkedin_url: string | null
+          major: string | null
+          portfolio_url: string | null
+          preferred_job_types: string[] | null
+          preferred_location: string | null
+          skills: string[] | null
           student_name: string | null
+          university: string | null
+          user_id: string | null
+          work_experience: string | null
         }
         Insert: {
+          certificates?: string[] | null
+          created_at?: string | null
+          education?: string | null
+          experience_level?: string | null
+          github_url?: string | null
+          gpa?: number | null
+          graduation_year?: number | null
           id?: string
+          linkedin_url?: string | null
+          major?: string | null
+          portfolio_url?: string | null
+          preferred_job_types?: string[] | null
+          preferred_location?: string | null
+          skills?: string[] | null
           student_name?: string | null
+          university?: string | null
+          user_id?: string | null
+          work_experience?: string | null
         }
         Update: {
+          certificates?: string[] | null
+          created_at?: string | null
+          education?: string | null
+          experience_level?: string | null
+          github_url?: string | null
+          gpa?: number | null
+          graduation_year?: number | null
           id?: string
+          linkedin_url?: string | null
+          major?: string | null
+          portfolio_url?: string | null
+          preferred_job_types?: string[] | null
+          preferred_location?: string | null
+          skills?: string[] | null
           student_name?: string | null
+          university?: string | null
+          user_id?: string | null
+          work_experience?: string | null
         }
         Relationships: []
       }
