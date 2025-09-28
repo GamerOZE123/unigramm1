@@ -68,18 +68,29 @@ export type Database = {
       }
       advertising_post_views: {
         Row: {
+          advertising_post_id: string | null
           id: string
           view_time: string | null
         }
         Insert: {
+          advertising_post_id?: string | null
           id?: string
           view_time?: string | null
         }
         Update: {
+          advertising_post_id?: string | null
           id?: string
           view_time?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "advertising_post_views_advertising_post_id_fkey"
+            columns: ["advertising_post_id"]
+            isOneToOne: false
+            referencedRelation: "advertising_posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       advertising_posts: {
         Row: {
@@ -241,14 +252,20 @@ export type Database = {
       }
       cleared_chats: {
         Row: {
+          cleared_at: string | null
+          conversation_id: string | null
           id: string
           user_id: string | null
         }
         Insert: {
+          cleared_at?: string | null
+          conversation_id?: string | null
           id?: string
           user_id?: string | null
         }
         Update: {
+          cleared_at?: string | null
+          conversation_id?: string | null
           id?: string
           user_id?: string | null
         }
@@ -272,6 +289,7 @@ export type Database = {
       clubs: {
         Row: {
           admin_user_id: string | null
+          category: string | null
           created_at: string | null
           description: string | null
           id: string
@@ -281,6 +299,7 @@ export type Database = {
         }
         Insert: {
           admin_user_id?: string | null
+          category?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -290,6 +309,7 @@ export type Database = {
         }
         Update: {
           admin_user_id?: string | null
+          category?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -371,14 +391,20 @@ export type Database = {
         Row: {
           conversation_id: string | null
           id: string
+          joined_at: string | null
+          user_id: string | null
         }
         Insert: {
           conversation_id?: string | null
           id?: string
+          joined_at?: string | null
+          user_id?: string | null
         }
         Update: {
           conversation_id?: string | null
           id?: string
+          joined_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -399,14 +425,20 @@ export type Database = {
       }
       deleted_chats: {
         Row: {
+          conversation_id: string | null
+          deleted_at: string | null
           id: string
           user_id: string | null
         }
         Insert: {
+          conversation_id?: string | null
+          deleted_at?: string | null
           id?: string
           user_id?: string | null
         }
         Update: {
+          conversation_id?: string | null
+          deleted_at?: string | null
           id?: string
           user_id?: string | null
         }
@@ -477,16 +509,43 @@ export type Database = {
       }
       holiday_events: {
         Row: {
+          created_at: string | null
+          current_attendees: number | null
+          date: string | null
+          description: string | null
           event_name: string | null
           id: string
+          is_active: boolean | null
+          location: string | null
+          max_attendees: number | null
+          organizer_id: string | null
+          title: string | null
         }
         Insert: {
+          created_at?: string | null
+          current_attendees?: number | null
+          date?: string | null
+          description?: string | null
           event_name?: string | null
           id?: string
+          is_active?: boolean | null
+          location?: string | null
+          max_attendees?: number | null
+          organizer_id?: string | null
+          title?: string | null
         }
         Update: {
+          created_at?: string | null
+          current_attendees?: number | null
+          date?: string | null
+          description?: string | null
           event_name?: string | null
           id?: string
+          is_active?: boolean | null
+          location?: string | null
+          max_attendees?: number | null
+          organizer_id?: string | null
+          title?: string | null
         }
         Relationships: []
       }
@@ -815,17 +874,34 @@ export type Database = {
       messages: {
         Row: {
           content: string | null
+          conversation_id: string | null
+          created_at: string | null
           id: string
+          sender_id: string | null
         }
         Insert: {
           content?: string | null
+          conversation_id?: string | null
+          created_at?: string | null
           id?: string
+          sender_id?: string | null
         }
         Update: {
           content?: string | null
+          conversation_id?: string | null
+          created_at?: string | null
           id?: string
+          sender_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mfa_amr_claims: {
         Row: {
@@ -946,6 +1022,7 @@ export type Database = {
       }
       posts: {
         Row: {
+          comments_count: number | null
           content: string | null
           created_at: string | null
           id: string
@@ -954,6 +1031,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          comments_count?: number | null
           content?: string | null
           created_at?: string | null
           id?: string
@@ -962,6 +1040,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          comments_count?: number | null
           content?: string | null
           created_at?: string | null
           id?: string
@@ -1364,6 +1443,16 @@ export type Database = {
           salary_range: string
           skills_required: string[]
           title: string
+        }[]
+      }
+      get_user_conversations: {
+        Args: { user_uuid: string }
+        Returns: {
+          id: string
+          last_message_at: string
+          other_user_avatar: string
+          other_user_id: string
+          other_user_name: string
         }[]
       }
     }
