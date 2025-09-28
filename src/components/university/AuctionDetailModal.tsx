@@ -53,19 +53,13 @@ export default function AuctionDetailModal({ auction, onClose, onBidPlaced }: Au
     try {
       const { data: bidsData, error: bidsError } = await supabase
         .from('auction_bids')
-        .select('id, bid_amount, created_at, user_id')
+        .select('id, amount, created_at, user_id')
         .eq('auction_id', auction.id)
-        .order('bid_amount', { ascending: false });
+        .order('amount', { ascending: false });
 
       if (bidsError) throw bidsError;
 
-      // Map bid_amount to amount for interface compatibility
-      const bidsWithAmount = bidsData?.map(bid => ({
-        ...bid,
-        amount: bid.bid_amount
-      })) || [];
-
-      setBids(bidsWithAmount);
+      setBids(bidsData || []);
     } catch (error) {
       console.error('Error fetching bids:', error);
       setBids([]);
@@ -88,7 +82,7 @@ export default function AuctionDetailModal({ auction, onClose, onBidPlaced }: Au
         .insert({
           auction_id: auction.id,
           user_id: user.id,
-          bid_amount: parseFloat(bidAmount)
+          amount: parseFloat(bidAmount)
         });
 
       if (error) throw error;

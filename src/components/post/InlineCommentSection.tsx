@@ -23,11 +23,9 @@ export default function InlineCommentSection({ postId, initialCommentsCount = 0 
     e.preventDefault();
     if (!newComment.trim() || submitting) return;
 
-    try {
-      await addComment(newComment);
+    const success = await addComment(newComment);
+    if (success) {
       setNewComment('');
-    } catch (error) {
-      console.error('Error adding comment:', error);
     }
   };
 

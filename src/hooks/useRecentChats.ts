@@ -4,13 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface RecentChat {
-  id: string;
   other_user_id: string;
   other_user_name: string;
   other_user_avatar: string;
-  last_message: string;
-  last_message_time: string;
-  unread_count: number;
+  other_user_university: string;
+  last_interacted_at: string;
 }
 
 export const useRecentChats = () => {
@@ -24,7 +22,7 @@ export const useRecentChats = () => {
     try {
       console.log('Fetching recent chats for user:', user.id);
       const { data, error } = await supabase.rpc('get_recent_chats', {
-        user_uuid: user.id,
+        target_user_id: user.id,
       });
 
       if (error) {

@@ -49,7 +49,7 @@ export default function CompanyApplicantsView() {
       const { data: companyJobs, error: jobsError } = await supabase
         .from('jobs')
         .select('id')
-        .eq('user_id', user.id);
+        .eq('company_id', user.id);
 
       if (jobsError) throw jobsError;
 
@@ -63,52 +63,46 @@ export default function CompanyApplicantsView() {
 
       const { data, error } = await supabase
         .from('job_applications')
-        .select('*')
+        .select(`
+          *,
+          jobs (
+            title,
+            id
+          )
+        `)
         .in('job_id', jobIds)
         .order('applied_at', { ascending: false });
 
       if (error) throw error;
 
-      // Get jobs and student profiles separately
-      const { data: jobs, error: jobsError2 } = await supabase
-        .from('jobs')
-        .select('id, title')
-        .in('id', jobIds);
-
-      if (jobsError2) throw jobsError2;
-
+      // Get student profiles separately
       const studentIds = data?.map(app => app.student_id) || [];
       let studentProfiles: any[] = [];
       
       if (studentIds.length > 0) {
         const { data: students, error: studentsError } = await supabase
           .from('student_profiles')
-          .select('*')
+          .select(`
+            *,
+            profiles (
+              full_name,
+              avatar_url,
+              university,
+              major,
+              email
+            )
+          `)
           .in('user_id', studentIds);
 
         if (studentsError) throw studentsError;
-
-        // Get profiles for students
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, avatar_url, university, major')
-          .in('user_id', studentIds);
-
-        if (profilesError) throw profilesError;
-
-        // Combine student profiles with user profiles
-        studentProfiles = students?.map(sp => ({
-          ...sp,
-          profiles: profiles?.find(p => p.user_id === sp.user_id)
-        })) || [];
+        studentProfiles = students || [];
       }
 
-      // Combine applications with jobs and student profiles
+      // Combine applications with student profiles
       const applicationsWithProfiles = data?.map(app => ({
         ...app,
-        jobs: jobs?.find(j => j.id === app.job_id),
         student_profiles: studentProfiles.find(sp => sp.user_id === app.student_id)
-      })).filter(app => app.student_profiles && app.jobs) || [];
+      })).filter(app => app.student_profiles) || [];
 
       setApplications(applicationsWithProfiles);
     } catch (error) {

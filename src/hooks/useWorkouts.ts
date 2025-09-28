@@ -5,14 +5,13 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface Workout {
   id: string;
-  workout_name: string;
-  title?: string;
-  duration?: number;
-  difficulty?: string;
-  equipment?: string;
+  title: string;
+  duration: number;
+  difficulty: string;
+  equipment: string;
   calories?: string;
-  workout_type?: string;
-  created_at?: string;
+  workout_type: string;
+  created_at: string;
 }
 
 export const useWorkouts = () => {
@@ -31,15 +30,7 @@ export const useWorkouts = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      const transformedData = (data || []).map(workout => ({
-        ...workout,
-        title: workout.workout_name,
-        duration: 30,
-        difficulty: 'moderate',
-        equipment: 'none',
-        workout_type: 'general'
-      }));
-      setWorkouts(transformedData);
+      setWorkouts(data || []);
     } catch (error) {
       console.error('Error fetching workouts:', error);
     } finally {
@@ -61,7 +52,8 @@ export const useWorkouts = () => {
       const { data, error } = await supabase
         .from('workouts')
         .insert([{
-          workout_name: workoutData.title
+          ...workoutData,
+          user_id: user.id
         }])
         .select()
         .single();

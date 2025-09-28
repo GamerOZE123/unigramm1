@@ -70,7 +70,7 @@ export default function EditProfileModal({
           major: data.major || '',
           avatar_url: data.avatar_url || ''
         });
-        setVerticalPosition(Number(data.banner_position) || 50);
+        setVerticalPosition(data.banner_position || 50);
       }
     } catch (error) {
       console.error('Error fetching profile:', error?.message || error);
@@ -178,7 +178,7 @@ export default function EditProfileModal({
           avatar_url: profile.avatar_url,
           banner_url: localBannerUrl,
           banner_height: localBannerHeight,
-          banner_position: verticalPosition.toString(),
+          banner_position: verticalPosition,
           updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id);
