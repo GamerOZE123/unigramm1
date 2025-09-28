@@ -40,13 +40,14 @@ interface Auction {
   description: string;
   starting_price: number;
   current_price: number;
-  reserve_price: number;
+  reserve_price?: number;
   image_urls: string[];
   end_time: string;
-  is_active: boolean;
-  winner_id: string;
+  is_active?: boolean;
+  winner_id?: string;
   created_at: string;
   user_id: string;
+  item_name?: string;
   profiles?: {
     full_name: string;
     username: string;
@@ -119,6 +120,10 @@ export default function MarketplacePage() {
 
         const auctionsWithData = auctionsData.map(auction => ({
           ...auction,
+          title: auction.title || auction.item_name || 'Auction Item',
+          reserve_price: (auction as any).reserve_price || auction.starting_price,
+          is_active: (auction as any).is_active ?? true,
+          winner_id: (auction as any).winner_id || null,
           bid_count: bidCountMap.get(auction.id) || 0
         }));
 

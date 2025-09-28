@@ -3,10 +3,11 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface TrendingHashtag {
+  id: string;
   hashtag: string;
-  post_count: number;
-  unique_users: number;
-  last_used: string;
+  post_count?: number;
+  unique_users?: number;
+  last_used?: string;
 }
 
 export const useTrendingHashtags = () => {
@@ -62,7 +63,8 @@ export const useTrendingHashtags = () => {
         
         // Convert to array and sort
         const trendingHashtags: TrendingHashtag[] = Array.from(hashtagMap.entries())
-          .map(([hashtag, data]) => ({
+          .map(([hashtag, data], index) => ({
+            id: `hashtag_${index}`,
             hashtag,
             post_count: data.post_count,
             unique_users: data.unique_users.size,
@@ -73,7 +75,14 @@ export const useTrendingHashtags = () => {
         
         setHashtags(trendingHashtags);
       } else {
-        setHashtags(data || []);
+        const transformedData = (data || []).map(item => ({
+          id: item.id,
+          hashtag: item.hashtag,
+          post_count: 0,
+          unique_users: 0,
+          last_used: new Date().toISOString()
+        }));
+        setHashtags(transformedData);
       }
     } catch (error) {
       console.error('Error in fetchTrendingHashtags:', error);

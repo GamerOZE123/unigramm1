@@ -5,18 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface ScheduledWorkout {
   id: string;
-  workout_id: string;
-  scheduled_time: string;
-  scheduled_date: string;
-  created_at: string;
-  workouts: {
-    title: string;
-    duration: number;
-    difficulty: string;
-    equipment: string;
-    calories?: string;
-    workout_type: string;
-  };
+  workout_time: string;
+  workouts?: any;
 }
 
 export const useScheduledWorkouts = () => {
@@ -31,27 +21,23 @@ export const useScheduledWorkouts = () => {
     try {
       let query = supabase
         .from('scheduled_workouts')
-        .select(`
-          *,
-          workouts (
-            title,
-            duration,
-            difficulty,
-            equipment,
-            calories,
-            workout_type
-          )
-        `)
-        .order('scheduled_time', { ascending: true });
+        .select('*')
+        .order('workout_time', { ascending: true });
 
       if (date) {
-        query = query.eq('scheduled_date', date);
+        query = query.gte('workout_time', `${date}T00:00:00.000Z`)
+                     .lt('workout_time', `${date}T23:59:59.999Z`);
       }
       
       const { data, error } = await query;
       
       if (error) throw error;
-      setScheduledWorkouts(data || []);
+      const transformedData = (data || []).map(item => ({
+        id: item.id,
+        workout_time: item.workout_time,
+        workouts: null
+      }));
+      setScheduledWorkouts(transformedData);
     } catch (error) {
       console.error('Error fetching scheduled workouts:', error);
     } finally {
@@ -66,27 +52,19 @@ export const useScheduledWorkouts = () => {
       const { data, error } = await supabase
         .from('scheduled_workouts')
         .insert([{
-          workout_id: workoutId,
-          scheduled_time: time,
-          scheduled_date: date,
-          user_id: user.id
+          workout_time: `${date}T${time}:00.000Z`
         }])
-        .select(`
-          *,
-          workouts (
-            title,
-            duration,
-            difficulty,
-            equipment,
-            calories,
-            workout_type
-          )
-        `)
+        .select('*')
         .single();
         
       if (error) throw error;
-      setScheduledWorkouts(prev => [...prev, data]);
-      return data;
+      const transformedData = {
+        id: data.id,
+        workout_time: data.workout_time,
+        workouts: null
+      };
+      setScheduledWorkouts(prev => [...prev, transformedData]);
+      return transformedData;
     } catch (error) {
       console.error('Error adding scheduled workout:', error);
       throw error;

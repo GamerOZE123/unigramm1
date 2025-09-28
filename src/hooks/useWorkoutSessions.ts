@@ -5,21 +5,11 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface WorkoutSession {
   id: string;
-  workout_name: string;
-  duration_minutes: number;
-  calories_burned?: number;
-  workout_type?: string;
-  notes?: string;
-  created_at: string;
-  user_id: string;
+  session_start: string;
 }
 
 interface CreateWorkoutSessionData {
-  workout_name: string;
-  duration_minutes: number;
-  calories_burned?: number;
-  workout_type?: string;
-  notes?: string;
+  session_start: string;
 }
 
 export const useWorkoutSessions = () => {
@@ -39,7 +29,11 @@ export const useWorkoutSessions = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      setWorkoutSessions(data || []);
+      const transformedData = (data || []).map(session => ({
+        id: session.id,
+        session_start: session.session_start || new Date().toISOString()
+      }));
+      setWorkoutSessions(transformedData);
     } catch (error) {
       console.error('Error fetching workout sessions:', error);
     } finally {
@@ -54,15 +48,18 @@ export const useWorkoutSessions = () => {
       const { data, error } = await supabase
         .from('workout_sessions')
         .insert([{
-          ...sessionData,
-          user_id: user.id
+          session_start: sessionData.session_start || new Date().toISOString()
         }])
         .select()
         .single();
         
       if (error) throw error;
-      setWorkoutSessions(prev => [data, ...prev]);
-      return data;
+      const transformedData = {
+        id: data.id,
+        session_start: data.session_start
+      };
+      setWorkoutSessions(prev => [transformedData, ...prev]);
+      return transformedData;
     } catch (error) {
       console.error('Error completing workout:', error);
       throw error;
