@@ -34,22 +34,38 @@ export default function StudentProfilesView() {
 
   const fetchStudentProfiles = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: studentData, error } = await supabase
         .from('student_profiles')
-        .select(`
-          *,
-          profiles (
-            full_name,
-            avatar_url,
-            university,
-            major,
-            email
-          )
-        `)
+        .select('*')
         .limit(20);
 
       if (error) throw error;
-      setStudents(data || []);
+
+      if (studentData && studentData.length > 0) {
+        // Get profiles for students
+        const studentIds = studentData.map(sp => sp.user_id);
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, avatar_url, university, major')
+          .in('user_id', studentIds);
+
+        // We also need email for contact - get from auth.users via RPC function or assume email is in profiles
+        // For now, let's add a placeholder email
+        const studentsWithProfiles = studentData.map(sp => {
+          const profile = profiles?.find(p => p.user_id === sp.user_id);
+          return {
+            ...sp,
+            profiles: profile ? {
+              ...profile,
+              email: `${profile.user_id}@university.edu` // Placeholder email
+            } : null
+          };
+        }).filter(sp => sp.profiles);
+
+        setStudents(studentsWithProfiles);
+      } else {
+        setStudents([]);
+      }
     } catch (error) {
       console.error('Error fetching student profiles:', error);
     } finally {

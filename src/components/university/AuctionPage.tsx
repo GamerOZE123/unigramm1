@@ -14,13 +14,14 @@ interface Auction {
   description: string;
   starting_price: number;
   current_price: number;
-  reserve_price: number;
+  reserve_price?: number;
   image_urls: string[];
   end_time: string;
   is_active: boolean;
-  winner_id: string;
+  winner_id?: string;
   created_at: string;
   user_id: string;
+  item_name?: string;
   profiles?: {
     full_name: string;
     username: string;
@@ -59,7 +60,12 @@ export default function AuctionPage() {
           .select('auction_id')
           .in('auction_id', auctionIds);
 
-        if (bidError) throw bidError;
+        if (bidError) {
+          console.error('Error fetching bid counts:', bidError);
+          // Continue without bid counts
+          setAuctions(auctionsData.map(auction => ({ ...auction, bid_count: 0 })));
+          return;
+        }
 
         const bidCountMap = new Map();
         bidCounts?.forEach(bid => {
@@ -68,11 +74,41 @@ export default function AuctionPage() {
         });
 
         const auctionsWithData = auctionsData.map(auction => ({
-          ...auction,
+          id: auction.id,
+          title: auction.title || auction.item_name || 'Untitled',
+          description: auction.description || '',
+          starting_price: auction.starting_price || 0,
+          current_price: auction.current_price || auction.starting_price || 0,
+          reserve_price: (auction as any).reserve_price || auction.starting_price || 0,
+          image_urls: auction.image_urls || [],
+          end_time: auction.end_time || new Date().toISOString(),
+          is_active: (auction as any).is_active !== false,
+          winner_id: (auction as any).winner_id || '',
+          created_at: auction.created_at || new Date().toISOString(),
+          user_id: auction.user_id,
+          item_name: auction.item_name,
           bid_count: bidCountMap.get(auction.id) || 0
         }));
 
         setAuctions(auctionsWithData);
+      } else {
+        // Also handle empty case with proper defaults
+        setAuctions(auctionsData?.map(auction => ({
+          id: auction.id,
+          title: auction.title || auction.item_name || 'Untitled',
+          description: auction.description || '',
+          starting_price: auction.starting_price || 0,
+          current_price: auction.current_price || auction.starting_price || 0,
+          reserve_price: (auction as any).reserve_price || auction.starting_price || 0,
+          image_urls: auction.image_urls || [],
+          end_time: auction.end_time || new Date().toISOString(),
+          is_active: (auction as any).is_active !== false,
+          winner_id: (auction as any).winner_id || '',
+          created_at: auction.created_at || new Date().toISOString(),
+          user_id: auction.user_id,
+          item_name: auction.item_name,
+          bid_count: 0
+        })) || []);
       }
     } catch (error) {
       console.error('Error fetching auctions:', error);

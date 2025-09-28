@@ -107,33 +107,74 @@ export type Database = {
       }
       auction_bids: {
         Row: {
+          amount: number | null
+          auction_id: string | null
           bid_amount: number | null
+          created_at: string | null
           id: string
-        }
-        Insert: {
-          bid_amount?: number | null
-          id?: string
-        }
-        Update: {
-          bid_amount?: number | null
-          id?: string
-        }
-        Relationships: []
-      }
-      auctions: {
-        Row: {
-          id: string
-          item_name: string | null
           user_id: string | null
         }
         Insert: {
+          amount?: number | null
+          auction_id?: string | null
+          bid_amount?: number | null
+          created_at?: string | null
           id?: string
-          item_name?: string | null
           user_id?: string | null
         }
         Update: {
+          amount?: number | null
+          auction_id?: string | null
+          bid_amount?: number | null
+          created_at?: string | null
           id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auction_bids_auction_id_fkey"
+            columns: ["auction_id"]
+            isOneToOne: false
+            referencedRelation: "auctions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      auctions: {
+        Row: {
+          created_at: string | null
+          current_price: number | null
+          description: string | null
+          end_time: string | null
+          id: string
+          image_urls: string[] | null
+          item_name: string | null
+          starting_price: number | null
+          title: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_price?: number | null
+          description?: string | null
+          end_time?: string | null
+          id?: string
+          image_urls?: string[] | null
           item_name?: string | null
+          starting_price?: number | null
+          title?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_price?: number | null
+          description?: string | null
+          end_time?: string | null
+          id?: string
+          image_urls?: string[] | null
+          item_name?: string | null
+          starting_price?: number | null
+          title?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -230,15 +271,30 @@ export type Database = {
       }
       clubs: {
         Row: {
+          admin_user_id: string | null
+          created_at: string | null
+          description: string | null
           id: string
+          image_url: string | null
+          member_count: number | null
           name: string | null
         }
         Insert: {
+          admin_user_id?: string | null
+          created_at?: string | null
+          description?: string | null
           id?: string
+          image_url?: string | null
+          member_count?: number | null
           name?: string | null
         }
         Update: {
+          admin_user_id?: string | null
+          created_at?: string | null
+          description?: string | null
           id?: string
+          image_url?: string | null
+          member_count?: number | null
           name?: string | null
         }
         Relationships: []
@@ -530,6 +586,7 @@ export type Database = {
       job_applications: {
         Row: {
           applied_at: string | null
+          created_at: string | null
           id: string
           job_id: string | null
           status: string | null
@@ -537,6 +594,7 @@ export type Database = {
         }
         Insert: {
           applied_at?: string | null
+          created_at?: string | null
           id?: string
           job_id?: string | null
           status?: string | null
@@ -544,6 +602,7 @@ export type Database = {
         }
         Update: {
           applied_at?: string | null
+          created_at?: string | null
           id?: string
           job_id?: string | null
           status?: string | null
@@ -683,18 +742,42 @@ export type Database = {
       }
       marketplace_items: {
         Row: {
+          condition: string | null
+          created_at: string | null
+          description: string | null
           id: string
+          image_urls: string[] | null
+          is_sold: boolean | null
           item_name: string | null
+          location: string | null
+          price: number | null
+          title: string | null
           user_id: string | null
         }
         Insert: {
+          condition?: string | null
+          created_at?: string | null
+          description?: string | null
           id?: string
+          image_urls?: string[] | null
+          is_sold?: boolean | null
           item_name?: string | null
+          location?: string | null
+          price?: number | null
+          title?: string | null
           user_id?: string | null
         }
         Update: {
+          condition?: string | null
+          created_at?: string | null
+          description?: string | null
           id?: string
+          image_urls?: string[] | null
+          is_sold?: boolean | null
           item_name?: string | null
+          location?: string | null
+          price?: number | null
+          title?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -891,32 +974,53 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          banner_position: string | null
+          banner_url: string | null
           bio: string | null
           created_at: string | null
+          followers_count: number | null
+          following_count: number | null
           full_name: string | null
           id: string
+          major: string | null
+          university: string | null
           updated_at: string | null
           user_id: string | null
+          user_type: string | null
           username: string | null
         }
         Insert: {
           avatar_url?: string | null
+          banner_position?: string | null
+          banner_url?: string | null
           bio?: string | null
           created_at?: string | null
+          followers_count?: number | null
+          following_count?: number | null
           full_name?: string | null
           id: string
+          major?: string | null
+          university?: string | null
           updated_at?: string | null
           user_id?: string | null
+          user_type?: string | null
           username?: string | null
         }
         Update: {
           avatar_url?: string | null
+          banner_position?: string | null
+          banner_url?: string | null
           bio?: string | null
           created_at?: string | null
+          followers_count?: number | null
+          following_count?: number | null
           full_name?: string | null
           id?: string
+          major?: string | null
+          university?: string | null
           updated_at?: string | null
           user_id?: string | null
+          user_type?: string | null
           username?: string | null
         }
         Relationships: []
@@ -1244,6 +1348,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_or_create_conversation: {
+        Args: { user1_id: string; user2_id: string }
+        Returns: string
+      }
       get_unswiped_jobs_for_student: {
         Args: { student_user_id: string }
         Returns: {
