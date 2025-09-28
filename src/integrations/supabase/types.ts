@@ -223,15 +223,24 @@ export type Database = {
       challenge_participants: {
         Row: {
           challenge_id: string | null
+          current_progress: number | null
           id: string
+          joined_at: string | null
+          user_id: string | null
         }
         Insert: {
           challenge_id?: string | null
+          current_progress?: number | null
           id?: string
+          joined_at?: string | null
+          user_id?: string | null
         }
         Update: {
           challenge_id?: string | null
+          current_progress?: number | null
           id?: string
+          joined_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -447,15 +456,45 @@ export type Database = {
       fitness_challenges: {
         Row: {
           challenge_name: string | null
+          challenge_type: string | null
+          created_at: string | null
+          creator_id: string | null
+          description: string | null
+          end_date: string | null
           id: string
+          is_active: boolean | null
+          start_date: string | null
+          target_unit: string | null
+          target_value: number | null
+          title: string | null
         }
         Insert: {
           challenge_name?: string | null
+          challenge_type?: string | null
+          created_at?: string | null
+          creator_id?: string | null
+          description?: string | null
+          end_date?: string | null
           id?: string
+          is_active?: boolean | null
+          start_date?: string | null
+          target_unit?: string | null
+          target_value?: number | null
+          title?: string | null
         }
         Update: {
           challenge_name?: string | null
+          challenge_type?: string | null
+          created_at?: string | null
+          creator_id?: string | null
+          description?: string | null
+          end_date?: string | null
           id?: string
+          is_active?: boolean | null
+          start_date?: string | null
+          target_unit?: string | null
+          target_value?: number | null
+          title?: string | null
         }
         Relationships: []
       }
@@ -515,6 +554,7 @@ export type Database = {
           description: string | null
           event_name: string | null
           id: string
+          image_url: string | null
           is_active: boolean | null
           location: string | null
           max_attendees: number | null
@@ -528,6 +568,7 @@ export type Database = {
           description?: string | null
           event_name?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           location?: string | null
           max_attendees?: number | null
@@ -541,6 +582,7 @@ export type Database = {
           description?: string | null
           event_name?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           location?: string | null
           max_attendees?: number | null
@@ -787,15 +829,24 @@ export type Database = {
       marketplace_categories: {
         Row: {
           category_name: string | null
+          description: string | null
+          icon: string | null
           id: string
+          name: string | null
         }
         Insert: {
           category_name?: string | null
+          description?: string | null
+          icon?: string | null
           id?: string
+          name?: string | null
         }
         Update: {
           category_name?: string | null
+          description?: string | null
+          icon?: string | null
           id?: string
+          name?: string | null
         }
         Relationships: []
       }
@@ -956,16 +1007,31 @@ export type Database = {
       }
       notifications: {
         Row: {
+          created_at: string | null
           id: string
+          is_read: boolean | null
           message: string | null
+          title: string | null
+          type: string | null
+          user_id: string | null
         }
         Insert: {
+          created_at?: string | null
           id?: string
+          is_read?: boolean | null
           message?: string | null
+          title?: string | null
+          type?: string | null
+          user_id?: string | null
         }
         Update: {
+          created_at?: string | null
           id?: string
+          is_read?: boolean | null
           message?: string | null
+          title?: string | null
+          type?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -1025,28 +1091,43 @@ export type Database = {
           comments_count: number | null
           content: string | null
           created_at: string | null
+          hashtags: string[] | null
           id: string
+          image_url: string | null
           image_urls: string[] | null
+          likes_count: number | null
           title: string | null
+          updated_at: string | null
           user_id: string | null
+          views_count: number | null
         }
         Insert: {
           comments_count?: number | null
           content?: string | null
           created_at?: string | null
+          hashtags?: string[] | null
           id?: string
+          image_url?: string | null
           image_urls?: string[] | null
+          likes_count?: number | null
           title?: string | null
+          updated_at?: string | null
           user_id?: string | null
+          views_count?: number | null
         }
         Update: {
           comments_count?: number | null
           content?: string | null
           created_at?: string | null
+          hashtags?: string[] | null
           id?: string
+          image_url?: string | null
           image_urls?: string[] | null
+          likes_count?: number | null
           title?: string | null
+          updated_at?: string | null
           user_id?: string | null
+          views_count?: number | null
         }
         Relationships: []
       }
@@ -1427,9 +1508,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_challenge_participant_count: {
+        Args: { challenge_uuid: string }
+        Returns: number
+      }
       get_or_create_conversation: {
         Args: { user1_id: string; user2_id: string }
         Returns: string
+      }
+      get_recent_chats: {
+        Args: { user_uuid: string }
+        Returns: {
+          id: string
+          last_message: string
+          last_message_time: string
+          other_user_avatar: string
+          other_user_id: string
+          other_user_name: string
+          unread_count: number
+        }[]
       }
       get_unswiped_jobs_for_student: {
         Args: { student_user_id: string }
