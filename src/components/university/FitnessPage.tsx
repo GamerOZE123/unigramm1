@@ -86,11 +86,7 @@ export default function FitnessPage() {
   const handleCompleteWorkout = async (scheduledWorkoutId: string, workoutData: any) => {
     try {
       await completeWorkout({
-        workout_name: workoutData.title,
-        duration_minutes: workoutData.duration,
-        workout_type: workoutData.workout_type,
-        calories_burned: workoutData.calories ? parseInt(workoutData.calories) : undefined,
-        notes: `Completed scheduled workout: ${workoutData.title}`
+        session_start: new Date().toISOString()
       });
       toast.success('Workout marked as completed!');
     } catch (error) {
@@ -113,8 +109,7 @@ export default function FitnessPage() {
   // Get today's featured workout (first scheduled or first available)
   const todaysFeaturedWorkout = scheduledWorkouts[0] || (workouts.length > 0 ? { 
     workouts: workouts[0], 
-    workout_id: workouts[0].id,
-    scheduled_time: '09:00',
+    workout_time: '09:00',
     id: `featured-${workouts[0].id}`
   } : null);
 
@@ -186,7 +181,7 @@ export default function FitnessPage() {
                       <div>
                         <h4 className="font-medium">{todaysFeaturedWorkout.workouts.title}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {formatTime(todaysFeaturedWorkout.scheduled_time)} • {todaysFeaturedWorkout.workouts.duration} min • {todaysFeaturedWorkout.workouts.workout_type}
+                          {todaysFeaturedWorkout.workout_time} • {todaysFeaturedWorkout.workouts?.duration || 30} min • {todaysFeaturedWorkout.workouts?.workout_type || 'General'}
                         </p>
                         <div className="flex gap-2 mt-1">
                           <Badge variant="secondary">{todaysFeaturedWorkout.workouts.difficulty}</Badge>
@@ -196,8 +191,8 @@ export default function FitnessPage() {
                     </div>
                     <Button
                       onClick={() => handleStartWorkout({
-                        ...todaysFeaturedWorkout.workouts,
-                        id: todaysFeaturedWorkout.workout_id
+                        id: todaysFeaturedWorkout.id,
+                        title: todaysFeaturedWorkout.workouts?.title || 'Workout'
                       })}
                       size="sm"
                     >
@@ -245,16 +240,17 @@ export default function FitnessPage() {
                           {isWorkoutCompleted(scheduledWorkout.id) && <Check className="w-4 h-4" />}
                         </button>
                         <div className="flex-1">
-                          <h4 className="font-medium">{scheduledWorkout.workouts.title}</h4>
+                          <h4 className="font-medium">{scheduledWorkout.workouts?.title || 'Workout'}</h4>
                           <p className="text-sm text-muted-foreground">
-                            {formatTime(scheduledWorkout.scheduled_time)} • {scheduledWorkout.workouts.duration} min • {scheduledWorkout.workouts.workout_type}
+                            {scheduledWorkout.workout_time} • {scheduledWorkout.workouts?.duration || 30} min • {scheduledWorkout.workouts?.workout_type || 'General'}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
                             onClick={() => handleStartWorkout({
-                              ...scheduledWorkout.workouts,
-                              id: scheduledWorkout.workout_id
+                              id: scheduledWorkout.id,
+                              title: scheduledWorkout.workouts?.title || 'Workout',
+                              duration: scheduledWorkout.workouts?.duration || 30
                             })}
                             size="sm"
                             variant="outline"
@@ -539,17 +535,18 @@ export default function FitnessPage() {
                           {isWorkoutCompleted(scheduledWorkout.id) && <Check className="w-4 h-4" />}
                         </button>
                         <div>
-                          <h4 className="font-medium">{scheduledWorkout.workouts.title}</h4>
+                          <h4 className="font-medium">{scheduledWorkout.workouts?.title || 'Workout'}</h4>
                           <p className="text-sm text-muted-foreground">
-                            {formatTime(scheduledWorkout.scheduled_time)} • {scheduledWorkout.workouts.duration} min • {scheduledWorkout.workouts.workout_type}
+                            {scheduledWorkout.workout_time} • {scheduledWorkout.workouts?.duration || 30} min • {scheduledWorkout.workouts?.workout_type || 'General'}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
                           onClick={() => handleStartWorkout({
-                            ...scheduledWorkout.workouts,
-                            id: scheduledWorkout.workout_id
+                            id: scheduledWorkout.id,
+                            title: scheduledWorkout.workouts?.title || 'Workout',
+                            duration: scheduledWorkout.workouts?.duration || 30
                           })}
                           size="sm"
                         >
