@@ -55,15 +55,6 @@ const universityOptions = [
     path: '/holidays',
     color: 'bg-pink-500',
     allowedFor: ['student']
-  },
-  {
-    id: 'carpooling',
-    title: 'Car Pooling',
-    description: 'Easy and convienient carpooling options for students',
-    icon: CarTaxiFront,
-    path: '/carpooling',
-    color: 'bg-yellow-500',
-    allowedFor: ['student']
   }
 ];
 
