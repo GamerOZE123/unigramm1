@@ -16,8 +16,10 @@ interface PostImage {
 
 export default function Explore() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [postImages, setPostImages] = useState<PostImage[]>([]);
+  const [randomImages, setRandomImages] = useState<PostImage[]>([]);
+  const [topPosts, setTopPosts] = useState<any[]>([]);
   const [imagesLoading, setImagesLoading] = useState(true);
+  const [topPostsLoading, setTopPostsLoading] = useState(true);
   const { users, loading, searchUsers } = useUsers();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -39,26 +41,83 @@ export default function Explore() {
       .map(({ value }) => value);
   };
 
-  const fetchPostImages = async () => {
+  const fetchRandomImages = async () => {
     try {
       const { data: posts, error } = await supabase
         .from('posts')
-        .select('id, image_url')
-        .not('image_url', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(50);
+        .select('id, image_url, image_urls')
+        .limit(100);
 
       if (error) throw error;
-      setPostImages(shuffleArray(posts || [])); // <-- shuffle before setting
+
+      const images: PostImage[] = [];
+      posts?.forEach(post => {
+        if (post.image_urls && post.image_urls.length > 0) {
+          post.image_urls.forEach((url: string) => {
+            images.push({ id: post.id, image_url: url });
+          });
+        } else if (post.image_url) {
+          images.push({ id: post.id, image_url: post.image_url });
+        }
+      });
+
+      setRandomImages(shuffleArray(images).slice(0, 16));
     } catch (error) {
-      console.error('Error fetching post images:', error);
+      console.error('Error fetching random images:', error);
     } finally {
       setImagesLoading(false);
     }
   };
 
+  const fetchTopPostsOfDay = async () => {
+    try {
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+      const { data: postsData, error: postsError } = await supabase
+        .from('posts')
+        .select('*')
+        .gte('created_at', yesterday);
+
+      if (postsError) throw postsError;
+
+      const userIds = [...new Set(postsData?.map(post => post.user_id) || [])];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, username, avatar_url')
+        .in('user_id', userIds);
+
+      const profilesMap = new Map();
+      profilesData?.forEach(profile => {
+        profilesMap.set(profile.user_id, profile);
+      });
+
+      const scoredPosts = (postsData || []).map(post => {
+        const profile = profilesMap.get(post.user_id);
+        const engagementScore = (post.likes_count * 2) + (post.comments_count * 3) + post.views_count;
+        
+        return {
+          ...post,
+          engagementScore,
+          profiles: {
+            full_name: profile?.full_name || 'Anonymous User',
+            username: profile?.username || 'user',
+            avatar_url: profile?.avatar_url || ''
+          }
+        };
+      });
+
+      scoredPosts.sort((a, b) => b.engagementScore - a.engagementScore);
+      setTopPosts(scoredPosts.slice(0, 12));
+    } catch (error) {
+      console.error('Error fetching top posts:', error);
+    } finally {
+      setTopPostsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetchPostImages();
+    fetchRandomImages();
+    fetchTopPostsOfDay();
   }, []);
 
   const handleImageClick = (postId: string) => {
@@ -140,37 +199,89 @@ export default function Explore() {
           </div>
         )}
 
-        {/* Image Collage when no search */}
+        {/* Random Posts & Top Posts when no search */}
         {!searchQuery && (
-          <div className="post-card">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Recent Posts</h3>
-            {imagesLoading ? (
-              <div className="text-center py-8">
-                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-                <p className="text-muted-foreground mt-2">Loading images...</p>
-              </div>
-            ) : postImages.length > 0 ? (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
-                {postImages.map((post) => (
-                  <div
-                    key={post.id}
-                    onClick={() => handleImageClick(post.id)}
-                    className="aspect-square bg-surface rounded-lg overflow-hidden cursor-pointer hover:opacity-75 transition-opacity"
-                  >
-                    <img
-                      src={post.image_url}
-                      alt="Post"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">No images to display yet</p>
-              </div>
-            )}
-          </div>
+          <>
+            {/* Random Posts Section */}
+            <div className="post-card mb-6">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Random Posts</h3>
+              {imagesLoading ? (
+                <div className="text-center py-8">
+                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p className="text-muted-foreground mt-2">Loading...</p>
+                </div>
+              ) : randomImages.length > 0 ? (
+                <div className="grid grid-cols-4 gap-2">
+                  {randomImages.map((image, index) => (
+                    <div
+                      key={`${image.id}-${index}`}
+                      onClick={() => handleImageClick(image.id)}
+                      className="aspect-square bg-surface rounded-lg overflow-hidden cursor-pointer hover:opacity-75 transition-opacity"
+                    >
+                      <img
+                        src={image.image_url}
+                        alt="Random post"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No images available</p>
+                </div>
+              )}
+            </div>
+
+            {/* Top Posts of the Day Section */}
+            <div className="post-card">
+              <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                <span>🔥</span> Top Posts of the Day
+              </h3>
+              {topPostsLoading ? (
+                <div className="text-center py-8">
+                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p className="text-muted-foreground mt-2">Loading...</p>
+                </div>
+              ) : topPosts.length > 0 ? (
+                <div className="space-y-4">
+                  {topPosts.map((post) => (
+                    <div key={post.id} className="border border-border rounded-lg p-4 hover:bg-muted/5 transition-colors">
+                      <div className="flex items-center gap-3 mb-3">
+                        <img
+                          src={post.profiles.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.profiles.username}`}
+                          alt={post.profiles.full_name}
+                          className="w-10 h-10 rounded-full"
+                        />
+                        <div>
+                          <p className="font-semibold text-sm">{post.profiles.full_name}</p>
+                          <p className="text-xs text-muted-foreground">@{post.profiles.username}</p>
+                        </div>
+                      </div>
+                      <p className="text-sm mb-3">{post.content}</p>
+                      {post.image_urls && post.image_urls.length > 0 && (
+                        <img
+                          src={post.image_urls[0]}
+                          alt="Post"
+                          className="w-full rounded-lg object-cover max-h-96 cursor-pointer mb-3"
+                          onClick={() => handleImageClick(post.id)}
+                        />
+                      )}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span>❤️ {post.likes_count}</span>
+                        <span>💬 {post.comments_count}</span>
+                        <span>👁️ {post.views_count}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No trending posts today</p>
+                </div>
+              )}
+            </div>
+          </>
         )}
       </div>
     </Layout>

@@ -29,6 +29,23 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Auto-extract hashtags from caption
+  const extractHashtagsFromCaption = (text: string): string[] => {
+    const hashtagRegex = /#[\w]+/g;
+    const matches = text.match(hashtagRegex) || [];
+    return matches.map(tag => tag.substring(1).toLowerCase());
+  };
+
+  // Update hashtags when caption changes
+  const handleCaptionChange = (text: string) => {
+    setCaption(text);
+    const autoHashtags = extractHashtagsFromCaption(text);
+    
+    // Merge auto-detected hashtags with manually added ones (remove duplicates)
+    const allHashtags = [...new Set([...hashtags, ...autoHashtags])];
+    setHashtags(allHashtags);
+  };
+
   // Handle file selection
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -246,9 +263,9 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
           {/* Caption Section */}
           <div>
             <Textarea
-              placeholder="Write a caption..."
+              placeholder="Write a caption... (Use #hashtag to add tags automatically)"
               value={caption}
-              onChange={(e) => setCaption(e.target.value)}
+              onChange={(e) => handleCaptionChange(e.target.value)}
               rows={3}
               className="resize-none"
             />

@@ -79,25 +79,29 @@ export default function Home() {
   const [seenPostIds, setSeenPostIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const isMobile = useIsMobile();
+  const [userUniversity, setUserUniversity] = useState<string | null>(null);
+  const [seenUniversityIds, setSeenUniversityIds] = useState<Set<string>>(new Set());
 
   const fetchPosts = async () => {
     try {
       console.log('Fetching posts...');
       
-      // First get all posts, excluding already seen ones
-      let query = supabase
-        .from('posts')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      // Exclude seen posts if we have any
-      if (seenPostIds.size > 0) {
-        const seenIds = Array.from(seenPostIds);
-        query = query.not('id', 'in', `(${seenIds.map(id => `"${id}"`).join(',')})`);
+      // Fetch user's university
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('university')
+          .eq('user_id', user.id)
+          .single();
+        
+        setUserUniversity(profile?.university || null);
       }
 
-      const { data: postsData, error: postsError } = await query;
+      // Get all posts
+      const { data: postsData, error: postsError } = await supabase
+        .from('posts')
+        .select('*')
+        .order('created_at', { ascending: false });
       
       if (postsError) {
         console.error('Error fetching posts:', postsError);
@@ -161,16 +165,17 @@ export default function Home() {
         profilesMap.set(profile.user_id, profile);
       });
       
-      // Transform regular posts data with profile information and shuffle randomly
-      const transformedPosts: TransformedPost[] = postsData.map((post) => {
+      // Separate university and global posts
+      const universityPosts: TransformedPost[] = [];
+      const globalPosts: TransformedPost[] = [];
+      
+      postsData.forEach((post) => {
         const profile = profilesMap.get(post.user_id);
-        
-        // Create user display data with proper fallbacks  
         const userName = profile?.full_name || profile?.username || 'Anonymous User';
         const userUsername = profile?.username || 'user';
-        const userUniversity = profile?.university || 'University';
+        const postUniversity = profile?.university || 'University';
         
-        return {
+        const transformedPost: TransformedPost = {
           id: post.id,
           content: post.content || '',
           image_url: post.image_url,
@@ -182,7 +187,7 @@ export default function Home() {
           user_id: post.user_id,
           user_name: userName,
           user_username: userUsername,
-          user_university: userUniversity,
+          user_university: postUniversity,
           hashtags: post.hashtags || [],
           profiles: {
             full_name: profile?.full_name || 'Anonymous User',
@@ -190,45 +195,71 @@ export default function Home() {
             avatar_url: profile?.avatar_url
           }
         };
-      }).sort(() => Math.random() - 0.5); // Randomly shuffle posts
+        
+        if (userUniversity && postUniversity === userUniversity) {
+          universityPosts.push(transformedPost);
+        } else {
+          globalPosts.push(transformedPost);
+        }
+      });
 
-      // Update seen posts
-      const newPostIds = transformedPosts.map(p => p.id);
-      setSeenPostIds(prev => new Set([...prev, ...newPostIds]));
+      // Score global posts by mixed engagement
+      const scoredGlobalPosts = globalPosts.map(post => {
+        const recencyScore = Math.max(0, 100 - (Date.now() - new Date(post.created_at).getTime()) / (1000 * 60 * 60));
+        const engagementScore = (post.likes_count * 2) + (post.comments_count * 3) + (post.views_count * 0.1);
+        const randomFactor = Math.random() * 20;
+        return { post, score: recencyScore + engagementScore + randomFactor };
+      });
+      scoredGlobalPosts.sort((a, b) => b.score - a.score);
+      const sortedGlobalPosts = scoredGlobalPosts.map(item => item.post);
 
-      // If no new posts and we have seen posts, reset and fetch again
-      if (transformedPosts.length === 0 && seenPostIds.size > 0) {
-        setSeenPostIds(new Set());
-        fetchPosts();
-        return;
-      }
-
-      // Create algorithm to intersperse advertising posts
-      const mixedArray: MixedPost[] = [];
-      let advertisingIndex = 0;
-      
-      // Shuffle advertising posts for random order and type check
+      // Shuffle advertising posts
       const shuffledAds = advertisingWithProfiles ? [...advertisingWithProfiles].filter(ad => 
         ad && typeof ad === 'object' && 'id' in ad
       ).sort(() => Math.random() - 0.5) : [];
-      
-      transformedPosts.forEach((post, index) => {
-        // Add regular post
-        mixedArray.push({
-          type: 'regular',
-          data: post
-        });
-        
-        // Add advertising post after every 3-4 posts
-        if ((index + 1) % 4 === 0 && advertisingIndex < shuffledAds.length) {
-          const adPost = shuffledAds[advertisingIndex];
-          mixedArray.push({
-            type: 'advertising',
-            data: adPost as any
-          });
-          advertisingIndex++;
+
+      // 40:60 mixing algorithm
+      const mixedArray: MixedPost[] = [];
+      let uniIndex = 0;
+      let globalIndex = 0;
+      let adIndex = 0;
+      let postCounter = 0;
+
+      while (uniIndex < universityPosts.length || globalIndex < sortedGlobalPosts.length) {
+        // Add 4 university posts (40%)
+        for (let i = 0; i < 4 && uniIndex < universityPosts.length; i++) {
+          mixedArray.push({ type: 'regular', data: universityPosts[uniIndex] });
+          uniIndex++;
+          postCounter++;
         }
-      });
+
+        // Add 6 global posts (60%)
+        for (let i = 0; i < 6 && globalIndex < sortedGlobalPosts.length; i++) {
+          mixedArray.push({ type: 'regular', data: sortedGlobalPosts[globalIndex] });
+          globalIndex++;
+          postCounter++;
+        }
+
+        // Add 1 ad every 10 posts
+        if (postCounter >= 10 && adIndex < shuffledAds.length) {
+          mixedArray.push({ type: 'advertising', data: shuffledAds[adIndex] as any });
+          adIndex++;
+          postCounter = 0;
+        }
+      }
+
+      // Add remaining global posts
+      while (globalIndex < sortedGlobalPosts.length) {
+        mixedArray.push({ type: 'regular', data: sortedGlobalPosts[globalIndex] });
+        globalIndex++;
+        postCounter++;
+
+        if (postCounter >= 4 && adIndex < shuffledAds.length) {
+          mixedArray.push({ type: 'advertising', data: shuffledAds[adIndex] as any });
+          adIndex++;
+          postCounter = 0;
+        }
+      }
       
       setMixedPosts(mixedArray);
     } catch (error) {
