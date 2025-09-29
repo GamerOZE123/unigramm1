@@ -39,11 +39,33 @@ export default function Auth() {
     checkUser();
   }, [navigate]);
 
+  const detectUniversityFromEmail = (email: string) => {
+    const domain = email.split('@')[1]?.toLowerCase();
+    if (domain?.includes('.snu')) {
+      return 'Shiv Nadar University';
+    }
+    // Add more university mappings here
+    return '';
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    
+    // Auto-detect university when email changes
+    if (name === 'email' && userType === 'student') {
+      const detectedUniversity = detectUniversityFromEmail(value);
+      setFormData({
+        ...formData,
+        [name]: value,
+        university: detectedUniversity || formData.university
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
+    
     setError('');
     setMessage('');
   };
@@ -309,24 +331,7 @@ export default function Auth() {
                     </div>
                   </div>
 
-                  {userType === 'student' ? (
-                    <div className="space-y-2">
-                      <Label htmlFor="university">University</Label>
-                      <div className="relative">
-                        <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                        <Input
-                          id="university"
-                          name="university"
-                          type="text"
-                          placeholder="Enter your university"
-                          className="pl-10 bg-surface border-border"
-                          value={formData.university}
-                          onChange={handleInputChange}
-                          required
-                        />
-                      </div>
-                    </div>
-                  ) : (
+                  {userType === 'company' && (
                     <div className="space-y-2">
                       <Label htmlFor="companyName">Company Name</Label>
                       <div className="relative">
@@ -360,6 +365,25 @@ export default function Auth() {
                     placeholder="Enter your email"
                     className="pl-10 bg-surface border-border"
                     value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
+            {mode === 'signup' && userType === 'student' && (
+              <div className="space-y-2">
+                <Label htmlFor="university">University</Label>
+                <div className="relative">
+                  <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input
+                    id="university"
+                    name="university"
+                    type="text"
+                    placeholder="Auto-detected or enter manually"
+                    className="pl-10 bg-surface border-border"
+                    value={formData.university}
                     onChange={handleInputChange}
                     required
                   />

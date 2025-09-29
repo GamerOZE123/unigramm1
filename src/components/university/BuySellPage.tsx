@@ -32,11 +32,29 @@ export default function BuySellPage() {
   const [selectedItem, setSelectedItem] = useState<MarketplaceItem | null>(null);
   const [editingItem, setEditingItem] = useState<MarketplaceItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [userUniversity, setUserUniversity] = useState<string>('');
   const { user } = useAuth();
 
   useEffect(() => {
-    fetchItems();
-  }, []);
+    const fetchUserUniversity = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('university')
+        .eq('user_id', user.id)
+        .single();
+      if (data) {
+        setUserUniversity(data.university || '');
+      }
+    };
+    fetchUserUniversity();
+  }, [user]);
+
+  useEffect(() => {
+    if (userUniversity) {
+      fetchItems();
+    }
+  }, [userUniversity]);
 
   const fetchItems = async () => {
     try {
@@ -48,7 +66,23 @@ export default function BuySellPage() {
 
       if (itemsError) throw itemsError;
 
-      setItems(itemsData || []);
+      // Filter by university
+      if (itemsData) {
+        const itemsWithProfiles = await Promise.all(
+          itemsData.map(async (item) => {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('university')
+              .eq('user_id', item.user_id)
+              .single();
+            return { ...item, userUniversity: profile?.university };
+          })
+        );
+        const filteredItems = itemsWithProfiles.filter(
+          (item) => item.userUniversity === userUniversity
+        );
+        setItems(filteredItems);
+      }
     } catch (error) {
       console.error('Error fetching marketplace items:', error);
     } finally {

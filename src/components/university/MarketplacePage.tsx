@@ -61,6 +61,7 @@ export default function MarketplacePage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('buysell');
+  const [userUniversity, setUserUniversity] = useState<string>('');
   
   // Modals
   const [showCreateItemModal, setShowCreateItemModal] = useState(false);
@@ -73,9 +74,26 @@ export default function MarketplacePage() {
   const { user } = useAuth();
 
   useEffect(() => {
-    fetchItems();
-    fetchAuctions();
-  }, []);
+    const fetchUserUniversity = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('university')
+        .eq('user_id', user.id)
+        .single();
+      if (data) {
+        setUserUniversity(data.university || '');
+      }
+    };
+    fetchUserUniversity();
+  }, [user]);
+
+  useEffect(() => {
+    if (userUniversity) {
+      fetchItems();
+      fetchAuctions();
+    }
+  }, [userUniversity]);
 
   const fetchItems = async () => {
     try {
@@ -86,7 +104,24 @@ export default function MarketplacePage() {
         .order('created_at', { ascending: false });
 
       if (itemsError) throw itemsError;
-      setItems(itemsData || []);
+
+      // Filter by university - get profiles for each item
+      if (itemsData) {
+        const itemsWithProfiles = await Promise.all(
+          itemsData.map(async (item) => {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('university')
+              .eq('user_id', item.user_id)
+              .single();
+            return { ...item, userUniversity: profile?.university };
+          })
+        );
+        const filteredItems = itemsWithProfiles.filter(
+          (item) => item.userUniversity === userUniversity
+        );
+        setItems(filteredItems);
+      }
     } catch (error) {
       console.error('Error fetching marketplace items:', error);
     }
@@ -103,7 +138,23 @@ export default function MarketplacePage() {
       if (auctionsError) throw auctionsError;
 
       if (auctionsData && auctionsData.length > 0) {
-        const auctionIds = auctionsData.map(auction => auction.id);
+        // Filter by university
+        const auctionsWithProfiles = await Promise.all(
+          auctionsData.map(async (auction) => {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('university')
+              .eq('user_id', auction.user_id)
+              .single();
+            return { ...auction, userUniversity: profile?.university };
+          })
+        );
+        
+        const filteredAuctions = auctionsWithProfiles.filter(
+          (auction) => auction.userUniversity === userUniversity
+        );
+
+        const auctionIds = filteredAuctions.map(auction => auction.id);
         const { data: bidCounts, error: bidError } = await supabase
           .from('auction_bids')
           .select('auction_id')
@@ -117,7 +168,7 @@ export default function MarketplacePage() {
           bidCountMap.set(bid.auction_id, count + 1);
         });
 
-        const auctionsWithData = auctionsData.map(auction => ({
+        const auctionsWithData = filteredAuctions.map(auction => ({
           ...auction,
           bid_count: bidCountMap.get(auction.id) || 0
         }));

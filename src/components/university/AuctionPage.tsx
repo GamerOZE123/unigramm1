@@ -35,11 +35,29 @@ export default function AuctionPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAuction, setSelectedAuction] = useState<Auction | null>(null);
   const [editingAuction, setEditingAuction] = useState<Auction | null>(null);
+  const [userUniversity, setUserUniversity] = useState<string>('');
   const { user } = useAuth();
 
   useEffect(() => {
-    fetchAuctions();
-  }, []);
+    const fetchUserUniversity = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('university')
+        .eq('user_id', user.id)
+        .single();
+      if (data) {
+        setUserUniversity(data.university || '');
+      }
+    };
+    fetchUserUniversity();
+  }, [user]);
+
+  useEffect(() => {
+    if (userUniversity) {
+      fetchAuctions();
+    }
+  }, [userUniversity]);
 
   const fetchAuctions = async () => {
     try {
@@ -52,8 +70,24 @@ export default function AuctionPage() {
       if (auctionsError) throw auctionsError;
 
       if (auctionsData && auctionsData.length > 0) {
+        // Filter by university
+        const auctionsWithProfiles = await Promise.all(
+          auctionsData.map(async (auction) => {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('university')
+              .eq('user_id', auction.user_id)
+              .single();
+            return { ...auction, userUniversity: profile?.university };
+          })
+        );
+        
+        const filteredAuctions = auctionsWithProfiles.filter(
+          (auction) => auction.userUniversity === userUniversity
+        );
+
         // Get bid counts for each auction
-        const auctionIds = auctionsData.map(auction => auction.id);
+        const auctionIds = filteredAuctions.map(auction => auction.id);
         const { data: bidCounts, error: bidError } = await supabase
           .from('auction_bids')
           .select('auction_id')
@@ -67,7 +101,7 @@ export default function AuctionPage() {
           bidCountMap.set(bid.auction_id, count + 1);
         });
 
-        const auctionsWithData = auctionsData.map(auction => ({
+        const auctionsWithData = filteredAuctions.map(auction => ({
           ...auction,
           bid_count: bidCountMap.get(auction.id) || 0
         }));

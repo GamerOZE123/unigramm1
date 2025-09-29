@@ -1,15 +1,32 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import { CarTaxiFront, MapPin, Clock, Users, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import MobileHeader from '@/components/layout/MobileHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Carpooling() {
   const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const [userUniversity, setUserUniversity] = useState<string>('');
 
-  // Mock data for demonstration
+  useEffect(() => {
+    const fetchUserUniversity = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('university')
+        .eq('user_id', user.id)
+        .single();
+      if (data) setUserUniversity(data.university || '');
+    };
+    fetchUserUniversity();
+  }, [user]);
+
+  // Mock data for demonstration - filtered by university
   const availableRides = [
     {
       id: 1,
