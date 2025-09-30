@@ -6,7 +6,6 @@ import { X, Upload, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import HashtagSelector from './HashtagSelector';
 
 interface FileUploadModalProps {
   isOpen: boolean;
@@ -25,26 +24,8 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadingImages, setUploadingImages] = useState<UploadingImage[]>([]);
   const [caption, setCaption] = useState('');
-  const [hashtags, setHashtags] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Auto-extract hashtags from caption
-  const extractHashtagsFromCaption = (text: string): string[] => {
-    const hashtagRegex = /#[\w]+/g;
-    const matches = text.match(hashtagRegex) || [];
-    return matches.map(tag => tag.substring(1).toLowerCase());
-  };
-
-  // Update hashtags when caption changes
-  const handleCaptionChange = (text: string) => {
-    setCaption(text);
-    const autoHashtags = extractHashtagsFromCaption(text);
-    
-    // Merge auto-detected hashtags with manually added ones (remove duplicates)
-    const allHashtags = [...new Set([...hashtags, ...autoHashtags])];
-    setHashtags(allHashtags);
-  };
 
   // Handle file selection
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,17 +96,10 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
 
     setUploading(true);
     try {
-      // Format hashtags
-      const formattedHashtags = hashtags
-        .filter(tag => tag.trim())
-        .map(tag => tag.toLowerCase().replace(/^#+/, '').trim())
-        .filter(tag => tag.length > 0);
-
-      // Create post immediately
+      // Create post - database trigger will extract hashtags from content
       const postData = {
         user_id: user.id,
         content: caption.trim() || 'New post',
-        hashtags: formattedHashtags.length > 0 ? formattedHashtags : null,
         image_urls: null
       };
 
@@ -157,7 +131,6 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
       setSelectedFiles([]);
       setUploadingImages([]);
       setCaption('');
-      setHashtags([]);
 
       // Notify parent and close
       onPostCreated();
@@ -174,7 +147,6 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
     setSelectedFiles([]);
     setUploadingImages([]);
     setCaption('');
-    setHashtags([]);
     onClose();
   };
 
@@ -263,20 +235,15 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
           {/* Caption Section */}
           <div>
             <Textarea
-              placeholder="Write a caption... (Use #hashtag to add tags automatically)"
+              placeholder="Write a caption... (Use #hashtags in your caption)"
               value={caption}
-              onChange={(e) => handleCaptionChange(e.target.value)}
-              rows={3}
+              onChange={(e) => setCaption(e.target.value)}
+              rows={4}
               className="resize-none"
             />
-          </div>
-
-          {/* Hashtags Section */}
-          <div>
-            <label className="text-sm font-medium text-muted-foreground mb-2 block">
-              Add Hashtags
-            </label>
-            <HashtagSelector hashtags={hashtags} onHashtagsChange={setHashtags} />
+            <p className="text-xs text-muted-foreground mt-2">
+              💡 Tip: Add hashtags directly in your caption like #fitness #health
+            </p>
           </div>
 
           {/* Action Buttons */}

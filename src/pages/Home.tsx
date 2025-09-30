@@ -81,227 +81,231 @@ export default function Home() {
   const isMobile = useIsMobile();
   const [userUniversity, setUserUniversity] = useState<string | null>(null);
   const [seenUniversityIds, setSeenUniversityIds] = useState<Set<string>>(new Set());
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+  const POSTS_PER_PAGE = 10;
 
-  const fetchPosts = async () => {
+  const fetchPosts = async (pageNum: number = 0, isInitial: boolean = false) => {
     try {
-      console.log('Fetching posts...');
+      if (isInitial) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
       
-      // Fetch user's university
-      if (user) {
+      const startIndex = pageNum * POSTS_PER_PAGE;
+      const endIndex = startIndex + POSTS_PER_PAGE - 1;
+
+      // Fetch user's university on initial load
+      let currentUserUniversity = userUniversity;
+      if (isInitial && user) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('university')
           .eq('user_id', user.id)
           .single();
         
-        setUserUniversity(profile?.university || null);
+        currentUserUniversity = profile?.university || null;
+        setUserUniversity(currentUserUniversity);
       }
 
-      // Get all posts
-      const { data: postsData, error: postsError } = await supabase
+      // Calculate counts for 40:60 ratio
+      const universityCount = Math.ceil(POSTS_PER_PAGE * 0.4);
+      const globalCount = POSTS_PER_PAGE - universityCount;
+
+      // Fetch university posts with pagination
+      let universityPosts: TransformedPost[] = [];
+      if (currentUserUniversity) {
+        const { data: uniPostsData, error: uniError } = await supabase
+          .from('posts')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(startIndex, startIndex + universityCount - 1);
+
+        if (uniError) throw uniError;
+
+        if (uniPostsData) {
+          const uniUserIds = [...new Set(uniPostsData.map(post => post.user_id))];
+          const { data: uniProfiles } = await supabase
+            .from('profiles')
+            .select('user_id, full_name, username, university, major, avatar_url')
+            .in('user_id', uniUserIds);
+
+          const uniProfilesMap = new Map();
+          uniProfiles?.forEach(profile => uniProfilesMap.set(profile.user_id, profile));
+
+          universityPosts = uniPostsData
+            .filter(post => uniProfilesMap.get(post.user_id)?.university === currentUserUniversity)
+            .map(post => {
+              const profile = uniProfilesMap.get(post.user_id);
+              return {
+                id: post.id,
+                content: post.content || '',
+                image_url: post.image_url,
+                image_urls: post.image_urls,
+                created_at: post.created_at,
+                likes_count: post.likes_count || 0,
+                comments_count: post.comments_count || 0,
+                views_count: post.views_count || 0,
+                user_id: post.user_id,
+                user_name: profile?.full_name || profile?.username || 'Anonymous',
+                user_username: profile?.username || 'user',
+                user_university: profile?.university,
+                hashtags: post.hashtags || [],
+                profiles: {
+                  full_name: profile?.full_name || 'Anonymous',
+                  username: profile?.username || 'user',
+                  avatar_url: profile?.avatar_url
+                }
+              };
+            });
+        }
+      }
+
+      // Fetch global posts with pagination
+      const { data: globalPostsData, error: globalError } = await supabase
         .from('posts')
         .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (postsError) {
-        console.error('Error fetching posts:', postsError);
-        throw postsError;
-      }
-      
-      // Fetch advertising posts
-      const { data: advertisingData, error: advertisingError } = await supabase
-        .from('advertising_posts')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false});
-      
-      // Fetch company profiles for advertising posts
-      let advertisingWithProfiles = [];
-      if (advertisingData && advertisingData.length > 0) {
-        const companyIds = [...new Set(advertisingData.map(ad => ad.company_id))];
-        const { data: companyProfilesData } = await supabase
-          .from('company_profiles')
-          .select('user_id, company_name, logo_url')
-          .in('user_id', companyIds);
-        
-        // Map company profiles to advertising posts
-        advertisingWithProfiles = advertisingData.map(ad => ({
-          ...ad,
-          company_profiles: companyProfilesData?.find(cp => cp.user_id === ad.company_id) || null
-        }));
-      }
-      
-      if (advertisingError) {
-        console.error('Error fetching advertising posts:', advertisingError);
-        throw advertisingError;
-      }
+        .order('created_at', { ascending: false })
+        .range(startIndex, startIndex + globalCount - 1);
 
-      console.log('Fetched posts:', postsData);
-      console.log('Fetched advertising posts:', advertisingWithProfiles);
-      
-      if (!postsData || postsData.length === 0) {
-        setMixedPosts([]);
-        setLoading(false);
-        return;
-      }
-      
-      // Get unique user IDs from regular posts
-      const userIds = [...new Set(postsData.map(post => post.user_id))];
-      
-      // Fetch profiles for all users
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, username, university, major, avatar_url')
-        .in('user_id', userIds);
-      
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-        throw profilesError;
-      }
-      
-      // Create a map of user_id to profile for quick lookup
-      const profilesMap = new Map();
-      profilesData?.forEach(profile => {
-        profilesMap.set(profile.user_id, profile);
-      });
-      
-      // Separate university and global posts
-      const universityPosts: TransformedPost[] = [];
-      const globalPosts: TransformedPost[] = [];
-      
-      postsData.forEach((post) => {
-        const profile = profilesMap.get(post.user_id);
-        const userName = profile?.full_name || profile?.username || 'Anonymous User';
-        const userUsername = profile?.username || 'user';
-        const postUniversity = profile?.university || 'University';
-        
-        const transformedPost: TransformedPost = {
-          id: post.id,
-          content: post.content || '',
-          image_url: post.image_url,
-          image_urls: post.image_urls,
-          created_at: post.created_at,
-          likes_count: post.likes_count || 0,
-          comments_count: post.comments_count || 0,
-          views_count: post.views_count || 0,
-          user_id: post.user_id,
-          user_name: userName,
-          user_username: userUsername,
-          user_university: postUniversity,
-          hashtags: post.hashtags || [],
-          profiles: {
-            full_name: profile?.full_name || 'Anonymous User',
-            username: profile?.username || 'user',
-            avatar_url: profile?.avatar_url
-          }
-        };
-        
-        if (userUniversity && postUniversity === userUniversity) {
-          universityPosts.push(transformedPost);
-        } else {
-          globalPosts.push(transformedPost);
+      if (globalError) throw globalError;
+
+      let globalPosts: TransformedPost[] = [];
+      if (globalPostsData) {
+        const globalUserIds = [...new Set(globalPostsData.map(post => post.user_id))];
+        const { data: globalProfiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, username, university, major, avatar_url')
+          .in('user_id', globalUserIds);
+
+        const globalProfilesMap = new Map();
+        globalProfiles?.forEach(profile => globalProfilesMap.set(profile.user_id, profile));
+
+        globalPosts = globalPostsData.map(post => {
+          const profile = globalProfilesMap.get(post.user_id);
+          const ageInHours = (Date.now() - new Date(post.created_at).getTime()) / (1000 * 60 * 60);
+          const recencyScore = Math.max(0, 100 - ageInHours);
+          const engagementScore = (post.likes_count * 2) + (post.comments_count * 3) + (post.views_count * 0.1);
+          const randomFactor = Math.random() * 20;
+          
+          return {
+            id: post.id,
+            content: post.content || '',
+            image_url: post.image_url,
+            image_urls: post.image_urls,
+            created_at: post.created_at,
+            likes_count: post.likes_count || 0,
+            comments_count: post.comments_count || 0,
+            views_count: post.views_count || 0,
+            user_id: post.user_id,
+            user_name: profile?.full_name || profile?.username || 'Anonymous',
+            user_username: profile?.username || 'user',
+            user_university: profile?.university,
+            hashtags: post.hashtags || [],
+            profiles: {
+              full_name: profile?.full_name || 'Anonymous',
+              username: profile?.username || 'user',
+              avatar_url: profile?.avatar_url
+            },
+            score: recencyScore + engagementScore + randomFactor
+          };
+        }).sort((a, b) => (b.score || 0) - (a.score || 0));
+
+        // Filter out university posts from global
+        if (currentUserUniversity) {
+          globalPosts = globalPosts.filter(post => post.user_university !== currentUserUniversity);
         }
-      });
+      }
 
-      // Score global posts by mixed engagement
-      const scoredGlobalPosts = globalPosts.map(post => {
-        const recencyScore = Math.max(0, 100 - (Date.now() - new Date(post.created_at).getTime()) / (1000 * 60 * 60));
-        const engagementScore = (post.likes_count * 2) + (post.comments_count * 3) + (post.views_count * 0.1);
-        const randomFactor = Math.random() * 20;
-        return { post, score: recencyScore + engagementScore + randomFactor };
-      });
-      scoredGlobalPosts.sort((a, b) => b.score - a.score);
-      const sortedGlobalPosts = scoredGlobalPosts.map(item => item.post);
+      // Fetch ads only on first page
+      let shuffledAds: any[] = [];
+      if (pageNum === 0) {
+        const { data: adsData } = await supabase
+          .from('advertising_posts')
+          .select('*')
+          .eq('is_active', true);
 
-      // Shuffle advertising posts
-      const shuffledAds = advertisingWithProfiles ? [...advertisingWithProfiles].filter(ad => 
-        ad && typeof ad === 'object' && 'id' in ad
-      ).sort(() => Math.random() - 0.5) : [];
+        if (adsData && adsData.length > 0) {
+          const companyIds = [...new Set(adsData.map((ad: any) => ad.company_id))];
+          const { data: companyProfiles } = await supabase
+            .from('company_profiles')
+            .select('user_id, company_name, logo_url')
+            .in('user_id', companyIds);
 
-      // 40:60 mixing algorithm
+          shuffledAds = adsData.map((ad: any) => ({
+            ...ad,
+            company_profiles: companyProfiles?.find(cp => cp.user_id === ad.company_id) || null
+          })).sort(() => Math.random() - 0.5);
+        }
+      }
+
+      // Mix posts in 40:60 ratio
       const mixedArray: MixedPost[] = [];
       let uniIndex = 0;
       let globalIndex = 0;
-      let adIndex = 0;
-      let postCounter = 0;
 
-      while (uniIndex < universityPosts.length || globalIndex < sortedGlobalPosts.length) {
-        // Add 4 university posts (40%)
+      while (uniIndex < universityPosts.length || globalIndex < globalPosts.length) {
+        // Add 4 university posts
         for (let i = 0; i < 4 && uniIndex < universityPosts.length; i++) {
           mixedArray.push({ type: 'regular', data: universityPosts[uniIndex] });
           uniIndex++;
-          postCounter++;
         }
-
-        // Add 6 global posts (60%)
-        for (let i = 0; i < 6 && globalIndex < sortedGlobalPosts.length; i++) {
-          mixedArray.push({ type: 'regular', data: sortedGlobalPosts[globalIndex] });
+        // Add 6 global posts
+        for (let i = 0; i < 6 && globalIndex < globalPosts.length; i++) {
+          mixedArray.push({ type: 'regular', data: globalPosts[globalIndex] });
           globalIndex++;
-          postCounter++;
-        }
-
-        // Add 1 ad every 10 posts
-        if (postCounter >= 10 && adIndex < shuffledAds.length) {
-          mixedArray.push({ type: 'advertising', data: shuffledAds[adIndex] as any });
-          adIndex++;
-          postCounter = 0;
         }
       }
 
-      // Add remaining global posts
-      while (globalIndex < sortedGlobalPosts.length) {
-        mixedArray.push({ type: 'regular', data: sortedGlobalPosts[globalIndex] });
-        globalIndex++;
-        postCounter++;
-
-        if (postCounter >= 4 && adIndex < shuffledAds.length) {
-          mixedArray.push({ type: 'advertising', data: shuffledAds[adIndex] as any });
-          adIndex++;
-          postCounter = 0;
-        }
+      // Insert ad on first batch
+      if (pageNum === 0 && shuffledAds.length > 0 && mixedArray.length >= 9) {
+        mixedArray.splice(9, 0, { type: 'advertising', data: shuffledAds[0] });
       }
-      
-      setMixedPosts(mixedArray);
+
+      // Check if we have more posts
+      setHasMore(mixedArray.length === POSTS_PER_PAGE);
+
+      if (isInitial) {
+        setMixedPosts(mixedArray);
+      } else {
+        setMixedPosts(prev => [...prev, ...mixedArray]);
+      }
     } catch (error) {
       console.error('Error fetching posts:', error);
-      setMixedPosts([]);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
-  // Set up real-time subscription for new posts
+  const loadMorePosts = () => {
+    if (!loadingMore && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchPosts(nextPage, false);
+    }
+  };
+
+  // Set up real-time subscription and initial load
   useEffect(() => {
-    fetchPosts();
+    fetchPosts(0, true);
 
     const channel = supabase
       .channel('posts_channel')
       .on('postgres_changes', 
         { event: 'INSERT', schema: 'public', table: 'posts' },
-        (payload) => {
-          console.log('New post added:', payload);
-          fetchPosts();
+        () => {
+          setPage(0);
+          fetchPosts(0, true);
         }
       )
       .on('postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'posts' },
-        (payload) => {
-          console.log('Post updated:', payload);
-          fetchPosts();
-        }
-      )
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'advertising_posts' },
-        (payload) => {
-          console.log('New advertising post added:', payload);
-          fetchPosts();
-        }
-      )
-      .on('postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'advertising_posts' },
-        (payload) => {
-          console.log('Advertising post updated:', payload);
-          fetchPosts();
+        () => {
+          setPage(0);
+          fetchPosts(0, true);
         }
       )
       .subscribe();
@@ -310,6 +314,24 @@ export default function Home() {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  // Infinite scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (loadingMore || !hasMore) return;
+
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight;
+      const clientHeight = window.innerHeight;
+
+      if (scrollTop + clientHeight >= scrollHeight - 500) {
+        loadMorePosts();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [loadingMore, hasMore, page]);
 
   if (loading) {
     return (
@@ -330,27 +352,22 @@ export default function Home() {
       
       <div className="max-w-xl mx-auto pt-6 -mt-4 md:pt-2 md:-mt-6">
         <div className="space-y-4">
-          {(() => {
-            console.log('mixedPosts:', mixedPosts);
-            return null;
-          })()}
           {mixedPosts.length > 0 ? (
-            mixedPosts.map((mixedPost, index) => {
-              console.log('Processing mixedPost:', mixedPost, 'at index:', index);
-              return mixedPost.type === 'regular' ? (
+            mixedPosts.map((mixedPost) =>
+              mixedPost.type === 'regular' ? (
                 <PostCard 
                   key={`regular-${mixedPost.data.id}`}
                   post={mixedPost.data as TransformedPost} 
-                  onPostUpdated={fetchPosts}
+                  onPostUpdated={() => fetchPosts(0, true)}
                 />
               ) : (
                 <AdvertisingPostCard
                   key={`ad-${mixedPost.data.id}`}
                   post={mixedPost.data as AdvertisingPost}
-                  onLikeUpdate={fetchPosts}
+                  onLikeUpdate={() => fetchPosts(0, true)}
                 />
-              );
-            })
+              )
+            )
           ) : (
             <div className="post-card text-center py-12">
               <h3 className="text-lg font-semibold text-foreground mb-2">
@@ -364,10 +381,22 @@ export default function Home() {
               </p>
             </div>
           )}
+          
+          {loadingMore && (
+            <div className="flex justify-center py-8">
+              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
+          
+          {!hasMore && mixedPosts.length > 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              You've reached the end!
+            </div>
+          )}
         </div>
       </div>
       
-      <ImageUploadButton onPostCreated={fetchPosts} />
+      <ImageUploadButton onPostCreated={() => fetchPosts(0, true)} />
     </Layout>
   );
 }
