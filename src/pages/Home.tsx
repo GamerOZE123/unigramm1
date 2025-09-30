@@ -80,16 +80,20 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const isMobile = useIsMobile();
   const [userUniversity, setUserUniversity] = useState<string | null>(null);
-  const [seenUniversityIds, setSeenUniversityIds] = useState<Set<string>>(new Set());
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
   const POSTS_PER_PAGE = 10;
+  const isFetchingRef = React.useRef(false);
 
   const fetchPosts = async (pageNum: number = 0, isInitial: boolean = false) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
     try {
       if (isInitial) {
         setLoading(true);
+        setSeenPostIds(new Set());
       } else {
         setLoadingMore(true);
       }
@@ -270,20 +274,34 @@ export default function Home() {
         mixedArray.splice(9, 0, { type: 'advertising', data: shuffledAds[0] });
       }
 
+      // Filter out posts we've already seen to prevent duplicates
+      const newSeenIds = new Set(seenPostIds);
+      const uniqueMixedArray = mixedArray.filter(post => {
+        const postId = post.data.id;
+        if (newSeenIds.has(postId)) {
+          return false;
+        }
+        newSeenIds.add(postId);
+        return true;
+      });
+      
+      setSeenPostIds(newSeenIds);
+
       // Determine if there are more posts (if we got the full amount we requested)
       const gotFullBatch = universityPosts.length >= universityCount || globalPosts.length >= globalCount;
-      setHasMore(gotFullBatch && mixedArray.length > 0);
+      setHasMore(gotFullBatch && uniqueMixedArray.length > 0);
 
       if (isInitial) {
-        setMixedPosts(mixedArray);
+        setMixedPosts(uniqueMixedArray);
       } else {
-        setMixedPosts(prev => [...prev, ...mixedArray]);
+        setMixedPosts(prev => [...prev, ...uniqueMixedArray]);
       }
     } catch (error) {
       console.error('Error fetching posts:', error);
     } finally {
       setLoading(false);
       setLoadingMore(false);
+      isFetchingRef.current = false;
     }
   };
 
@@ -295,31 +313,9 @@ export default function Home() {
     fetchPosts(nextPage, false);
   };
 
-  // Set up real-time subscription and initial load
+  // Initial load only
   useEffect(() => {
     fetchPosts(0, true);
-
-    const channel = supabase
-      .channel('posts_channel')
-      .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'posts' },
-        () => {
-          setPage(0);
-          fetchPosts(0, true);
-        }
-      )
-      .on('postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'posts' },
-        () => {
-          setPage(0);
-          fetchPosts(0, true);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   // Infinite scroll with ref to prevent stale closures
