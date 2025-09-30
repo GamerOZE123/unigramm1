@@ -121,7 +121,7 @@ export default function Home() {
           .from('posts')
           .select('*')
           .order('created_at', { ascending: false })
-          .range(startIndex, startIndex + universityCount - 1);
+          .range(startIndex, startIndex + (universityCount * 3) - 1); // Fetch more to filter
 
         if (uniError) throw uniError;
 
@@ -137,6 +137,7 @@ export default function Home() {
 
           universityPosts = uniPostsData
             .filter(post => uniProfilesMap.get(post.user_id)?.university === currentUserUniversity)
+            .slice(0, universityCount) // Take only what we need
             .map(post => {
               const profile = uniProfilesMap.get(post.user_id);
               return {
@@ -168,7 +169,7 @@ export default function Home() {
         .from('posts')
         .select('*')
         .order('created_at', { ascending: false })
-        .range(startIndex, startIndex + globalCount - 1);
+        .range(startIndex, startIndex + (globalCount * 2) - 1); // Fetch more to filter
 
       if (globalError) throw globalError;
 
@@ -183,7 +184,7 @@ export default function Home() {
         const globalProfilesMap = new Map();
         globalProfiles?.forEach(profile => globalProfilesMap.set(profile.user_id, profile));
 
-        globalPosts = globalPostsData.map(post => {
+        let allGlobalPosts = globalPostsData.map(post => {
           const profile = globalProfilesMap.get(post.user_id);
           const ageInHours = (Date.now() - new Date(post.created_at).getTime()) / (1000 * 60 * 60);
           const recencyScore = Math.max(0, 100 - ageInHours);
@@ -211,12 +212,17 @@ export default function Home() {
             },
             score: recencyScore + engagementScore + randomFactor
           };
-        }).sort((a, b) => (b.score || 0) - (a.score || 0));
+        });
 
         // Filter out university posts from global
         if (currentUserUniversity) {
-          globalPosts = globalPosts.filter(post => post.user_university !== currentUserUniversity);
+          allGlobalPosts = allGlobalPosts.filter(post => post.user_university !== currentUserUniversity);
         }
+
+        // Sort and take only what we need
+        globalPosts = allGlobalPosts
+          .sort((a, b) => (b.score || 0) - (a.score || 0))
+          .slice(0, globalCount);
       }
 
       // Fetch ads only on first page
@@ -264,8 +270,9 @@ export default function Home() {
         mixedArray.splice(9, 0, { type: 'advertising', data: shuffledAds[0] });
       }
 
-      // Check if we have more posts
-      setHasMore(mixedArray.length === POSTS_PER_PAGE);
+      // Determine if there are more posts (if we got the full amount we requested)
+      const gotFullBatch = universityPosts.length >= universityCount || globalPosts.length >= globalCount;
+      setHasMore(gotFullBatch && mixedArray.length > 0);
 
       if (isInitial) {
         setMixedPosts(mixedArray);
@@ -281,11 +288,11 @@ export default function Home() {
   };
 
   const loadMorePosts = () => {
-    if (!loadingMore && hasMore) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchPosts(nextPage, false);
-    }
+    if (loadingMore || !hasMore) return;
+    
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchPosts(nextPage, false);
   };
 
   // Set up real-time subscription and initial load
@@ -315,21 +322,29 @@ export default function Home() {
     };
   }, []);
 
-  // Infinite scroll
+  // Infinite scroll with ref to prevent stale closures
   useEffect(() => {
-    const handleScroll = () => {
-      if (loadingMore || !hasMore) return;
+    let isScrolling = false;
 
+    const handleScroll = () => {
+      if (isScrolling) return;
+      
       const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       const scrollHeight = document.documentElement.scrollHeight;
       const clientHeight = window.innerHeight;
 
-      if (scrollTop + clientHeight >= scrollHeight - 500) {
+      if (scrollTop + clientHeight >= scrollHeight - 800) {
+        isScrolling = true;
         loadMorePosts();
+        
+        // Reset flag after a delay
+        setTimeout(() => {
+          isScrolling = false;
+        }, 1000);
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [loadingMore, hasMore, page]);
 
@@ -385,12 +400,6 @@ export default function Home() {
           {loadingMore && (
             <div className="flex justify-center py-8">
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          )}
-          
-          {!hasMore && mixedPosts.length > 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              You've reached the end!
             </div>
           )}
         </div>
