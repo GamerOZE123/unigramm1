@@ -119,6 +119,8 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
             onEdit={() => setShowEditModal(true)}
             onDelete={handleDeletePost}
             userId={post.user_id}
+            hashtags={post.hashtags}
+            onHashtagClick={handleHashtagClick}
           />
 
           {/* Images (single or multiple) with hashtags overlay */}

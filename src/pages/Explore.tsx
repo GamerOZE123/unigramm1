@@ -259,6 +259,25 @@ export default function Explore() {
                         </div>
                       </div>
                       <p className="text-sm mb-3">{post.content}</p>
+                      
+                      {/* Hashtags */}
+                      {post.hashtags && post.hashtags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {post.hashtags.map((hashtag: string, idx: number) => (
+                            <button
+                              key={idx}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/hashtag/${hashtag}`);
+                              }}
+                              className="text-blue-500 hover:text-blue-600 text-sm font-medium cursor-pointer transition-colors"
+                            >
+                              #{hashtag}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      
                       {post.image_urls && post.image_urls.length > 0 && (
                         <img
                           src={post.image_urls[0]}

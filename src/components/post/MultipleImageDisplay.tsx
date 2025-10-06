@@ -161,26 +161,6 @@ export default function MultipleImageDisplay({
                 className="w-full h-full object-cover"
                 loading="lazy"
               />
-              
-              {/* Hashtags overlay */}
-              {hashtags && hashtags.length > 0 && (
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-                  <div className="flex flex-wrap gap-2">
-                    {hashtags.map((hashtag, index) => (
-                      <button
-                        key={index}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onHashtagClick?.(hashtag, e);
-                        }}
-                        className="text-white hover:text-blue-300 text-sm font-medium cursor-pointer transition-colors"
-                      >
-                        #{hashtag}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -232,26 +212,6 @@ export default function MultipleImageDisplay({
                         className="w-full h-full object-cover"
                         loading="lazy"
                       />
-                      
-                      {/* Hashtags overlay - only show on first image */}
-                      {index === 0 && hashtags && hashtags.length > 0 && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-                          <div className="flex flex-wrap gap-2">
-                            {hashtags.map((hashtag, idx) => (
-                              <button
-                                key={idx}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onHashtagClick?.(hashtag, e);
-                                }}
-                                className="text-white hover:text-blue-300 text-sm font-medium cursor-pointer transition-colors"
-                              >
-                                #{hashtag}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   )}
                   

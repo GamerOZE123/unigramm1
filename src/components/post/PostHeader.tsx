@@ -20,6 +20,8 @@ interface PostHeaderProps {
   onEdit?: () => void;
   onDelete?: () => void;
   userId?: string; // Add userId for profile navigation
+  hashtags?: string[];
+  onHashtagClick?: (hashtag: string, e: React.MouseEvent) => void;
 }
 
 export default function PostHeader({ 
@@ -32,7 +34,9 @@ export default function PostHeader({
   isOwnPost = false, 
   onEdit, 
   onDelete,
-  userId 
+  userId,
+  hashtags,
+  onHashtagClick
 }: PostHeaderProps) {
   const navigate = useNavigate();
   const formatDate = (dateString: string) => {
@@ -133,6 +137,24 @@ export default function PostHeader({
           <p className="text-foreground mt-1 leading-relaxed whitespace-pre-line">
             {content}
           </p>
+        )}
+
+        {/* Hashtags below caption */}
+        {hashtags && hashtags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-2">
+            {hashtags.map((hashtag, index) => (
+              <button
+                key={index}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onHashtagClick?.(hashtag, e);
+                }}
+                className="text-blue-500 hover:text-blue-600 text-sm font-medium cursor-pointer transition-colors"
+              >
+                #{hashtag}
+              </button>
+            ))}
+          </div>
         )}
       </div>
     </div>

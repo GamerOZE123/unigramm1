@@ -130,29 +130,9 @@ export default function PostContent({
                   src={imageUrl}
                   alt="Post content"
                   className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-                
-                {/* Hashtags overlay */}
-                {hashtags && hashtags.length > 0 && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-                    <div className="flex flex-wrap gap-2">
-                      {hashtags.map((hashtag, index) => (
-                        <button
-                          key={index}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onHashtagClick?.(hashtag, e);
-                          }}
-                          className="text-white hover:text-blue-300 text-sm font-medium cursor-pointer transition-colors"
-                        >
-                          #{hashtag}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+              loading="lazy"
+            />
+          </div>
             </div>
           ) : (
             <div className="bg-muted/20 border border-border rounded-lg p-4 flex items-center justify-between w-full max-w-md">

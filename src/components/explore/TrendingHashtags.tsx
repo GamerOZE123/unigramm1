@@ -2,9 +2,15 @@
 import React from 'react';
 import { Hash, TrendingUp } from 'lucide-react';
 import { useTrendingHashtags } from '@/hooks/useTrendingHashtags';
+import { useNavigate } from 'react-router-dom';
 
 export default function TrendingHashtags() {
   const { hashtags, loading } = useTrendingHashtags();
+  const navigate = useNavigate();
+
+  const handleHashtagClick = (hashtag: string) => {
+    navigate(`/hashtag/${hashtag}`);
+  };
 
   if (loading) {
     return (
@@ -45,14 +51,18 @@ export default function TrendingHashtags() {
       </div>
       <div className="space-y-3">
         {hashtags.map((tag, index) => (
-          <div key={tag.hashtag} className="flex items-center justify-between">
+          <div 
+            key={tag.hashtag} 
+            className="flex items-center justify-between cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
+            onClick={() => handleHashtagClick(tag.hashtag)}
+          >
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-muted-foreground w-4">
                 #{index + 1}
               </span>
               <div className="flex items-center gap-1">
                 <Hash className="w-4 h-4 text-primary" />
-                <span className="font-medium text-foreground">{tag.hashtag}</span>
+                <span className="font-medium text-blue-500 hover:text-blue-600">{tag.hashtag}</span>
               </div>
             </div>
             <div className="text-right">
