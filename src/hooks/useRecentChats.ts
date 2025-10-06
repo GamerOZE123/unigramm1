@@ -94,27 +94,7 @@ const addRecentChat = async (otherUserId: string) => {
     if (user) {
       fetchRecentChats();
 
-      // Real-time: Refresh on new messages (Instagram: chat bubbles up/reappears)
-      const messageChannel = supabase
-        .channel('recent-chats-messages')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages',
-          },
-          (payload) => {
-            const message = payload.new;
-            if (message.sender_id !== user.id) {
-              console.log('New incoming message, refreshing recent chats');
-              fetchRecentChats();  // Restore/add chat
-            }
-          }
-        )
-        .subscribe();
-
-      // Real-time: Refresh on recent_chats updates (e.g., self-deletion)
+      // Real-time: Refresh on recent_chats updates (database trigger handles both send/receive)
       const recentChatsChannel = supabase
         .channel('recent-chats-updates')
         .on(
@@ -133,7 +113,6 @@ const addRecentChat = async (otherUserId: string) => {
         .subscribe();
 
       return () => {
-        supabase.removeChannel(messageChannel);
         supabase.removeChannel(recentChatsChannel);
       };
     }

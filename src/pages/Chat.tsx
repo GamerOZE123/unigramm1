@@ -168,9 +168,7 @@ export default function Chat() {
     const msg = newMessage.trim();
     setNewMessage('');
     const result = await sendMessage(selectedConversationId, msg);
-    if (result.success && selectedUser?.user_id) {
-      await addRecentChat(selectedUser.user_id);
-    } else {
+    if (!result.success) {
       toast.error('Failed to send message');
     }
   };
