@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { X, Save } from 'lucide-react';
+import { X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import HashtagSelector from './HashtagSelector';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface EditPostModalProps {
   isOpen: boolean;
@@ -19,9 +19,12 @@ interface EditPostModalProps {
 }
 
 export default function EditPostModal({ isOpen, onClose, onPostUpdated, post }: EditPostModalProps) {
+  const { user } = useAuth();
   const [content, setContent] = useState(post.content);
   const [hashtags, setHashtags] = useState<string[]>(post.hashtags || []);
   const [updating, setUpdating] = useState(false);
+
+  if (!isOpen) return null;
 
   const handleUpdate = async () => {
     if (!content.trim()) {
@@ -68,62 +71,58 @@ export default function EditPostModal({ isOpen, onClose, onPostUpdated, post }: 
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between">
-            Edit Post
-            <Button variant="ghost" size="icon" onClick={handleClose}>
-              <X className="w-4 h-4" />
-            </Button>
-          </DialogTitle>
-        </DialogHeader>
-        
-        <div className="space-y-4">
-          {/* Content Section */}
-          <div>
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={handleClose}>
+      <div 
+        className="bg-card border border-border rounded-2xl p-6 max-w-lg w-full animate-scale-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-foreground">Edit Post</h2>
+          <Button variant="ghost" size="icon" onClick={handleClose}>
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Content */}
+        <div className="flex gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center flex-shrink-0">
+            <span className="text-sm font-bold text-white">
+              {user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
+            </span>
+          </div>
+          <div className="flex-1">
             <Textarea
               placeholder="Edit your post..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              rows={3}
-              className="resize-none"
+              className="min-h-[100px] resize-none bg-transparent border-none p-0 text-base text-foreground placeholder:text-muted-foreground focus-visible:ring-0"
             />
-          </div>
-
-          {/* Hashtags Section */}
-          <div>
-            <label className="text-sm font-medium text-muted-foreground mb-2 block">
-              Edit Hashtags
-            </label>
-            <HashtagSelector hashtags={hashtags} onHashtagsChange={setHashtags} />
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-2 pt-4">
-            <Button variant="outline" onClick={handleClose} className="flex-1">
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleUpdate} 
-              disabled={updating || !content.trim()}
-              className="flex-1"
-            >
-              {updating ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                  Updating...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Update
-                </>
-              )}
-            </Button>
+            
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Edit Hashtags
+                </label>
+                <HashtagSelector hashtags={hashtags} onHashtagsChange={setHashtags} />
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-end gap-2 mt-4 pt-4 border-t border-border">
+              <Button variant="outline" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleUpdate} 
+                disabled={updating || !content.trim()}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {updating ? 'Updating...' : 'Update'}
+              </Button>
+            </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }

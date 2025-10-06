@@ -104,12 +104,20 @@ export default function PostHeader({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={onEdit}>
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit?.();
+                  }}
+                >
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Post
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={onDelete}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete?.();
+                  }}
                   className="text-destructive focus:text-destructive"
                 >
                   <Trash className="w-4 h-4 mr-2" />

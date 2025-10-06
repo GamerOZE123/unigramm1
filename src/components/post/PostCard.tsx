@@ -121,12 +121,14 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
             userId={post.user_id}
           />
 
-          {/* Images (single or multiple) */}
+          {/* Images (single or multiple) with hashtags overlay */}
           {(post.image_urls?.length > 0 || post.image_url) && (
             <div className="flex justify-center w-full">
               {post.image_urls?.length > 0 ? (
                 <MultipleImageDisplay 
                   imageUrls={post.image_urls}
+                  hashtags={post.hashtags}
+                  onHashtagClick={handleHashtagClick}
                   onLike={handleLikeClick}
                   onComment={handleCommentClick}
                   onShare={handleShareClick}
@@ -140,6 +142,8 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
                 <PostContent
                   content=""
                   imageUrl={post.image_url}
+                  hashtags={post.hashtags}
+                  onHashtagClick={handleHashtagClick}
                   onLike={handleLikeClick}
                   onComment={handleCommentClick}
                   onShare={handleShareClick}
@@ -150,21 +154,6 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
                   postContent={post.content}
                 />
               ) : null}
-            </div>
-          )}
-
-          {/* Hashtags */}
-          {post.hashtags && post.hashtags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {post.hashtags.map((hashtag, index) => (
-                <button
-                  key={index}
-                  onClick={(e) => handleHashtagClick(hashtag, e)}
-                  className="text-blue-500 hover:text-blue-700 hover:underline text-sm font-medium cursor-pointer transition-colors"
-                >
-                  #{hashtag}
-                </button>
-              ))}
             </div>
           )}
 
