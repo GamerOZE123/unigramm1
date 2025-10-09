@@ -358,52 +358,12 @@ export default function Explore() {
               ) : topPosts.length > 0 ? (
                 <div className="space-y-4">
                   {topPosts.map((post) => (
-                    <div key={post.id} className="border border-border rounded-lg p-4 hover:bg-muted/5 transition-colors">
-                      <div className="flex items-center gap-3 mb-3">
-                        <img
-                          src={post.profiles.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${post.profiles.username}`}
-                          alt={post.profiles.full_name}
-                          className="w-10 h-10 rounded-full"
-                        />
-                        <div>
-                          <p className="font-semibold text-sm">{post.profiles.full_name}</p>
-                          <p className="text-xs text-muted-foreground">@{post.profiles.username}</p>
-                        </div>
-                      </div>
-                      <p className="text-sm mb-3">{post.content}</p>
-                      
-                      {/* Hashtags */}
-                      {post.hashtags && post.hashtags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {post.hashtags.map((hashtag: string, idx: number) => (
-                            <button
-                              key={idx}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleHashtagClick(hashtag);
-                              }}
-                              className="text-blue-500 hover:text-blue-600 text-sm font-medium cursor-pointer transition-colors"
-                            >
-                              #{hashtag}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                      
-                      {post.image_urls && post.image_urls.length > 0 && (
-                        <img
-                          src={post.image_urls[0]}
-                          alt="Post"
-                          className="w-full rounded-lg object-cover max-h-96 cursor-pointer mb-3"
-                          onClick={() => handleImageClick(post.id)}
-                        />
-                      )}
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>❤️ {post.likes_count}</span>
-                        <span>💬 {post.comments_count}</span>
-                        <span>👁️ {post.views_count}</span>
-                      </div>
-                    </div>
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      onPostUpdated={fetchTopPostsOfDay}
+                      onHashtagClick={handleHashtagClick}
+                    />
                   ))}
                 </div>
               ) : (
