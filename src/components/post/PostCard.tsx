@@ -41,9 +41,10 @@ interface PostCardProps {
   onComment?: () => void;
   onShare?: () => void;
   onPostUpdated?: () => void;
+  onHashtagClick?: (hashtag: string) => void;
 }
 
-export default function PostCard({ post, onLike, onComment, onShare, onPostUpdated }: PostCardProps) {
+export default function PostCard({ post, onLike, onComment, onShare, onPostUpdated, onHashtagClick }: PostCardProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [showEditModal, setShowEditModal] = useState(false);
@@ -56,10 +57,14 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
     recordPostView(post.id);
   });
 
-  const handleHashtagClick = (hashtag: string, e: React.MouseEvent) => {
+  const handleHashtagClickInternal = (hashtag: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    navigate(`/hashtag/${hashtag}`);
+    if (onHashtagClick) {
+      onHashtagClick(hashtag);
+    } else {
+      navigate(`/hashtag/${hashtag}`);
+    }
   };
 
   const handleLikeClick = (e: React.MouseEvent) => {
@@ -120,7 +125,7 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
             onDelete={handleDeletePost}
             userId={post.user_id}
             hashtags={post.hashtags}
-            onHashtagClick={handleHashtagClick}
+            onHashtagClick={handleHashtagClickInternal}
           />
 
           {/* Images (single or multiple) with hashtags overlay */}
@@ -130,7 +135,7 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
                 <MultipleImageDisplay 
                   imageUrls={post.image_urls}
                   hashtags={post.hashtags}
-                  onHashtagClick={handleHashtagClick}
+                  onHashtagClick={handleHashtagClickInternal}
                   onLike={handleLikeClick}
                   onComment={handleCommentClick}
                   onShare={handleShareClick}
@@ -145,7 +150,7 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
                   content=""
                   imageUrl={post.image_url}
                   hashtags={post.hashtags}
-                  onHashtagClick={handleHashtagClick}
+                  onHashtagClick={handleHashtagClickInternal}
                   onLike={handleLikeClick}
                   onComment={handleCommentClick}
                   onShare={handleShareClick}
