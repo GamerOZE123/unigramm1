@@ -253,6 +253,48 @@ export type Database = {
         }
         Relationships: []
       }
+      carpool_rides: {
+        Row: {
+          available_seats: number
+          created_at: string | null
+          driver_id: string
+          from_location: string
+          id: string
+          is_active: boolean | null
+          price: number
+          ride_date: string
+          ride_time: string
+          to_location: string
+          updated_at: string | null
+        }
+        Insert: {
+          available_seats: number
+          created_at?: string | null
+          driver_id: string
+          from_location: string
+          id?: string
+          is_active?: boolean | null
+          price: number
+          ride_date: string
+          ride_time: string
+          to_location: string
+          updated_at?: string | null
+        }
+        Update: {
+          available_seats?: number
+          created_at?: string | null
+          driver_id?: string
+          from_location?: string
+          id?: string
+          is_active?: boolean | null
+          price?: number
+          ride_date?: string
+          ride_time?: string
+          to_location?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       challenge_participants: {
         Row: {
           challenge_id: string
@@ -1634,6 +1676,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      universities: {
+        Row: {
+          abbreviation: string
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          abbreviation: string
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          abbreviation?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       user_presence: {
         Row: {

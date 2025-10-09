@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Calendar, MapPin, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface HolidayEvent {
   id: string;
@@ -19,16 +20,15 @@ interface HolidayEvent {
     full_name: string;
     username: string;
     avatar_url: string;
+    university?: string;
   };
 }
 
 export default function HolidayPage() {
+  const { user } = useAuth();
   const [events, setEvents] = useState<HolidayEvent[]>([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchEvents();
-  }, []);
+  const [userUniversity, setUserUniversity] = useState<string>('');
 
   const fetchEvents = async () => {
     try {
@@ -45,7 +45,7 @@ export default function HolidayPage() {
         
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select('user_id, full_name, username, avatar_url')
+          .select('user_id, full_name, username, avatar_url, university')
           .in('user_id', userIds);
 
         if (profilesError) throw profilesError;
@@ -60,7 +60,12 @@ export default function HolidayPage() {
           profiles: profilesMap.get(event.organizer_id)
         }));
 
-        setEvents(eventsWithProfiles);
+        // Filter by university
+        const filteredEvents = eventsWithProfiles.filter(event => 
+          event.profiles?.university === userUniversity
+        );
+
+        setEvents(filteredEvents);
       }
     } catch (error) {
       console.error('Error fetching holiday events:', error);
@@ -68,6 +73,25 @@ export default function HolidayPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const fetchUserUniversity = async () => {
+      if (!user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('university')
+        .eq('user_id', user.id)
+        .single();
+      if (data) setUserUniversity(data.university || '');
+    };
+    fetchUserUniversity();
+  }, [user]);
+
+  useEffect(() => {
+    if (userUniversity) {
+      fetchEvents();
+    }
+  }, [userUniversity]);
 
   if (loading) {
     return <div className="text-center py-8">Loading holiday events...</div>;

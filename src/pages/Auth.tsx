@@ -7,6 +7,13 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { GraduationCap, Mail, Lock, User, ArrowLeft, Building2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type AuthMode = 'login' | 'signup' | 'forgot' | 'reset';
 type UserType = 'student' | 'company';
@@ -17,6 +24,7 @@ export default function Auth() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [userType, setUserType] = useState<UserType>('student');
+  const [universities, setUniversities] = useState<Array<{id: string, name: string}>>([]);
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
@@ -37,6 +45,16 @@ export default function Auth() {
       }
     };
     checkUser();
+
+    // Fetch universities
+    const fetchUniversities = async () => {
+      const { data } = await supabase
+        .from('universities')
+        .select('id, name')
+        .order('name');
+      if (data) setUniversities(data);
+    };
+    fetchUniversities();
   }, [navigate]);
 
   const detectUniversityFromEmail = (email: string) => {
@@ -376,17 +394,23 @@ export default function Auth() {
               <div className="space-y-2">
                 <Label htmlFor="university">University</Label>
                 <div className="relative">
-                  <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    id="university"
-                    name="university"
-                    type="text"
-                    placeholder="Auto-detected or enter manually"
-                    className="pl-10 bg-surface border-border"
+                  <GraduationCap className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 z-10 pointer-events-none" />
+                  <Select
                     value={formData.university}
-                    onChange={handleInputChange}
+                    onValueChange={(value) => setFormData({...formData, university: value})}
                     required
-                  />
+                  >
+                    <SelectTrigger className="pl-10 bg-surface border-border">
+                      <SelectValue placeholder="Select your university" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border-border z-50">
+                      {universities.map(uni => (
+                        <SelectItem key={uni.id} value={uni.name}>
+                          {uni.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             )}

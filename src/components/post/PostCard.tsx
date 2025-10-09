@@ -63,7 +63,7 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
     if (onHashtagClick) {
       onHashtagClick(hashtag);
     } else {
-      navigate(`/hashtag/${hashtag}`);
+      navigate(`/explore?hashtag=${hashtag}`);
     }
   };
 
