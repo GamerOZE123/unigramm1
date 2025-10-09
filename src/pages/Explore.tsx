@@ -124,28 +124,44 @@ export default function Explore() {
   const fetchHashtagPosts = async (hashtag: string) => {
     setHashtagPostsLoading(true);
     try {
-      const { data: posts, error } = await supabase
+      // First, get all posts
+      const { data: allPosts, error: postsError } = await supabase
         .from('posts')
-        .select(`
-          *,
-          profiles:user_id (
-            id,
-            user_id,
-            username,
-            full_name,
-            avatar_url,
-            university
-          )
-        `)
-        .contains('hashtags', [hashtag.toLowerCase()])
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (postsError) throw postsError;
 
-      const transformedPosts = posts?.map(post => ({
+      // Filter posts that contain the hashtag (case-insensitive)
+      const filteredPosts = allPosts?.filter(post => {
+        if (!post.hashtags || !Array.isArray(post.hashtags)) return false;
+        return post.hashtags.some((tag: string) => 
+          tag.toLowerCase() === hashtag.toLowerCase()
+        );
+      }) || [];
+
+      // Get unique user IDs
+      const userIds = [...new Set(filteredPosts.map(post => post.user_id))];
+
+      // Fetch profiles for these users
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, username, full_name, avatar_url, university')
+        .in('user_id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of user profiles
+      const profileMap = new Map();
+      profiles?.forEach(profile => {
+        profileMap.set(profile.user_id, profile);
+      });
+
+      // Transform posts with profile data
+      const transformedPosts = filteredPosts.map(post => ({
         ...post,
-        profile: post.profiles
-      })) || [];
+        profiles: profileMap.get(post.user_id)
+      }));
 
       setHashtagPosts(transformedPosts);
     } catch (error) {
