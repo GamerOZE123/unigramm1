@@ -1,120 +1,11 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { X, Upload, Image as ImageIcon, CheckCircle, Loader2, Trash2 } from "lucide-react";
-
-// --- MOCK UTILITIES & COMPONENTS (To make the file runnable and self-contained) ---
-
-// Mock Tailwind UI Components (Dialog, Button, Textarea)
-const Dialog = ({ open, onOpenChange, children }) => (
-  <div
-    className={`fixed inset-0 z-50 overflow-y-auto transition-opacity ${open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
-  >
-    <div className="flex items-center justify-center min-h-screen p-4">
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onOpenChange} />
-      {children}
-    </div>
-  </div>
-);
-
-const DialogContent = ({ className = "max-w-md", children }) => (
-  <div
-    className={`relative w-full rounded-xl bg-white p-6 shadow-2xl transform transition-all ${className} dark:bg-gray-800`}
-  >
-    {children}
-  </div>
-);
-
-const DialogHeader = ({ children }) => <div className="space-y-2 text-center sm:text-left">{children}</div>;
-const DialogTitle = ({ children, className = "" }) => (
-  <h2 className={`text-lg font-semibold ${className}`}>{children}</h2>
-);
-const Button = ({ children, onClick, disabled, variant = "default", className = "", type = "button" }) => {
-  const baseStyle =
-    "px-4 py-2 font-medium rounded-lg transition-colors duration-200 shadow-md flex items-center justify-center";
-  let style;
-  switch (variant) {
-    case "outline":
-      style =
-        "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700";
-      break;
-    case "ghost":
-      style = "bg-transparent text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700";
-      break;
-    case "destructive":
-      style = "bg-red-600 text-white hover:bg-red-700";
-      break;
-    default:
-      style = "bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600";
-  }
-
-  return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      className={`${baseStyle} ${style} ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${className}`}
-    >
-      {children}
-    </button>
-  );
-};
-
-const Textarea = ({ placeholder, value, onChange, rows = 3, className = "" }) => (
-  <textarea
-    placeholder={placeholder}
-    value={value}
-    onChange={onChange}
-    rows={rows}
-    className={`w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white ${className}`}
-  />
-);
-
-// Mock Integrations
-const mockUser = { id: "user-123", email: "user@example.com" };
-const useAuth = () => ({ user: mockUser });
-const toast = {
-  info: (message) => console.log(`[Toast Info]: ${message}`),
-  success: (message) => console.log(`[Toast Success]: ${message}`),
-  error: (message) => console.log(`[Toast Error]: ${message}`),
-};
-const supabase = {
-  storage: {
-    from: (bucket) => ({
-      // Simulate file upload delay and success
-      upload: (fileName, file) =>
-        new Promise((resolve) => {
-          setTimeout(() => {
-            console.log(`Mock Upload: ${fileName}`);
-            resolve({ data: { path: fileName }, error: null });
-          }, 500);
-        }),
-      getPublicUrl: (fileName) => ({
-        data: { publicUrl: `https://mock-cdn.com/${fileName}` },
-      }),
-    }),
-  },
-  from: (table) => ({
-    insert: (data) => ({
-      select: () => ({
-        single: () =>
-          new Promise((resolve) => {
-            setTimeout(() => {
-              console.log("Mock DB Insert Post");
-              resolve({ data: { id: `post-${Date.now()}`, ...data }, error: null });
-            }, 100);
-          }),
-      }),
-    }),
-    update: (data) => ({
-      eq: () =>
-        new Promise((resolve) => {
-          setTimeout(() => {
-            console.log("Mock DB Update Post Images");
-            resolve({ data: data, error: null });
-          }, 50);
-        }),
-    }),
-  }),
-};
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 // --- COMPONENT TYPES ---
 interface FileUploadModalProps {
@@ -133,7 +24,7 @@ interface UploadingImage {
 
 const MAX_FILES = 10;
 
-export default function App({ isOpen, onClose, onPostCreated }: FileUploadModalProps) {
+export default function FileUploadModal({ isOpen, onClose, onPostCreated }: FileUploadModalProps) {
   const { user } = useAuth();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadingImages, setUploadingImages] = useState<UploadingImage[]>([]);
@@ -215,7 +106,7 @@ export default function App({ isOpen, onClose, onPostCreated }: FileUploadModalP
         const fileName = `${postId}/${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 
         try {
-          const { data, error } = await supabase.storage.from("post-images").upload(fileName, file);
+          const { error } = await supabase.storage.from("post-images").upload(fileName, file);
 
           if (error) throw error;
 
@@ -227,11 +118,10 @@ export default function App({ isOpen, onClose, onPostCreated }: FileUploadModalP
           );
           return urlData.publicUrl;
         } catch (error) {
-          // In case of a single file failure, we log it and return null or an empty string,
-          // which will be filtered out later, but we allow other uploads to continue.
+          console.error("Upload error:", error);
           toast.error(`Failed to upload ${file.name}`);
           setUploadingImages((prev) =>
-            prev.map((img, i) => (i === index ? { ...img, uploaded: false, error: true } : img)),
+            prev.map((img, i) => (i === index ? { ...img, uploaded: false } : img)),
           );
           return null;
         }
@@ -257,9 +147,10 @@ export default function App({ isOpen, onClose, onPostCreated }: FileUploadModalP
         image_urls: null,
       };
 
-      const { data: post, error: postError } = await supabase.from("posts").insert(postData).select().single();
+      const { data: postResult, error: postError } = await supabase.from("posts").insert(postData).select().single();
 
       if (postError) throw postError;
+      const post = postResult;
 
       let imageUrls: string[] = [];
       if (selectedFiles.length > 0) {
@@ -320,11 +211,9 @@ export default function App({ isOpen, onClose, onPostCreated }: FileUploadModalP
             <span className="text-2xl font-extrabold text-blue-600 dark:text-blue-400">Create New Post</span>
             <Button
               variant="ghost"
-              className="hover:bg-gray-100 dark:hover:bg-gray-700"
-              size="icon"
               onClick={handleClose}
             >
-              <X className="w-5 h-5 text-gray-500" />
+              <X className="w-5 h-5" />
             </Button>
           </DialogTitle>
         </DialogHeader>
@@ -431,7 +320,7 @@ export default function App({ isOpen, onClose, onPostCreated }: FileUploadModalP
 
           {/* Action Buttons */}
           <div className="flex gap-4 pt-2">
-            <Button variant="outline" onClick={handleClose} className="flex-1 font-semibold text-base">
+            <Button variant="outline" onClick={handleClose} disabled={uploading} className="flex-1 font-semibold text-base">
               Cancel
             </Button>
             <Button
