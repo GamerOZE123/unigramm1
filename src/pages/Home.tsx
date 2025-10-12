@@ -79,7 +79,7 @@ export default function Home() {
   const [seenPostIds, setSeenPostIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const isMobile = useIsMobile();
-  const [userUniversity, setUserUniversity] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<{ university?: string; major?: string; country?: string; state?: string } | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
@@ -101,95 +101,42 @@ export default function Home() {
       const startIndex = pageNum * POSTS_PER_PAGE;
       const endIndex = startIndex + POSTS_PER_PAGE - 1;
 
-      // Fetch user's university on initial load
-      let currentUserUniversity = userUniversity;
+      // Fetch user profile for ad targeting on initial load
+      let currentUserProfile = userProfile;
       if (isInitial && user) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('university')
+          .select('university, major, country, state')
           .eq('user_id', user.id)
           .single();
         
-        currentUserUniversity = profile?.university || null;
-        setUserUniversity(currentUserUniversity);
+        currentUserProfile = profile || null;
+        setUserProfile(currentUserProfile);
       }
 
-      // Calculate counts for 40:60 ratio
-      const universityCount = Math.ceil(POSTS_PER_PAGE * 0.4);
-      const globalCount = POSTS_PER_PAGE - universityCount;
-
-      // Fetch university posts with pagination
-      let universityPosts: TransformedPost[] = [];
-      if (currentUserUniversity) {
-        const { data: uniPostsData, error: uniError } = await supabase
-          .from('posts')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .range(startIndex, startIndex + (universityCount * 3) - 1); // Fetch more to filter
-
-        if (uniError) throw uniError;
-
-        if (uniPostsData) {
-          const uniUserIds = [...new Set(uniPostsData.map(post => post.user_id))];
-          const { data: uniProfiles } = await supabase
-            .from('profiles')
-            .select('user_id, full_name, username, university, major, avatar_url')
-            .in('user_id', uniUserIds);
-
-          const uniProfilesMap = new Map();
-          uniProfiles?.forEach(profile => uniProfilesMap.set(profile.user_id, profile));
-
-          universityPosts = uniPostsData
-            .filter(post => uniProfilesMap.get(post.user_id)?.university === currentUserUniversity)
-            .slice(0, universityCount) // Take only what we need
-            .map(post => {
-              const profile = uniProfilesMap.get(post.user_id);
-              return {
-                id: post.id,
-                content: post.content || '',
-                image_url: post.image_url,
-                image_urls: post.image_urls,
-                created_at: post.created_at,
-                likes_count: post.likes_count || 0,
-                comments_count: post.comments_count || 0,
-                views_count: post.views_count || 0,
-                user_id: post.user_id,
-                user_name: profile?.full_name || profile?.username || 'Anonymous',
-                user_username: profile?.username || 'user',
-                user_university: profile?.university,
-                hashtags: post.hashtags || [],
-                profiles: {
-                  full_name: profile?.full_name || 'Anonymous',
-                  username: profile?.username || 'user',
-                  avatar_url: profile?.avatar_url
-                }
-              };
-            });
-        }
-      }
-
-      // Fetch global posts with pagination
-      const { data: globalPostsData, error: globalError } = await supabase
+      // Fetch ALL posts with pagination using ranking algorithm
+      const { data: allPostsData, error: postsError } = await supabase
         .from('posts')
         .select('*')
         .order('created_at', { ascending: false })
-        .range(startIndex, startIndex + (globalCount * 2) - 1); // Fetch more to filter
+        .range(startIndex, endIndex);
 
-      if (globalError) throw globalError;
+      if (postsError) throw postsError;
 
-      let globalPosts: TransformedPost[] = [];
-      if (globalPostsData) {
-        const globalUserIds = [...new Set(globalPostsData.map(post => post.user_id))];
-        const { data: globalProfiles } = await supabase
+      let rankedPosts: TransformedPost[] = [];
+      if (allPostsData) {
+        const userIds = [...new Set(allPostsData.map(post => post.user_id))];
+        const { data: profiles } = await supabase
           .from('profiles')
           .select('user_id, full_name, username, university, major, avatar_url')
-          .in('user_id', globalUserIds);
+          .in('user_id', userIds);
 
-        const globalProfilesMap = new Map();
-        globalProfiles?.forEach(profile => globalProfilesMap.set(profile.user_id, profile));
+        const profilesMap = new Map();
+        profiles?.forEach(profile => profilesMap.set(profile.user_id, profile));
 
-        let allGlobalPosts = globalPostsData.map(post => {
-          const profile = globalProfilesMap.get(post.user_id);
+        // Apply ranking algorithm to ALL posts
+        rankedPosts = allPostsData.map(post => {
+          const profile = profilesMap.get(post.user_id);
           const ageInHours = (Date.now() - new Date(post.created_at).getTime()) / (1000 * 60 * 60);
           const recencyScore = Math.max(0, 100 - ageInHours);
           const engagementScore = (post.likes_count * 2) + (post.comments_count * 3) + (post.views_count * 0.1);
@@ -216,62 +163,98 @@ export default function Home() {
             },
             score: recencyScore + engagementScore + randomFactor
           };
-        });
-
-        // Filter out university posts from global
-        if (currentUserUniversity) {
-          allGlobalPosts = allGlobalPosts.filter(post => post.user_university !== currentUserUniversity);
-        }
-
-        // Sort and take only what we need
-        globalPosts = allGlobalPosts
-          .sort((a, b) => (b.score || 0) - (a.score || 0))
-          .slice(0, globalCount);
+        }).sort((a, b) => (b.score || 0) - (a.score || 0));
       }
 
-      // Fetch ads only on first page
-      let shuffledAds: any[] = [];
+      // Fetch targeted ads only on first page
+      let targetedAds: any[] = [];
       if (pageNum === 0) {
         const { data: adsData } = await supabase
           .from('advertising_posts')
           .select('*')
           .eq('is_active', true);
 
-        if (adsData && adsData.length > 0) {
-          const companyIds = [...new Set(adsData.map((ad: any) => ad.company_id))];
+        if (adsData && adsData.length > 0 && currentUserProfile) {
+          // Filter ads based on targeting criteria
+          const matchingAds = adsData.filter((ad: any) => {
+            // If no targeting is set, show to everyone
+            const hasNoTargeting = 
+              (!ad.target_universities || ad.target_universities.length === 0) &&
+              (!ad.target_majors || ad.target_majors.length === 0) &&
+              (!ad.target_locations || ad.target_locations.length === 0);
+            
+            if (hasNoTargeting) return true;
+
+            // Check if user matches any targeting criteria
+            let matches = false;
+
+            // University targeting
+            if (ad.target_universities && ad.target_universities.length > 0 && currentUserProfile.university) {
+              matches = matches || ad.target_universities.includes(currentUserProfile.university);
+            }
+
+            // Major targeting
+            if (ad.target_majors && ad.target_majors.length > 0 && currentUserProfile.major) {
+              matches = matches || ad.target_majors.includes(currentUserProfile.major);
+            }
+
+            // Location targeting
+            if (ad.target_locations && ad.target_locations.length > 0 && currentUserProfile.country && currentUserProfile.state) {
+              const userLocation = `${currentUserProfile.state}, ${currentUserProfile.country}`;
+              matches = matches || ad.target_locations.some((loc: string) => 
+                userLocation.toLowerCase().includes(loc.toLowerCase())
+              );
+            }
+
+            return matches;
+          });
+
+          // Fetch company profiles for matching ads
+          const companyIds = [...new Set(matchingAds.map((ad: any) => ad.company_id))];
           const { data: companyProfiles } = await supabase
             .from('company_profiles')
             .select('user_id, company_name, logo_url')
             .in('user_id', companyIds);
 
-          shuffledAds = adsData.map((ad: any) => ({
+          targetedAds = matchingAds.map((ad: any) => ({
             ...ad,
             company_profiles: companyProfiles?.find(cp => cp.user_id === ad.company_id) || null
           })).sort(() => Math.random() - 0.5);
         }
       }
 
-      // Mix posts in 40:60 ratio
-      const mixedArray: MixedPost[] = [];
-      let uniIndex = 0;
-      let globalIndex = 0;
+      // Convert ranked posts to MixedPost format
+      let mixedArray: MixedPost[] = rankedPosts.map(post => ({
+        type: 'regular',
+        data: post
+      }));
 
-      while (uniIndex < universityPosts.length || globalIndex < globalPosts.length) {
-        // Add 4 university posts
-        for (let i = 0; i < 4 && uniIndex < universityPosts.length; i++) {
-          mixedArray.push({ type: 'regular', data: universityPosts[uniIndex] });
-          uniIndex++;
-        }
-        // Add 6 global posts
-        for (let i = 0; i < 6 && globalIndex < globalPosts.length; i++) {
-          mixedArray.push({ type: 'regular', data: globalPosts[globalIndex] });
-          globalIndex++;
-        }
-      }
+      // Insert ads every 3-4 posts (randomly alternate between 3 and 4)
+      if (pageNum === 0 && targetedAds.length > 0) {
+        let adIndex = 0;
+        let postCount = 0;
+        const insertInterval = () => Math.random() > 0.5 ? 3 : 4; // Randomly 3 or 4 posts
+        let nextInsertPosition = insertInterval();
 
-      // Insert ad on first batch
-      if (pageNum === 0 && shuffledAds.length > 0 && mixedArray.length >= 9) {
-        mixedArray.splice(9, 0, { type: 'advertising', data: shuffledAds[0] });
+        const finalMixedArray: MixedPost[] = [];
+        
+        for (let i = 0; i < mixedArray.length; i++) {
+          finalMixedArray.push(mixedArray[i]);
+          postCount++;
+
+          // Insert ad after every 3-4 posts
+          if (postCount === nextInsertPosition && adIndex < targetedAds.length) {
+            finalMixedArray.push({ 
+              type: 'advertising', 
+              data: targetedAds[adIndex] 
+            });
+            adIndex++;
+            postCount = 0;
+            nextInsertPosition = insertInterval(); // Next random interval
+          }
+        }
+
+        mixedArray = finalMixedArray;
       }
 
       // Filter out posts we've already seen to prevent duplicates
@@ -288,7 +271,7 @@ export default function Home() {
       setSeenPostIds(newSeenIds);
 
       // Determine if there are more posts (if we got the full amount we requested)
-      const gotFullBatch = universityPosts.length >= universityCount || globalPosts.length >= globalCount;
+      const gotFullBatch = rankedPosts.length >= POSTS_PER_PAGE;
       setHasMore(gotFullBatch && uniqueMixedArray.length > 0);
 
       if (isInitial) {
