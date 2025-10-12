@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Hash, TrendingUp } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { useTrendingHashtags } from '@/hooks/useTrendingHashtags';
+import { useTrendingUniversityPosts } from '@/hooks/useTrendingUniversityPosts';
 
 interface RandomUser {
   user_id: string;
@@ -21,7 +21,7 @@ export default function RightSidebar() {
   const navigate = useNavigate();
   const [randomUsers, setRandomUsers] = useState<RandomUser[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
-  const { hashtags, loading: loadingHashtags } = useTrendingHashtags();
+  const { posts: trendingPosts, loading: loadingTrending } = useTrendingUniversityPosts(5);
 
   useEffect(() => {
     fetchRandomUsers();
@@ -53,8 +53,8 @@ export default function RightSidebar() {
     navigate(`/profile/${userId}`);
   };
 
-  const handleHashtagClick = (hashtag: string) => {
-    navigate(`/hashtag/${hashtag}`);
+  const handlePostClick = (postId: string) => {
+    navigate(`/post/${postId}`);
   };
 
   return (
@@ -103,43 +103,47 @@ export default function RightSidebar() {
         </div>
       </div>
 
-      {/* Trending Hashtags */}
+      {/* Trending in University */}
       <div>
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold text-foreground">Trending Hashtags</h3>
+          <h3 className="text-lg font-semibold text-foreground">Trending in Your University</h3>
         </div>
-        {loadingHashtags ? (
-          <div className="space-y-2">
+        {loadingTrending ? (
+          <div className="space-y-3">
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="animate-pulse">
-                <div className="h-4 bg-muted rounded w-20 mb-1"></div>
-                <div className="h-3 bg-muted rounded w-16"></div>
+              <div key={i} className="animate-pulse p-2">
+                <div className="h-4 bg-muted rounded w-full mb-2"></div>
+                <div className="h-3 bg-muted rounded w-3/4"></div>
               </div>
             ))}
           </div>
-        ) : hashtags.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No trending hashtags yet</p>
+        ) : trendingPosts.length === 0 ? (
+          <p className="text-muted-foreground text-sm">No trending posts in your university yet</p>
         ) : (
           <div className="space-y-3">
-            {hashtags.slice(0, 5).map((tag, index) => (
+            {trendingPosts.map((post, index) => (
               <div 
-                key={tag.hashtag} 
-                className="flex items-center justify-between cursor-pointer p-2 rounded-lg hover:bg-muted/20 transition-colors"
-                onClick={() => handleHashtagClick(tag.hashtag)}
+                key={post.id} 
+                className="cursor-pointer p-3 rounded-lg hover:bg-muted/20 transition-colors border border-border/50"
+                onClick={() => handlePostClick(post.id)}
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-muted-foreground w-4">
+                <div className="flex items-start gap-2 mb-2">
+                  <span className="text-sm font-medium text-muted-foreground">
                     #{index + 1}
                   </span>
-                  <div className="flex items-center gap-1">
-                    <Hash className="w-4 h-4 text-primary" />
-                    <span className="font-medium text-foreground">{tag.hashtag}</span>
+                  <div className="flex-1">
+                    <p className="text-sm text-foreground line-clamp-2 mb-2">
+                      {post.content}
+                    </p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{post.profiles.full_name || post.profiles.username}</span>
+                      <span>•</span>
+                      <span>{post.likes_count} likes</span>
+                      <span>•</span>
+                      <span>{post.comments_count} comments</span>
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-foreground">{tag.post_count}</div>
-                  <div className="text-xs text-muted-foreground">posts</div>
                 </div>
               </div>
             ))}
