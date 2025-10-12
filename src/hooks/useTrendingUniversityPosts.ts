@@ -2,33 +2,22 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface TrendingPost {
-  id: string;
-  content: string;
-  user_id: string;
-  likes_count: number;
-  comments_count: number;
-  views_count: number;
-  created_at: string;
-  profiles: {
-    full_name: string;
-    username: string;
-    avatar_url: string | null;
-  };
-  engagement_score: number;
+interface TrendingHashtag {
+  hashtag: string;
+  post_count: number;
 }
 
 export function useTrendingUniversityPosts(limit: number = 5) {
   const { user } = useAuth();
-  const [posts, setPosts] = useState<TrendingPost[]>([]);
+  const [hashtags, setHashtags] = useState<TrendingHashtag[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
-    fetchTrendingPosts();
+    fetchTrendingHashtags();
   }, [user, limit]);
 
-  const fetchTrendingPosts = async () => {
+  const fetchTrendingHashtags = async () => {
     if (!user) return;
 
     try {
@@ -42,67 +31,61 @@ export function useTrendingUniversityPosts(limit: number = 5) {
         .single();
 
       if (!userProfile?.university) {
-        setPosts([]);
+        setHashtags([]);
         return;
       }
 
-      // Fetch posts from the same university from the last 7 days
-      const sevenDaysAgo = new Date();
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      // Fetch posts from the same university from the last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       const { data: postsData, error } = await supabase
         .from('posts')
-        .select(`
-          id,
-          content,
-          user_id,
-          likes_count,
-          comments_count,
-          views_count,
-          created_at
-        `)
-        .gte('created_at', sevenDaysAgo.toISOString())
-        .order('created_at', { ascending: false });
+        .select('id, hashtags, user_id, created_at')
+        .not('hashtags', 'is', null)
+        .gte('created_at', thirtyDaysAgo.toISOString());
 
       if (error) throw error;
 
-      // Fetch profiles separately and join in memory
+      // Fetch profiles to filter by university
       const userIds = [...new Set(postsData?.map(p => p.user_id) || [])];
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('user_id, full_name, username, avatar_url, university')
+        .select('user_id, university')
         .in('user_id', userIds)
         .eq('university', userProfile.university);
 
-      // Create a map for quick profile lookup
-      const profilesMap = new Map(
-        profilesData?.map(p => [p.user_id, p]) || []
-      );
+      const universityUserIds = new Set(profilesData?.map(p => p.user_id) || []);
 
-      // Filter posts by users from the same university and join with profiles
-      const postsWithProfiles = (postsData || [])
-        .filter(post => profilesMap.has(post.user_id))
-        .map(post => ({
-          ...post,
-          profiles: profilesMap.get(post.user_id)!
-        }));
+      // Filter posts by university users and count hashtags
+      const hashtagCounts: Record<string, number> = {};
+      
+      (postsData || [])
+        .filter(post => universityUserIds.has(post.user_id))
+        .forEach(post => {
+          if (post.hashtags && Array.isArray(post.hashtags)) {
+            post.hashtags.forEach(tag => {
+              if (tag) {
+                hashtagCounts[tag] = (hashtagCounts[tag] || 0) + 1;
+              }
+            });
+          }
+        });
 
-      // Calculate engagement score and sort
-      const rankedPosts = postsWithProfiles.map(post => ({
-        ...post,
-        engagement_score: (post.likes_count * 3) + (post.comments_count * 5) + (post.views_count * 0.1)
-      }))
-      .sort((a, b) => b.engagement_score - a.engagement_score)
-      .slice(0, limit);
+      // Convert to array and sort by count
+      const sortedHashtags = Object.entries(hashtagCounts)
+        .map(([hashtag, post_count]) => ({ hashtag, post_count }))
+        .sort((a, b) => b.post_count - a.post_count)
+        .slice(0, limit);
 
-      setPosts(rankedPosts);
+      setHashtags(sortedHashtags);
     } catch (error) {
-      console.error('Error fetching trending university posts:', error);
-      setPosts([]);
+      console.error('Error fetching trending university hashtags:', error);
+      setHashtags([]);
     } finally {
       setLoading(false);
     }
   };
 
-  return { posts, loading, refetch: fetchTrendingPosts };
+  return { hashtags, loading, refetch: fetchTrendingHashtags };
 }
