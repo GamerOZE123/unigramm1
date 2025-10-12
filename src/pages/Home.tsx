@@ -76,7 +76,11 @@ interface MixedPost {
 export default function Home() {
   const { user } = useAuth();
   const [mixedPosts, setMixedPosts] = useState<MixedPost[]>([]);
-  const [seenPostIds, setSeenPostIds] = useState<Set<string>>(new Set());
+  const [seenPostIds, setSeenPostIds] = useState<Set<string>>(() => {
+    // Load seen posts from localStorage on mount
+    const stored = localStorage.getItem('seenPostIds');
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  });
   const [loading, setLoading] = useState(true);
   const isMobile = useIsMobile();
   const [userProfile, setUserProfile] = useState<{ university?: string; major?: string; country?: string; state?: string } | null>(null);
@@ -86,6 +90,11 @@ export default function Home() {
   const POSTS_PER_PAGE = 10;
   const isFetchingRef = React.useRef(false);
 
+  // Save seenPostIds to localStorage whenever it changes
+  React.useEffect(() => {
+    localStorage.setItem('seenPostIds', JSON.stringify([...seenPostIds]));
+  }, [seenPostIds]);
+
   const fetchPosts = async (pageNum: number = 0, isInitial: boolean = false) => {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
@@ -93,7 +102,7 @@ export default function Home() {
     try {
       if (isInitial) {
         setLoading(true);
-        setSeenPostIds(new Set());
+        // Don't reset seenPostIds on refresh - it's persisted in localStorage
       } else {
         setLoadingMore(true);
       }
@@ -273,6 +282,23 @@ export default function Home() {
       // Determine if there are more posts (if we got the full amount we requested)
       const gotFullBatch = rankedPosts.length >= POSTS_PER_PAGE;
       setHasMore(gotFullBatch && uniqueMixedArray.length > 0);
+
+      // If no new posts and we've seen everything, clear seen posts to start fresh
+      if (uniqueMixedArray.length === 0 && rankedPosts.length > 0) {
+        console.log('All posts seen, clearing history');
+        localStorage.removeItem('seenPostIds');
+        setSeenPostIds(new Set());
+        // Retry fetching without filtering
+        if (isInitial) {
+          const freshPosts = mixedArray.slice(0, POSTS_PER_PAGE).map(post => ({
+            type: post.type,
+            data: post.data
+          }));
+          setMixedPosts(freshPosts as MixedPost[]);
+          setHasMore(mixedArray.length > POSTS_PER_PAGE);
+          return;
+        }
+      }
 
       if (isInitial) {
         setMixedPosts(uniqueMixedArray);
