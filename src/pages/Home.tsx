@@ -129,7 +129,8 @@ export default function Home() {
     try {
       if (isInitial) {
         setLoading(true);
-        // Don't reset seenPostIds on refresh - it's persisted in localStorage
+        // Clear seen posts on refresh to always show posts
+        setSeenPostIds(new Set());
       } else {
         setLoadingMore(true);
       }
@@ -274,18 +275,20 @@ export default function Home() {
         }
       }
 
-      // Filter out posts we've already seen BEFORE creating mixed array
+      // Filter out posts we've already seen (only for loading more, not initial load)
       const newSeenIds = new Set(seenPostIds);
-      const unseenPosts = rankedPosts.filter(post => {
+      const postsToShow = isInitial ? rankedPosts : rankedPosts.filter(post => {
         if (newSeenIds.has(post.id)) {
           return false;
         }
-        newSeenIds.add(post.id);
         return true;
       });
 
-      // Convert unseen posts to MixedPost format
-      let mixedArray: MixedPost[] = unseenPosts.map(post => ({
+      // Mark posts as seen
+      postsToShow.forEach(post => newSeenIds.add(post.id));
+
+      // Convert posts to MixedPost format
+      let mixedArray: MixedPost[] = postsToShow.map(post => ({
         type: 'regular',
         data: post
       }));
@@ -327,22 +330,9 @@ export default function Home() {
       
       setSeenPostIds(newSeenIds);
 
-      // Determine if there are more posts (if we got the full amount we requested)
+      // Determine if there are more posts
       const gotFullBatch = rankedPosts.length >= POSTS_PER_PAGE;
-      setHasMore(gotFullBatch && mixedArray.length > 0);
-
-      // If no new posts and we've seen everything, clear seen posts to start fresh
-      if (mixedArray.length === 0 && rankedPosts.length > 0) {
-        console.log('All posts seen, clearing history');
-        localStorage.removeItem('seenPostIds');
-        setSeenPostIds(new Set());
-        // Retry fetching without filtering
-        if (isInitial) {
-          // Re-fetch without filtering
-          await fetchPosts(0, true);
-          return;
-        }
-      }
+      setHasMore(gotFullBatch);
 
       if (isInitial) {
         setMixedPosts(mixedArray);
