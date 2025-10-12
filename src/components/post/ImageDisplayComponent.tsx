@@ -13,9 +13,33 @@ export default function ImageDisplayComponent({
   className = "" 
 }: ImageDisplayComponentProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState<number>(16/9);
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
+
+  // Load image aspect ratio
+  React.useEffect(() => {
+    const img = new Image();
+    img.onload = () => {
+      let ratio = img.width / img.height;
+      
+      // Constrain portrait images to 4:3
+      if (ratio < 1) {
+        ratio = Math.max(ratio, 3/4);
+      }
+      // Constrain wide images to 16:9
+      if (ratio > 2) {
+        ratio = 16/9;
+      }
+      
+      setAspectRatio(ratio);
+    };
+    img.onerror = () => {
+      setAspectRatio(16/9); // Fallback
+    };
+    img.src = imageUrl;
+  }, [imageUrl]);
 
   // Handle escape key to close modal
   React.useEffect(() => {
@@ -36,10 +60,11 @@ export default function ImageDisplayComponent({
 
   return (
     <>
-      {/* In-Feed Display - Fixed 16:9 Aspect Ratio */}
+      {/* In-Feed Display - Dynamic Aspect Ratio */}
       <div className={`w-full max-w-md ${className}`}>
         <div 
-          className="relative w-full aspect-video bg-muted rounded-xl overflow-hidden cursor-pointer hover:opacity-95 transition-opacity"
+          className="relative w-full bg-muted rounded-xl overflow-hidden cursor-pointer hover:opacity-95 transition-opacity"
+          style={{ aspectRatio }}
           onClick={openModal}
         >
           <img

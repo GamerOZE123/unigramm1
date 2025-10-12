@@ -145,6 +145,18 @@ export default function MultipleImageDisplay({
     const imageUrl = imageUrls[0];
     const aspectRatio = imageAspectRatios[0];
     
+    // Determine display ratio with constraints
+    let displayRatio = aspectRatio || 16/9;
+    
+    // Constrain portrait images (taller than square) to max 4:3
+    if (displayRatio < 1) {
+      displayRatio = Math.max(displayRatio, 3/4);
+    }
+    // Constrain very wide images to max 16:9
+    if (displayRatio > 2) {
+      displayRatio = 16/9;
+    }
+    
     return (
       <>
         <div className={`w-full max-w-md ${className}`} data-image-container>
@@ -152,7 +164,8 @@ export default function MultipleImageDisplay({
             <ImagePlaceholder status="loading" className="max-w-md" />
           ) : (
             <div 
-              className="relative w-full aspect-video bg-muted rounded-xl overflow-hidden cursor-pointer hover:opacity-95 transition-opacity group"
+              className="relative w-full bg-muted rounded-xl overflow-hidden cursor-pointer hover:opacity-95 transition-opacity group"
+              style={{ aspectRatio: displayRatio }}
               onClick={() => handleImageClick(0)}
             >
               <img
@@ -203,7 +216,16 @@ export default function MultipleImageDisplay({
                     <ImagePlaceholder status="loading" />
                   ) : (
                     <div 
-                      className="relative w-full aspect-video bg-muted rounded-xl overflow-hidden cursor-pointer hover:opacity-95 transition-opacity group"
+                      className="relative w-full bg-muted rounded-xl overflow-hidden cursor-pointer hover:opacity-95 transition-opacity group"
+                      style={{ 
+                        aspectRatio: (() => {
+                          const ratio = imageAspectRatios[index] || 16/9;
+                          // Constrain portrait to 4:3, wide to 16:9
+                          if (ratio < 1) return Math.max(ratio, 3/4);
+                          if (ratio > 2) return 16/9;
+                          return ratio;
+                        })()
+                      }}
                       onClick={() => handleImageClick(index)}
                     >
                       <img

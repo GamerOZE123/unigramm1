@@ -188,10 +188,15 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
             </div>
 
             {uploadingImages.length > 0 && (
-              <div className="flex gap-3 overflow-x-auto pb-2">
+              <div className={`grid gap-2 ${
+                uploadingImages.length === 1 ? 'grid-cols-1' : 
+                uploadingImages.length === 2 ? 'grid-cols-2' : 
+                uploadingImages.length === 3 ? 'grid-cols-3' : 
+                'grid-cols-2'
+              }`}>
                 {uploadingImages.map((img, index) => (
-                  <div key={index} className="relative flex-shrink-0 group">
-                    <div className="w-20 h-20 rounded-lg overflow-hidden border border-border flex items-center justify-center bg-muted">
+                  <div key={index} className="relative group">
+                    <div className="w-full aspect-square rounded-lg overflow-hidden border border-border bg-muted">
                       {img.uploaded && img.url ? (
                         <img
                           src={img.url}
@@ -206,7 +211,7 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
                             className="w-full h-full object-cover opacity-50"
                           />
                           <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
                           </div>
                         </>
                       )}
@@ -214,9 +219,9 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
                     <button
                       type="button"
                       onClick={() => removeImage(index)}
-                      className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
                     >
-                      <X className="w-3 h-3" />
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
                 ))}

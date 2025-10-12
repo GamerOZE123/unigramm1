@@ -117,7 +117,7 @@ export default function ImageUploadModal({ isOpen, onClose, onPostCreated }: Ima
                 <img 
                   src={imagePreview} 
                   alt="Preview" 
-                  className="w-full h-48 object-cover rounded-lg"
+                  className="w-full max-h-[500px] object-contain rounded-lg bg-muted"
                 />
                 <Button
                   variant="secondary"
