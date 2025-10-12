@@ -189,8 +189,8 @@ export default function Home() {
             profile?.university === currentUserProfile?.university ? 20 : 0
           );
           
-          // Random factor: larger on refresh for variety, smaller on initial load for consistency
-          const randomFactor = isInitial ? Math.random() * 10 : Math.random() * 150;
+          // Large random factor for variety in all cases
+          const randomFactor = Math.random() * 150;
           
           return {
             id: post.id,
