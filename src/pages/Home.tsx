@@ -274,20 +274,32 @@ export default function Home() {
         }
       }
 
-      // Convert ranked posts to MixedPost format
-      let mixedArray: MixedPost[] = rankedPosts.map(post => ({
+      // Filter out posts we've already seen BEFORE creating mixed array
+      const newSeenIds = new Set(seenPostIds);
+      const unseenPosts = rankedPosts.filter(post => {
+        if (newSeenIds.has(post.id)) {
+          return false;
+        }
+        newSeenIds.add(post.id);
+        return true;
+      });
+
+      // Convert unseen posts to MixedPost format
+      let mixedArray: MixedPost[] = unseenPosts.map(post => ({
         type: 'regular',
         data: post
       }));
 
-      // Insert ads into the feed - NEVER in first 3 posts
-      if (pageNum === 0 && targetedAds.length > 0 && mixedArray.length > 3) {
+      // Insert ads ONLY if we have at least 3 unseen posts and NEVER in first post
+      if (pageNum === 0 && targetedAds.length > 0 && mixedArray.length >= 3) {
         const finalMixedArray: MixedPost[] = [];
         
-        // ALWAYS add first 3 posts without ads
-        for (let i = 0; i < Math.min(3, mixedArray.length); i++) {
-          finalMixedArray.push(mixedArray[i]);
-        }
+        // ALWAYS add first post without ad (user requirement: first post never ad)
+        finalMixedArray.push(mixedArray[0]);
+        
+        // Add second and third posts
+        if (mixedArray.length > 1) finalMixedArray.push(mixedArray[1]);
+        if (mixedArray.length > 2) finalMixedArray.push(mixedArray[2]);
         
         // Now insert ads starting from position 4+
         let adIndex = 0;
@@ -311,49 +323,31 @@ export default function Home() {
         }
         
         mixedArray = finalMixedArray;
-      } else if (pageNum === 0 && targetedAds.length > 0 && mixedArray.length <= 3) {
-        // If we have 3 or fewer posts, just show them without ads
-        // Ads will be inserted on next page load when more posts are available
       }
-
-      // Filter out posts we've already seen to prevent duplicates
-      const newSeenIds = new Set(seenPostIds);
-      const uniqueMixedArray = mixedArray.filter(post => {
-        const postId = post.data.id;
-        if (newSeenIds.has(postId)) {
-          return false;
-        }
-        newSeenIds.add(postId);
-        return true;
-      });
       
       setSeenPostIds(newSeenIds);
 
       // Determine if there are more posts (if we got the full amount we requested)
       const gotFullBatch = rankedPosts.length >= POSTS_PER_PAGE;
-      setHasMore(gotFullBatch && uniqueMixedArray.length > 0);
+      setHasMore(gotFullBatch && mixedArray.length > 0);
 
       // If no new posts and we've seen everything, clear seen posts to start fresh
-      if (uniqueMixedArray.length === 0 && rankedPosts.length > 0) {
+      if (mixedArray.length === 0 && rankedPosts.length > 0) {
         console.log('All posts seen, clearing history');
         localStorage.removeItem('seenPostIds');
         setSeenPostIds(new Set());
         // Retry fetching without filtering
         if (isInitial) {
-          const freshPosts = mixedArray.slice(0, POSTS_PER_PAGE).map(post => ({
-            type: post.type,
-            data: post.data
-          }));
-          setMixedPosts(freshPosts as MixedPost[]);
-          setHasMore(mixedArray.length > POSTS_PER_PAGE);
+          // Re-fetch without filtering
+          await fetchPosts(0, true);
           return;
         }
       }
 
       if (isInitial) {
-        setMixedPosts(uniqueMixedArray);
+        setMixedPosts(mixedArray);
       } else {
-        setMixedPosts(prev => [...prev, ...uniqueMixedArray]);
+        setMixedPosts(prev => [...prev, ...mixedArray]);
       }
     } catch (error) {
       console.error('Error fetching posts:', error);
