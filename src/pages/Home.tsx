@@ -129,8 +129,7 @@ export default function Home() {
     try {
       if (isInitial) {
         setLoading(true);
-        // Clear seen posts on refresh to always show posts
-        setSeenPostIds(new Set());
+        // Keep seen posts history to prioritize unseen posts
       } else {
         setLoadingMore(true);
       }
@@ -275,17 +274,22 @@ export default function Home() {
         }
       }
 
-      // Filter out posts we've already seen (only for loading more, not initial load)
+      // Separate unseen and seen posts
       const newSeenIds = new Set(seenPostIds);
-      const postsToShow = isInitial ? rankedPosts : rankedPosts.filter(post => {
+      const unseenPosts: typeof rankedPosts = [];
+      const seenPosts: typeof rankedPosts = [];
+      
+      rankedPosts.forEach(post => {
         if (newSeenIds.has(post.id)) {
-          return false;
+          seenPosts.push(post);
+        } else {
+          unseenPosts.push(post);
+          newSeenIds.add(post.id);
         }
-        return true;
       });
 
-      // Mark posts as seen
-      postsToShow.forEach(post => newSeenIds.add(post.id));
+      // Prioritize unseen posts, then add seen posts if needed
+      const postsToShow = [...unseenPosts, ...seenPosts];
 
       // Convert posts to MixedPost format
       let mixedArray: MixedPost[] = postsToShow.map(post => ({
