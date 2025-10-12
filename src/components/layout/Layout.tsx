@@ -19,11 +19,9 @@ export default function Layout({ children }: LayoutProps) {
       {/* Desktop Sidebar - hidden on fitness page */}
       {!isFitnessPage && <Sidebar />}
       
-      {/* Header - hidden on mobile and fitness page */}
-      {!isFitnessPage && <Header />}
       
       {/* Main Content */}
-      <main className={`${!isFitnessPage ? 'md:ml-64 md:pt-16' : ''} ${!isFitnessPage ? 'pb-20 md:pb-6' : ''} ${showRightSidebar && !isFitnessPage ? 'xl:mr-80' : ''}`}>
+      <main className={`${!isFitnessPage ? 'md:ml-64' : ''} ${!isFitnessPage ? 'pb-20 md:pb-6' : ''} ${showRightSidebar && !isFitnessPage ? 'xl:mr-80' : ''}`}>
         {!isFitnessPage && (
           <div
             className="container mx-auto px-4 py-2"

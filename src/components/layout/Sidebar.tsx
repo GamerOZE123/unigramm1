@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { Home, MessageCircle, User, GraduationCap, LogOut, Search } from 'lucide-react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { Home, MessageCircle, User, GraduationCap, LogOut, Search, Bell, Settings } from 'lucide-react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ const navigation = [
 
 export default function Sidebar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { signOut, user } = useAuth();
 
   const handleSignOut = async () => {
@@ -66,6 +67,24 @@ export default function Sidebar() {
 
         {/* User Profile at Bottom */}
         <div className="p-4 border-t border-border">
+          <div className="flex items-center gap-2 mb-3">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => navigate('/notifications')}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Bell className="w-4 h-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Settings className="w-4 h-4" />
+            </Button>
+          </div>
+          
           <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface transition-colors cursor-pointer">
             <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
               <span className="text-sm font-bold text-white">

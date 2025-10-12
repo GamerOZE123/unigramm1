@@ -7,6 +7,7 @@ import ImageUploadButton from '@/components/post/ImageUploadButton';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import MobileHeader from '@/components/layout/MobileHeader';
+import { cn } from '@/lib/utils';
 // Re-importing to force refresh
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -112,6 +113,7 @@ export default function Home() {
   const [page, setPage] = useState(0);
   const POSTS_PER_PAGE = 10;
   const isFetchingRef = React.useRef(false);
+  const [viewMode, setViewMode] = useState<'global' | 'university'>('global');
 
   // Save seen post IDs to localStorage with timestamp and limit
   useEffect(() => {
@@ -151,11 +153,25 @@ export default function Home() {
       }
 
       // Fetch ALL posts with pagination using ranking algorithm
-      const { data: allPostsData, error: postsError } = await supabase
+      let postsQuery = supabase
         .from('posts')
         .select('*')
-        .order('created_at', { ascending: false })
-        .range(startIndex, endIndex);
+        .order('created_at', { ascending: false });
+
+      // Filter by university if in university mode
+      if (viewMode === 'university' && currentUserProfile?.university) {
+        const { data: universityProfiles } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .eq('university', currentUserProfile.university);
+        
+        if (universityProfiles && universityProfiles.length > 0) {
+          const userIds = universityProfiles.map(p => p.user_id);
+          postsQuery = postsQuery.in('user_id', userIds);
+        }
+      }
+
+      const { data: allPostsData, error: postsError } = await postsQuery.range(startIndex, endIndex);
 
       if (postsError) throw postsError;
 
@@ -533,6 +549,39 @@ export default function Home() {
       {isMobile && <MobileHeader />}
       
       <div className="max-w-xl mx-auto pt-6 -mt-4 md:pt-2 md:-mt-6">
+        {/* Global/University Toggle */}
+        <div className="flex justify-center gap-4 py-4 mb-4 sticky top-0 bg-background z-10 border-b border-border">
+          <button
+            onClick={() => {
+              setViewMode('global');
+              setPage(0);
+              setMixedPosts([]);
+              fetchPosts(0, true);
+            }}
+            className={`px-6 py-2 rounded-full font-medium transition-all ${
+              viewMode === 'global'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            Global
+          </button>
+          <button
+            onClick={() => {
+              setViewMode('university');
+              setPage(0);
+              setMixedPosts([]);
+              fetchPosts(0, true);
+            }}
+            className={`px-6 py-2 rounded-full font-medium transition-all ${
+              viewMode === 'university'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            University
+          </button>
+        </div>
         {/* New posts available banner */}
         {newPostsAvailable && (
           <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between animate-in fade-in slide-in-from-top-2">

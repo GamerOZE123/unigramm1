@@ -54,7 +54,7 @@ export default function RightSidebar() {
   };
 
   const handleHashtagClick = (hashtag: string) => {
-    navigate(`/hashtag/${hashtag}`);
+    navigate(`/explore?hashtag=${hashtag}`);
   };
 
   return (
