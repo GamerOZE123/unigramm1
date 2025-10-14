@@ -67,7 +67,7 @@ export default function Explore() {
         }
       });
 
-      setRandomImages(shuffleArray(images).slice(0, 16));
+      setRandomImages(shuffleArray(images).slice(0, 8));
     } catch (error) {
       console.error('Error fetching random images:', error);
     } finally {
