@@ -66,24 +66,22 @@ export default function Sidebar() {
         </nav>
 
         {/* User Profile at Bottom */}
-        <div className="p-4 border-t border-border">
-          <div className="flex items-center gap-2 mb-3">
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => navigate('/notifications')}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <Bell className="w-4 h-4" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <Settings className="w-4 h-4" />
-            </Button>
-          </div>
+        <div className="p-4 border-t border-border space-y-2">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/notifications')}
+            className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          >
+            <Bell className="w-4 h-4 mr-2" />
+            <span className="text-sm">Notifications</span>
+          </Button>
+          <Button 
+            variant="ghost" 
+            className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            <span className="text-sm">Settings</span>
+          </Button>
           
           <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface transition-colors cursor-pointer">
             <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
@@ -101,10 +99,10 @@ export default function Sidebar() {
           <Button 
             onClick={handleSignOut}
             variant="ghost" 
-            className="w-full mt-2 justify-start text-muted-foreground hover:text-foreground"
+            className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted/50"
           >
             <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
+            <span className="text-sm">Sign Out</span>
           </Button>
         </div>
       </div>

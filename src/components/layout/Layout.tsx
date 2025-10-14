@@ -11,7 +11,7 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
-  const showRightSidebar = location.pathname === '/' || location.pathname === '/home';
+  const showRightSidebar = location.pathname === '/' || location.pathname === '/home' || location.pathname.startsWith('/post/');
   const isFitnessPage = location.pathname === '/fitness';
 
   return (

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import PostCard from '@/components/post/PostCard';
 import NewCommentSection from '@/components/post/NewCommentSection';
+import RightSidebar from '@/components/layout/RightSidebar';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -152,13 +153,21 @@ export default function Post() {
   return (
     <Layout>
       {isMobile && <MobileHeader />}
-      <div
-        className="max-w-2xl mx-auto"
-        style={{ paddingRight: '10px', paddingLeft: '10px' }} // <-- added inline style
-      >
+      <div className="max-w-2xl mx-auto pt-6 px-4">
+        {/* Back Button */}
+        <Button
+          variant="ghost"
+          onClick={() => navigate(-1)}
+          className="mb-4 text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back
+        </Button>
+        
         <PostCard post={post} />
         <NewCommentSection postId={post.id} />
       </div>
+      <RightSidebar />
     </Layout>
   );
 }

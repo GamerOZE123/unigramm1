@@ -58,9 +58,9 @@ export default function RightSidebar() {
   };
 
   return (
-    <aside className="hidden xl:block fixed top-16 right-0 w-80 h-[calc(100vh-4rem)] overflow-y-auto bg-card border-l border-border p-6">
+    <aside className="hidden xl:block fixed top-16 right-0 w-80 h-[calc(100vh-4rem)] overflow-y-auto bg-background border-l border-border p-6 space-y-6">
       {/* Random Users */}
-      <div className="mb-8">
+      <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-foreground">People you may know</h3>
           <Button 
@@ -104,7 +104,7 @@ export default function RightSidebar() {
       </div>
 
       {/* Trending Hashtags in University */}
-      <div>
+      <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-5 h-5 text-primary" />
           <h3 className="text-lg font-semibold text-foreground">Trending in Your University</h3>
