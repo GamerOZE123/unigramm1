@@ -5,9 +5,10 @@ import { useTrendingUniversities } from '@/hooks/useTrendingUniversities';
 
 interface TrendingHashtagsProps {
   onHashtagClick?: (hashtag: string) => void;
+  onUniversityClick?: (university: string) => void;
 }
 
-export default function TrendingHashtags({ onHashtagClick }: TrendingHashtagsProps) {
+export default function TrendingHashtags({ onHashtagClick, onUniversityClick }: TrendingHashtagsProps) {
   const { hashtags, loading: hashtagsLoading } = useTrendingHashtags();
   const { universities, loading: universitiesLoading } = useTrendingUniversities();
 
@@ -101,7 +102,8 @@ export default function TrendingHashtags({ onHashtagClick }: TrendingHashtagsPro
               {universities.map((uni, index) => (
                 <div 
                   key={uni.university} 
-                  className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between cursor-pointer hover:bg-muted/50 p-2 rounded-lg transition-colors"
+                  onClick={() => onUniversityClick?.(uni.university)}
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-muted-foreground w-4">
@@ -109,7 +111,7 @@ export default function TrendingHashtags({ onHashtagClick }: TrendingHashtagsPro
                     </span>
                     <div className="flex items-center gap-1">
                       <Hash className="w-4 h-4 text-primary" />
-                      <span className="font-medium text-foreground">{uni.university}</span>
+                      <span className="font-medium text-blue-500 hover:text-blue-600">{uni.university}</span>
                     </div>
                   </div>
                   <div className="text-sm font-medium text-foreground">{uni.post_count} posts</div>

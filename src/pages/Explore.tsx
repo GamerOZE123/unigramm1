@@ -19,21 +19,28 @@ export default function Explore() {
   const [searchQuery, setSearchQuery] = useState('');
   const [randomImages, setRandomImages] = useState<PostImage[]>([]);
   const [topPosts, setTopPosts] = useState<any[]>([]);
-  const [hashtagPosts, setHashtagPosts] = useState<any[]>([]);
+  const [searchPosts, setSearchPosts] = useState<any[]>([]);
   const [imagesLoading, setImagesLoading] = useState(true);
   const [topPostsLoading, setTopPostsLoading] = useState(true);
-  const [hashtagPostsLoading, setHashtagPostsLoading] = useState(false);
+  const [searchPostsLoading, setSearchPostsLoading] = useState(false);
   const { users, loading, searchUsers } = useUsers();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const isMobile = useIsMobile();
-  
-  const selectedHashtag = searchParams.get('hashtag');
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
     setSearchQuery(query);
-    searchUsers(query);
+    
+    // Check if it's a hashtag or university search
+    if (query.startsWith('#')) {
+      const searchTerm = query.slice(1).toLowerCase();
+      fetchSearchPosts(searchTerm, 'hashtag');
+    } else if (query.trim()) {
+      searchUsers(query);
+      setSearchPosts([]);
+    } else {
+      setSearchPosts([]);
+    }
   };
 
   const handleUserClick = (userId: string) => {
@@ -121,85 +128,100 @@ export default function Explore() {
     }
   };
 
-  const fetchHashtagPosts = async (hashtag: string) => {
-    setHashtagPostsLoading(true);
+  const fetchSearchPosts = async (searchTerm: string, type: 'hashtag' | 'university') => {
+    setSearchPostsLoading(true);
     try {
-      // First, get all posts
-      const { data: allPosts, error: postsError } = await supabase
-        .from('posts')
-        .select('*')
-        .order('created_at', { ascending: false });
+      if (type === 'hashtag') {
+        // Fetch posts by hashtag
+        const { data: allPosts, error: postsError } = await supabase
+          .from('posts')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-      if (postsError) throw postsError;
+        if (postsError) throw postsError;
 
-      // Filter posts that contain the hashtag (case-insensitive)
-      const filteredPosts = allPosts?.filter(post => {
-        if (!post.hashtags || !Array.isArray(post.hashtags)) return false;
-        return post.hashtags.some((tag: string) => 
-          tag.toLowerCase() === hashtag.toLowerCase()
-        );
-      }) || [];
+        const filteredPosts = allPosts?.filter(post => {
+          if (!post.hashtags || !Array.isArray(post.hashtags)) return false;
+          return post.hashtags.some((tag: string) => 
+            tag.toLowerCase() === searchTerm.toLowerCase()
+          );
+        }) || [];
 
-      // Get unique user IDs
-      const userIds = [...new Set(filteredPosts.map(post => post.user_id))];
+        const userIds = [...new Set(filteredPosts.map(post => post.user_id))];
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, username, full_name, avatar_url, university')
+          .in('user_id', userIds);
 
-      // Fetch profiles for these users
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, username, full_name, avatar_url, university')
-        .in('user_id', userIds);
+        if (profilesError) throw profilesError;
 
-      if (profilesError) throw profilesError;
+        const profileMap = new Map();
+        profiles?.forEach(profile => {
+          profileMap.set(profile.user_id, profile);
+        });
 
-      // Create a map of user profiles
-      const profileMap = new Map();
-      profiles?.forEach(profile => {
-        profileMap.set(profile.user_id, profile);
-      });
+        const transformedPosts = filteredPosts.map(post => ({
+          ...post,
+          profiles: profileMap.get(post.user_id)
+        }));
 
-      // Transform posts with profile data
-      const transformedPosts = filteredPosts.map(post => ({
-        ...post,
-        profiles: profileMap.get(post.user_id)
-      }));
+        setSearchPosts(transformedPosts);
+      } else {
+        // Fetch posts by university
+        const { data: profiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, username, full_name, avatar_url, university')
+          .ilike('university', `%${searchTerm}%`);
 
-      setHashtagPosts(transformedPosts);
+        if (profilesError) throw profilesError;
+
+        if (!profiles || profiles.length === 0) {
+          setSearchPosts([]);
+          return;
+        }
+
+        const userIds = profiles.map(p => p.user_id);
+        const { data: posts, error: postsError } = await supabase
+          .from('posts')
+          .select('*')
+          .in('user_id', userIds)
+          .order('created_at', { ascending: false });
+
+        if (postsError) throw postsError;
+
+        const profileMap = new Map();
+        profiles.forEach(profile => {
+          profileMap.set(profile.user_id, profile);
+        });
+
+        const transformedPosts = (posts || []).map(post => ({
+          ...post,
+          profiles: profileMap.get(post.user_id)
+        }));
+
+        setSearchPosts(transformedPosts);
+      }
     } catch (error) {
-      console.error('Error fetching hashtag posts:', error);
+      console.error('Error fetching search posts:', error);
     } finally {
-      setHashtagPostsLoading(false);
+      setSearchPostsLoading(false);
     }
   };
 
   const handleHashtagClick = (hashtag: string) => {
-    setSearchParams({ hashtag });
+    setSearchQuery(`#${hashtag}`);
+    fetchSearchPosts(hashtag, 'hashtag');
   };
 
-  const handleClearHashtag = () => {
-    setSearchParams({});
-    setHashtagPosts([]);
+  const handleUniversityClick = (university: string) => {
+    setSearchQuery(`#${university}`);
+    fetchSearchPosts(university, 'university');
   };
 
   useEffect(() => {
     fetchRandomImages();
     fetchTopPostsOfDay();
   }, []);
-
-  useEffect(() => {
-    if (selectedHashtag) {
-      fetchHashtagPosts(selectedHashtag);
-    } else {
-      setHashtagPosts([]);
-    }
-  }, [selectedHashtag]);
-
-  useEffect(() => {
-    if (selectedHashtag) {
-      fetchHashtagPosts(selectedHashtag);
-    } else {
-      setHashtagPosts([]);
-    }
-  }, [selectedHashtag]);
 
   const handleImageClick = (postId: string) => {
     navigate(`/post/${postId}`);
@@ -226,23 +248,12 @@ export default function Explore() {
         </div>
 
         {/* Trending Hashtags */}
-        {!searchQuery && !selectedHashtag && <TrendingHashtags onHashtagClick={handleHashtagClick} />}
+        {!searchQuery && <TrendingHashtags onHashtagClick={handleHashtagClick} onUniversityClick={handleUniversityClick} />}
 
-        {/* Hashtag Posts View */}
-        {selectedHashtag && !searchQuery && (
+        {/* Search Posts View */}
+        {searchQuery.startsWith('#') && (
           <div className="space-y-4">
-            <div className="flex items-center gap-3 post-card p-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleClearHashtag}
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <h2 className="text-2xl font-bold text-blue-500">#{selectedHashtag}</h2>
-            </div>
-
-            {hashtagPostsLoading ? (
+            {searchPostsLoading ? (
               <div className="space-y-4">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="post-card p-4 space-y-3">
@@ -257,19 +268,20 @@ export default function Explore() {
                   </div>
                 ))}
               </div>
-            ) : hashtagPosts.length > 0 ? (
+            ) : searchPosts.length > 0 ? (
               <div className="space-y-4">
-                {hashtagPosts.map((post) => (
+                {searchPosts.map((post) => (
                   <PostCard
                     key={post.id}
                     post={post}
-                    onPostUpdated={() => fetchHashtagPosts(selectedHashtag)}
+                    onPostUpdated={() => fetchSearchPosts(searchQuery.slice(1), 'hashtag')}
+                    onHashtagClick={handleHashtagClick}
                   />
                 ))}
               </div>
             ) : (
               <div className="post-card p-8 text-center">
-                <p className="text-muted-foreground">No posts found with #{selectedHashtag}</p>
+                <p className="text-muted-foreground">No posts found for {searchQuery}</p>
               </div>
             )}
           </div>
@@ -327,8 +339,8 @@ export default function Explore() {
           </div>
         )}
 
-        {/* Random Posts & Top Posts when no search and no hashtag */}
-        {!searchQuery && !selectedHashtag && (
+        {/* Random Posts & Top Posts when no search */}
+        {!searchQuery && (
           <>
             {/* Random Posts Section */}
             <div className="post-card mb-6">

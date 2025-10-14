@@ -119,7 +119,7 @@ export default function University() {
       {/* Mobile Header */}
       {isMobile && <MobileHeader />}
       
-      <div className="space-y-6">
+      <div className="space-y-6 pt-6">
         <div className="text-center">
           <h1 className="text-3xl font-bold text-foreground mb-2">University Hub</h1>
           <p className="text-muted-foreground">
