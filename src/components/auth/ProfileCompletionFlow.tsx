@@ -96,7 +96,6 @@ export const ProfileCompletionFlow = ({ open, onComplete }: ProfileCompletionFlo
       
       toast.success('Welcome to Unigramm! Your profile is complete.');
       setTimeout(() => {
-        onComplete();
         navigate('/home');
       }, 2000);
     }

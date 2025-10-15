@@ -104,7 +104,18 @@ export default function Auth() {
       if (error) throw error;
 
       if (data.user) {
-        navigate('/home');
+        // Check if profile needs completion on first login
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('profile_completed')
+          .eq('user_id', data.user.id)
+          .single();
+
+        if (profileData && !profileData.profile_completed) {
+          setShowOnboarding(true);
+        } else {
+          navigate('/home');
+        }
       }
     } catch (error: any) {
       setError(error.message || 'Login failed. Please try again.');
@@ -150,19 +161,8 @@ export default function Auth() {
       if (error) throw error;
 
       if (data.user) {
-        // Check if profile needs completion
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('profile_completed')
-          .eq('user_id', data.user.id)
-          .single();
-
-        if (profileData && !profileData.profile_completed) {
-          setShowOnboarding(true);
-        } else {
-          setMessage('Account created successfully! Please check your email to confirm your account.');
-          setMode('login');
-        }
+        setMessage('Account created successfully! Please check your email to confirm your account.');
+        setMode('login');
       }
     } catch (error: any) {
       setError(error.message || 'Signup failed. Please try again.');
