@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export interface ProfileCompletionData {
-  campus_year: string;
+  major: string;
   interests: string[];
   preferred_event_types: string[];
   status_message: string;
@@ -12,13 +12,15 @@ export interface ProfileCompletionData {
   twitter_url: string;
   website_url: string;
   campus_groups: string[];
+  avatar_url: string;
+  banner_url: string;
 }
 
 export const useProfileCompletion = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<ProfileCompletionData>({
-    campus_year: '',
+    major: '',
     interests: [],
     preferred_event_types: [],
     status_message: '',
@@ -26,7 +28,9 @@ export const useProfileCompletion = () => {
     instagram_url: '',
     twitter_url: '',
     website_url: '',
-    campus_groups: []
+    campus_groups: [],
+    avatar_url: '',
+    banner_url: ''
   });
 
   const saveStep = async (stepData: Partial<ProfileCompletionData>) => {
@@ -77,7 +81,7 @@ export const useProfileCompletion = () => {
     }
   };
 
-  const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 6));
+  const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 8));
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
   const skipStep = () => nextStep();
 
