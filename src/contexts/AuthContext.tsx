@@ -7,7 +7,9 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  profileCompleted: boolean;
   signOut: () => Promise<void>;
+  checkProfileCompletion: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,6 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileCompleted, setProfileCompleted] = useState(false);
 
   useEffect(() => {
     // Set up auth state listener
@@ -45,6 +48,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
+  const checkProfileCompletion = async () => {
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from('profiles')
+      .select('profile_completed')
+      .eq('user_id', user.id)
+      .single();
+    
+    setProfileCompleted(data?.profile_completed || false);
+  };
+
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -53,11 +68,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  useEffect(() => {
+    if (user) {
+      checkProfileCompletion();
+    }
+  }, [user]);
+
   const value = {
     user,
     session,
     loading,
+    profileCompleted,
     signOut,
+    checkProfileCompletion,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

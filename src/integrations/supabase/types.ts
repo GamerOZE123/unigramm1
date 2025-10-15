@@ -1430,6 +1430,8 @@ export type Database = {
           banner_position: number | null
           banner_url: string | null
           bio: string | null
+          campus_groups: string[] | null
+          campus_year: string | null
           country: string | null
           created_at: string
           email: string | null
@@ -1437,13 +1439,22 @@ export type Database = {
           following_count: number | null
           full_name: string | null
           id: string
+          instagram_url: string | null
+          interests: string[] | null
+          linkedin_url: string | null
           major: string | null
+          preferred_event_types: string[] | null
+          profile_completed: boolean | null
+          profile_completion_date: string | null
           state: string | null
+          status_message: string | null
+          twitter_url: string | null
           university: string | null
           updated_at: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"] | null
           username: string
+          website_url: string | null
         }
         Insert: {
           area?: string | null
@@ -1452,6 +1463,8 @@ export type Database = {
           banner_position?: number | null
           banner_url?: string | null
           bio?: string | null
+          campus_groups?: string[] | null
+          campus_year?: string | null
           country?: string | null
           created_at?: string
           email?: string | null
@@ -1459,13 +1472,22 @@ export type Database = {
           following_count?: number | null
           full_name?: string | null
           id?: string
+          instagram_url?: string | null
+          interests?: string[] | null
+          linkedin_url?: string | null
           major?: string | null
+          preferred_event_types?: string[] | null
+          profile_completed?: boolean | null
+          profile_completion_date?: string | null
           state?: string | null
+          status_message?: string | null
+          twitter_url?: string | null
           university?: string | null
           updated_at?: string
           user_id: string
           user_type?: Database["public"]["Enums"]["user_type"] | null
           username: string
+          website_url?: string | null
         }
         Update: {
           area?: string | null
@@ -1474,6 +1496,8 @@ export type Database = {
           banner_position?: number | null
           banner_url?: string | null
           bio?: string | null
+          campus_groups?: string[] | null
+          campus_year?: string | null
           country?: string | null
           created_at?: string
           email?: string | null
@@ -1481,13 +1505,22 @@ export type Database = {
           following_count?: number | null
           full_name?: string | null
           id?: string
+          instagram_url?: string | null
+          interests?: string[] | null
+          linkedin_url?: string | null
           major?: string | null
+          preferred_event_types?: string[] | null
+          profile_completed?: boolean | null
+          profile_completion_date?: string | null
           state?: string | null
+          status_message?: string | null
+          twitter_url?: string | null
           university?: string | null
           updated_at?: string
           user_id?: string
           user_type?: Database["public"]["Enums"]["user_type"] | null
           username?: string
+          website_url?: string | null
         }
         Relationships: []
       }

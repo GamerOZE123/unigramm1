@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { GraduationCap, Mail, Lock, User, ArrowLeft, Building2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { ProfileCompletionFlow } from '@/components/auth/ProfileCompletionFlow';
 import {
   Select,
   SelectContent,
@@ -25,6 +26,7 @@ export default function Auth() {
   const [error, setError] = useState('');
   const [userType, setUserType] = useState<UserType>('student');
   const [universities, setUniversities] = useState<Array<{id: string, name: string}>>([]);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
@@ -148,8 +150,19 @@ export default function Auth() {
       if (error) throw error;
 
       if (data.user) {
-        setMessage('Account created successfully! Please check your email to confirm your account.');
-        setMode('login');
+        // Check if profile needs completion
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('profile_completed')
+          .eq('user_id', data.user.id)
+          .single();
+
+        if (profileData && !profileData.profile_completed) {
+          setShowOnboarding(true);
+        } else {
+          setMessage('Account created successfully! Please check your email to confirm your account.');
+          setMode('login');
+        }
       }
     } catch (error: any) {
       setError(error.message || 'Signup failed. Please try again.');
@@ -260,7 +273,17 @@ export default function Auth() {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <>
+      <ProfileCompletionFlow 
+        open={showOnboarding} 
+        onComplete={() => {
+          setShowOnboarding(false);
+          setMessage('Welcome to Unigramm! Please check your email to confirm your account.');
+          setMode('login');
+        }} 
+      />
+      
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
@@ -500,5 +523,6 @@ export default function Auth() {
         </div>
       </div>
     </div>
+    </>
   );
 }
