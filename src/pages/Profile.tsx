@@ -32,6 +32,13 @@ interface ProfileData {
   banner_url?: string;
   banner_height?: number;
   banner_position?: number;
+  interests?: string[];
+  event_preferences?: string[];
+  campus_groups?: string[];
+  linkedin_url?: string;
+  instagram_url?: string;
+  twitter_url?: string;
+  website_url?: string;
 }
 
 interface PostWithProfile {
@@ -158,7 +165,7 @@ export default function Profile() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_id, username, full_name, avatar_url, university, major, bio, followers_count, following_count, country, state, area, banner_url, banner_height, banner_position')
+        .select('user_id, username, full_name, avatar_url, university, major, bio, followers_count, following_count, country, state, area, banner_url, banner_height, banner_position, interests, event_preferences, campus_groups, linkedin_url, instagram_url, twitter_url, website_url')
         .eq('user_id', userId)
         .single();
 
@@ -295,8 +302,44 @@ export default function Profile() {
             {profileData.full_name || profileData.username}
           </h1>
           <p className="text-muted-foreground">@{profileData.username}</p>
-          {profileData.bio && <p className="mt-2">{profileData.bio}</p>}
-          {/* ...other info... */}
+          {profileData.bio && <p className="mt-2 text-foreground/80">{profileData.bio}</p>}
+          
+          {/* Interests */}
+          {profileData.interests && profileData.interests.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2 justify-center">
+              {profileData.interests.map((interest, idx) => (
+                <span key={idx} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+                  {interest}
+                </span>
+              ))}
+            </div>
+          )}
+          
+          {/* Social Links */}
+          {(profileData.linkedin_url || profileData.instagram_url || profileData.twitter_url || profileData.website_url) && (
+            <div className="mt-3 flex gap-3 justify-center">
+              {profileData.linkedin_url && (
+                <a href={profileData.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition">
+                  LinkedIn
+                </a>
+              )}
+              {profileData.instagram_url && (
+                <a href={profileData.instagram_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition">
+                  Instagram
+                </a>
+              )}
+              {profileData.twitter_url && (
+                <a href={profileData.twitter_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition">
+                  Twitter
+                </a>
+              )}
+              {profileData.website_url && (
+                <a href={profileData.website_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition">
+                  Website
+                </a>
+              )}
+            </div>
+          )}
           <div className="flex justify-center gap-6 mt-4">
             <div className="text-center">
               <div className="font-bold text-lg">{posts.length}</div>

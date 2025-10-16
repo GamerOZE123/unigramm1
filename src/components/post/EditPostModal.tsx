@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import HashtagSelector from './HashtagSelector';
 import { useAuth } from '@/contexts/AuthContext';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 interface EditPostModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ interface EditPostModalProps {
     id: string;
     content: string;
     hashtags?: string[];
+    image_urls?: string[];
   };
 }
 
@@ -22,9 +24,15 @@ export default function EditPostModal({ isOpen, onClose, onPostUpdated, post }: 
   const { user } = useAuth();
   const [content, setContent] = useState(post.content);
   const [hashtags, setHashtags] = useState<string[]>(post.hashtags || []);
+  const [imageUrls, setImageUrls] = useState<string[]>(post.image_urls || []);
   const [updating, setUpdating] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleDeleteImage = async (index: number) => {
+    const updatedImages = imageUrls.filter((_, i) => i !== index);
+    setImageUrls(updatedImages);
+  };
 
   const handleUpdate = async () => {
     if (!content.trim()) {
@@ -44,7 +52,8 @@ export default function EditPostModal({ isOpen, onClose, onPostUpdated, post }: 
         .from('posts')
         .update({
           content: content.trim(),
-          hashtags: formattedHashtags.length > 0 ? formattedHashtags : null
+          hashtags: formattedHashtags.length > 0 ? formattedHashtags : null,
+          image_urls: imageUrls.length > 0 ? imageUrls : null
         })
         .eq('id', post.id);
 
@@ -67,6 +76,7 @@ export default function EditPostModal({ isOpen, onClose, onPostUpdated, post }: 
   const handleClose = () => {
     setContent(post.content);
     setHashtags(post.hashtags || []);
+    setImageUrls(post.image_urls || []);
     onClose();
   };
 
@@ -98,6 +108,35 @@ export default function EditPostModal({ isOpen, onClose, onPostUpdated, post }: 
               onChange={(e) => setContent(e.target.value)}
               className="min-h-[100px] resize-none bg-transparent border-none p-0 text-base text-foreground placeholder:text-muted-foreground focus-visible:ring-0"
             />
+            
+            {/* Image Preview with Delete */}
+            {imageUrls.length > 0 && (
+              <div className="mt-4">
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Images
+                </label>
+                <ScrollArea className="w-full whitespace-nowrap rounded-lg border border-border">
+                  <div className="flex gap-2 p-2">
+                    {imageUrls.map((url, index) => (
+                      <div key={index} className="relative flex-shrink-0">
+                        <img 
+                          src={url} 
+                          alt={`Post image ${index + 1}`}
+                          className="h-32 w-32 object-cover rounded-lg"
+                        />
+                        <button
+                          onClick={() => handleDeleteImage(index)}
+                          className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90 transition"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <ScrollBar orientation="horizontal" />
+                </ScrollArea>
+              </div>
+            )}
             
             <div className="mt-4 space-y-3">
               <div>
