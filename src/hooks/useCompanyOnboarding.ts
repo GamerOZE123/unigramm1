@@ -26,10 +26,10 @@ export const useCompanyOnboarding = () => {
 
     setLoading(true);
     try {
-      // Save company profile
+      // Save company profile (upsert to handle existing profiles)
       const { error: profileError } = await supabase
         .from('company_profiles')
-        .insert({
+        .upsert({
           user_id: user.id,
           company_name: data.company_name,
           industry: data.industry,
@@ -38,6 +38,8 @@ export const useCompanyOnboarding = () => {
           company_description: data.company_description,
           logo_url: data.logo_url,
           website_url: data.website_url,
+        }, {
+          onConflict: 'user_id'
         });
 
       if (profileError) throw profileError;
