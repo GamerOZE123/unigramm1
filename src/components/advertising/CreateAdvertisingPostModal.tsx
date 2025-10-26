@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, Lock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 
 interface CreateAdvertisingPostModalProps {
   open: boolean;
@@ -29,6 +31,65 @@ export default function CreateAdvertisingPostModal({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
+  
+  // Subscription and targeting state
+  const [subscriptionTier, setSubscriptionTier] = useState<string>('free');
+  const [targetingEnabled, setTargetingEnabled] = useState(false);
+  const [universities, setUniversities] = useState<Array<{ id: string; name: string }>>([]);
+  const [selectedUniversities, setSelectedUniversities] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (open && user) {
+      fetchSubscriptionAndUniversities();
+    }
+  }, [open, user]);
+
+  const fetchSubscriptionAndUniversities = async () => {
+    if (!user) return;
+    
+    setLoading(true);
+    try {
+      // Fetch current subscription
+      const { data: userSub, error: subError } = await supabase
+        .from('user_subscriptions')
+        .select('subscriptions(name, targeting_enabled)')
+        .eq('user_id', user.id)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (subError) throw subError;
+
+      const subscription = userSub?.subscriptions as any;
+      setSubscriptionTier(subscription?.name?.toLowerCase() || 'free');
+      setTargetingEnabled(subscription?.targeting_enabled || false);
+
+      // Fetch universities if targeting is enabled
+      if (subscription?.targeting_enabled) {
+        const { data: univData, error: univError } = await supabase
+          .from('universities')
+          .select('id, name')
+          .order('name');
+
+        if (univError) throw univError;
+        setUniversities(univData || []);
+      }
+    } catch (error) {
+      console.error('Error fetching subscription and universities:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleUniversity = (universityId: string) => {
+    setSelectedUniversities(prev => 
+      prev.includes(universityId)
+        ? prev.filter(id => id !== universityId)
+        : [...prev, universityId]
+    );
+  };
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -90,7 +151,10 @@ export default function CreateAdvertisingPostModal({
           image_thumbnail_url: imageUrls.thumbnail,
           image_medium_url: imageUrls.medium,
           image_original_url: imageUrls.original,
-          redirect_url: redirectUrl.trim()
+          redirect_url: redirectUrl.trim(),
+          target_universities: targetingEnabled && selectedUniversities.length > 0 
+            ? selectedUniversities 
+            : null
         });
 
       if (insertError) throw insertError;
@@ -106,6 +170,7 @@ export default function CreateAdvertisingPostModal({
       setRedirectUrl('');
       setImageFile(null);
       setImagePreview(null);
+      setSelectedUniversities([]);
       onOpenChange(false);
       onPostCreated();
     } catch (error) {
@@ -213,6 +278,66 @@ export default function CreateAdvertisingPostModal({
               onChange={(e) => setRedirectUrl(e.target.value)}
               placeholder="https://yourwebsite.com"
             />
+          </div>
+
+          {/* Targeting Section */}
+          <div className="space-y-4 pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <div>
+                <Label className="text-base">Audience Targeting</Label>
+                <p className="text-sm text-muted-foreground">
+                  {targetingEnabled 
+                    ? 'Select specific universities to target your ad' 
+                    : 'Available in Growth and Premium plans'}
+                </p>
+              </div>
+              {!targetingEnabled && (
+                <Badge variant="secondary" className="gap-1">
+                  <Lock className="w-3 h-3" />
+                  Locked
+                </Badge>
+              )}
+            </div>
+
+            {targetingEnabled && universities.length > 0 && (
+              <div className="space-y-2">
+                <Label>Target Universities (Optional)</Label>
+                <div className="border rounded-lg p-3 max-h-40 overflow-y-auto space-y-2">
+                  {universities.map((university) => (
+                    <div
+                      key={university.id}
+                      className="flex items-center gap-2"
+                    >
+                      <input
+                        type="checkbox"
+                        id={`uni-${university.id}`}
+                        checked={selectedUniversities.includes(university.id)}
+                        onChange={() => toggleUniversity(university.id)}
+                        className="rounded border-input"
+                      />
+                      <label
+                        htmlFor={`uni-${university.id}`}
+                        className="text-sm cursor-pointer flex-1"
+                      >
+                        {university.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Leave empty to show ad to all universities
+                </p>
+              </div>
+            )}
+
+            {!targetingEnabled && (
+              <div className="bg-muted/50 rounded-lg p-4 text-center">
+                <Lock className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">
+                  Upgrade to Growth or Premium to unlock audience targeting features
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}
