@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
 import MobileLayout from '@/components/layout/MobileLayout';
-import { Plus, BarChart3, Eye, MousePointer, Heart, TrendingUp } from 'lucide-react';
+import { Plus, BarChart3, Eye, MousePointer, Heart, TrendingUp, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AdvertisingPostCard from '@/components/advertising/AdvertisingPostCard';
 import CreateAdvertisingPostModal from '@/components/advertising/CreateAdvertisingPostModal';
 import SubscriptionCard from '@/components/advertising/SubscriptionCard';
 import SubscriptionComparisonModal from '@/components/advertising/SubscriptionComparisonModal';
+import SubscriptionsView from '@/components/advertising/SubscriptionsView';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -19,6 +21,7 @@ export default function Advertising() {
   const [advertisingPosts, setAdvertisingPosts] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [analytics, setAnalytics] = useState({
     totalViews: 0,
     totalClicks: 0,
@@ -94,15 +97,32 @@ export default function Advertising() {
               <BarChart3 className="w-8 h-8 text-primary" />
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Advertising Dashboard</h1>
             </div>
-            <Button
-              size={isMobile ? "default" : "lg"}
-              className="w-full sm:w-auto shadow-lg hover:shadow-xl transition-shadow"
-              onClick={() => setShowCreateModal(true)}
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Create Ad
-            </Button>
+            {activeTab === 'dashboard' && (
+              <Button
+                size={isMobile ? "default" : "lg"}
+                className="w-full sm:w-auto shadow-lg hover:shadow-xl transition-shadow"
+                onClick={() => setShowCreateModal(true)}
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Create Ad
+              </Button>
+            )}
           </div>
+
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="dashboard" className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                Dashboard
+              </TabsTrigger>
+              <TabsTrigger value="subscriptions" className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                Subscriptions
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="dashboard" className="space-y-6 mt-6">
 
           {/* Subscription Card */}
           <SubscriptionCard onUpgradeClick={() => setShowUpgradeModal(true)} />
@@ -219,6 +239,13 @@ export default function Advertising() {
               </CardContent>
             </Card>
           )}
+
+            </TabsContent>
+
+            <TabsContent value="subscriptions" className="mt-6">
+              <SubscriptionsView />
+            </TabsContent>
+          </Tabs>
 
           {/* Modals */}
           <CreateAdvertisingPostModal
@@ -246,15 +273,32 @@ export default function Advertising() {
               <BarChart3 className="w-8 h-8 text-primary" />
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Advertising Dashboard</h1>
             </div>
-            <Button
-              size={isMobile ? "default" : "lg"}
-              className="w-full sm:w-auto shadow-lg hover:shadow-xl transition-shadow"
-              onClick={() => setShowCreateModal(true)}
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Create Ad
-            </Button>
+            {activeTab === 'dashboard' && (
+              <Button
+                size={isMobile ? "default" : "lg"}
+                className="w-full sm:w-auto shadow-lg hover:shadow-xl transition-shadow"
+                onClick={() => setShowCreateModal(true)}
+              >
+                <Plus className="w-5 h-5 mr-2" />
+                Create Ad
+              </Button>
+            )}
           </div>
+
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="dashboard" className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4" />
+                Dashboard
+              </TabsTrigger>
+              <TabsTrigger value="subscriptions" className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                Subscriptions
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="dashboard" className="space-y-6 mt-6">
 
           {/* Subscription Card */}
           <SubscriptionCard onUpgradeClick={() => setShowUpgradeModal(true)} />
@@ -371,6 +415,13 @@ export default function Advertising() {
               </CardContent>
             </Card>
           )}
+
+            </TabsContent>
+
+            <TabsContent value="subscriptions" className="mt-6">
+              <SubscriptionsView />
+            </TabsContent>
+          </Tabs>
 
           {/* Modals */}
           <CreateAdvertisingPostModal
