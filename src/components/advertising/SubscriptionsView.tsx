@@ -21,6 +21,7 @@ interface Subscription {
 }
 
 interface UserSubscription {
+  id: string;
   subscription_id: string;
   status: string;
   started_at: string;
@@ -59,7 +60,7 @@ export default function SubscriptionsView() {
       // Fetch current user subscription
       const { data: userSubData, error: userSubError } = await supabase
         .from('user_subscriptions')
-        .select('*, subscriptions(*)')
+        .select('id, subscription_id, status, started_at, expires_at, auto_renew, subscriptions(*)')
         .eq('user_id', user.id)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
@@ -92,7 +93,7 @@ export default function SubscriptionsView() {
             expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
             auto_renew: true,
           })
-          .eq('id', currentSubscription.subscription_id)
+          .eq('id', currentSubscription.id)
           .eq('user_id', user.id);
 
         if (error) throw error;
