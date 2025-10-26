@@ -9,6 +9,7 @@ import { X, Plus, User, FileText, Award, Briefcase, ExternalLink } from 'lucide-
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { normalizeUrl } from '@/lib/utils';
 
 interface Education {
   id: string;
@@ -253,9 +254,9 @@ export default function StudentApplicationForm({ onComplete, onCancel }: Student
           .update({
             skills,
             certificates: certifications,
-            linkedin_url: personalInfo.linkedin_url,
-            github_url: personalInfo.github_url,
-            portfolio_url: personalInfo.portfolio_url,
+            linkedin_url: personalInfo.linkedin_url ? normalizeUrl(personalInfo.linkedin_url) : '',
+            github_url: personalInfo.github_url ? normalizeUrl(personalInfo.github_url) : '',
+            portfolio_url: personalInfo.portfolio_url ? normalizeUrl(personalInfo.portfolio_url) : '',
             education: education as any,
             work_experience: experience as any,
             preferred_location: personalInfo.location,
@@ -271,9 +272,9 @@ export default function StudentApplicationForm({ onComplete, onCancel }: Student
             user_id: user.id,
             skills,
             certificates: certifications,
-            linkedin_url: personalInfo.linkedin_url,
-            github_url: personalInfo.github_url,
-            portfolio_url: personalInfo.portfolio_url,
+            linkedin_url: personalInfo.linkedin_url ? normalizeUrl(personalInfo.linkedin_url) : '',
+            github_url: personalInfo.github_url ? normalizeUrl(personalInfo.github_url) : '',
+            portfolio_url: personalInfo.portfolio_url ? normalizeUrl(personalInfo.portfolio_url) : '',
             education: education as any,
             work_experience: experience as any,
             preferred_location: personalInfo.location,
@@ -442,7 +443,8 @@ export default function StudentApplicationForm({ onComplete, onCancel }: Student
               <Input
                 id="portfolio_url"
                 name="portfolio_url"
-                placeholder="https://yourportfolio.com"
+                type="text"
+                placeholder="yourportfolio.com"
                 value={personalInfo.portfolio_url}
                 onChange={handlePersonalInfoChange}
               />
@@ -453,7 +455,8 @@ export default function StudentApplicationForm({ onComplete, onCancel }: Student
               <Input
                 id="website_url"
                 name="website_url"
-                placeholder="https://yourwebsite.com"
+                type="text"
+                placeholder="yourwebsite.com"
                 value={personalInfo.website_url}
                 onChange={handlePersonalInfoChange}
               />

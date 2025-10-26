@@ -1,6 +1,7 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Linkedin, Instagram, Twitter, Globe } from 'lucide-react';
+import { normalizeUrl } from '@/lib/utils';
 
 interface SocialLinksStepProps {
   linkedin: string;
@@ -76,9 +77,14 @@ export const SocialLinksStep = ({ linkedin, instagram, twitter, website, onChang
           </Label>
           <Input
             id="website"
-            type="url"
-            placeholder="https://yourwebsite.com"
+            type="text"
+            placeholder="yourwebsite.com"
             value={website}
+            onBlur={(e) => {
+              if (e.target.value) {
+                onChange('website_url', normalizeUrl(e.target.value));
+              }
+            }}
             onChange={(e) => onChange('website_url', e.target.value)}
           />
         </div>

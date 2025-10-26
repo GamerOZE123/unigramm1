@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { normalizeUrl } from '@/lib/utils';
 
 interface CompanyProfileSetupProps {
   onComplete: () => void;
@@ -40,11 +41,16 @@ export default function CompanyProfileSetup({ onComplete }: CompanyProfileSetupP
     setLoading(true);
 
     try {
+      const normalizedData = {
+        ...formData,
+        website_url: formData.website_url ? normalizeUrl(formData.website_url) : ''
+      };
+
       const { error } = await supabase
         .from('company_profiles')
         .insert({
           user_id: user.id,
-          ...formData
+          ...normalizedData
         });
 
       if (error) throw error;
@@ -99,7 +105,8 @@ export default function CompanyProfileSetup({ onComplete }: CompanyProfileSetupP
             <Input
               id="website_url"
               name="website_url"
-              placeholder="https://yourcompany.com"
+              type="text"
+              placeholder="yourcompany.com"
               value={formData.website_url}
               onChange={handleInputChange}
             />

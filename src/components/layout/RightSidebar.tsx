@@ -49,6 +49,38 @@ export default function RightSidebar() {
     }
   };
 
+  // Set up real-time subscription for avatar updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('profile-avatars')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `user_id=in.(${randomUsers.map(u => u.user_id).join(',')})`
+        },
+        (payload) => {
+          setRandomUsers(prevUsers =>
+            prevUsers.map(u =>
+              u.user_id === payload.new.user_id
+                ? { ...u, avatar_url: payload.new.avatar_url }
+                : u
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, randomUsers.map(u => u.user_id).join(',')]);
+
+
   const handleUserClick = (userId: string) => {
     navigate(`/profile/${userId}`);
   };
@@ -84,11 +116,19 @@ export default function RightSidebar() {
                 className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-muted/20 transition-colors"
                 onClick={() => handleUserClick(randomUser.user_id)}
               >
-                <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
-                  <span className="text-sm font-bold text-white">
-                    {randomUser.full_name?.charAt(0) || randomUser.username?.charAt(0) || 'U'}
-                  </span>
-                </div>
+                {randomUser.avatar_url ? (
+                  <img 
+                    src={randomUser.avatar_url} 
+                    alt={randomUser.full_name || randomUser.username || 'User'} 
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
+                    <span className="text-sm font-bold text-white">
+                      {randomUser.full_name?.charAt(0) || randomUser.username?.charAt(0) || 'U'}
+                    </span>
+                  </div>
+                )}
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">
                     {randomUser.full_name || randomUser.username}

@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CompanyOnboardingData } from '@/hooks/useCompanyOnboarding';
+import { normalizeUrl } from '@/lib/utils';
 
 interface CompanyContactStepProps {
   onNext: () => void;
@@ -16,7 +17,7 @@ export default function CompanyContactStep({ onNext, onBack, onData, initialData
 
   const handleNext = () => {
     if (!websiteUrl) return;
-    onData({ website_url: websiteUrl });
+    onData({ website_url: normalizeUrl(websiteUrl) });
     onNext();
   };
 
@@ -31,10 +32,10 @@ export default function CompanyContactStep({ onNext, onBack, onData, initialData
         <Label htmlFor="website">Company Website *</Label>
         <Input
           id="website"
-          type="url"
+          type="text"
           value={websiteUrl}
           onChange={(e) => setWebsiteUrl(e.target.value)}
-          placeholder="https://example.com"
+          placeholder="example.com"
         />
       </div>
 

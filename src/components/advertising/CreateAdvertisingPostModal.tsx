@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { normalizeUrl } from '@/lib/utils';
 
 interface CreateAdvertisingPostModalProps {
   open: boolean;
@@ -151,7 +152,7 @@ export default function CreateAdvertisingPostModal({
           image_thumbnail_url: imageUrls.thumbnail,
           image_medium_url: imageUrls.medium,
           image_original_url: imageUrls.original,
-          redirect_url: redirectUrl.trim(),
+          redirect_url: normalizeUrl(redirectUrl.trim()),
           target_universities: targetingEnabled && selectedUniversities.length > 0 
             ? selectedUniversities 
             : null
@@ -273,10 +274,10 @@ export default function CreateAdvertisingPostModal({
             <Label htmlFor="url">Website URL *</Label>
             <Input
               id="url"
-              type="url"
+              type="text"
               value={redirectUrl}
               onChange={(e) => setRedirectUrl(e.target.value)}
-              placeholder="https://yourwebsite.com"
+              placeholder="yourwebsite.com"
             />
           </div>
 
