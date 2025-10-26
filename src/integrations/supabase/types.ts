@@ -1672,6 +1672,57 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          analytics_tier: string | null
+          created_at: string | null
+          custom_branding: boolean | null
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          monthly_post_limit: number | null
+          name: string
+          price_monthly: number | null
+          price_yearly: number | null
+          priority_placement: boolean | null
+          targeting_enabled: boolean | null
+          updated_at: string | null
+          user_type: string
+        }
+        Insert: {
+          analytics_tier?: string | null
+          created_at?: string | null
+          custom_branding?: boolean | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          monthly_post_limit?: number | null
+          name: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+          priority_placement?: boolean | null
+          targeting_enabled?: boolean | null
+          updated_at?: string | null
+          user_type: string
+        }
+        Update: {
+          analytics_tier?: string | null
+          created_at?: string | null
+          custom_branding?: boolean | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          monthly_post_limit?: number | null
+          name?: string
+          price_monthly?: number | null
+          price_yearly?: number | null
+          priority_placement?: boolean | null
+          targeting_enabled?: boolean | null
+          updated_at?: string | null
+          user_type?: string
+        }
+        Relationships: []
+      }
       typing_status: {
         Row: {
           conversation_id: string
@@ -1760,6 +1811,71 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          auto_renew: boolean | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          started_at: string | null
+          status: string | null
+          subscription_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auto_renew?: boolean | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string | null
+          subscription_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          auto_renew?: boolean | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string | null
+          subscription_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workout_sessions: {
         Row: {
@@ -1873,6 +1989,10 @@ export type Database = {
         Args: { target_user_id: string }
         Returns: boolean
       }
+      can_create_advertising_post: {
+        Args: { company_user_id: string }
+        Returns: boolean
+      }
       company_can_access_student_contact: {
         Args: { company_user_id: string; student_user_id: string }
         Returns: boolean
@@ -1889,10 +2009,7 @@ export type Database = {
         }
         Returns: string
       }
-      extract_hashtags: {
-        Args: { content: string }
-        Returns: string[]
-      }
+      extract_hashtags: { Args: { content: string }; Returns: string[] }
       get_challenge_participant_count: {
         Args: { challenge_uuid: string }
         Returns: number
@@ -1917,10 +2034,7 @@ export type Database = {
         Args: { user1_id: string; user2_id: string }
         Returns: string
       }
-      get_public_profile_columns: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_public_profile_columns: { Args: never; Returns: string }
       get_public_student_info: {
         Args: { target_user_id: string }
         Returns: {
@@ -1941,10 +2055,7 @@ export type Database = {
           other_user_university: string
         }[]
       }
-      get_safe_profile_fields: {
-        Args: Record<PropertyKey, never>
-        Returns: string[]
-      }
+      get_safe_profile_fields: { Args: never; Returns: string[] }
       get_unswiped_jobs_for_student: {
         Args: { student_user_id: string }
         Returns: {
@@ -1972,14 +2083,18 @@ export type Database = {
           unread_count: number
         }[]
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       mark_messages_as_read: {
         Args: { conversation_uuid: string; reader_user_id: string }
         Returns: undefined
       }
-      reset_monthly_post_usage: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      reset_monthly_post_usage: { Args: never; Returns: undefined }
       update_typing_status: {
         Args: {
           conversation_uuid: string
@@ -1996,18 +2111,21 @@ export type Database = {
         }
         Returns: undefined
       }
-      upsert_recent_chat: {
-        Args:
-          | {
+      upsert_recent_chat:
+        | {
+            Args: { current_user_id: string; target_user_id: string }
+            Returns: undefined
+          }
+        | {
+            Args: {
               current_user_id: string
               other_user_avatar: string
               other_user_name: string
               other_user_university: string
               target_user_id: string
             }
-          | { current_user_id: string; target_user_id: string }
-        Returns: undefined
-      }
+            Returns: undefined
+          }
       user_can_see_email: {
         Args: { profile_user_id: string }
         Returns: boolean
@@ -2018,6 +2136,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "admin" | "moderator" | "user"
       user_type: "student" | "company"
     }
     CompositeTypes: {
@@ -2146,6 +2265,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "moderator", "user"],
       user_type: ["student", "company"],
     },
   },

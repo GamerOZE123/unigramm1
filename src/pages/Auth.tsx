@@ -8,6 +8,7 @@ import { GraduationCap, Mail, Lock, User, ArrowLeft, Building2 } from 'lucide-re
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { ProfileCompletionFlow } from '@/components/auth/ProfileCompletionFlow';
+import CompanyOnboardingFlow from '@/components/auth/CompanyOnboardingFlow';
 import {
   Select,
   SelectContent,
@@ -27,6 +28,7 @@ export default function Auth() {
   const [userType, setUserType] = useState<UserType>('student');
   const [universities, setUniversities] = useState<Array<{id: string, name: string}>>([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showCompanyOnboarding, setShowCompanyOnboarding] = useState(false);
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
@@ -107,12 +109,17 @@ export default function Auth() {
         // Check if profile needs completion on first login
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('profile_completed')
+          .select('profile_completed, user_type')
           .eq('user_id', data.user.id)
           .single();
 
         if (profileData && !profileData.profile_completed) {
-          setShowOnboarding(true);
+          // Show appropriate onboarding based on user type
+          if (profileData.user_type === 'company') {
+            setShowCompanyOnboarding(true);
+          } else {
+            setShowOnboarding(true);
+          }
         } else {
           navigate('/home');
         }
@@ -282,6 +289,8 @@ export default function Auth() {
           setMode('login');
         }} 
       />
+
+      {showCompanyOnboarding && <CompanyOnboardingFlow />}
       
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">

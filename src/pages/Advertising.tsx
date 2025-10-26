@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AdvertisingPostCard from '@/components/advertising/AdvertisingPostCard';
 import CreateAdvertisingPostModal from '@/components/advertising/CreateAdvertisingPostModal';
+import SubscriptionCard from '@/components/advertising/SubscriptionCard';
+import SubscriptionComparisonModal from '@/components/advertising/SubscriptionComparisonModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -16,6 +18,7 @@ export default function Advertising() {
   const [loading, setLoading] = useState(true);
   const [advertisingPosts, setAdvertisingPosts] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [analytics, setAnalytics] = useState({
     totalViews: 0,
     totalClicks: 0,
@@ -101,6 +104,9 @@ export default function Advertising() {
             </Button>
           </div>
 
+          {/* Subscription Card */}
+          <SubscriptionCard onUpgradeClick={() => setShowUpgradeModal(true)} />
+
           {/* Analytics Cards */}
           {!loading && advertisingPosts.length > 0 && (
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -214,11 +220,15 @@ export default function Advertising() {
             </Card>
           )}
 
-          {/* Create Advertising Post Modal */}
+          {/* Modals */}
           <CreateAdvertisingPostModal
             open={showCreateModal}
             onOpenChange={setShowCreateModal}
             onPostCreated={fetchAdvertisingPosts}
+          />
+          <SubscriptionComparisonModal
+            isOpen={showUpgradeModal}
+            onClose={() => setShowUpgradeModal(false)}
           />
         </div>
       </div>
@@ -246,6 +256,9 @@ export default function Advertising() {
             </Button>
           </div>
 
+          {/* Subscription Card */}
+          <SubscriptionCard onUpgradeClick={() => setShowUpgradeModal(true)} />
+
           {/* Analytics Cards */}
           {!loading && advertisingPosts.length > 0 && (
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -359,11 +372,15 @@ export default function Advertising() {
             </Card>
           )}
 
-          {/* Create Advertising Post Modal */}
+          {/* Modals */}
           <CreateAdvertisingPostModal
             open={showCreateModal}
             onOpenChange={setShowCreateModal}
             onPostCreated={fetchAdvertisingPosts}
+          />
+          <SubscriptionComparisonModal
+            isOpen={showUpgradeModal}
+            onClose={() => setShowUpgradeModal(false)}
           />
         </div>
       </div>
