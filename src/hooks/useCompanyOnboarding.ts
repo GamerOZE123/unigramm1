@@ -42,14 +42,30 @@ export const useCompanyOnboarding = () => {
 
       if (profileError) throw profileError;
 
+      // Get Free tier subscription ID if no subscription selected
+      let subscriptionId = data.subscription_id;
+      if (!subscriptionId) {
+        const { data: freeTier, error: freeTierError } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('user_type', 'company')
+          .eq('name', 'Free')
+          .single();
+
+        if (freeTierError) throw freeTierError;
+        subscriptionId = freeTier.id;
+      }
+
       // Create user subscription
       const { error: subscriptionError } = await supabase
         .from('user_subscriptions')
         .insert({
           user_id: user.id,
-          subscription_id: data.subscription_id,
+          subscription_id: subscriptionId,
           status: 'active',
+          started_at: new Date().toISOString(),
           expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
+          auto_renew: true,
         });
 
       if (subscriptionError) throw subscriptionError;

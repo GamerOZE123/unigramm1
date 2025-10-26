@@ -76,9 +76,48 @@ export default function SubscriptionsView() {
     }
   };
 
-  const handleSelectPlan = (planId: string) => {
-    // TODO: Implement payment integration
-    toast.info('Payment integration coming soon!');
+  const handleSelectPlan = async (planId: string) => {
+    if (!user) return;
+    
+    try {
+      // Check if user already has an active subscription
+      if (currentSubscription) {
+        // Update existing subscription
+        const { error } = await supabase
+          .from('user_subscriptions')
+          .update({
+            subscription_id: planId,
+            status: 'active',
+            started_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+            auto_renew: true,
+          })
+          .eq('id', currentSubscription.subscription_id)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } else {
+        // Create new subscription
+        const { error } = await supabase
+          .from('user_subscriptions')
+          .insert({
+            user_id: user.id,
+            subscription_id: planId,
+            status: 'active',
+            started_at: new Date().toISOString(),
+            expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            auto_renew: true,
+          });
+
+        if (error) throw error;
+      }
+
+      toast.success('Subscription updated successfully!');
+      await fetchData(); // Refresh data
+    } catch (error: any) {
+      console.error('Error updating subscription:', error);
+      toast.error('Failed to update subscription');
+    }
   };
 
   const getPlanFeatures = (sub: Subscription) => {

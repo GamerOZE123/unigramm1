@@ -40,6 +40,17 @@ export default function SubscriptionSelectionStep({
     fetchSubscriptions();
   }, []);
 
+  useEffect(() => {
+    // Auto-select Free tier by default
+    if (subscriptions.length > 0 && !selectedPlan) {
+      const freeTier = subscriptions.find(s => s.name === 'Free');
+      if (freeTier) {
+        setSelectedPlan(freeTier.id);
+        onData({ subscription_id: freeTier.id });
+      }
+    }
+  }, [subscriptions]);
+
   const fetchSubscriptions = async () => {
     try {
       const { data, error } = await supabase
