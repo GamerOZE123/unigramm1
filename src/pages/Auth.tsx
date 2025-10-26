@@ -106,6 +106,26 @@ export default function Auth() {
       if (error) throw error;
 
       if (data.user) {
+        // Fetch user's location and update profile
+        try {
+          const locationResponse = await fetch('https://ipapi.co/json/');
+          const locationData = await locationResponse.json();
+          
+          if (locationData.country_name && locationData.region && locationData.city) {
+            await supabase
+              .from('profiles')
+              .update({
+                country: locationData.country_name,
+                state: locationData.region,
+                area: locationData.city
+              })
+              .eq('user_id', data.user.id);
+          }
+        } catch (locationError) {
+          console.error('Failed to fetch location:', locationError);
+          // Continue login even if location fetch fails
+        }
+
         // Check if profile needs completion on first login
         const { data: profileData } = await supabase
           .from('profiles')
