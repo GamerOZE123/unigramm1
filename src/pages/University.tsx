@@ -28,7 +28,7 @@ const universityOptions = [
     icon: Briefcase,
     path: '/jobs-internships',
     color: 'bg-blue-500',
-    allowedFor: ['student', 'company']
+    allowedFor: ['student', 'company', 'clubs']
   },
   {
     id: 'advertising',
@@ -37,7 +37,16 @@ const universityOptions = [
     icon: Target,
     path: '/advertising',
     color: 'bg-orange-500',
-    allowedFor: ['company', 'clubs']
+    allowedFor: ['company']
+  },
+  {
+    id: 'clubs',
+    title: 'Clubs & Organizations',
+    description: 'Discover and join university clubs',
+    icon: UserCircle,
+    path: '/clubs',
+    color: 'bg-indigo-500',
+    allowedFor: ['student', 'clubs']
   },
   {
     id: 'carpooling',
@@ -65,15 +74,6 @@ const universityOptions = [
     path: '/holidays',
     color: 'bg-pink-500',
     allowedFor: ['student']
-  },
-  {
-    id: 'clubs',
-    title: 'Clubs & Organizations',
-    description: 'Discover and join university clubs',
-    icon: UserCircle,
-    path: '/clubs',
-    color: 'bg-indigo-500',
-    allowedFor: ['student', 'clubs']
   }
 ];
 
