@@ -112,9 +112,6 @@ export default function EditPostModal({ isOpen, onClose, onPostUpdated, post }: 
             {/* Image Preview with Delete */}
             {imageUrls.length > 0 && (
               <div className="mt-4">
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Images
-                </label>
                 <ScrollArea className="w-full whitespace-nowrap rounded-lg border border-border">
                   <div className="flex gap-2 p-2">
                     {imageUrls.map((url, index) => (
@@ -137,15 +134,6 @@ export default function EditPostModal({ isOpen, onClose, onPostUpdated, post }: 
                 </ScrollArea>
               </div>
             )}
-            
-            <div className="mt-4 space-y-3">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Edit Hashtags
-                </label>
-                <HashtagSelector hashtags={hashtags} onHashtagsChange={setHashtags} />
-              </div>
-            </div>
             
             <div className="flex items-center justify-end gap-2 mt-4 pt-4 border-t border-border">
               <Button variant="outline" onClick={handleClose}>

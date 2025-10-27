@@ -1,8 +1,10 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Home, MessageCircle, User, Search, GraduationCap } from 'lucide-react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const navigation = [
   { name: 'Home', href: '/home', icon: Home },
@@ -14,11 +16,45 @@ const navigation = [
 
 export default function MobileNavigation() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [userType, setUserType] = useState<string>('student');
+
+  useEffect(() => {
+    const fetchUserType = async () => {
+      if (!user) return;
+      
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (profileData?.user_type) {
+        setUserType(profileData.user_type);
+      }
+    };
+
+    fetchUserType();
+  }, [user]);
+
+  const getProfileLink = () => {
+    if (userType === 'company') return '/jobs';
+    if (userType === 'clubs') return '/university';
+    return '/profile';
+  };
+
+  const updatedNavigation = navigation.map(item => {
+    if (item.name === 'Profile') {
+      return { ...item, href: getProfileLink() };
+    }
+    return item;
+  });
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border md:hidden">
       <div className="grid grid-cols-5 h-16">
-        {navigation.map((item) => {
+        {updatedNavigation.map((item) => {
           const isActive = location.pathname === item.href;
           return (
             <NavLink

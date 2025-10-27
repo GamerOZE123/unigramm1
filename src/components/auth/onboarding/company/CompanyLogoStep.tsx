@@ -34,7 +34,7 @@ export default function CompanyLogoStep({ onNext, onBack, onData, initialData }:
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
 
-      const { error: uploadError, data } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, file, { upsert: true });
 
@@ -45,6 +45,7 @@ export default function CompanyLogoStep({ onNext, onBack, onData, initialData }:
         .getPublicUrl(fileName);
 
       setLogoUrl(publicUrl);
+      onData({ logo_url: publicUrl });
       toast.success('Logo uploaded successfully!');
     } catch (error: any) {
       console.error('Error uploading logo:', error);
