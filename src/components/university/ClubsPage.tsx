@@ -1,27 +1,30 @@
-
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Plus, Users, Calendar, Hash } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Users, Mail, Phone, Globe } from 'lucide-react';
 
-interface Club {
+interface ClubProfile {
   id: string;
-  name: string;
-  description: string;
+  user_id: string;
+  club_name: string;
+  club_description: string;
+  logo_url: string;
   category: string;
-  image_url: string;
+  contact_email: string;
+  contact_phone: string;
+  website_url: string;
+  university: string;
   member_count: number;
-  admin_user_id: string;
   created_at: string;
-  profiles?: {
+  profiles: {
     full_name: string;
-    username: string;
     avatar_url: string;
-  };
+  } | null;
 }
 
 export default function ClubsPage() {
-  const [clubs, setClubs] = useState<Club[]>([]);
+  const [clubs, setClubs] = useState<ClubProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,23 +33,25 @@ export default function ClubsPage() {
 
   const fetchClubs = async () => {
     try {
+      // First, get clubs
       const { data: clubsData, error: clubsError } = await supabase
-        .from('clubs')
+        .from('clubs_profiles')
         .select('*')
-        .order('member_count', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (clubsError) throw clubsError;
 
       if (clubsData && clubsData.length > 0) {
-        const userIds = [...new Set(clubsData.map(club => club.admin_user_id))];
-        
+        // Then get profiles for those clubs
+        const userIds = clubsData.map(club => club.user_id);
         const { data: profilesData, error: profilesError } = await supabase
           .from('profiles')
-          .select('user_id, full_name, username, avatar_url')
+          .select('user_id, full_name, avatar_url')
           .in('user_id', userIds);
 
         if (profilesError) throw profilesError;
 
+        // Map profiles to clubs
         const profilesMap = new Map();
         profilesData?.forEach(profile => {
           profilesMap.set(profile.user_id, profile);
@@ -54,7 +59,7 @@ export default function ClubsPage() {
 
         const clubsWithProfiles = clubsData.map(club => ({
           ...club,
-          profiles: profilesMap.get(club.admin_user_id)
+          profiles: profilesMap.get(club.user_id) || null
         }));
 
         setClubs(clubsWithProfiles);
@@ -66,76 +71,68 @@ export default function ClubsPage() {
     }
   };
 
-  if (loading) {
-    return <div className="text-center py-8">Loading clubs...</div>;
-  }
-
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="post-card">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-foreground">University Clubs</h2>
-          <Button className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            Create Club
-          </Button>
-        </div>
-        <p className="text-muted-foreground">Join clubs and connect with students who share your interests.</p>
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">University Clubs & Organizations</h1>
       </div>
 
-      {/* Clubs Grid */}
-      {clubs.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {clubs.map((club) => (
-            <div key={club.id} className="post-card hover:shadow-lg transition-shadow cursor-pointer">
-              <div className="relative h-40 bg-surface rounded-lg mb-4 overflow-hidden">
-                <img
-                  src={club.image_url || '/placeholder.svg'}
-                  alt={club.name}
-                  className="w-full h-full object-cover"
-                />
-                {club.category && (
-                  <div className="absolute top-3 left-3 bg-primary text-primary-foreground px-2 py-1 rounded-lg text-xs font-medium">
-                    {club.category}
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <h3 className="text-lg font-bold text-foreground">{club.name}</h3>
-                <p className="text-muted-foreground text-sm line-clamp-2">{club.description}</p>
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Users className="w-4 h-4" />
-                    {club.member_count} members
-                  </div>
-                  <Button size="sm">Join Club</Button>
-                </div>
-
-                {club.profiles && (
-                  <div className="flex items-center gap-2 pt-2 border-t border-border">
-                    <img
-                      src={club.profiles.avatar_url || '/placeholder.svg'}
-                      alt={club.profiles.full_name}
-                      className="w-6 h-6 rounded-full object-cover"
-                    />
-                    <span className="text-xs text-muted-foreground">
-                      Admin: {club.profiles.full_name || club.profiles.username}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
+      {loading ? (
+        <div className="text-center py-8">Loading clubs...</div>
+      ) : clubs.length === 0 ? (
+        <div className="text-center py-12 space-y-4">
+          <Users className="w-16 h-16 text-muted-foreground mx-auto" />
+          <p className="text-muted-foreground">No clubs found yet</p>
+          <p className="text-sm text-muted-foreground">Club organizations can sign up to showcase their activities</p>
         </div>
       ) : (
-        <div className="post-card text-center py-12">
-          <p className="text-muted-foreground">No clubs available yet.</p>
-          <Button className="mt-4">
-            Create the first club!
-          </Button>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {clubs.map((club) => (
+            <Card key={club.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                {club.logo_url && (
+                  <div className="w-full h-40 mb-4 rounded-lg overflow-hidden bg-muted">
+                    <img src={club.logo_url} alt={club.club_name} className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <CardTitle>{club.club_name}</CardTitle>
+                {club.category && <CardDescription>{club.category}</CardDescription>}
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground line-clamp-3">{club.club_description}</p>
+                
+                <div className="space-y-2 pt-2">
+                  {club.contact_email && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Mail className="w-4 h-4 text-muted-foreground" />
+                      <a href={`mailto:${club.contact_email}`} className="text-primary hover:underline">
+                        {club.contact_email}
+                      </a>
+                    </div>
+                  )}
+                  {club.contact_phone && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Phone className="w-4 h-4 text-muted-foreground" />
+                      <span>{club.contact_phone}</span>
+                    </div>
+                  )}
+                  {club.website_url && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <Globe className="w-4 h-4 text-muted-foreground" />
+                      <a href={club.website_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                        Visit Website
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
+                  <Users className="w-4 h-4" />
+                  <span>{club.member_count} members</span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
     </div>

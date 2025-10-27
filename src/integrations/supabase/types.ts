@@ -451,6 +451,57 @@ export type Database = {
         }
         Relationships: []
       }
+      clubs_profiles: {
+        Row: {
+          category: string | null
+          club_description: string | null
+          club_name: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          logo_url: string | null
+          member_count: number | null
+          social_links: Json | null
+          university: string | null
+          updated_at: string
+          user_id: string
+          website_url: string | null
+        }
+        Insert: {
+          category?: string | null
+          club_description?: string | null
+          club_name: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          member_count?: number | null
+          social_links?: Json | null
+          university?: string | null
+          updated_at?: string
+          user_id: string
+          website_url?: string | null
+        }
+        Update: {
+          category?: string | null
+          club_description?: string | null
+          club_name?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          member_count?: number | null
+          social_links?: Json | null
+          university?: string | null
+          updated_at?: string
+          user_id?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           content: string
@@ -2137,7 +2188,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
-      user_type: "student" | "company"
+      user_type: "student" | "company" | "clubs"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2266,7 +2317,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
-      user_type: ["student", "company"],
+      user_type: ["student", "company", "clubs"],
     },
   },
 } as const

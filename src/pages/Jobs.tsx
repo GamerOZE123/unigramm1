@@ -12,7 +12,7 @@ import CompanyJobsView from '@/components/jobs/CompanyJobsView';
 export default function Jobs() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [userType, setUserType] = useState<'student' | 'company'>('student');
+  const [userType, setUserType] = useState<'student' | 'company' | 'clubs'>('student');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

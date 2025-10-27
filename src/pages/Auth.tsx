@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { ProfileCompletionFlow } from '@/components/auth/ProfileCompletionFlow';
 import CompanyOnboardingFlow from '@/components/auth/CompanyOnboardingFlow';
+import ClubOnboardingFlow from '@/components/auth/ClubOnboardingFlow';
 import {
   Select,
   SelectContent,
@@ -18,7 +19,7 @@ import {
 } from "@/components/ui/select";
 
 type AuthMode = 'login' | 'signup' | 'forgot' | 'reset';
-type UserType = 'student' | 'company';
+type UserType = 'student' | 'company' | 'clubs';
 
 export default function Auth() {
   const [mode, setMode] = useState<AuthMode>('login');
@@ -29,6 +30,7 @@ export default function Auth() {
   const [universities, setUniversities] = useState<Array<{id: string, name: string}>>([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showCompanyOnboarding, setShowCompanyOnboarding] = useState(false);
+  const [showClubOnboarding, setShowClubOnboarding] = useState(false);
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
@@ -137,6 +139,8 @@ export default function Auth() {
           // Show appropriate onboarding based on user type
           if (profileData.user_type === 'company') {
             setShowCompanyOnboarding(true);
+          } else if (profileData.user_type === 'clubs') {
+            setShowClubOnboarding(true);
           } else {
             setShowOnboarding(true);
           }
@@ -179,6 +183,7 @@ export default function Auth() {
             full_name: formData.name,
             university: userType === 'student' ? formData.university : undefined,
             company_name: userType === 'company' ? formData.companyName : undefined,
+            club_name: userType === 'clubs' ? formData.name : undefined,
             username: formData.name || formData.email.split('@')[0],
             user_type: userType,
           }
@@ -311,6 +316,7 @@ export default function Auth() {
       />
 
       {showCompanyOnboarding && <CompanyOnboardingFlow />}
+      {showClubOnboarding && <ClubOnboardingFlow />}
       
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
@@ -365,7 +371,7 @@ export default function Auth() {
               <>
                 <div className="space-y-4">
                   <Label>I am a:</Label>
-                  <RadioGroup value={userType} onValueChange={(value: UserType) => setUserType(value)} className="grid grid-cols-2 gap-4">
+                  <RadioGroup value={userType} onValueChange={(value: UserType) => setUserType(value)} className="grid grid-cols-3 gap-4">
                     <div className="flex items-center p-4 border rounded-md cursor-pointer transition-colors hover:bg-muted/50 data-[state=checked]:bg-muted" data-state={userType === 'student' ? 'checked' : 'unchecked'}>
                       <RadioGroupItem value="student" id="student" className="sr-only" />
                       <Label htmlFor="student" className="flex flex-col items-center gap-2 w-full cursor-pointer">
@@ -380,19 +386,28 @@ export default function Auth() {
                         <span className="font-medium text-center">Company</span>
                       </Label>
                     </div>
+                    <div className="flex items-center p-4 border rounded-md cursor-pointer transition-colors hover:bg-muted/50 data-[state=checked]:bg-muted" data-state={userType === 'clubs' ? 'checked' : 'unchecked'}>
+                      <RadioGroupItem value="clubs" id="clubs" className="sr-only" />
+                      <Label htmlFor="clubs" className="flex flex-col items-center gap-2 w-full cursor-pointer">
+                        <User className="w-6 h-6 text-primary" />
+                        <span className="font-medium text-center">Club</span>
+                      </Label>
+                    </div>
                   </RadioGroup>
                 </div>
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="name">{userType === 'student' ? 'Full Name' : 'Contact Person Name'}</Label>
+                    <Label htmlFor="name">
+                      {userType === 'student' ? 'Full Name' : userType === 'clubs' ? 'Club Name' : 'Contact Person Name'}
+                    </Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                       <Input
                         id="name"
                         name="name"
                         type="text"
-                        placeholder={userType === 'student' ? 'Enter your full name' : 'Enter contact person name'}
+                        placeholder={userType === 'student' ? 'Enter your full name' : userType === 'clubs' ? 'Enter your club name' : 'Enter contact person name'}
                         className="pl-10 bg-surface border-border"
                         value={formData.name}
                         onChange={handleInputChange}

@@ -13,7 +13,8 @@ import {
   PlusCircle,
   Target,
   Dumbbell,
-  CarTaxiFront
+  CarTaxiFront,
+  UserCircle
 } from 'lucide-react';
 import MobileHeader from '@/components/layout/MobileHeader';
 // Re-importing to force refresh
@@ -64,13 +65,22 @@ const universityOptions = [
     path: '/holidays',
     color: 'bg-pink-500',
     allowedFor: ['student']
+  },
+  {
+    id: 'clubs',
+    title: 'Clubs & Organizations',
+    description: 'Discover and join university clubs',
+    icon: UserCircle,
+    path: '/clubs',
+    color: 'bg-indigo-500',
+    allowedFor: ['student']
   }
 ];
 
 export default function University() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [userType, setUserType] = useState<'student' | 'company'>('student');
+  const [userType, setUserType] = useState<'student' | 'company' | 'clubs'>('student');
   const [loading, setLoading] = useState(true);
   const isMobile = useIsMobile();
 

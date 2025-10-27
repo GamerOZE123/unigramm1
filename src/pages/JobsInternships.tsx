@@ -17,7 +17,7 @@ export default function JobsInternships() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isMobile = useIsMobile();
-  const [userType, setUserType] = useState<'student' | 'company'>('student');
+  const [userType, setUserType] = useState<'student' | 'company' | 'clubs'>('student');
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);

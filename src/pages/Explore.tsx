@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
-import { Search, User, ArrowLeft } from 'lucide-react';
+import { Search, User, ArrowLeft, TrendingUp } from 'lucide-react';
 import { useUsers } from '@/hooks/useUsers';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import TrendingHashtags from '@/components/explore/TrendingHashtags';
 import { supabase } from '@/integrations/supabase/client';
 import MobileHeader from '@/components/layout/MobileHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
 import PostCard from '@/components/post/PostCard';
 import { Button } from '@/components/ui/button';
+import { useTrendingHashtags } from '@/hooks/useTrendingHashtags';
 
 interface PostImage {
   id: string;
@@ -26,6 +26,7 @@ export default function Explore() {
   const { users, loading, searchUsers } = useUsers();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { hashtags: trendingHashtags, loading: hashtagsLoading } = useTrendingHashtags();
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -248,7 +249,33 @@ export default function Explore() {
         </div>
 
         {/* Trending Hashtags */}
-        {!searchQuery && <TrendingHashtags onHashtagClick={handleHashtagClick} onUniversityClick={handleUniversityClick} />}
+        {!searchQuery && !hashtagsLoading && trendingHashtags.length > 0 && (
+          <div className="post-card">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-primary" />
+              Trending Now
+            </h2>
+            <div className="space-y-2">
+              {trendingHashtags.map((hashtag, index) => (
+                <div
+                  key={hashtag.hashtag}
+                  className="flex items-center justify-between p-3 hover:bg-muted rounded-lg cursor-pointer transition-colors"
+                  onClick={() => handleHashtagClick(hashtag.hashtag)}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-muted-foreground font-semibold">#{index + 1}</span>
+                    <div>
+                      <p className="font-medium">#{hashtag.hashtag}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {hashtag.post_count} {hashtag.post_count === 1 ? 'post' : 'posts'} · {hashtag.unique_users} {hashtag.unique_users === 1 ? 'user' : 'users'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Search Posts View */}
         {searchQuery.startsWith('#') && (
