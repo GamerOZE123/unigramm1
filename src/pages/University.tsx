@@ -37,7 +37,7 @@ const universityOptions = [
     icon: Target,
     path: '/advertising',
     color: 'bg-orange-500',
-    allowedFor: ['company']
+    allowedFor: ['company', 'clubs']
   },
   {
     id: 'carpooling',
@@ -73,7 +73,7 @@ const universityOptions = [
     icon: UserCircle,
     path: '/clubs',
     color: 'bg-indigo-500',
-    allowedFor: ['student']
+    allowedFor: ['student', 'clubs']
   }
 ];
 
@@ -135,6 +135,8 @@ export default function University() {
           <p className="text-muted-foreground">
             {userType === 'company' 
               ? 'Connect with students and promote your opportunities'
+              : userType === 'clubs'
+              ? 'Connect with your university community'
               : 'Everything you need for your university experience'
             }
           </p>

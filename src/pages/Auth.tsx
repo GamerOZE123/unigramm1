@@ -181,7 +181,7 @@ export default function Auth() {
           emailRedirectTo: `${window.location.origin}/auth`,
           data: {
             full_name: formData.name,
-            university: userType === 'student' ? formData.university : undefined,
+            university: (userType === 'student' || userType === 'clubs') ? formData.university : undefined,
             company_name: userType === 'company' ? formData.companyName : undefined,
             club_name: userType === 'clubs' ? formData.name : undefined,
             username: formData.name || formData.email.split('@')[0],
@@ -457,7 +457,7 @@ export default function Auth() {
               </div>
             )}
 
-            {mode === 'signup' && userType === 'student' && (
+            {mode === 'signup' && (userType === 'student' || userType === 'clubs') && (
               <div className="space-y-2">
                 <Label htmlFor="university">University</Label>
                 <div className="relative">

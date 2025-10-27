@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Mail, Phone, Globe } from 'lucide-react';
@@ -24,19 +25,32 @@ interface ClubProfile {
 }
 
 export default function ClubsPage() {
+  const { user } = useAuth();
   const [clubs, setClubs] = useState<ClubProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchClubs();
-  }, []);
+  }, [user]);
 
   const fetchClubs = async () => {
+    if (!user) return;
+    
     try {
-      // First, get clubs
+      // Get logged-in user's university
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('university')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      // Get clubs from the same university
       const { data: clubsData, error: clubsError } = await supabase
         .from('clubs_profiles')
         .select('*')
+        .eq('university', profileData?.university || '')
         .order('created_at', { ascending: false });
 
       if (clubsError) throw clubsError;

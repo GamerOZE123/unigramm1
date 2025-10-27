@@ -22,7 +22,10 @@ export default function ClubLogoStep({ onNext, onBack, onData, initialData }: Cl
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !user) return;
+    if (!file || !user) {
+      if (!user) toast.error('User not authenticated');
+      return;
+    }
 
     if (!file.type.startsWith('image/')) {
       toast.error('Please upload an image file');
@@ -32,23 +35,32 @@ export default function ClubLogoStep({ onNext, onBack, onData, initialData }: Cl
     setUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const fileName = `club-${user.id}-${Date.now()}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
+      // Upload to avatars bucket
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('avatars')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, file, { 
+          upsert: true,
+          contentType: file.type
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
 
+      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(fileName);
 
       setLogoUrl(publicUrl);
+      onData({ logo_url: publicUrl });
       toast.success('Logo uploaded successfully!');
     } catch (error: any) {
       console.error('Error uploading logo:', error);
-      toast.error('Failed to upload logo');
+      toast.error(error.message || 'Failed to upload logo');
     } finally {
       setUploading(false);
     }
