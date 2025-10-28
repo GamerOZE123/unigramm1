@@ -70,19 +70,19 @@ export const useTrendingHashtags = () => {
         last_used: data.lastUsed,
         trend_score: data.totalScore
       }))
-      .filter(tag => tag.trend_score > 0.1) // Filter out extremely low scores
+      .filter(tag => tag.post_count >= 1) // Show any hashtag that has been used
       .sort((a, b) => b.trend_score - a.trend_score)
       .slice(0, 5);
   };
 
   const fetchTrendingHashtags = async () => {
     try {
-      // Fetch posts from last 7 days (gives us data but recent posts will score higher)
+      // Fetch posts from last 30 days to keep showing hashtags even when activity is low
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select('hashtags, user_id, created_at')
         .not('hashtags', 'is', null)
-        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
         .order('created_at', { ascending: false });
       
       if (postsError) throw postsError;

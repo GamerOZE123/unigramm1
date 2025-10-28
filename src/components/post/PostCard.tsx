@@ -201,6 +201,7 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
             id: post.id,
             content: post.content,
             hashtags: post.hashtags,
+            image_urls: post.image_urls || (post.image_url ? [post.image_url] : []),
           }}
         />
       )}
