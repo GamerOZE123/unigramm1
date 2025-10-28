@@ -98,10 +98,36 @@ export const useClubMembers = (clubId: string | null) => {
     }
   };
 
+  const updateMemberRole = async (membershipId: string, newRole: string) => {
+    try {
+      const { error } = await supabase
+        .from('club_memberships')
+        .update({ role: newRole })
+        .eq('id', membershipId);
+
+      if (error) throw error;
+      
+      toast({
+        title: "Success",
+        description: "Member role updated successfully"
+      });
+      
+      await fetchMembers();
+    } catch (error) {
+      console.error('Error updating member role:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update member role",
+        variant: "destructive"
+      });
+    }
+  };
+
   return {
     members,
     loading,
     removeMember,
+    updateMemberRole,
     refetch: fetchMembers
   };
 };

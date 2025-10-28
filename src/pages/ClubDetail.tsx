@@ -10,6 +10,8 @@ import ClubMembersRightSidebar from '@/components/university/ClubMembersRightSid
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useClubJoinRequests } from '@/hooks/useClubJoinRequests';
+import ClubMemberManagement from '@/components/university/ClubMemberManagement';
 
 interface ClubProfile {
   id: string;
@@ -34,6 +36,8 @@ export default function ClubDetail() {
   const [loading, setLoading] = useState(true);
   const [isMember, setIsMember] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+  const [hasPendingRequest, setHasPendingRequest] = useState(false);
+  const { sendJoinRequest } = useClubJoinRequests(clubId || null, false);
 
   useEffect(() => {
     if (clubId) {
@@ -69,46 +73,48 @@ export default function ClubDetail() {
     if (!user || !clubId) return;
     
     try {
-      const { data } = await supabase
+      const { data: memberData } = await supabase
         .from('club_memberships')
         .select('id')
         .eq('club_id', clubId)
         .eq('user_id', user.id)
         .single();
 
-      setIsMember(!!data);
+      setIsMember(!!memberData);
+
+      // Check for pending request
+      const { data: requestData } = await supabase
+        .from('club_join_requests')
+        .select('id')
+        .eq('club_id', clubId)
+        .eq('student_id', user.id)
+        .eq('status', 'pending')
+        .single();
+
+      setHasPendingRequest(!!requestData);
     } catch (error) {
-      // Not a member
       setIsMember(false);
+      setHasPendingRequest(false);
     }
   };
 
-  const handleJoinClub = async () => {
+  const handleRequestToJoin = async () => {
     if (!user || !clubId) return;
 
     try {
-      const { error } = await supabase
-        .from('club_memberships')
-        .insert({
-          club_id: clubId,
-          user_id: user.id,
-          role: 'member'
-        });
-
-      if (error) throw error;
-
+      await sendJoinRequest(clubId, user.id);
+      
       toast({
         title: "Success",
-        description: "You've joined the club!"
+        description: "Join request sent! Waiting for club approval."
       });
 
-      setIsMember(true);
-      fetchClubDetails();
+      setHasPendingRequest(true);
     } catch (error) {
-      console.error('Error joining club:', error);
+      console.error('Error sending join request:', error);
       toast({
         title: "Error",
-        description: "Failed to join club",
+        description: "Failed to send join request",
         variant: "destructive"
       });
     }
@@ -216,10 +222,11 @@ export default function ClubDetail() {
                   
                   {!isOwner && userType === 'student' && (
                     <Button
-                      onClick={isMember ? handleLeaveClub : handleJoinClub}
+                      onClick={isMember ? handleLeaveClub : handleRequestToJoin}
                       variant={isMember ? "outline" : "default"}
+                      disabled={hasPendingRequest}
                     >
-                      {isMember ? 'Leave Club' : 'Join Club'}
+                      {isMember ? 'Leave Club' : hasPendingRequest ? 'Request Pending' : 'Request to Join'}
                     </Button>
                   )}
                 </div>
@@ -267,6 +274,11 @@ export default function ClubDetail() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Club Member Management - Only for owners */}
+        {isOwner && clubId && (
+          <ClubMemberManagement clubId={clubId} />
+        )}
 
         {/* Club Posts/Activities Section - Placeholder */}
         <Card>
