@@ -14,6 +14,7 @@ import Explore from '@/pages/Explore';
 import Chat from '@/pages/Chat';
 import University from '@/pages/University';
 import Clubs from '@/pages/Clubs';
+import ClubDetail from '@/pages/ClubDetail';
 import BuySell from '@/pages/BuySell';
 import Auction from '@/pages/Auction';
 import Marketplace from '@/pages/Marketplace';
@@ -51,6 +52,7 @@ function App() {
             <Route path="/chat/:conversationId?" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="/university" element={<ProtectedRoute><University /></ProtectedRoute>} />
             <Route path="/clubs" element={<ProtectedRoute><Clubs /></ProtectedRoute>} />
+            <Route path="/clubs/:clubId" element={<ProtectedRoute><ClubDetail /></ProtectedRoute>} />
             <Route path="/buy-sell" element={<ProtectedRoute><BuySell /></ProtectedRoute>} />
             <Route path="/auction" element={<ProtectedRoute><Auction /></ProtectedRoute>} />
             <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />

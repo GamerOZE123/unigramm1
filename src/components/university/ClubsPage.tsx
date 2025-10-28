@@ -4,8 +4,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Mail, Phone, Globe, Edit } from 'lucide-react';
-import ClubMembersRightSidebar from './ClubMembersRightSidebar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { useNavigate } from 'react-router-dom';
 import EditClubModal from './EditClubModal';
+import ClubUpcomingEvents from './ClubUpcomingEvents';
 
 interface ClubProfile {
   id: string;
@@ -28,12 +31,12 @@ interface ClubProfile {
 
 export default function ClubsPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [ownClub, setOwnClub] = useState<ClubProfile | null>(null);
   const [myClubs, setMyClubs] = useState<ClubProfile[]>([]);
   const [otherClubs, setOtherClubs] = useState<ClubProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [selectedClub, setSelectedClub] = useState<string | null>(null);
   const [isClubOwner, setIsClubOwner] = useState(false);
   const [isStudent, setIsStudent] = useState(false);
 
@@ -92,7 +95,6 @@ export default function ClubsPage() {
           setOtherClubs(others);
           setIsClubOwner(true);
           setIsStudent(false);
-          setSelectedClub(own?.id || null);
         } else {
           // For students, separate joined clubs from others
           const { data: memberships } = await supabase
@@ -109,7 +111,6 @@ export default function ClubsPage() {
           setOtherClubs(others);
           setIsClubOwner(false);
           setIsStudent(true);
-          setSelectedClub(clubsWithProfiles[0]?.id || null);
         }
       }
     } catch (error) {
@@ -154,7 +155,7 @@ export default function ClubsPage() {
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <Card 
                       className="hover:shadow-lg transition-shadow border-primary cursor-pointer"
-                      onClick={() => setSelectedClub(ownClub.id)}
+                      onClick={() => navigate(`/clubs/${ownClub.id}`)}
                     >
                       <CardHeader>
                       {ownClub.logo_url && (
@@ -221,7 +222,7 @@ export default function ClubsPage() {
                       <Card 
                         key={club.id} 
                         className="hover:shadow-lg transition-shadow border-primary cursor-pointer"
-                        onClick={() => setSelectedClub(club.id)}
+                        onClick={() => navigate(`/clubs/${club.id}`)}
                       >
                         <CardHeader>
                           {club.logo_url && (
@@ -286,7 +287,7 @@ export default function ClubsPage() {
                   <Card 
                     key={club.id} 
                     className="hover:shadow-lg transition-shadow cursor-pointer"
-                    onClick={() => setSelectedClub(club.id)}
+                    onClick={() => navigate(`/clubs/${club.id}`)}
                   >
                   <CardHeader>
                     {club.logo_url && (
@@ -340,12 +341,7 @@ export default function ClubsPage() {
 
       {/* Right Sidebar */}
       <div className="lg:sticky lg:top-4 lg:h-fit">
-        <ClubMembersRightSidebar 
-          clubId={selectedClub || undefined}
-          isClubOwner={isClubOwner}
-          isStudent={isStudent}
-          onRequestHandled={fetchClubs}
-        />
+        <ClubUpcomingEvents />
       </div>
 
       {/* Edit Modal */}
