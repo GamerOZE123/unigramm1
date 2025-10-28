@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface JoinRequest {
   id: string;
@@ -8,6 +9,8 @@ interface JoinRequest {
   student_id: string;
   status: string;
   created_at: string;
+  club_name?: string;
+  club_logo_url?: string;
   profiles: {
     full_name: string;
     avatar_url: string;
@@ -15,54 +18,87 @@ interface JoinRequest {
   } | null;
 }
 
-export const useClubJoinRequests = (clubId: string | null) => {
+export const useClubJoinRequests = (clubId: string | null, isStudent: boolean = false) => {
+  const { user } = useAuth();
   const [requests, setRequests] = useState<JoinRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (clubId) {
+    if (clubId || isStudent) {
       fetchRequests();
     }
-  }, [clubId]);
+  }, [clubId, isStudent]);
 
   const fetchRequests = async () => {
-    if (!clubId) return;
-    
     setLoading(true);
     try {
-      // First get the requests
-      const { data: requests, error: requestsError } = await supabase
-        .from('club_join_requests')
-        .select('*')
-        .eq('club_id', clubId)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
+      if (isStudent && user) {
+        // Fetch join requests sent to this student
+        const { data: requests, error: requestsError } = await supabase
+          .from('club_join_requests')
+          .select('*')
+          .eq('student_id', user.id)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false });
 
-      if (requestsError) throw requestsError;
+        if (requestsError) throw requestsError;
 
-      if (requests && requests.length > 0) {
-        // Then get the profiles for those students
-        const studentIds = requests.map(r => r.student_id);
-        const { data: profiles, error: profilesError } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, avatar_url, university')
-          .in('user_id', studentIds);
+        if (requests && requests.length > 0) {
+          // Get club details
+          const clubIds = requests.map(r => r.club_id);
+          const { data: clubs, error: clubsError } = await supabase
+            .from('clubs_profiles')
+            .select('id, club_name, logo_url')
+            .in('id', clubIds);
 
-        if (profilesError) throw profilesError;
+          if (clubsError) throw clubsError;
 
-        // Combine the data
-        const profilesMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
-        const data = requests.map(r => ({
-          ...r,
-          profiles: profilesMap.get(r.student_id) || null
-        }));
+          const clubsMap = new Map(clubs?.map(c => [c.id, c]) || []);
+          const data = requests.map(r => ({
+            ...r,
+            club_name: clubsMap.get(r.club_id)?.club_name,
+            club_logo_url: clubsMap.get(r.club_id)?.logo_url,
+            profiles: null
+          }));
 
-        setRequests(data);
-      } else {
-        setRequests([]);
+          setRequests(data);
+        } else {
+          setRequests([]);
+        }
+      } else if (clubId) {
+        // Fetch join requests for this club
+        const { data: requests, error: requestsError } = await supabase
+          .from('club_join_requests')
+          .select('*')
+          .eq('club_id', clubId)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false });
+
+        if (requestsError) throw requestsError;
+
+        if (requests && requests.length > 0) {
+          // Then get the profiles for those students
+          const studentIds = requests.map(r => r.student_id);
+          const { data: profiles, error: profilesError } = await supabase
+            .from('profiles')
+            .select('user_id, full_name, avatar_url, university')
+            .in('user_id', studentIds);
+
+          if (profilesError) throw profilesError;
+
+          // Combine the data
+          const profilesMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+          const data = requests.map(r => ({
+            ...r,
+            profiles: profilesMap.get(r.student_id) || null
+          }));
+
+          setRequests(data);
+        } else {
+          setRequests([]);
+        }
       }
-
     } catch (error) {
       console.error('Error fetching requests:', error);
     } finally {

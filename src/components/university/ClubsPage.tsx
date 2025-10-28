@@ -29,11 +29,13 @@ interface ClubProfile {
 export default function ClubsPage() {
   const { user } = useAuth();
   const [ownClub, setOwnClub] = useState<ClubProfile | null>(null);
+  const [myClubs, setMyClubs] = useState<ClubProfile[]>([]);
   const [otherClubs, setOtherClubs] = useState<ClubProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedClub, setSelectedClub] = useState<string | null>(null);
   const [isClubOwner, setIsClubOwner] = useState(false);
+  const [isStudent, setIsStudent] = useState(false);
 
   useEffect(() => {
     fetchClubs();
@@ -89,12 +91,24 @@ export default function ClubsPage() {
           setOwnClub(own || null);
           setOtherClubs(others);
           setIsClubOwner(true);
+          setIsStudent(false);
           setSelectedClub(own?.id || null);
         } else {
-          // For students, show all clubs
+          // For students, separate joined clubs from others
+          const { data: memberships } = await supabase
+            .from('club_memberships')
+            .select('club_id')
+            .eq('user_id', user.id);
+          
+          const joinedClubIds = new Set(memberships?.map(m => m.club_id) || []);
+          const joined = clubsWithProfiles.filter(club => joinedClubIds.has(club.id));
+          const others = clubsWithProfiles.filter(club => !joinedClubIds.has(club.id));
+          
           setOwnClub(null);
-          setOtherClubs(clubsWithProfiles);
+          setMyClubs(joined);
+          setOtherClubs(others);
           setIsClubOwner(false);
+          setIsStudent(true);
           setSelectedClub(clubsWithProfiles[0]?.id || null);
         }
       }
@@ -114,7 +128,7 @@ export default function ClubsPage() {
 
         {loading ? (
           <div className="text-center py-8">Loading clubs...</div>
-        ) : !ownClub && otherClubs.length === 0 ? (
+        ) : !ownClub && myClubs.length === 0 && otherClubs.length === 0 ? (
           <div className="text-center py-12 space-y-4">
             <Users className="w-16 h-16 text-muted-foreground mx-auto" />
             <p className="text-muted-foreground">No clubs found yet</p>
@@ -197,6 +211,74 @@ export default function ClubsPage() {
               </>
             )}
 
+            {/* Student's Joined Clubs Section */}
+            {isStudent && myClubs.length > 0 && (
+              <>
+                <div>
+                  <h2 className="text-xl font-semibold mb-4">My Clubs</h2>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {myClubs.map((club) => (
+                      <Card 
+                        key={club.id} 
+                        className="hover:shadow-lg transition-shadow border-primary cursor-pointer"
+                        onClick={() => setSelectedClub(club.id)}
+                      >
+                        <CardHeader>
+                          {club.logo_url && (
+                            <div className="w-full h-40 mb-4 rounded-lg overflow-hidden bg-muted">
+                              <img src={club.logo_url} alt={club.club_name} className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                          <CardTitle>{club.club_name}</CardTitle>
+                          {club.category && <CardDescription>{club.category}</CardDescription>}
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <p className="text-sm text-muted-foreground line-clamp-3">{club.club_description}</p>
+                          
+                          <div className="space-y-2 pt-2">
+                            {club.contact_email && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <Mail className="w-4 h-4 text-muted-foreground" />
+                                <a href={`mailto:${club.contact_email}`} className="text-primary hover:underline">
+                                  {club.contact_email}
+                                </a>
+                              </div>
+                            )}
+                            {club.contact_phone && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <Phone className="w-4 h-4 text-muted-foreground" />
+                                <span>{club.contact_phone}</span>
+                              </div>
+                            )}
+                            {club.website_url && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <Globe className="w-4 h-4 text-muted-foreground" />
+                                <a href={club.website_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                  Visit Website
+                                </a>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
+                            <Users className="w-4 h-4" />
+                            <span>{club.member_count} members</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Divider */}
+                {otherClubs.length > 0 && (
+                  <div className="border-t border-border pt-6">
+                    <h2 className="text-xl font-semibold mb-4">Other Clubs</h2>
+                  </div>
+                )}
+              </>
+            )}
+
             {/* Other Clubs Section */}
             {otherClubs.length > 0 && (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -257,14 +339,19 @@ export default function ClubsPage() {
       </div>
 
       {/* Right Sidebar */}
-      {selectedClub && (
-        <div className="lg:sticky lg:top-4 lg:h-fit">
+      <div className="lg:sticky lg:top-4 lg:h-fit">
+        {isStudent ? (
+          <ClubMembersRightSidebar 
+            isStudent={true}
+            onRequestHandled={fetchClubs}
+          />
+        ) : selectedClub ? (
           <ClubMembersRightSidebar 
             clubId={selectedClub}
             isClubOwner={isClubOwner}
           />
-        </div>
-      )}
+        ) : null}
+      </div>
 
       {/* Edit Modal */}
       {ownClub && (
