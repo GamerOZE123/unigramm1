@@ -386,6 +386,41 @@ export type Database = {
         }
         Relationships: []
       }
+      club_join_requests: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_join_requests_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       club_memberships: {
         Row: {
           club_id: string
@@ -413,7 +448,7 @@ export type Database = {
             foreignKeyName: "club_memberships_club_id_fkey"
             columns: ["club_id"]
             isOneToOne: false
-            referencedRelation: "clubs"
+            referencedRelation: "clubs_profiles"
             referencedColumns: ["id"]
           },
         ]
