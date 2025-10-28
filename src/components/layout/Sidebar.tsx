@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Home, MessageCircle, User, GraduationCap, LogOut, Search, Bell, Settings } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 
 const navigation = [
   { name: 'Home', href: '/', icon: Home },
@@ -18,6 +19,35 @@ export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
+  const [userType, setUserType] = useState<string>('Student');
+
+  useEffect(() => {
+    fetchUserType();
+  }, [user]);
+
+  const fetchUserType = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) throw error;
+      
+      if (data?.user_type === 'clubs') {
+        setUserType('Club');
+      } else if (data?.user_type === 'company') {
+        setUserType('Company');
+      } else {
+        setUserType('Student');
+      }
+    } catch (error) {
+      console.error('Error fetching user type:', error);
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -93,7 +123,7 @@ export default function Sidebar() {
               <p className="text-sm font-medium text-foreground truncate">
                 {user?.email || 'User'}
               </p>
-              <p className="text-xs text-muted-foreground truncate">Student</p>
+              <p className="text-xs text-muted-foreground truncate">{userType}</p>
             </div>
           </div>
           <Button 

@@ -340,17 +340,12 @@ export default function ClubsPage() {
 
       {/* Right Sidebar */}
       <div className="lg:sticky lg:top-4 lg:h-fit">
-        {isStudent ? (
-          <ClubMembersRightSidebar 
-            isStudent={true}
-            onRequestHandled={fetchClubs}
-          />
-        ) : selectedClub ? (
-          <ClubMembersRightSidebar 
-            clubId={selectedClub}
-            isClubOwner={isClubOwner}
-          />
-        ) : null}
+        <ClubMembersRightSidebar 
+          clubId={selectedClub || undefined}
+          isClubOwner={isClubOwner}
+          isStudent={isStudent}
+          onRequestHandled={fetchClubs}
+        />
       </div>
 
       {/* Edit Modal */}
