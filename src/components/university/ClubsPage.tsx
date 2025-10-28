@@ -26,7 +26,8 @@ interface ClubProfile {
 
 export default function ClubsPage() {
   const { user } = useAuth();
-  const [clubs, setClubs] = useState<ClubProfile[]>([]);
+  const [ownClub, setOwnClub] = useState<ClubProfile | null>(null);
+  const [otherClubs, setOtherClubs] = useState<ClubProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,10 +38,10 @@ export default function ClubsPage() {
     if (!user) return;
     
     try {
-      // Get logged-in user's university
+      // Get logged-in user's university and user_type
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('university')
+        .select('university, user_type')
         .eq('user_id', user.id)
         .single();
 
@@ -76,7 +77,17 @@ export default function ClubsPage() {
           profiles: profilesMap.get(club.user_id) || null
         }));
 
-        setClubs(clubsWithProfiles);
+        // If user is a club, separate their own club from others
+        if (profileData?.user_type === 'clubs') {
+          const own = clubsWithProfiles.find(club => club.user_id === user.id);
+          const others = clubsWithProfiles.filter(club => club.user_id !== user.id);
+          setOwnClub(own || null);
+          setOtherClubs(others);
+        } else {
+          // For students, show all clubs
+          setOwnClub(null);
+          setOtherClubs(clubsWithProfiles);
+        }
       }
     } catch (error) {
       console.error('Error fetching clubs:', error);
@@ -93,60 +104,127 @@ export default function ClubsPage() {
 
       {loading ? (
         <div className="text-center py-8">Loading clubs...</div>
-      ) : clubs.length === 0 ? (
+      ) : !ownClub && otherClubs.length === 0 ? (
         <div className="text-center py-12 space-y-4">
           <Users className="w-16 h-16 text-muted-foreground mx-auto" />
           <p className="text-muted-foreground">No clubs found yet</p>
           <p className="text-sm text-muted-foreground">Club organizations can sign up to showcase their activities</p>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {clubs.map((club) => (
-            <Card key={club.id} className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                {club.logo_url && (
-                  <div className="w-full h-40 mb-4 rounded-lg overflow-hidden bg-muted">
-                    <img src={club.logo_url} alt={club.club_name} className="w-full h-full object-cover" />
-                  </div>
-                )}
-                <CardTitle>{club.club_name}</CardTitle>
-                {club.category && <CardDescription>{club.category}</CardDescription>}
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-muted-foreground line-clamp-3">{club.club_description}</p>
-                
-                <div className="space-y-2 pt-2">
-                  {club.contact_email && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Mail className="w-4 h-4 text-muted-foreground" />
-                      <a href={`mailto:${club.contact_email}`} className="text-primary hover:underline">
-                        {club.contact_email}
-                      </a>
-                    </div>
-                  )}
-                  {club.contact_phone && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Phone className="w-4 h-4 text-muted-foreground" />
-                      <span>{club.contact_phone}</span>
-                    </div>
-                  )}
-                  {club.website_url && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <Globe className="w-4 h-4 text-muted-foreground" />
-                      <a href={club.website_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                        Visit Website
-                      </a>
-                    </div>
-                  )}
-                </div>
+        <div className="space-y-8">
+          {/* Own Club Section (for club users) */}
+          {ownClub && (
+            <>
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Your Club</h2>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <Card className="hover:shadow-lg transition-shadow border-primary">
+                    <CardHeader>
+                      {ownClub.logo_url && (
+                        <div className="w-full h-40 mb-4 rounded-lg overflow-hidden bg-muted">
+                          <img src={ownClub.logo_url} alt={ownClub.club_name} className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <CardTitle>{ownClub.club_name}</CardTitle>
+                      {ownClub.category && <CardDescription>{ownClub.category}</CardDescription>}
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <p className="text-sm text-muted-foreground line-clamp-3">{ownClub.club_description}</p>
+                      
+                      <div className="space-y-2 pt-2">
+                        {ownClub.contact_email && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Mail className="w-4 h-4 text-muted-foreground" />
+                            <a href={`mailto:${ownClub.contact_email}`} className="text-primary hover:underline">
+                              {ownClub.contact_email}
+                            </a>
+                          </div>
+                        )}
+                        {ownClub.contact_phone && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Phone className="w-4 h-4 text-muted-foreground" />
+                            <span>{ownClub.contact_phone}</span>
+                          </div>
+                        )}
+                        {ownClub.website_url && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Globe className="w-4 h-4 text-muted-foreground" />
+                            <a href={ownClub.website_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                              Visit Website
+                            </a>
+                          </div>
+                        )}
+                      </div>
 
-                <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
-                  <Users className="w-4 h-4" />
-                  <span>{club.member_count} members</span>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
+                        <Users className="w-4 h-4" />
+                        <span>{ownClub.member_count} members</span>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+
+              {/* Divider */}
+              {otherClubs.length > 0 && (
+                <div className="border-t border-border pt-6">
+                  <h2 className="text-xl font-semibold mb-4">Other Clubs</h2>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Other Clubs Section */}
+          {otherClubs.length > 0 && (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {otherClubs.map((club) => (
+                <Card key={club.id} className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    {club.logo_url && (
+                      <div className="w-full h-40 mb-4 rounded-lg overflow-hidden bg-muted">
+                        <img src={club.logo_url} alt={club.club_name} className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                    <CardTitle>{club.club_name}</CardTitle>
+                    {club.category && <CardDescription>{club.category}</CardDescription>}
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <p className="text-sm text-muted-foreground line-clamp-3">{club.club_description}</p>
+                    
+                    <div className="space-y-2 pt-2">
+                      {club.contact_email && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="w-4 h-4 text-muted-foreground" />
+                          <a href={`mailto:${club.contact_email}`} className="text-primary hover:underline">
+                            {club.contact_email}
+                          </a>
+                        </div>
+                      )}
+                      {club.contact_phone && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="w-4 h-4 text-muted-foreground" />
+                          <span>{club.contact_phone}</span>
+                        </div>
+                      )}
+                      {club.website_url && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Globe className="w-4 h-4 text-muted-foreground" />
+                          <a href={club.website_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                            Visit Website
+                          </a>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
+                      <Users className="w-4 h-4" />
+                      <span>{club.member_count} members</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
