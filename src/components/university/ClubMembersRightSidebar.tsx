@@ -33,7 +33,8 @@ export default function ClubMembersRightSidebar({
   const handleSearchChange = async (value: string) => {
     setSearchQuery(value);
     if (value.trim()) {
-      await searchUsers(value);
+      // Filter to only show students when searching
+      await searchUsers(value, 'student');
     }
   };
 
@@ -236,32 +237,40 @@ export default function ClubMembersRightSidebar({
             {searchQuery && users.length > 0 && (
               <ScrollArea className="h-[200px]">
                 <div className="space-y-2">
-                  {users.map((user) => (
-                      <div key={user.user_id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50">
+                  {users.map((userItem) => {
+                    // Check if user is already a member or has pending request
+                    const isMember = members.some(m => m.user_id === userItem.user_id);
+                    const hasPendingRequest = requests.some(r => r.student_id === userItem.user_id);
+                    const isAlreadyInvited = isMember || hasPendingRequest;
+                    
+                    return (
+                      <div key={userItem.user_id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={user.avatar_url || ''} />
+                          <AvatarImage src={userItem.avatar_url || ''} />
                           <AvatarFallback>
-                            {user.full_name?.charAt(0) || 'U'}
+                            {userItem.full_name?.charAt(0) || 'U'}
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">
-                            {user.full_name}
+                            {userItem.full_name}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {user.university}
+                            {userItem.university}
                           </p>
                         </div>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => handleSendRequest(user.user_id)}
+                          onClick={() => handleSendRequest(userItem.user_id)}
+                          disabled={isAlreadyInvited}
                         >
                           <UserPlus className="w-3 h-3 mr-1" />
-                          Invite
-                      </Button>
-                    </div>
-                  ))}
+                          {isAlreadyInvited ? 'Invited' : 'Invite'}
+                        </Button>
+                      </div>
+                    );
+                  })}
                   {users.length === 0 && (
                     <p className="text-sm text-muted-foreground text-center py-4">
                       No users found

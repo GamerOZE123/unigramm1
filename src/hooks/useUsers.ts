@@ -17,7 +17,7 @@ export const useUsers = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const searchUsers = async (query: string) => {
+  const searchUsers = async (query: string, userType?: 'student' | 'clubs' | 'company') => {
     if (!query.trim()) {
       setUsers([]);
       return;
@@ -25,11 +25,17 @@ export const useUsers = () => {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let queryBuilder = supabase
         .from('profiles')
         .select('id, user_id, username, full_name, avatar_url, university, major, bio, user_type, followers_count, following_count, banner_url, created_at, updated_at')
-        .or(`full_name.ilike.%${query}%,username.ilike.%${query}%`)
-        .limit(10);
+        .or(`full_name.ilike.%${query}%,username.ilike.%${query}%`);
+      
+      // Filter by user type if specified
+      if (userType) {
+        queryBuilder = queryBuilder.eq('user_type', userType);
+      }
+      
+      const { data, error } = await queryBuilder.limit(10);
       
       if (error) throw error;
       setUsers(data || []);
