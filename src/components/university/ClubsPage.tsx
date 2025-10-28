@@ -3,7 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Mail, Phone, Globe } from 'lucide-react';
+import { Users, Mail, Phone, Globe, Edit } from 'lucide-react';
+import ClubMembersRightSidebar from './ClubMembersRightSidebar';
+import EditClubModal from './EditClubModal';
 
 interface ClubProfile {
   id: string;
@@ -29,6 +31,9 @@ export default function ClubsPage() {
   const [ownClub, setOwnClub] = useState<ClubProfile | null>(null);
   const [otherClubs, setOtherClubs] = useState<ClubProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedClub, setSelectedClub] = useState<string | null>(null);
+  const [isClubOwner, setIsClubOwner] = useState(false);
 
   useEffect(() => {
     fetchClubs();
@@ -83,10 +88,14 @@ export default function ClubsPage() {
           const others = clubsWithProfiles.filter(club => club.user_id !== user.id);
           setOwnClub(own || null);
           setOtherClubs(others);
+          setIsClubOwner(true);
+          setSelectedClub(own?.id || null);
         } else {
           // For students, show all clubs
           setOwnClub(null);
           setOtherClubs(clubsWithProfiles);
+          setIsClubOwner(false);
+          setSelectedClub(clubsWithProfiles[0]?.id || null);
         }
       }
     } catch (error) {
@@ -97,29 +106,43 @@ export default function ClubsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">University Clubs & Organizations</h1>
-      </div>
-
-      {loading ? (
-        <div className="text-center py-8">Loading clubs...</div>
-      ) : !ownClub && otherClubs.length === 0 ? (
-        <div className="text-center py-12 space-y-4">
-          <Users className="w-16 h-16 text-muted-foreground mx-auto" />
-          <p className="text-muted-foreground">No clubs found yet</p>
-          <p className="text-sm text-muted-foreground">Club organizations can sign up to showcase their activities</p>
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6">
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">University Clubs & Organizations</h1>
         </div>
-      ) : (
-        <div className="space-y-8">
-          {/* Own Club Section (for club users) */}
-          {ownClub && (
-            <>
-              <div>
-                <h2 className="text-xl font-semibold mb-4">Your Club</h2>
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <Card className="hover:shadow-lg transition-shadow border-primary">
-                    <CardHeader>
+
+        {loading ? (
+          <div className="text-center py-8">Loading clubs...</div>
+        ) : !ownClub && otherClubs.length === 0 ? (
+          <div className="text-center py-12 space-y-4">
+            <Users className="w-16 h-16 text-muted-foreground mx-auto" />
+            <p className="text-muted-foreground">No clubs found yet</p>
+            <p className="text-sm text-muted-foreground">Club organizations can sign up to showcase their activities</p>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {/* Own Club Section (for club users) */}
+            {ownClub && (
+              <>
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold">Your Club</h2>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditModalOpen(true)}
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit Club
+                    </Button>
+                  </div>
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <Card 
+                      className="hover:shadow-lg transition-shadow border-primary cursor-pointer"
+                      onClick={() => setSelectedClub(ownClub.id)}
+                    >
+                      <CardHeader>
                       {ownClub.logo_url && (
                         <div className="w-full h-40 mb-4 rounded-lg overflow-hidden bg-muted">
                           <img src={ownClub.logo_url} alt={ownClub.club_name} className="w-full h-full object-cover" />
@@ -159,26 +182,30 @@ export default function ClubsPage() {
                       <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
                         <Users className="w-4 h-4" />
                         <span>{ownClub.member_count} members</span>
-                      </div>
-                    </CardContent>
-                  </Card>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
-              </div>
 
-              {/* Divider */}
-              {otherClubs.length > 0 && (
-                <div className="border-t border-border pt-6">
-                  <h2 className="text-xl font-semibold mb-4">Other Clubs</h2>
-                </div>
-              )}
-            </>
-          )}
+                {/* Divider */}
+                {otherClubs.length > 0 && (
+                  <div className="border-t border-border pt-6">
+                    <h2 className="text-xl font-semibold mb-4">Other Clubs</h2>
+                  </div>
+                )}
+              </>
+            )}
 
-          {/* Other Clubs Section */}
-          {otherClubs.length > 0 && (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {otherClubs.map((club) => (
-                <Card key={club.id} className="hover:shadow-lg transition-shadow">
+            {/* Other Clubs Section */}
+            {otherClubs.length > 0 && (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {otherClubs.map((club) => (
+                  <Card 
+                    key={club.id} 
+                    className="hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => setSelectedClub(club.id)}
+                  >
                   <CardHeader>
                     {club.logo_url && (
                       <div className="w-full h-40 mb-4 rounded-lg overflow-hidden bg-muted">
@@ -220,12 +247,33 @@ export default function ClubsPage() {
                       <Users className="w-4 h-4" />
                       <span>{club.member_count} members</span>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Right Sidebar */}
+      {selectedClub && (
+        <div className="lg:sticky lg:top-4 lg:h-fit">
+          <ClubMembersRightSidebar 
+            clubId={selectedClub}
+            isClubOwner={isClubOwner}
+          />
         </div>
+      )}
+
+      {/* Edit Modal */}
+      {ownClub && (
+        <EditClubModal
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          club={ownClub}
+          onSuccess={fetchClubs}
+        />
       )}
     </div>
   );
