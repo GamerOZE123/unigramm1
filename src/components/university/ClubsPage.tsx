@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import EditClubModal from './EditClubModal';
 import ClubUpcomingEvents from './ClubUpcomingEvents';
+import ClubMembersRightSidebar from './ClubMembersRightSidebar';
 
 interface ClubProfile {
   id: string;
@@ -340,8 +341,15 @@ export default function ClubsPage() {
       </div>
 
       {/* Right Sidebar */}
-      <div className="lg:sticky lg:top-4 lg:h-fit">
-        <ClubUpcomingEvents />
+      <div className="lg:sticky lg:top-4 lg:h-fit space-y-4">
+        {isStudent ? (
+          <ClubMembersRightSidebar 
+            isStudent={true}
+            onRequestHandled={fetchClubs}
+          />
+        ) : (
+          <ClubUpcomingEvents />
+        )}
       </div>
 
       {/* Edit Modal */}
