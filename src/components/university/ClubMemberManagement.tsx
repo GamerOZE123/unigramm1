@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,13 +8,11 @@ import {
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogTrigger,
   DialogFooter 
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Edit2, Trash2, UserPlus } from 'lucide-react';
+import { Edit2, Trash2, Plus, Search } from 'lucide-react';
 import { useClubMembers } from '@/hooks/useClubMembers';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 
 interface ClubMemberManagementProps {
@@ -27,12 +24,26 @@ export default function ClubMemberManagement({ clubId }: ClubMemberManagementPro
   const [editingMember, setEditingMember] = useState<string | null>(null);
   const [newRole, setNewRole] = useState('');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isAddRoleDialogOpen, setIsAddRoleDialogOpen] = useState(false);
+  const [newRoleTitle, setNewRoleTitle] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Group members by role
+  // Filter and group members by role
   const groupedMembers = useMemo(() => {
+    // First filter by search query
+    const filteredMembers = members.filter(member => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        member.profiles?.full_name?.toLowerCase().includes(query) ||
+        member.role?.toLowerCase().includes(query) ||
+        member.profiles?.university?.toLowerCase().includes(query)
+      );
+    });
+
     const groups: { [key: string]: typeof members } = {};
     
-    members.forEach(member => {
+    filteredMembers.forEach(member => {
       const role = member.role || 'Member';
       if (!groups[role]) {
         groups[role] = [];
@@ -48,7 +59,12 @@ export default function ClubMemberManagement({ clubId }: ClubMemberManagementPro
     });
 
     return sortedGroups;
-  }, [members]);
+  }, [members, searchQuery]);
+
+  const handleAddRole = () => {
+    setNewRoleTitle('');
+    setIsAddRoleDialogOpen(true);
+  };
 
   const handleEditRole = (memberId: string, currentRole: string) => {
     setEditingMember(memberId);
@@ -73,20 +89,32 @@ export default function ClubMemberManagement({ clubId }: ClubMemberManagementPro
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="p-6">
-          <p className="text-muted-foreground text-center">Loading members...</p>
-        </CardContent>
-      </Card>
+      <div className="p-6">
+        <p className="text-muted-foreground text-center">Loading members...</p>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Member Management</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="space-y-6">
+      {/* Search Bar and Add Role Button */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search members by name, role, or university..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Button onClick={handleAddRole} size="icon" variant="outline">
+          <Plus className="w-4 h-4" />
+        </Button>
+      </div>
+
+      {/* Members grouped by role */}
+      <div className="space-y-6">
         {groupedMembers.length === 0 ? (
           <p className="text-muted-foreground text-center py-8">No members yet</p>
         ) : (
@@ -153,8 +181,40 @@ export default function ClubMemberManagement({ clubId }: ClubMemberManagementPro
             </div>
           ))
         )}
+      </div>
 
-        {/* Edit Role Dialog */}
+      {/* Add Role Dialog */}
+      <Dialog open={isAddRoleDialogOpen} onOpenChange={setIsAddRoleDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Role</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-role-title">Role Title</Label>
+              <Input
+                id="new-role-title"
+                placeholder="e.g., Videography Lead, Marketing Lead"
+                value={newRoleTitle}
+                onChange={(e) => setNewRoleTitle(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Create a new role category. You can then assign members to this role.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddRoleDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => setIsAddRoleDialogOpen(false)} disabled={!newRoleTitle.trim()}>
+              Create Role
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Role Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
           <DialogContent>
             <DialogHeader>
@@ -181,10 +241,9 @@ export default function ClubMemberManagement({ clubId }: ClubMemberManagementPro
               <Button onClick={handleSaveRole} disabled={!newRole.trim()}>
                 Save Role
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

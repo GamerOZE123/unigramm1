@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useClubJoinRequests } from '@/hooks/useClubJoinRequests';
 import ClubMemberManagement from '@/components/university/ClubMemberManagement';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface ClubProfile {
   id: string;
@@ -37,6 +38,7 @@ export default function ClubDetail() {
   const [isMember, setIsMember] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
+  const [showManageMembersModal, setShowManageMembersModal] = useState(false);
   const { sendJoinRequest } = useClubJoinRequests(clubId || null, false);
 
   useEffect(() => {
@@ -240,6 +242,16 @@ export default function ClubDetail() {
                   <p className="text-foreground">{club.club_description}</p>
                 )}
 
+                {/* Manage Members Button - Only for owners */}
+                {isOwner && (
+                  <div className="pt-4">
+                    <Button onClick={() => setShowManageMembersModal(true)} variant="outline" className="w-full">
+                      <Users className="w-4 h-4 mr-2" />
+                      Manage Members
+                    </Button>
+                  </div>
+                )}
+
                 {/* Contact Info */}
                 <div className="space-y-2 pt-4 border-t">
                   {club.university && (
@@ -275,11 +287,6 @@ export default function ClubDetail() {
           </CardContent>
         </Card>
 
-        {/* Club Member Management - Only for owners */}
-        {isOwner && clubId && (
-          <ClubMemberManagement clubId={clubId} />
-        )}
-
         {/* Club Posts/Activities Section - Placeholder */}
         <Card>
           <CardHeader>
@@ -292,6 +299,16 @@ export default function ClubDetail() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Manage Members Modal */}
+      <Dialog open={showManageMembersModal} onOpenChange={setShowManageMembersModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Club Members</DialogTitle>
+          </DialogHeader>
+          {clubId && <ClubMemberManagement clubId={clubId} />}
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 }

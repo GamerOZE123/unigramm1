@@ -124,39 +124,62 @@ export default function ClubMembersRightSidebar({
   // For club owners, show members and requests
   return (
     <div className="space-y-4">
-      {/* Members Section */}
+      {/* Members Section - Grouped by Role */}
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">Members ({members.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[300px]">
-            <div className="space-y-3">
-              {membersLoading ? (
-                <p className="text-sm text-muted-foreground">Loading members...</p>
-              ) : members.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No members yet</p>
-              ) : (
-                members.map((member) => (
-                  <div key={member.id} className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={member.profiles?.avatar_url || ''} />
-                      <AvatarFallback>
-                        {member.profiles?.full_name?.charAt(0) || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {member.profiles?.full_name}
-                      </p>
-                      <p className="text-xs text-muted-foreground capitalize">
-                        {member.role}
-                      </p>
+            {membersLoading ? (
+              <p className="text-sm text-muted-foreground">Loading members...</p>
+            ) : members.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No members yet</p>
+            ) : (
+              <div className="space-y-4">
+                {Object.entries(
+                  members.reduce((acc, member) => {
+                    const role = member.role || 'Member';
+                    if (!acc[role]) acc[role] = [];
+                    acc[role].push(member);
+                    return acc;
+                  }, {} as Record<string, typeof members>)
+                )
+                .sort(([roleA], [roleB]) => {
+                  if (roleA.toLowerCase() === 'member') return 1;
+                  if (roleB.toLowerCase() === 'member') return -1;
+                  return roleA.localeCompare(roleB);
+                })
+                .map(([role, roleMembers]) => (
+                  <div key={role} className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-px flex-1 bg-border" />
+                      <span className="text-xs font-semibold text-muted-foreground uppercase">
+                        {role}
+                      </span>
+                      <div className="h-px flex-1 bg-border" />
+                    </div>
+                    <div className="space-y-2 pl-2">
+                      {roleMembers.map((member) => (
+                        <div key={member.id} className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={member.profiles?.avatar_url || ''} />
+                            <AvatarFallback className="text-xs">
+                              {member.profiles?.full_name?.charAt(0) || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {member.profiles?.full_name}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </ScrollArea>
         </CardContent>
       </Card>
