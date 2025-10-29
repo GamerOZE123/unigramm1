@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Edit2, Trash2, Plus, Search } from 'lucide-react';
 import { useClubMembers } from '@/hooks/useClubMembers';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ClubMemberManagementProps {
   clubId: string;
@@ -27,6 +28,7 @@ export default function ClubMemberManagement({ clubId }: ClubMemberManagementPro
   const [isAddRoleDialogOpen, setIsAddRoleDialogOpen] = useState(false);
   const [newRoleTitle, setNewRoleTitle] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedMemberForNewRole, setSelectedMemberForNewRole] = useState<string | null>(null);
 
   // Filter and group members by role
   const groupedMembers = useMemo(() => {
@@ -63,7 +65,19 @@ export default function ClubMemberManagement({ clubId }: ClubMemberManagementPro
 
   const handleAddRole = () => {
     setNewRoleTitle('');
+    setSelectedMemberForNewRole(null);
     setIsAddRoleDialogOpen(true);
+  };
+
+  const handleCreateAndAssignRole = async () => {
+    if (!newRoleTitle.trim() || !selectedMemberForNewRole) {
+      return;
+    }
+    
+    await updateMemberRole(selectedMemberForNewRole, newRoleTitle.trim());
+    setIsAddRoleDialogOpen(false);
+    setNewRoleTitle('');
+    setSelectedMemberForNewRole(null);
   };
 
   const handleEditRole = (memberId: string, currentRole: string) => {
@@ -217,21 +231,63 @@ export default function ClubMemberManagement({ clubId }: ClubMemberManagementPro
 
       {/* Add Role Dialog */}
       <Dialog open={isAddRoleDialogOpen} onOpenChange={setIsAddRoleDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Add New Role</DialogTitle>
+            <DialogTitle>Create and Assign New Role</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="new-role-title">Role Title</Label>
               <Input
                 id="new-role-title"
-                placeholder="e.g., Videography Lead, Marketing Lead"
+                placeholder="e.g., Videography Lead, Marketing Lead, Organizing Committee"
                 value={newRoleTitle}
                 onChange={(e) => setNewRoleTitle(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Create a new role category. You can then assign members to this role.
+                Enter a custom role name for organizing your team members.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Select Member to Assign This Role</Label>
+              <ScrollArea className="h-[300px] border rounded-lg p-2">
+                <div className="space-y-2">
+                  {members.map((member) => (
+                    <div
+                      key={member.id}
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                        selectedMemberForNewRole === member.id
+                          ? 'bg-primary/10 border-2 border-primary'
+                          : 'bg-muted/30 hover:bg-muted'
+                      }`}
+                      onClick={() => setSelectedMemberForNewRole(member.id)}
+                    >
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={member.profiles?.avatar_url || ''} />
+                        <AvatarFallback>
+                          {member.profiles?.full_name?.charAt(0) || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">
+                          {member.profiles?.full_name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Current role: {member.role}
+                        </p>
+                      </div>
+                      {selectedMemberForNewRole === member.id && (
+                        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                          <span className="text-white text-xs">✓</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              <p className="text-xs text-muted-foreground">
+                Select a member to assign the new role to. You can change roles later.
               </p>
             </div>
           </div>
@@ -239,8 +295,11 @@ export default function ClubMemberManagement({ clubId }: ClubMemberManagementPro
             <Button variant="outline" onClick={() => setIsAddRoleDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => setIsAddRoleDialogOpen(false)} disabled={!newRoleTitle.trim()}>
-              Create Role
+            <Button 
+              onClick={handleCreateAndAssignRole} 
+              disabled={!newRoleTitle.trim() || !selectedMemberForNewRole}
+            >
+              Create and Assign Role
             </Button>
           </DialogFooter>
         </DialogContent>

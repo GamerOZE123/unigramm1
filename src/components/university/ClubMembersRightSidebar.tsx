@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Search, UserPlus, X, Check } from 'lucide-react';
 import { useClubMembers } from '@/hooks/useClubMembers';
 import { useClubJoinRequests } from '@/hooks/useClubJoinRequests';
@@ -127,16 +128,16 @@ export default function ClubMembersRightSidebar({
       {/* Members Section - Grouped by Role */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Members ({members.length})</CardTitle>
+          <CardTitle className="text-lg">Club Members ({members.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[300px]">
+          <ScrollArea className="h-[400px]">
             {membersLoading ? (
               <p className="text-sm text-muted-foreground">Loading members...</p>
             ) : members.length === 0 ? (
               <p className="text-sm text-muted-foreground">No members yet</p>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-5">
                 {Object.entries(
                   members.reduce((acc, member) => {
                     const role = member.role || 'Member';
@@ -151,18 +152,25 @@ export default function ClubMembersRightSidebar({
                   return roleA.localeCompare(roleB);
                 })
                 .map(([role, roleMembers]) => (
-                  <div key={role} className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="h-px flex-1 bg-border" />
-                      <span className="text-xs font-semibold text-muted-foreground uppercase">
-                        {role}
-                      </span>
-                      <div className="h-px flex-1 bg-border" />
+                  <div key={role} className="space-y-3">
+                    {/* Role Title with Badge */}
+                    <div className="sticky top-0 bg-card z-10 pb-2">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="secondary" className="font-semibold text-sm px-3 py-1">
+                          {role}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          ({roleMembers.length})
+                        </span>
+                      </div>
+                      <Separator />
                     </div>
-                    <div className="space-y-2 pl-2">
+                    
+                    {/* Members in this role */}
+                    <div className="space-y-2 pl-3">
                       {roleMembers.map((member) => (
-                        <div key={member.id} className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
+                        <div key={member.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                          <Avatar className="h-9 w-9 ring-2 ring-border/50">
                             <AvatarImage src={member.profiles?.avatar_url || ''} />
                             <AvatarFallback className="text-xs">
                               {member.profiles?.full_name?.charAt(0) || 'U'}
@@ -171,6 +179,9 @@ export default function ClubMembersRightSidebar({
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">
                               {member.profiles?.full_name}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {member.profiles?.university}
                             </p>
                           </div>
                         </div>
