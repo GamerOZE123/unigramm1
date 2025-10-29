@@ -100,9 +100,12 @@ export const useClubMembers = (clubId: string | null) => {
 
   const updateMemberRole = async (membershipId: string, newRole: string) => {
     try {
+      // Normalize role - capitalize first letter
+      const normalizedRole = newRole.trim().charAt(0).toUpperCase() + newRole.trim().slice(1).toLowerCase();
+      
       const { error } = await supabase
         .from('club_memberships')
-        .update({ role: newRole })
+        .update({ role: normalizedRole })
         .eq('id', membershipId);
 
       if (error) throw error;

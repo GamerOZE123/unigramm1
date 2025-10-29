@@ -97,9 +97,18 @@ export default function ClubMemberManagement({ clubId }: ClubMemberManagementPro
 
   return (
     <div className="space-y-6">
-      {/* Search Bar and Add Role Button */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
+      {/* Header with Search */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold">Member Management</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Assign roles and manage your club members
+            </p>
+          </div>
+        </div>
+        
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             placeholder="Search members by name, role, or university..."
@@ -108,37 +117,60 @@ export default function ClubMemberManagement({ clubId }: ClubMemberManagementPro
             className="pl-9"
           />
         </div>
-        <Button onClick={handleAddRole} size="icon" variant="outline">
-          <Plus className="w-4 h-4" />
-        </Button>
+      </div>
+
+      {/* Quick Add Role Section */}
+      <div className="bg-muted/30 border-2 border-dashed border-border rounded-lg p-6">
+        <div className="flex items-start gap-4">
+          <div className="flex-1 space-y-3">
+            <div className="flex items-center gap-2">
+              <Plus className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold">Add New Role</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Create custom roles like "Videography Lead", "Marketing Lead", or "Organizing Committee" to organize your team
+            </p>
+            <Button onClick={handleAddRole} variant="default" size="sm">
+              <Plus className="w-4 h-4 mr-2" />
+              Create Role
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Members grouped by role */}
       <div className="space-y-6">
         {groupedMembers.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8">No members yet</p>
+          <div className="text-center py-12 border-2 border-dashed border-border rounded-lg">
+            <p className="text-muted-foreground">No members yet</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Invite students to join your club from the sidebar
+            </p>
+          </div>
         ) : (
           groupedMembers.map(([role, roleMembers]) => (
-            <div key={role} className="space-y-3">
+            <div key={role} className="space-y-3 p-4 rounded-lg border border-border bg-card">
               {/* Role Header */}
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="text-sm font-semibold">
-                  {role}
-                </Badge>
-                <span className="text-xs text-muted-foreground">
-                  ({roleMembers.length} {roleMembers.length === 1 ? 'member' : 'members'})
-                </span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Badge variant="secondary" className="text-base font-semibold px-3 py-1">
+                    {role}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    {roleMembers.length} {roleMembers.length === 1 ? 'member' : 'members'}
+                  </span>
+                </div>
               </div>
 
               {/* Members in this role */}
-              <div className="space-y-2 pl-4 border-l-2 border-border">
+              <div className="space-y-2 mt-4">
                 {roleMembers.map((member) => (
                   <div 
                     key={member.id} 
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted transition-colors"
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <Avatar className="h-10 w-10">
+                      <Avatar className="h-10 w-10 ring-2 ring-border">
                         <AvatarImage src={member.profiles?.avatar_url || ''} />
                         <AvatarFallback>
                           {member.profiles?.full_name?.charAt(0) || 'U'}
@@ -161,6 +193,7 @@ export default function ClubMemberManagement({ clubId }: ClubMemberManagementPro
                         variant="ghost"
                         className="h-8 w-8 p-0"
                         onClick={() => handleEditRole(member.id, member.role)}
+                        title="Change role"
                       >
                         <Edit2 className="h-4 w-4" />
                       </Button>
@@ -169,6 +202,7 @@ export default function ClubMemberManagement({ clubId }: ClubMemberManagementPro
                         variant="ghost"
                         className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                         onClick={() => handleRemoveMember(member.id)}
+                        title="Remove member"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -176,8 +210,6 @@ export default function ClubMemberManagement({ clubId }: ClubMemberManagementPro
                   </div>
                 ))}
               </div>
-
-              <Separator className="mt-4" />
             </div>
           ))
         )}

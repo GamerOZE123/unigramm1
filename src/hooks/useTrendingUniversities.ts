@@ -12,11 +12,10 @@ export const useTrendingUniversities = () => {
 
   const fetchTrendingUniversities = async () => {
     try {
-      // Get all posts from the last 7 days with user profiles
+      // Get all posts (no time limit - universities remain trending based on overall activity)
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
-        .select('user_id, created_at')
-        .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+        .select('user_id, created_at');
       
       if (postsError) throw postsError;
 

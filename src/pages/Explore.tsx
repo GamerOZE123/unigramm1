@@ -9,6 +9,9 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import PostCard from '@/components/post/PostCard';
 import { Button } from '@/components/ui/button';
 import { useTrendingHashtags } from '@/hooks/useTrendingHashtags';
+import { useTrendingUniversities } from '@/hooks/useTrendingUniversities';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface PostImage {
   id: string;
@@ -27,6 +30,7 @@ export default function Explore() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { hashtags: trendingHashtags, loading: hashtagsLoading } = useTrendingHashtags();
+  const { universities: trendingUniversities, loading: universitiesLoading } = useTrendingUniversities();
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
@@ -228,8 +232,58 @@ export default function Explore() {
     navigate(`/post/${postId}`);
   };
 
+  // Custom Right Sidebar for Explore
+  const exploreRightSidebar = (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-primary" />
+            Trending Universities
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {universitiesLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-muted rounded w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          ) : trendingUniversities.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No trending universities yet</p>
+          ) : (
+            <div className="space-y-3">
+              {trendingUniversities.map((uni, index) => (
+                <div
+                  key={uni.university}
+                  className="flex items-center justify-between p-3 hover:bg-muted rounded-lg cursor-pointer transition-colors"
+                  onClick={() => handleUniversityClick(uni.university)}
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <span className="text-sm font-semibold text-muted-foreground w-6">
+                      #{index + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{uni.university}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {uni.post_count} {uni.post_count === 1 ? 'post' : 'posts'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   return (
-    <Layout>
+    <Layout rightSidebar={exploreRightSidebar}>
       {/* Mobile Header */}
       {isMobile && <MobileHeader />}
 
@@ -248,32 +302,34 @@ export default function Explore() {
           </div>
         </div>
 
-        {/* Trending Hashtags */}
+        {/* Trending Hashtags - Scrollable */}
         {!searchQuery && !hashtagsLoading && trendingHashtags.length > 0 && (
           <div className="post-card">
             <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-primary" />
               Trending Now
             </h2>
-            <div className="space-y-2">
-              {trendingHashtags.map((hashtag, index) => (
-                <div
-                  key={hashtag.hashtag}
-                  className="flex items-center justify-between p-3 hover:bg-muted rounded-lg cursor-pointer transition-colors"
-                  onClick={() => handleHashtagClick(hashtag.hashtag)}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-muted-foreground font-semibold">#{index + 1}</span>
-                    <div>
-                      <p className="font-medium">#{hashtag.hashtag}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {hashtag.post_count} {hashtag.post_count === 1 ? 'post' : 'posts'} · {hashtag.unique_users} {hashtag.unique_users === 1 ? 'user' : 'users'}
-                      </p>
+            <ScrollArea className="h-[400px] pr-4">
+              <div className="space-y-2">
+                {trendingHashtags.map((hashtag, index) => (
+                  <div
+                    key={hashtag.hashtag}
+                    className="flex items-center justify-between p-3 hover:bg-muted rounded-lg cursor-pointer transition-colors"
+                    onClick={() => handleHashtagClick(hashtag.hashtag)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground font-semibold">#{index + 1}</span>
+                      <div>
+                        <p className="font-medium">#{hashtag.hashtag}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {hashtag.post_count} {hashtag.post_count === 1 ? 'post' : 'posts'} · {hashtag.unique_users} {hashtag.unique_users === 1 ? 'user' : 'users'}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </ScrollArea>
           </div>
         )}
 
