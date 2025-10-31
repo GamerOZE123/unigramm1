@@ -27,8 +27,34 @@ export const useClubJoinRequests = (clubId: string | null, isStudent: boolean = 
   useEffect(() => {
     if (clubId || isStudent) {
       fetchRequests();
+      
+      // Set up real-time subscription for join requests
+      const subscriptionConfig: any = {
+        event: '*',
+        schema: 'public',
+        table: 'club_join_requests'
+      };
+      
+      // Add filter based on whether it's a student or club view
+      if (isStudent && user) {
+        subscriptionConfig.filter = `student_id=eq.${user.id}`;
+      } else if (clubId) {
+        subscriptionConfig.filter = `club_id=eq.${clubId}`;
+      }
+      
+      const channel = supabase
+        .channel('club-join-requests')
+        .on('postgres_changes', subscriptionConfig, (payload) => {
+          console.log('Join request change detected:', payload);
+          fetchRequests();
+        })
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
-  }, [clubId, isStudent]);
+  }, [clubId, isStudent, user?.id]);
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -108,35 +134,67 @@ export const useClubJoinRequests = (clubId: string | null, isStudent: boolean = 
 
   const sendJoinRequest = async (clubId: string, studentId: string) => {
     try {
-      const { error } = await supabase
+      // First check if a request already exists
+      const { data: existingRequest, error: checkError } = await supabase
         .from('club_join_requests')
-        .insert({
-          club_id: clubId,
-          student_id: studentId,
-          status: 'pending'
-        });
+        .select('id, status')
+        .eq('club_id', clubId)
+        .eq('student_id', studentId)
+        .maybeSingle();
 
-      if (error) throw error;
-      
-      toast({
-        title: "Success",
-        description: "Join request sent successfully"
-      });
-    } catch (error: any) {
-      console.error('Error sending join request:', error);
-      if (error.code === '23505') {
+      if (checkError) throw checkError;
+
+      if (existingRequest) {
+        if (existingRequest.status === 'pending') {
+          toast({
+            title: "Already Sent",
+            description: "This student already has a pending invitation",
+          });
+          return;
+        }
+        
+        // If rejected or accepted, update to pending (re-invite)
+        const { error: updateError } = await supabase
+          .from('club_join_requests')
+          .update({ 
+            status: 'pending', 
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', existingRequest.id);
+
+        if (updateError) throw updateError;
+        
         toast({
-          title: "Info",
-          description: "Request already sent to this student",
-          variant: "default"
+          title: "Success",
+          description: "Invitation sent successfully"
         });
       } else {
+        // Create new request
+        const { error: insertError } = await supabase
+          .from('club_join_requests')
+          .insert({
+            club_id: clubId,
+            student_id: studentId,
+            status: 'pending'
+          });
+
+        if (insertError) throw insertError;
+        
         toast({
-          title: "Error",
-          description: "Failed to send join request",
-          variant: "destructive"
+          title: "Success",
+          description: "Invitation sent successfully"
         });
       }
+      
+      // Refetch to update the UI
+      await fetchRequests();
+    } catch (error: any) {
+      console.error('Error sending join request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send invitation",
+        variant: "destructive"
+      });
     }
   };
 
