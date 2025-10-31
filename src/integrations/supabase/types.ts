@@ -253,6 +253,44 @@ export type Database = {
         }
         Relationships: []
       }
+      carpool_ride_requests: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          passenger_id: string
+          ride_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          passenger_id: string
+          ride_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          passenger_id?: string
+          ride_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carpool_ride_requests_ride_id_fkey"
+            columns: ["ride_id"]
+            isOneToOne: false
+            referencedRelation: "carpool_rides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       carpool_rides: {
         Row: {
           available_seats: number

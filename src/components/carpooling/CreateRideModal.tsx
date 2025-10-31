@@ -264,18 +264,18 @@ export default function CreateRideModal({ open, onOpenChange, onRideCreated }: C
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="price">Price per Seat ($)</Label>
-              <Input
-                id="price"
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="price">Price per Seat (₹)</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="0"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                />
+              </div>
           </div>
 
           <div className="space-y-2">

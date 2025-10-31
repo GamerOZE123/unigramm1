@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
-import { CarTaxiFront, MapPin, Clock, Users, Plus, Package, Car } from 'lucide-react';
+import { CarTaxiFront, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import MobileHeader from '@/components/layout/MobileHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import CreateRideModal from '@/components/carpooling/CreateRideModal';
+import CarpoolRideCard from '@/components/carpooling/CarpoolRideCard';
+import RideRequestModal from '@/components/carpooling/RideRequestModal';
+import EditRideModal from '@/components/carpooling/EditRideModal';
 
 interface CarpoolRide {
   id: string;
@@ -19,11 +21,17 @@ interface CarpoolRide {
   ride_date: string;
   available_seats: number;
   price: number;
+  car_type?: string;
+  baggage_allowed?: number;
+  notes?: string;
   profiles?: {
     user_id: string;
     full_name: string;
     avatar_url: string;
     university: string;
+  } | null;
+  request?: {
+    status: string;
   } | null;
 }
 
@@ -34,6 +42,10 @@ export default function Carpooling() {
   const [rides, setRides] = useState<CarpoolRide[]>([]);
   const [loading, setLoading] = useState(true);
   const [createRideModalOpen, setCreateRideModalOpen] = useState(false);
+  const [requestModalOpen, setRequestModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedRideId, setSelectedRideId] = useState<string>('');
+  const [selectedRide, setSelectedRide] = useState<any>(null);
 
   useEffect(() => {
     const fetchUserUniversity = async () => {
@@ -49,7 +61,7 @@ export default function Carpooling() {
   }, [user]);
 
   const fetchRides = async () => {
-    if (!userUniversity) return;
+    if (!userUniversity || !user) return;
     
     try {
       setLoading(true);
@@ -75,14 +87,26 @@ export default function Carpooling() {
 
         if (profilesError) throw profilesError;
 
+        // Fetch ride requests for current user
+        const { data: requestsData } = await supabase
+          .from('carpool_ride_requests')
+          .select('ride_id, status')
+          .eq('passenger_id', user.id);
+
         const profilesMap = new Map();
         profilesData?.forEach(profile => {
           profilesMap.set(profile.user_id, profile);
         });
 
+        const requestsMap = new Map();
+        requestsData?.forEach(request => {
+          requestsMap.set(request.ride_id, request);
+        });
+
         const ridesWithProfiles = ridesData.map(ride => ({
           ...ride,
-          profiles: profilesMap.get(ride.driver_id)
+          profiles: profilesMap.get(ride.driver_id),
+          request: requestsMap.get(ride.id)
         }));
 
         // Filter by university
@@ -90,7 +114,14 @@ export default function Carpooling() {
           ride => ride.profiles?.university === userUniversity
         );
 
-        setRides(filteredRides);
+        // Sort: user's requested rides first, then by date
+        const sortedRides = filteredRides.sort((a, b) => {
+          if (a.request && !b.request) return -1;
+          if (!a.request && b.request) return 1;
+          return 0;
+        });
+
+        setRides(sortedRides);
       } else {
         setRides([]);
       }
@@ -106,15 +137,25 @@ export default function Carpooling() {
     }
   };
 
+  const handleRequestRide = (rideId: string) => {
+    setSelectedRideId(rideId);
+    setRequestModalOpen(true);
+  };
+
+  const handleEditRide = (ride: any) => {
+    setSelectedRide(ride);
+    setEditModalOpen(true);
+  };
+
   useEffect(() => {
     fetchRides();
-  }, [userUniversity]);
+  }, [userUniversity, user]);
 
   return (
     <Layout>
       {isMobile && <MobileHeader />}
       
-      <div className="space-y-6 p-6 pb-24">
+      <div className="max-w-4xl mx-auto space-y-6 p-6 pb-24">
         <div className="text-center">
           <CarTaxiFront className="w-16 h-16 text-primary mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-foreground mb-2">Carpooling</h1>
@@ -131,37 +172,19 @@ export default function Carpooling() {
           ) : rides.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">No rides available at the moment</div>
           ) : (
-            rides.map((ride) => (
-              <Card key={ride.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg flex items-center justify-between">
-                    <span>{ride.profiles?.full_name || 'Unknown Driver'}</span>
-                    <span className="text-lg font-bold text-primary">${ride.price}</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-                    <MapPin className="w-4 h-4" />
-                    <span>{ride.from_location} → {ride.to_location}</span>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-3 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <Clock className="w-4 h-4 text-muted-foreground" />
-                      <span>{new Date(ride.ride_date).toLocaleDateString()} at {ride.ride_time}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Users className="w-4 h-4 text-muted-foreground" />
-                      <span>{ride.available_seats} seats</span>
-                    </div>
-                  </div>
-                  
-                  <Button variant="outline" className="w-full sm:w-auto mt-3">
-                    Request Ride
-                  </Button>
-                </CardContent>
-              </Card>
-            ))
+            <div className="grid gap-4">
+              {rides.map((ride) => (
+                <CarpoolRideCard
+                  key={ride.id}
+                  ride={ride}
+                  isOwner={ride.driver_id === user?.id}
+                  hasRequested={!!ride.request}
+                  requestStatus={ride.request?.status}
+                  onRequestRide={() => handleRequestRide(ride.id)}
+                  onEditRide={() => handleEditRide(ride)}
+                />
+              ))}
+            </div>
           )}
         </div>
 
@@ -182,10 +205,26 @@ export default function Carpooling() {
       <CreateRideModal
         open={createRideModalOpen}
         onOpenChange={setCreateRideModalOpen}
-        onRideCreated={() => {
-          fetchRides();
-        }}
+        onRideCreated={fetchRides}
       />
+
+      {/* Request Ride Modal */}
+      <RideRequestModal
+        open={requestModalOpen}
+        onOpenChange={setRequestModalOpen}
+        rideId={selectedRideId}
+        onRequestCreated={fetchRides}
+      />
+
+      {/* Edit Ride Modal */}
+      {selectedRide && (
+        <EditRideModal
+          open={editModalOpen}
+          onOpenChange={setEditModalOpen}
+          ride={selectedRide}
+          onRideUpdated={fetchRides}
+        />
+      )}
     </Layout>
   );
 }
