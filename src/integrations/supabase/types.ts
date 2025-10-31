@@ -444,6 +444,7 @@ export type Database = {
           club_id: string
           created_at: string
           id: string
+          request_type: string
           status: string
           student_id: string
           updated_at: string
@@ -452,6 +453,7 @@ export type Database = {
           club_id: string
           created_at?: string
           id?: string
+          request_type?: string
           status?: string
           student_id: string
           updated_at?: string
@@ -460,6 +462,7 @@ export type Database = {
           club_id?: string
           created_at?: string
           id?: string
+          request_type?: string
           status?: string
           student_id?: string
           updated_at?: string

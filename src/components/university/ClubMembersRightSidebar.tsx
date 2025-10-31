@@ -41,7 +41,8 @@ export default function ClubMembersRightSidebar({
 
   const handleSendRequest = async (studentId: string) => {
     if (!clubId) return;
-    await sendJoinRequest(clubId, studentId);
+    // Club owners send invitations to students
+    await sendJoinRequest(clubId, studentId, 'invitation');
     setSearchQuery('');
   };
 

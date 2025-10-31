@@ -23,6 +23,9 @@ export const useClubJoinRequests = (clubId: string | null, isStudent: boolean = 
   const [requests, setRequests] = useState<JoinRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  
+  // Determine request type based on context
+  const requestType = isStudent ? 'invitation' : 'request';
 
   useEffect(() => {
     if (clubId || isStudent) {
@@ -60,11 +63,12 @@ export const useClubJoinRequests = (clubId: string | null, isStudent: boolean = 
     setLoading(true);
     try {
       if (isStudent && user) {
-        // Fetch join requests sent to this student
+        // Fetch invitations sent TO this student by clubs
         const { data: requests, error: requestsError } = await supabase
           .from('club_join_requests')
           .select('*')
           .eq('student_id', user.id)
+          .eq('request_type', 'invitation')
           .eq('status', 'pending')
           .order('created_at', { ascending: false });
 
@@ -93,11 +97,12 @@ export const useClubJoinRequests = (clubId: string | null, isStudent: boolean = 
           setRequests([]);
         }
       } else if (clubId) {
-        // Fetch join requests for this club
+        // Fetch join requests FROM students to this club
         const { data: requests, error: requestsError } = await supabase
           .from('club_join_requests')
           .select('*')
           .eq('club_id', clubId)
+          .eq('request_type', 'request')
           .eq('status', 'pending')
           .order('created_at', { ascending: false });
 
@@ -132,28 +137,32 @@ export const useClubJoinRequests = (clubId: string | null, isStudent: boolean = 
     }
   };
 
-  const sendJoinRequest = async (clubId: string, studentId: string) => {
+  const sendJoinRequest = async (clubId: string, studentId: string, type: 'request' | 'invitation' = 'invitation') => {
     try {
       // First check if a request already exists
       const { data: existingRequest, error: checkError } = await supabase
         .from('club_join_requests')
-        .select('id, status')
+        .select('id, status, request_type')
         .eq('club_id', clubId)
         .eq('student_id', studentId)
+        .eq('request_type', type)
         .maybeSingle();
 
       if (checkError) throw checkError;
 
       if (existingRequest) {
         if (existingRequest.status === 'pending') {
+          const message = type === 'invitation' 
+            ? "This student already has a pending invitation"
+            : "You already have a pending request to this club";
           toast({
             title: "Already Sent",
-            description: "This student already has a pending invitation",
+            description: message,
           });
           return;
         }
         
-        // If rejected or accepted, update to pending (re-invite)
+        // If rejected or accepted, update to pending (re-send)
         const { error: updateError } = await supabase
           .from('club_join_requests')
           .update({ 
@@ -164,9 +173,12 @@ export const useClubJoinRequests = (clubId: string | null, isStudent: boolean = 
 
         if (updateError) throw updateError;
         
+        const message = type === 'invitation' 
+          ? "Invitation sent successfully"
+          : "Request sent successfully";
         toast({
           title: "Success",
-          description: "Invitation sent successfully"
+          description: message
         });
       } else {
         // Create new request
@@ -175,14 +187,18 @@ export const useClubJoinRequests = (clubId: string | null, isStudent: boolean = 
           .insert({
             club_id: clubId,
             student_id: studentId,
-            status: 'pending'
+            status: 'pending',
+            request_type: type
           });
 
         if (insertError) throw insertError;
         
+        const message = type === 'invitation' 
+          ? "Invitation sent successfully"
+          : "Request sent successfully";
         toast({
           title: "Success",
-          description: "Invitation sent successfully"
+          description: message
         });
       }
       
@@ -200,6 +216,29 @@ export const useClubJoinRequests = (clubId: string | null, isStudent: boolean = 
 
   const acceptRequest = async (requestId: string, studentId: string, clubId: string) => {
     try {
+      // Check if student is already a member
+      const { data: existingMember } = await supabase
+        .from('club_memberships')
+        .select('id')
+        .eq('club_id', clubId)
+        .eq('user_id', studentId)
+        .maybeSingle();
+
+      if (existingMember) {
+        // Just update the request status if already a member
+        await supabase
+          .from('club_join_requests')
+          .update({ status: 'accepted' })
+          .eq('id', requestId);
+        
+        toast({
+          title: "Info",
+          description: "User is already a member of this club"
+        });
+        await fetchRequests();
+        return;
+      }
+
       // Update request status
       const { error: updateError } = await supabase
         .from('club_join_requests')
@@ -208,16 +247,19 @@ export const useClubJoinRequests = (clubId: string | null, isStudent: boolean = 
 
       if (updateError) throw updateError;
 
-      // Add to club_memberships
+      // Add to club_memberships with proper role
       const { error: membershipError } = await supabase
         .from('club_memberships')
         .insert({
           club_id: clubId,
           user_id: studentId,
-          role: 'member'
+          role: 'Member'
         });
 
-      if (membershipError) throw membershipError;
+      if (membershipError) {
+        console.error('Membership error:', membershipError);
+        throw membershipError;
+      }
       
       toast({
         title: "Success",

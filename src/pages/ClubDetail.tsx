@@ -86,12 +86,13 @@ export default function ClubDetail() {
 
       setIsMember(!!memberData);
 
-      // Check for pending request
+      // Check for pending student request (not invitation)
       const { data: requestData } = await supabase
         .from('club_join_requests')
         .select('id')
         .eq('club_id', clubId)
         .eq('student_id', user.id)
+        .eq('request_type', 'request')
         .eq('status', 'pending')
         .single();
 
@@ -106,7 +107,8 @@ export default function ClubDetail() {
     if (!user || !clubId) return;
 
     try {
-      await sendJoinRequest(clubId, user.id);
+      // Students send 'request' type to clubs
+      await sendJoinRequest(clubId, user.id, 'request');
       
       toast({
         title: "Success",
