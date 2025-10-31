@@ -7,6 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import Layout from '@/components/layout/Layout';
 import ClubMembersRightSidebar from '@/components/university/ClubMembersRightSidebar';
+import ClubPostsSection from '@/components/university/ClubPostsSection';
+import ClubUpcomingEvents from '@/components/university/ClubUpcomingEvents';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -287,17 +289,27 @@ export default function ClubDetail() {
           </CardContent>
         </Card>
 
-        {/* Club Posts/Activities Section - Placeholder */}
+        {/* Club Posts Section */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
+            <CardTitle>Club Posts</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground text-center py-8">
-              No recent activity
-            </p>
+            <ClubPostsSection clubUserId={club.user_id} />
           </CardContent>
         </Card>
+
+        {/* Upcoming Events Section */}
+        {isOwner && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Upcoming Events</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ClubUpcomingEvents clubId={clubId} isOwner={isOwner} />
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Manage Members Modal */}
