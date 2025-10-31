@@ -10,6 +10,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { MapPin, Users, Package, Car } from 'lucide-react';
 
+const SNU_LOCATIONS = [
+  "SNU inner gate",
+  "SNU Parking 1",
+  "Botanical Garden",
+  "IGI Airport T1",
+  "IGI Airport T2",
+  "IGI Airport T3",
+  "Ghaziabad Railway Station",
+  "Pari Chowk",
+  "Hindon Airport",
+  "SNU"
+];
+
 interface CreateRideModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -117,13 +130,21 @@ export default function CreateRideModal({ open, onOpenChange, onRideCreated }: C
                 <MapPin className="w-4 h-4 text-primary" />
                 From *
               </Label>
-              <Input
-                id="from_location"
-                placeholder="Enter pickup location"
+              <Select
                 value={formData.from_location}
-                onChange={(e) => setFormData({ ...formData, from_location: e.target.value })}
-                required
-              />
+                onValueChange={(value) => setFormData({ ...formData, from_location: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select pickup location" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SNU_LOCATIONS.map((location) => (
+                    <SelectItem key={location} value={location}>
+                      {location}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -131,13 +152,21 @@ export default function CreateRideModal({ open, onOpenChange, onRideCreated }: C
                 <MapPin className="w-4 h-4 text-primary" />
                 To *
               </Label>
-              <Input
-                id="to_location"
-                placeholder="Enter destination"
+              <Select
                 value={formData.to_location}
-                onChange={(e) => setFormData({ ...formData, to_location: e.target.value })}
-                required
-              />
+                onValueChange={(value) => setFormData({ ...formData, to_location: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select destination" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SNU_LOCATIONS.map((location) => (
+                    <SelectItem key={location} value={location}>
+                      {location}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
