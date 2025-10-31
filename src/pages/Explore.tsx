@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
-import { Search, User, ArrowLeft, TrendingUp } from 'lucide-react';
+import { Search, User, ArrowLeft, TrendingUp, Calendar } from 'lucide-react';
 import { useUsers } from '@/hooks/useUsers';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,10 +12,23 @@ import { useTrendingHashtags } from '@/hooks/useTrendingHashtags';
 import { useTrendingUniversities } from '@/hooks/useTrendingUniversities';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { format } from 'date-fns';
 
 interface PostImage {
   id: string;
   image_url: string;
+}
+
+interface UpcomingEvent {
+  id: string;
+  title: string;
+  event_date: string;
+  event_time?: string;
+  location?: string;
+  club_id: string;
+  clubs_profiles?: {
+    club_name: string;
+  };
 }
 
 export default function Explore() {
@@ -26,9 +39,13 @@ export default function Explore() {
   const [imagesLoading, setImagesLoading] = useState(true);
   const [topPostsLoading, setTopPostsLoading] = useState(true);
   const [searchPostsLoading, setSearchPostsLoading] = useState(false);
+  const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
   const { users, loading, searchUsers } = useUsers();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [searchParams] = useSearchParams();
+  const view = searchParams.get('view');
   const { hashtags: trendingHashtags, loading: hashtagsLoading } = useTrendingHashtags();
   const { universities: trendingUniversities, loading: universitiesLoading } = useTrendingUniversities();
 
@@ -223,14 +240,168 @@ export default function Explore() {
     fetchSearchPosts(university, 'university');
   };
 
+  const fetchUpcomingEvents = async () => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('club_events')
+        .select('id, title, event_date, event_time, location, club_id, clubs_profiles(club_name)')
+        .gte('event_date', today)
+        .order('event_date', { ascending: true });
+      
+      if (error) throw error;
+      setUpcomingEvents(data || []);
+    } catch (error) {
+      console.error('Error fetching upcoming events:', error);
+    } finally {
+      setLoadingEvents(false);
+    }
+  };
+
   useEffect(() => {
     fetchRandomImages();
     fetchTopPostsOfDay();
+    fetchUpcomingEvents();
   }, []);
 
   const handleImageClick = (postId: string) => {
     navigate(`/post/${postId}`);
   };
+
+  // Render all events view
+  if (view === 'events') {
+    return (
+      <Layout>
+        {isMobile && <MobileHeader />}
+        <div className="space-y-6 px-2 mt-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/explore')}>
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <h1 className="text-2xl font-bold">All Upcoming Events</h1>
+          </div>
+          {loadingEvents ? (
+            <div className="text-center py-8">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+            </div>
+          ) : upcomingEvents.length === 0 ? (
+            <div className="post-card p-8 text-center">
+              <p className="text-muted-foreground">No upcoming events</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {upcomingEvents.map((event) => (
+                <div key={event.id} className="post-card p-4 hover:shadow-lg transition-shadow">
+                  <div className="flex items-start gap-3">
+                    <Calendar className="w-5 h-5 text-primary mt-1" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground">{event.title}</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {format(new Date(event.event_date), 'MMMM dd, yyyy')}
+                        {event.event_time && ` · ${event.event_time}`}
+                      </p>
+                      {event.location && (
+                        <p className="text-sm text-muted-foreground mt-1">{event.location}</p>
+                      )}
+                      {event.clubs_profiles?.club_name && (
+                        <p className="text-sm text-primary mt-2 font-medium">{event.clubs_profiles.club_name}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </Layout>
+    );
+  }
+
+  // Render all hashtags view
+  if (view === 'hashtags') {
+    return (
+      <Layout>
+        {isMobile && <MobileHeader />}
+        <div className="space-y-6 px-2 mt-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/explore')}>
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <h1 className="text-2xl font-bold">All Trending Hashtags</h1>
+          </div>
+          {hashtagsLoading ? (
+            <div className="text-center py-8">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+            </div>
+          ) : (
+            <div className="post-card p-4">
+              <div className="space-y-2">
+                {trendingHashtags.map((hashtag, index) => (
+                  <div
+                    key={hashtag.hashtag}
+                    className="flex items-center justify-between p-3 hover:bg-muted rounded-lg cursor-pointer transition-colors"
+                    onClick={() => handleHashtagClick(hashtag.hashtag)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground font-semibold">#{index + 1}</span>
+                      <div>
+                        <p className="font-medium">#{hashtag.hashtag}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {hashtag.post_count} posts · {hashtag.unique_users} users
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </Layout>
+    );
+  }
+
+  // Render all universities view
+  if (view === 'universities') {
+    return (
+      <Layout>
+        {isMobile && <MobileHeader />}
+        <div className="space-y-6 px-2 mt-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/explore')}>
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <h1 className="text-2xl font-bold">All Trending Universities</h1>
+          </div>
+          {universitiesLoading ? (
+            <div className="text-center py-8">
+              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+            </div>
+          ) : (
+            <div className="post-card p-4">
+              <div className="space-y-2">
+                {trendingUniversities.map((uni, index) => (
+                  <div
+                    key={uni.university}
+                    className="flex items-center justify-between p-3 hover:bg-muted rounded-lg cursor-pointer transition-colors"
+                    onClick={() => handleUniversityClick(uni.university)}
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <span className="text-sm font-semibold text-muted-foreground">#{index + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{uni.university}</p>
+                        <p className="text-sm text-muted-foreground">{uni.post_count} posts</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -240,7 +411,7 @@ export default function Explore() {
       <div className="space-y-6 px-2">
         {/* Search Header */}
         <div className="flex justify-center mt-6">
-          <div className="relative w-full max-w-lg"> {/* increased max-w-xs to max-w-lg */}
+          <div className="relative w-full max-w-lg">
             <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
@@ -252,19 +423,77 @@ export default function Explore() {
           </div>
         </div>
 
+        {/* Mobile: Upcoming Events */}
+        {isMobile && !searchQuery && (
+          <div className="post-card">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-primary" />
+                Upcoming Events
+              </h2>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => navigate('/explore?view=events')}
+                className="text-primary"
+              >
+                See All
+              </Button>
+            </div>
+            {loadingEvents ? (
+              <div className="text-center py-4">
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+              </div>
+            ) : upcomingEvents.length === 0 ? (
+              <p className="text-muted-foreground text-sm text-center py-2">No upcoming events</p>
+            ) : (
+              <div className="space-y-3">
+                {upcomingEvents.slice(0, 3).map((event) => (
+                  <div 
+                    key={event.id} 
+                    className="p-3 rounded-lg hover:bg-muted/20 transition-colors cursor-pointer border border-border/50"
+                    onClick={() => navigate('/explore?view=events')}
+                  >
+                    <p className="text-sm font-medium text-foreground">{event.title}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {format(new Date(event.event_date), 'MMM dd, yyyy')}
+                      {event.event_time && ` · ${event.event_time}`}
+                    </p>
+                    {event.clubs_profiles?.club_name && (
+                      <p className="text-xs text-primary mt-1">{event.clubs_profiles.club_name}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Trending Section - Split Layout */}
         {!searchQuery && (!hashtagsLoading || !universitiesLoading) && (trendingHashtags.length > 0 || trendingUniversities.length > 0) && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Trending Hashtags */}
             {!hashtagsLoading && trendingHashtags.length > 0 && (
               <div className="post-card">
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                  Trending Now
-                </h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    Trending Now
+                  </h2>
+                  {isMobile && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => navigate('/explore?view=hashtags')}
+                      className="text-primary"
+                    >
+                      See All
+                    </Button>
+                  )}
+                </div>
                 <ScrollArea className="h-[300px] md:h-[500px] pr-4">
                   <div className="space-y-2">
-                    {trendingHashtags.map((hashtag, index) => (
+                    {(isMobile ? trendingHashtags.slice(0, 3) : trendingHashtags).map((hashtag, index) => (
                       <div
                         key={hashtag.hashtag}
                         className="flex items-center justify-between p-3 hover:bg-muted rounded-lg cursor-pointer transition-colors"
@@ -289,13 +518,25 @@ export default function Explore() {
             {/* Trending Universities */}
             {!universitiesLoading && trendingUniversities.length > 0 && (
               <div className="post-card">
-                <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                  Trending Universities
-                </h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-primary" />
+                    Trending Universities
+                  </h2>
+                  {isMobile && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => navigate('/explore?view=universities')}
+                      className="text-primary"
+                    >
+                      See All
+                    </Button>
+                  )}
+                </div>
                 <ScrollArea className="h-[300px] md:h-[500px] pr-4">
                   <div className="space-y-2">
-                    {trendingUniversities.map((uni, index) => (
+                    {(isMobile ? trendingUniversities.slice(0, 3) : trendingUniversities).map((uni, index) => (
                       <div
                         key={uni.university}
                         className="flex items-center justify-between p-3 hover:bg-muted rounded-lg cursor-pointer transition-colors"
