@@ -262,7 +262,7 @@ export default function Explore() {
                   <TrendingUp className="w-5 h-5 text-primary" />
                   Trending Now
                 </h2>
-                <ScrollArea className="h-[500px] pr-4">
+                <ScrollArea className="h-[300px] md:h-[500px] pr-4">
                   <div className="space-y-2">
                     {trendingHashtags.map((hashtag, index) => (
                       <div
@@ -293,7 +293,7 @@ export default function Explore() {
                   <TrendingUp className="w-5 h-5 text-primary" />
                   Trending Universities
                 </h2>
-                <ScrollArea className="h-[500px] pr-4">
+                <ScrollArea className="h-[300px] md:h-[500px] pr-4">
                   <div className="space-y-2">
                     {trendingUniversities.map((uni, index) => (
                       <div

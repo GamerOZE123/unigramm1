@@ -39,9 +39,10 @@ export default function MobileNavigation() {
   }, [user]);
 
   const getProfileLink = () => {
-    if (userType === 'company') return '/jobs';
-    if (userType === 'clubs') return '/university';
-    return '/profile';
+    if (!user) return '/profile';
+    if (userType === 'company') return `/profile/${user.id}`;
+    if (userType === 'clubs') return `/profile/${user.id}`;
+    return `/profile/${user.id}`;
   };
 
   const updatedNavigation = navigation.map(item => {
