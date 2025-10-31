@@ -256,11 +256,14 @@ export type Database = {
       carpool_rides: {
         Row: {
           available_seats: number
+          baggage_allowed: number | null
+          car_type: string | null
           created_at: string | null
           driver_id: string
           from_location: string
           id: string
           is_active: boolean | null
+          notes: string | null
           price: number
           ride_date: string
           ride_time: string
@@ -269,11 +272,14 @@ export type Database = {
         }
         Insert: {
           available_seats: number
+          baggage_allowed?: number | null
+          car_type?: string | null
           created_at?: string | null
           driver_id: string
           from_location: string
           id?: string
           is_active?: boolean | null
+          notes?: string | null
           price: number
           ride_date: string
           ride_time: string
@@ -282,11 +288,14 @@ export type Database = {
         }
         Update: {
           available_seats?: number
+          baggage_allowed?: number | null
+          car_type?: string | null
           created_at?: string | null
           driver_id?: string
           from_location?: string
           id?: string
           is_active?: boolean | null
+          notes?: string | null
           price?: number
           ride_date?: string
           ride_time?: string
