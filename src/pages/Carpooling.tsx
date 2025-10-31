@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '@/components/layout/Layout';
-import { CarTaxiFront, MapPin, Clock, Users, Plus } from 'lucide-react';
+import { CarTaxiFront, MapPin, Clock, Users, Plus, Package, Car } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import MobileHeader from '@/components/layout/MobileHeader';
@@ -8,6 +8,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import CreateRideModal from '@/components/carpooling/CreateRideModal';
 
 interface CarpoolRide {
   id: string;
@@ -32,6 +33,7 @@ export default function Carpooling() {
   const [userUniversity, setUserUniversity] = useState<string>('');
   const [rides, setRides] = useState<CarpoolRide[]>([]);
   const [loading, setLoading] = useState(true);
+  const [createRideModalOpen, setCreateRideModalOpen] = useState(false);
 
   useEffect(() => {
     const fetchUserUniversity = async () => {
@@ -46,63 +48,65 @@ export default function Carpooling() {
     fetchUserUniversity();
   }, [user]);
 
-  useEffect(() => {
-    const fetchRides = async () => {
-      if (!userUniversity) return;
+  const fetchRides = async () => {
+    if (!userUniversity) return;
+    
+    try {
+      setLoading(true);
+      const today = new Date().toISOString().split('T')[0];
       
-      try {
-        setLoading(true);
-        const today = new Date().toISOString().split('T')[0];
-        
-        const { data: ridesData, error: ridesError } = await supabase
-          .from('carpool_rides')
-          .select('*')
-          .eq('is_active', true)
-          .gte('ride_date', today)
-          .order('ride_date', { ascending: true })
-          .order('ride_time', { ascending: true });
+      const { data: ridesData, error: ridesError } = await supabase
+        .from('carpool_rides')
+        .select('*')
+        .eq('is_active', true)
+        .gte('ride_date', today)
+        .order('ride_date', { ascending: true })
+        .order('ride_time', { ascending: true });
 
-        if (ridesError) throw ridesError;
+      if (ridesError) throw ridesError;
 
-        if (ridesData && ridesData.length > 0) {
-          // Fetch profiles for all drivers
-          const driverIds = [...new Set(ridesData.map(ride => ride.driver_id))];
-          const { data: profilesData, error: profilesError } = await supabase
-            .from('profiles')
-            .select('user_id, full_name, avatar_url, university')
-            .in('user_id', driverIds);
+      if (ridesData && ridesData.length > 0) {
+        // Fetch profiles for all drivers
+        const driverIds = [...new Set(ridesData.map(ride => ride.driver_id))];
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, avatar_url, university')
+          .in('user_id', driverIds);
 
-          if (profilesError) throw profilesError;
+        if (profilesError) throw profilesError;
 
-          const profilesMap = new Map();
-          profilesData?.forEach(profile => {
-            profilesMap.set(profile.user_id, profile);
-          });
-
-          const ridesWithProfiles = ridesData.map(ride => ({
-            ...ride,
-            profiles: profilesMap.get(ride.driver_id)
-          }));
-
-          // Filter by university
-          const filteredRides = ridesWithProfiles.filter(
-            ride => ride.profiles?.university === userUniversity
-          );
-
-          setRides(filteredRides);
-        }
-      } catch (error) {
-        console.error('Error fetching rides:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load carpool rides",
-          variant: "destructive",
+        const profilesMap = new Map();
+        profilesData?.forEach(profile => {
+          profilesMap.set(profile.user_id, profile);
         });
-      } finally {
-        setLoading(false);
-      }
-    };
 
+        const ridesWithProfiles = ridesData.map(ride => ({
+          ...ride,
+          profiles: profilesMap.get(ride.driver_id)
+        }));
+
+        // Filter by university
+        const filteredRides = ridesWithProfiles.filter(
+          ride => ride.profiles?.university === userUniversity
+        );
+
+        setRides(filteredRides);
+      } else {
+        setRides([]);
+      }
+    } catch (error) {
+      console.error('Error fetching rides:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load carpool rides",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchRides();
   }, [userUniversity]);
 
@@ -110,24 +114,13 @@ export default function Carpooling() {
     <Layout>
       {isMobile && <MobileHeader />}
       
-      <div className="space-y-6 p-6">
+      <div className="space-y-6 p-6 pb-24">
         <div className="text-center">
           <CarTaxiFront className="w-16 h-16 text-primary mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-foreground mb-2">Carpooling</h1>
           <p className="text-muted-foreground">
             Share rides, save money, and make new friends
           </p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <Button className="flex-1">
-            <Plus className="w-4 h-4 mr-2" />
-            Offer a Ride
-          </Button>
-          <Button variant="outline" className="flex-1">
-            <Users className="w-4 h-4 mr-2" />
-            Find a Ride
-          </Button>
         </div>
 
         <div className="space-y-4">
@@ -152,18 +145,18 @@ export default function Carpooling() {
                     <span>{ride.from_location} → {ride.to_location}</span>
                   </div>
                   
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="flex flex-wrap gap-3 text-sm">
                     <div className="flex items-center space-x-2">
                       <Clock className="w-4 h-4 text-muted-foreground" />
                       <span>{new Date(ride.ride_date).toLocaleDateString()} at {ride.ride_time}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Users className="w-4 h-4 text-muted-foreground" />
-                      <span>{ride.available_seats} seats available</span>
+                      <span>{ride.available_seats} seats</span>
                     </div>
                   </div>
                   
-                  <Button variant="outline" className="w-full mt-3">
+                  <Button variant="outline" className="w-full sm:w-auto mt-3">
                     Request Ride
                   </Button>
                 </CardContent>
@@ -172,18 +165,27 @@ export default function Carpooling() {
           )}
         </div>
 
-        <div className="post-card text-center py-8">
-          <CarTaxiFront className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">Start Carpooling Today</h3>
-          <p className="text-muted-foreground mb-4">
-            Reduce your carbon footprint and transportation costs by sharing rides with fellow students.
-          </p>
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Create Your First Ride
-          </Button>
-        </div>
       </div>
+
+      {/* Floating Action Button */}
+      <div className="fixed bottom-20 right-6 z-50">
+        <Button
+          size="lg"
+          className="h-14 w-14 rounded-full shadow-lg"
+          onClick={() => setCreateRideModalOpen(true)}
+        >
+          <Plus className="h-6 w-6" />
+        </Button>
+      </div>
+
+      {/* Create Ride Modal */}
+      <CreateRideModal
+        open={createRideModalOpen}
+        onOpenChange={setCreateRideModalOpen}
+        onRideCreated={() => {
+          fetchRides();
+        }}
+      />
     </Layout>
   );
 }
