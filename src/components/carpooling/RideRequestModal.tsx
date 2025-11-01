@@ -38,6 +38,23 @@ export default function RideRequestModal({
 
     setLoading(true);
     try {
+      // First, get the ride details to find the driver
+      const { data: rideData, error: rideError } = await supabase
+        .from('carpool_rides')
+        .select('driver_id, from_location, to_location, ride_date')
+        .eq('id', rideId)
+        .single();
+
+      if (rideError) throw rideError;
+
+      // Get passenger profile for notification
+      const { data: passengerProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', user.id)
+        .single();
+
+      // Create the ride request
       const { error } = await supabase
         .from('carpool_ride_requests')
         .insert({
@@ -58,6 +75,19 @@ export default function RideRequestModal({
           return;
         }
         throw error;
+      }
+
+      // Create notification for the driver
+      if (rideData?.driver_id && passengerProfile) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: rideData.driver_id,
+            type: 'carpool_request',
+            title: 'New Ride Request',
+            message: `${passengerProfile.full_name || 'Someone'} requested to join your ride from ${rideData.from_location} to ${rideData.to_location}`,
+            related_user_id: user.id
+          });
       }
 
       toast({
