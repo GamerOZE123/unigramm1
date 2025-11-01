@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MapPin, Clock, Users, Package, Car, Edit, CheckCircle, XCircle } from 'lucide-react';
+import { MapPin, Clock, Users, Package, Car, X, CheckCircle, XCircle, UserCheck, MessageCircle } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 
@@ -22,12 +22,15 @@ interface CarpoolRideCardProps {
       full_name: string;
       avatar_url: string;
     } | null;
+    pendingRequestsCount?: number;
   };
   isOwner: boolean;
   hasRequested?: boolean;
   requestStatus?: string;
   onRequestRide: () => void;
-  onEditRide: () => void;
+  onViewRequests: () => void;
+  onDeleteRide: () => void;
+  onMessage?: () => void;
 }
 
 export default function CarpoolRideCard({
@@ -36,7 +39,9 @@ export default function CarpoolRideCard({
   hasRequested,
   requestStatus,
   onRequestRide,
-  onEditRide
+  onViewRequests,
+  onDeleteRide,
+  onMessage
 }: CarpoolRideCardProps) {
   return (
     <Card className="hover:shadow-lg transition-all flex flex-col h-full">
@@ -64,10 +69,6 @@ export default function CarpoolRideCard({
                 </Badge>
               )}
             </div>
-          </div>
-          <div className="text-right">
-            <div className="text-2xl font-bold text-primary">₹{ride.price}</div>
-            <div className="text-xs text-muted-foreground">per seat</div>
           </div>
         </div>
       </CardHeader>
@@ -120,37 +121,58 @@ export default function CarpoolRideCard({
         )}
       </CardContent>
 
-      <CardFooter className="pt-0">
+      <CardFooter className="pt-0 space-y-2">
         {isOwner ? (
-          <Button onClick={onEditRide} variant="outline" className="w-full" size="sm">
-            <Edit className="w-4 h-4 mr-2" />
-            Edit Ride
-          </Button>
+          <>
+            <Button onClick={onViewRequests} className="w-full" size="sm">
+              <UserCheck className="w-4 h-4 mr-2" />
+              View Requests{ride.pendingRequestsCount !== undefined && ride.pendingRequestsCount > 0 ? ` (${ride.pendingRequestsCount})` : ''}
+            </Button>
+            <div className="flex gap-2">
+              {onMessage && (
+                <Button onClick={onMessage} variant="outline" className="flex-1" size="sm">
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Message
+                </Button>
+              )}
+              <Button onClick={onDeleteRide} variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50">
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+          </>
         ) : (
-          <Button 
-            onClick={onRequestRide} 
-            disabled={hasRequested}
-            className="w-full"
-            size="sm"
-          >
-            {hasRequested ? (
-              requestStatus === 'accepted' ? (
-                <>
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Accepted
-                </>
-              ) : requestStatus === 'rejected' ? (
-                <>
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Rejected
-                </>
+          <div className="space-y-2 w-full">
+            <Button 
+              onClick={onRequestRide} 
+              disabled={hasRequested}
+              className="w-full"
+              size="sm"
+            >
+              {hasRequested ? (
+                requestStatus === 'accepted' ? (
+                  <>
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Accepted
+                  </>
+                ) : requestStatus === 'rejected' ? (
+                  <>
+                    <XCircle className="w-4 h-4 mr-2" />
+                    Rejected
+                  </>
+                ) : (
+                  'Request Sent'
+                )
               ) : (
-                'Request Sent'
-              )
-            ) : (
-              'Request Ride'
+                'Request Ride'
+              )}
+            </Button>
+            {onMessage && (
+              <Button onClick={onMessage} variant="outline" className="w-full" size="sm">
+                <MessageCircle className="w-4 h-4 mr-2" />
+                Message Driver
+              </Button>
             )}
-          </Button>
+          </div>
         )}
       </CardFooter>
     </Card>
