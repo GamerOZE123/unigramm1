@@ -1,16 +1,16 @@
-import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Search, UserPlus, X, Check } from "lucide-react";
-import { useClubMembers } from "@/hooks/useClubMembers";
-import { useClubJoinRequests } from "@/hooks/useClubJoinRequests";
-import { useUsers } from "@/hooks/useUsers";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { useAuth } from "@/contexts/AuthContext";
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Search, UserPlus, X, Check } from 'lucide-react';
+import { useClubMembers } from '@/hooks/useClubMembers';
+import { useClubJoinRequests } from '@/hooks/useClubJoinRequests';
+import { useUsers } from '@/hooks/useUsers';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ClubMembersRightSidebarProps {
   clubId?: string;
@@ -19,14 +19,14 @@ interface ClubMembersRightSidebarProps {
   onRequestHandled?: () => void;
 }
 
-export default function ClubMembersRightSidebar({
-  clubId,
-  isClubOwner = false,
+export default function ClubMembersRightSidebar({ 
+  clubId, 
+  isClubOwner = false, 
   isStudent = false,
-  onRequestHandled,
+  onRequestHandled 
 }: ClubMembersRightSidebarProps) {
   const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
   const { members, loading: membersLoading } = useClubMembers(clubId || null);
   const { requests, sendJoinRequest, acceptRequest, rejectRequest } = useClubJoinRequests(clubId || null, isStudent);
   const { users, searchUsers } = useUsers();
@@ -35,21 +35,21 @@ export default function ClubMembersRightSidebar({
     setSearchQuery(value);
     if (value.trim()) {
       // Filter to only show students when searching
-      await searchUsers(value, "student");
+      await searchUsers(value, 'student');
     }
   };
 
   const handleSendRequest = async (studentId: string) => {
     if (!clubId) return;
     // Club owners send invitations to students
-    await sendJoinRequest(clubId, studentId, "invitation");
-    setSearchQuery("");
+    await sendJoinRequest(clubId, studentId, 'invitation');
+    setSearchQuery('');
   };
 
   const handleAcceptRequest = async (requestId: string, studentId: string) => {
     if (isStudent) {
       // Student accepting an invite
-      const request = requests.find((r) => r.id === requestId);
+      const request = requests.find(r => r.id === requestId);
       if (request && user) {
         await acceptRequest(requestId, user.id, request.club_id);
         onRequestHandled?.();
@@ -83,8 +83,10 @@ export default function ClubMembersRightSidebar({
                 <div key={request.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <Avatar>
-                      <AvatarImage src={request.club_logo_url || ""} />
-                      <AvatarFallback>{request.club_name?.slice(0, 2).toUpperCase()}</AvatarFallback>
+                      <AvatarImage src={request.club_logo_url || ''} />
+                      <AvatarFallback>
+                        {request.club_name?.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{request.club_name}</p>
@@ -96,7 +98,7 @@ export default function ClubMembersRightSidebar({
                       size="sm"
                       variant="ghost"
                       className="h-8 w-8 p-0"
-                      onClick={() => handleAcceptRequest(request.id, "")}
+                      onClick={() => handleAcceptRequest(request.id, '')}
                     >
                       <Check className="h-4 w-4 text-green-600" />
                     </Button>
@@ -129,56 +131,56 @@ export default function ClubMembersRightSidebar({
             ) : (
               <div className="space-y-5">
                 {Object.entries(
-                  members.reduce(
-                    (acc, member) => {
-                      const role = member.role || "Member";
-                      if (!acc[role]) acc[role] = [];
-                      acc[role].push(member);
-                      return acc;
-                    },
-                    {} as Record<string, typeof members>,
-                  ),
+                  members.reduce((acc, member) => {
+                    const role = member.role || 'Member';
+                    if (!acc[role]) acc[role] = [];
+                    acc[role].push(member);
+                    return acc;
+                  }, {} as Record<string, typeof members>)
                 )
-                  .sort(([roleA], [roleB]) => {
-                    if (roleA.toLowerCase() === "member") return 1;
-                    if (roleB.toLowerCase() === "member") return -1;
-                    return roleA.localeCompare(roleB);
-                  })
-                  .map(([role, roleMembers]) => (
-                    <div key={role} className="space-y-3">
-                      {/* Role Title with Badge */}
-                      <div className="sticky top-0 bg-card z-10 pb-2">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="secondary" className="font-semibold text-sm px-3 py-1">
-                            {role}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">({roleMembers.length})</span>
-                        </div>
-                        <Separator />
+                .sort(([roleA], [roleB]) => {
+                  if (roleA.toLowerCase() === 'member') return 1;
+                  if (roleB.toLowerCase() === 'member') return -1;
+                  return roleA.localeCompare(roleB);
+                })
+                .map(([role, roleMembers]) => (
+                  <div key={role} className="space-y-3">
+                    {/* Role Title with Badge */}
+                    <div className="sticky top-0 bg-card z-10 pb-2">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge variant="secondary" className="font-semibold text-sm px-3 py-1">
+                          {role}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          ({roleMembers.length})
+                        </span>
                       </div>
-
-                      {/* Members in this role */}
-                      <div className="space-y-2 pl-3">
-                        {roleMembers.map((member) => (
-                          <div
-                            key={member.id}
-                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
-                          >
-                            <Avatar className="h-9 w-9 ring-2 ring-border/50">
-                              <AvatarImage src={member.profiles?.avatar_url || ""} />
-                              <AvatarFallback className="text-xs">
-                                {member.profiles?.full_name?.charAt(0) || "U"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">{member.profiles?.full_name}</p>
-                              <p className="text-xs text-muted-foreground truncate">{member.profiles?.university}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      <Separator />
                     </div>
-                  ))}
+                    
+                    {/* Members in this role */}
+                    <div className="space-y-2 pl-3">
+                      {roleMembers.map((member) => (
+                        <div key={member.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                          <Avatar className="h-9 w-9 ring-2 ring-border/50">
+                            <AvatarImage src={member.profiles?.avatar_url || ''} />
+                            <AvatarFallback className="text-xs">
+                              {member.profiles?.full_name?.charAt(0) || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">
+                              {member.profiles?.full_name}
+                            </p>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {member.profiles?.university}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </ScrollArea>
@@ -198,12 +200,18 @@ export default function ClubMembersRightSidebar({
                   <div key={request.id} className="space-y-2">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-10 w-10">
-                        <AvatarImage src={request.profiles?.avatar_url || ""} />
-                        <AvatarFallback>{request.profiles?.full_name?.charAt(0) || "U"}</AvatarFallback>
+                        <AvatarImage src={request.profiles?.avatar_url || ''} />
+                        <AvatarFallback>
+                          {request.profiles?.full_name?.charAt(0) || 'U'}
+                        </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{request.profiles?.full_name}</p>
-                        <p className="text-xs text-muted-foreground">{request.profiles?.university}</p>
+                        <p className="text-sm font-medium truncate">
+                          {request.profiles?.full_name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {request.profiles?.university}
+                        </p>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -251,25 +259,31 @@ export default function ClubMembersRightSidebar({
                 className="pl-9"
               />
             </div>
-
+            
             {searchQuery && users.length > 0 && (
               <ScrollArea className="h-[200px]">
                 <div className="space-y-2">
                   {users.map((userItem) => {
                     // Check if user is already a member or has pending request
-                    const isMember = members.some((m) => m.user_id === userItem.user_id);
-                    const hasPendingRequest = requests.some((r) => r.student_id === userItem.user_id);
+                    const isMember = members.some(m => m.user_id === userItem.user_id);
+                    const hasPendingRequest = requests.some(r => r.student_id === userItem.user_id);
                     const isAlreadyInvited = isMember || hasPendingRequest;
-
+                    
                     return (
                       <div key={userItem.user_id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50">
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={userItem.avatar_url || ""} />
-                          <AvatarFallback>{userItem.full_name?.charAt(0) || "U"}</AvatarFallback>
+                          <AvatarImage src={userItem.avatar_url || ''} />
+                          <AvatarFallback>
+                            {userItem.full_name?.charAt(0) || 'U'}
+                          </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{userItem.full_name}</p>
-                          <p className="text-xs text-muted-foreground">{userItem.university}</p>
+                          <p className="text-sm font-medium truncate">
+                            {userItem.full_name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {userItem.university}
+                          </p>
                         </div>
                         <Button
                           size="sm"
@@ -278,13 +292,15 @@ export default function ClubMembersRightSidebar({
                           disabled={isAlreadyInvited}
                         >
                           <UserPlus className="w-3 h-3 mr-1" />
-                          {isAlreadyInvited ? "Invited" : "Invite"}
+                          {isAlreadyInvited ? 'Invited' : 'Invite'}
                         </Button>
                       </div>
                     );
                   })}
                   {users.length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-4">No users found</p>
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No users found
+                    </p>
                   )}
                 </div>
               </ScrollArea>
