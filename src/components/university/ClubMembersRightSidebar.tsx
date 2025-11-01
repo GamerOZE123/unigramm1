@@ -123,7 +123,7 @@ export default function ClubMembersRightSidebar({
     );
   }
 
-  // For club owners, show members and requests
+  // Show members section for everyone
   return (
     <div className="space-y-4">
       {/* Members Section - Grouped by Role */}

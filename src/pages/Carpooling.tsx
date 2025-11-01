@@ -155,7 +155,7 @@ export default function Carpooling() {
     <Layout>
       {isMobile && <MobileHeader />}
       
-      <div className="max-w-4xl mx-auto space-y-6 p-6 pb-24">
+      <div className="max-w-7xl mx-auto space-y-6 p-6 pb-24">
         <div className="text-center">
           <CarTaxiFront className="w-16 h-16 text-primary mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-foreground mb-2">Carpooling</h1>
@@ -172,7 +172,7 @@ export default function Carpooling() {
           ) : rides.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">No rides available at the moment</div>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {rides.map((ride) => (
                 <CarpoolRideCard
                   key={ride.id}

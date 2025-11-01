@@ -39,7 +39,7 @@ export default function CarpoolRideCard({
   onEditRide
 }: CarpoolRideCardProps) {
   return (
-    <Card className="hover:shadow-lg transition-all">
+    <Card className="hover:shadow-lg transition-all flex flex-col h-full">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -72,7 +72,7 @@ export default function CarpoolRideCard({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-3 flex-1">
         <div className="flex items-start gap-2">
           <MapPin className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
           <div className="text-sm">

@@ -106,8 +106,46 @@ export default function ClubDetail() {
   const handleRequestToJoin = async () => {
     if (!user || !clubId) return;
 
+    // If already has pending request, cancel it
+    if (hasPendingRequest) {
+      try {
+        const { data: requestData } = await supabase
+          .from('club_join_requests')
+          .select('id')
+          .eq('club_id', clubId)
+          .eq('student_id', user.id)
+          .eq('request_type', 'request')
+          .eq('status', 'pending')
+          .single();
+
+        if (requestData) {
+          const { error } = await supabase
+            .from('club_join_requests')
+            .delete()
+            .eq('id', requestData.id);
+
+          if (error) throw error;
+
+          toast({
+            title: "Success",
+            description: "Join request cancelled"
+          });
+
+          setHasPendingRequest(false);
+        }
+      } catch (error) {
+        console.error('Error cancelling join request:', error);
+        toast({
+          title: "Error",
+          description: "Failed to cancel join request",
+          variant: "destructive"
+        });
+      }
+      return;
+    }
+
+    // Send new join request
     try {
-      // Students send 'request' type to clubs
       await sendJoinRequest(clubId, user.id, 'request');
       
       toast({
@@ -229,10 +267,9 @@ export default function ClubDetail() {
                   {!isOwner && userType === 'student' && (
                     <Button
                       onClick={isMember ? handleLeaveClub : handleRequestToJoin}
-                      variant={isMember ? "outline" : "default"}
-                      disabled={hasPendingRequest}
+                      variant={isMember ? "outline" : hasPendingRequest ? "secondary" : "default"}
                     >
-                      {isMember ? 'Leave Club' : hasPendingRequest ? 'Request Pending' : 'Request to Join'}
+                      {isMember ? 'Leave Club' : hasPendingRequest ? 'Pending... (Click to Cancel)' : 'Request to Join'}
                     </Button>
                   )}
                 </div>
