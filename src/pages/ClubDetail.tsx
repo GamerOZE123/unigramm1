@@ -41,7 +41,7 @@ export default function ClubDetail() {
   const [isOwner, setIsOwner] = useState(false);
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
   const [showManageMembersModal, setShowManageMembersModal] = useState(false);
-  const { sendJoinRequest } = useClubJoinRequests(clubId || null, false);
+  const { sendJoinRequest, cancelJoinRequest } = useClubJoinRequests(clubId || null, false);
 
   useEffect(() => {
     if (clubId) {
@@ -143,39 +143,8 @@ export default function ClubDetail() {
 
     // If already has pending request, cancel it
     if (hasPendingRequest) {
-      try {
-        const { data: requestData } = await supabase
-          .from('club_join_requests')
-          .select('id')
-          .eq('club_id', clubId)
-          .eq('student_id', user.id)
-          .eq('request_type', 'request')
-          .eq('status', 'pending')
-          .single();
-
-        if (requestData) {
-          const { error } = await supabase
-            .from('club_join_requests')
-            .delete()
-            .eq('id', requestData.id);
-
-          if (error) throw error;
-
-          toast({
-            title: "Success",
-            description: "Join request cancelled"
-          });
-
-          setHasPendingRequest(false);
-        }
-      } catch (error) {
-        console.error('Error cancelling join request:', error);
-        toast({
-          title: "Error",
-          description: "Failed to cancel join request",
-          variant: "destructive"
-        });
-      }
+      await cancelJoinRequest(clubId, user.id, 'request');
+      setHasPendingRequest(false);
       return;
     }
 

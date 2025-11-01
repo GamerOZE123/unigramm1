@@ -210,7 +210,38 @@ export const useClubJoinRequests = (clubId: string | null, isStudent: boolean = 
       console.error('Error sending join request:', error);
       toast({
         title: "Error",
-        description: "Failed to send invitation",
+        description: type === 'invitation' ? "Failed to send invitation" : "Failed to send request",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const cancelJoinRequest = async (clubId: string, studentId: string, type: 'request' | 'invitation' = 'request') => {
+    try {
+      const { error } = await supabase
+        .from('club_join_requests')
+        .delete()
+        .eq('club_id', clubId)
+        .eq('student_id', studentId)
+        .eq('request_type', type)
+        .eq('status', 'pending');
+
+      if (error) throw error;
+      
+      const message = type === 'invitation' 
+        ? "Invitation cancelled"
+        : "Request cancelled";
+      toast({
+        title: "Success",
+        description: message
+      });
+      
+      await fetchRequests();
+    } catch (error: any) {
+      console.error('Error cancelling request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel request",
         variant: "destructive"
       });
     }
@@ -308,6 +339,7 @@ export const useClubJoinRequests = (clubId: string | null, isStudent: boolean = 
     requests,
     loading,
     sendJoinRequest,
+    cancelJoinRequest,
     acceptRequest,
     rejectRequest,
     refetch: fetchRequests
