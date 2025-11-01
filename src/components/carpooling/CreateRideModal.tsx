@@ -76,7 +76,7 @@ export default function CreateRideModal({ open, onOpenChange, onRideCreated }: C
           ride_date: formData.ride_date,
           ride_time: formData.ride_time,
           available_seats: formData.available_seats,
-          price: formData.price,
+          price: 0,
           car_type: formData.car_type || null,
           baggage_allowed: formData.baggage_allowed,
           notes: formData.notes || null,
@@ -241,41 +241,26 @@ export default function CreateRideModal({ open, onOpenChange, onRideCreated }: C
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="car_type" className="flex items-center gap-2">
-                <Car className="w-4 h-4 text-primary" />
-                Car Type
-              </Label>
-              <Select
-                value={formData.car_type}
-                onValueChange={(value) => setFormData({ ...formData, car_type: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select car type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sedan">Sedan</SelectItem>
-                  <SelectItem value="suv">SUV</SelectItem>
-                  <SelectItem value="hatchback">Hatchback</SelectItem>
-                  <SelectItem value="van">Van</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="price">Price per Seat (₹)</Label>
-                <Input
-                  id="price"
-                  type="number"
-                  min="0"
-                  step="1"
-                  placeholder="0"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                />
-              </div>
+          <div className="space-y-2">
+            <Label htmlFor="car_type" className="flex items-center gap-2">
+              <Car className="w-4 h-4 text-primary" />
+              Car Type
+            </Label>
+            <Select
+              value={formData.car_type}
+              onValueChange={(value) => setFormData({ ...formData, car_type: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select car type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sedan">Sedan</SelectItem>
+                <SelectItem value="suv">SUV</SelectItem>
+                <SelectItem value="hatchback">Hatchback</SelectItem>
+                <SelectItem value="van">Van</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
