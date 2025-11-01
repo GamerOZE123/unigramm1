@@ -50,12 +50,12 @@ export default function ClubDetail() {
     }
   }, [clubId, user]);
 
-  // Realtime subscription for join requests
+  // Realtime subscription for join requests and memberships
   useEffect(() => {
     if (!clubId || !user) return;
 
     const channel = supabase
-      .channel('club-join-requests-changes')
+      .channel('club-status-changes')
       .on(
         'postgres_changes',
         {
@@ -66,6 +66,19 @@ export default function ClubDetail() {
         },
         () => {
           checkMembership();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'club_memberships',
+          filter: `club_id=eq.${clubId},user_id=eq.${user.id}`
+        },
+        () => {
+          checkMembership();
+          fetchClubDetails(); // Refetch to update member count
         }
       )
       .subscribe();
