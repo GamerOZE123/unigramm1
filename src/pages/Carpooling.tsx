@@ -27,8 +27,8 @@ const SNU_LOCATIONS = [
 ];
 import CreateRideModal from '@/components/carpooling/CreateRideModal';
 import CarpoolRideCard from '@/components/carpooling/CarpoolRideCard';
-import RideRequestModal from '@/components/carpooling/RideRequestModal';
-import RideRequestsModal from '@/components/carpooling/RideRequestsModal';
+import PassengerRequestModal from '@/components/carpooling/PassengerRequestModal';
+import RideRequestsModal from '@/components/carpooling/RideRequestModal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -478,7 +478,7 @@ export default function Carpooling() {
       />
 
       {/* Request Ride Modal */}
-      <RideRequestModal
+      <PassengerRequestModal
         open={requestModalOpen}
         onOpenChange={setRequestModalOpen}
         rideId={selectedRideId}
