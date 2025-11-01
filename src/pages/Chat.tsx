@@ -12,7 +12,7 @@ import { useChat } from '@/hooks/useChat';
 import { useRecentChats } from '@/hooks/useRecentChats';
 import { useUsers } from '@/hooks/useUsers';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -20,6 +20,7 @@ export default function Chat() {
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [newMessage, setNewMessage] = useState('');
@@ -117,6 +118,46 @@ export default function Chat() {
   useEffect(() => {
     if (selectedConversationId) fetchMessages(selectedConversationId);
   }, [selectedConversationId]);
+
+  // Handle conversation query parameter
+  useEffect(() => {
+    const conversationId = searchParams.get('conversation');
+    if (conversationId && conversationId !== selectedConversationId) {
+      setSelectedConversationId(conversationId);
+      
+      // Get user details from the conversation
+      const loadConversation = async () => {
+        // First check if conversation is already in the list
+        let conversation = conversations.find(c => c.conversation_id === conversationId);
+        
+        // If not found, refresh conversations list
+        if (!conversation) {
+          await refreshConversations();
+          // Wait a bit for conversations to update
+          await new Promise(resolve => setTimeout(resolve, 100));
+          conversation = conversations.find(c => c.conversation_id === conversationId);
+        }
+        
+        // If still not found, we might need to query the database
+        if (!conversation) {
+          // Try to get conversation from database
+          const { data } = await supabase
+            .rpc('get_user_conversations', { target_user_id: user?.id || '' });
+          conversation = data?.find((c: any) => c.conversation_id === conversationId);
+        }
+        
+        if (conversation) {
+          const userData = await getUserById(conversation.other_user_id);
+          if (userData) {
+            setSelectedUser(userData);
+            if (isMobile) setShowUserList(false);
+          }
+        }
+      };
+      
+      loadConversation();
+    }
+  }, [searchParams]);
 
   const handleUserClick = async (userId: string) => {
   try {
