@@ -50,6 +50,31 @@ export default function ClubDetail() {
     }
   }, [clubId, user]);
 
+  // Realtime subscription for join requests
+  useEffect(() => {
+    if (!clubId || !user) return;
+
+    const channel = supabase
+      .channel('club-join-requests-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'club_join_requests',
+          filter: `club_id=eq.${clubId},student_id=eq.${user.id}`
+        },
+        () => {
+          checkMembership();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [clubId, user]);
+
   const fetchClubDetails = async () => {
     try {
       const { data, error } = await supabase
@@ -77,27 +102,37 @@ export default function ClubDetail() {
     if (!user || !clubId) return;
     
     try {
-      const { data: memberData } = await supabase
+      // Check membership
+      const { data: memberData, error: memberError } = await supabase
         .from('club_memberships')
         .select('id')
         .eq('club_id', clubId)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
+
+      if (memberError && memberError.code !== 'PGRST116') {
+        console.error('Error checking membership:', memberError);
+      }
 
       setIsMember(!!memberData);
 
       // Check for pending student request (not invitation)
-      const { data: requestData } = await supabase
+      const { data: requestData, error: requestError } = await supabase
         .from('club_join_requests')
-        .select('id')
+        .select('id, status')
         .eq('club_id', clubId)
         .eq('student_id', user.id)
         .eq('request_type', 'request')
         .eq('status', 'pending')
-        .single();
+        .maybeSingle();
+
+      if (requestError && requestError.code !== 'PGRST116') {
+        console.error('Error checking pending request:', requestError);
+      }
 
       setHasPendingRequest(!!requestData);
     } catch (error) {
+      console.error('Error in checkMembership:', error);
       setIsMember(false);
       setHasPendingRequest(false);
     }
@@ -226,7 +261,7 @@ export default function ClubDetail() {
         />
       }
     >
-      <div className="space-y-6">
+      <div className="max-w-3xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
           <Button

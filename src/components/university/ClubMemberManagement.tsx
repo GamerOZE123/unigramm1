@@ -11,10 +11,12 @@ import {
   DialogFooter 
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Edit2, Trash2, Plus, Search } from 'lucide-react';
+import { Edit2, Trash2, Plus, Search, UserPlus, Check, X } from 'lucide-react';
 import { useClubMembers } from '@/hooks/useClubMembers';
+import { useClubJoinRequests } from '@/hooks/useClubJoinRequests';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface ClubMemberManagementProps {
   clubId: string;
@@ -22,6 +24,7 @@ interface ClubMemberManagementProps {
 
 export default function ClubMemberManagement({ clubId }: ClubMemberManagementProps) {
   const { members, loading, removeMember, updateMemberRole } = useClubMembers(clubId);
+  const { requests, loading: requestsLoading, acceptRequest, rejectRequest } = useClubJoinRequests(clubId, false);
   const [editingMember, setEditingMember] = useState<string | null>(null);
   const [newRole, setNewRole] = useState('');
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -109,8 +112,84 @@ export default function ClubMemberManagement({ clubId }: ClubMemberManagementPro
     );
   }
 
+  const pendingRequests = requests.filter(req => req.status === 'pending' && req.request_type === 'request');
+
+  const handleAcceptRequest = async (requestId: string, studentId: string) => {
+    await acceptRequest(requestId, studentId, clubId);
+  };
+
+  const handleRejectRequest = async (requestId: string) => {
+    await rejectRequest(requestId);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Pending Join Requests Section */}
+      {pendingRequests.length > 0 && (
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-primary" />
+              Pending Join Requests ({pendingRequests.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScrollArea className="max-h-[400px]">
+              <div className="space-y-3">
+                {pendingRequests.map((request) => (
+                  <div 
+                    key={request.id}
+                    className="flex items-center justify-between p-4 rounded-lg bg-muted/30 hover:bg-muted transition-colors border border-border"
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Avatar className="h-12 w-12 ring-2 ring-primary/20">
+                        <AvatarImage src={request.profiles?.avatar_url || ''} />
+                        <AvatarFallback>
+                          {request.profiles?.full_name?.charAt(0) || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">
+                          {request.profiles?.full_name || 'Unknown Student'}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {request.profiles?.university || 'No university'}
+                        </p>
+                        {request.profiles?.major && (
+                          <p className="text-xs text-muted-foreground">
+                            {request.profiles.major}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 ml-4">
+                      <Button
+                        size="sm"
+                        onClick={() => handleAcceptRequest(request.id, request.student_id)}
+                        className="gap-1"
+                      >
+                        <Check className="h-4 w-4" />
+                        Accept
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleRejectRequest(request.id)}
+                        className="gap-1"
+                      >
+                        <X className="h-4 w-4" />
+                        Decline
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header with Search */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
