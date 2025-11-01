@@ -2174,6 +2174,14 @@ export type Database = {
       }
     }
     Functions: {
+      accept_club_join_request: {
+        Args: {
+          club_id_param: string
+          request_id_param: string
+          student_id_param: string
+        }
+        Returns: undefined
+      }
       can_access_profile_email: {
         Args: { target_user_id: string }
         Returns: boolean

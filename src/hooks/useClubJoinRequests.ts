@@ -249,51 +249,15 @@ export const useClubJoinRequests = (clubId: string | null, isStudent: boolean = 
 
   const acceptRequest = async (requestId: string, studentId: string, clubId: string) => {
     try {
-      // Check if student is already a member
-      const { data: existingMember } = await supabase
-        .from('club_memberships')
-        .select('id')
-        .eq('club_id', clubId)
-        .eq('user_id', studentId)
-        .maybeSingle();
+      // Call the database function to handle acceptance atomically
+      const { error } = await supabase.rpc('accept_club_join_request', {
+        request_id_param: requestId,
+        student_id_param: studentId,
+        club_id_param: clubId
+      });
 
-      if (existingMember) {
-        // Just update the request status if already a member
-        await supabase
-          .from('club_join_requests')
-          .update({ status: 'accepted' })
-          .eq('id', requestId);
-        
-        toast({
-          title: "Info",
-          description: "User is already a member of this club"
-        });
-        await fetchRequests();
-        return;
-      }
+      if (error) throw error;
 
-      // Update request status
-      const { error: updateError } = await supabase
-        .from('club_join_requests')
-        .update({ status: 'accepted' })
-        .eq('id', requestId);
-
-      if (updateError) throw updateError;
-
-      // Add to club_memberships with proper role
-      const { error: membershipError } = await supabase
-        .from('club_memberships')
-        .insert({
-          club_id: clubId,
-          user_id: studentId,
-          role: 'Member'
-        });
-
-      if (membershipError) {
-        console.error('Membership error:', membershipError);
-        throw membershipError;
-      }
-      
       toast({
         title: "Success",
         description: "Request accepted and member added"
