@@ -356,12 +356,12 @@ export default function Carpooling() {
               <h3 className="font-semibold text-sm">Filters</h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              <Select value={filters.from} onValueChange={(value) => setFilters({ ...filters, from: value })}>
+              <Select value={filters.from || "all"} onValueChange={(value) => setFilters({ ...filters, from: value === "all" ? "" : value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="From location" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All locations</SelectItem>
+                  <SelectItem value="all">All locations</SelectItem>
                   {SNU_LOCATIONS.map((location) => (
                     <SelectItem key={location} value={location}>
                       {location}
@@ -370,12 +370,12 @@ export default function Carpooling() {
                 </SelectContent>
               </Select>
               
-              <Select value={filters.to} onValueChange={(value) => setFilters({ ...filters, to: value })}>
+              <Select value={filters.to || "all"} onValueChange={(value) => setFilters({ ...filters, to: value === "all" ? "" : value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="To location" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All locations</SelectItem>
+                  <SelectItem value="all">All locations</SelectItem>
                   {SNU_LOCATIONS.map((location) => (
                     <SelectItem key={location} value={location}>
                       {location}
