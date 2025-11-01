@@ -1,20 +1,20 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Users, Globe, Mail, Phone } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import Layout from "@/components/layout/Layout";
-import ClubMembersRightSidebar from "@/components/university/ClubMembersRightSidebar";
-import ClubPostsSection from "@/components/university/ClubPostsSection";
-import ClubUpcomingEvents from "@/components/university/ClubUpcomingEvents";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
-import { useToast } from "@/hooks/use-toast";
-import { useClubJoinRequests } from "@/hooks/useClubJoinRequests";
-import ClubMemberManagement from "@/components/university/ClubMemberManagement";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ArrowLeft, Users, Globe, Mail, Phone } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import Layout from '@/components/layout/Layout';
+import ClubMembersRightSidebar from '@/components/university/ClubMembersRightSidebar';
+import ClubPostsSection from '@/components/university/ClubPostsSection';
+import ClubUpcomingEvents from '@/components/university/ClubUpcomingEvents';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { useClubJoinRequests } from '@/hooks/useClubJoinRequests';
+import ClubMemberManagement from '@/components/university/ClubMemberManagement';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface ClubProfile {
   id: string;
@@ -55,32 +55,32 @@ export default function ClubDetail() {
     if (!clubId || !user) return;
 
     const channel = supabase
-      .channel("club-status-changes")
+      .channel('club-status-changes')
       .on(
-        "postgres_changes",
+        'postgres_changes',
         {
-          event: "*",
-          schema: "public",
-          table: "club_join_requests",
-          filter: `club_id=eq.${clubId}`,
+          event: '*',
+          schema: 'public',
+          table: 'club_join_requests',
+          filter: `club_id=eq.${clubId}`
         },
         () => {
           checkMembership();
           fetchClubDetails(); // Auto refresh when requests change
-        },
+        }
       )
       .on(
-        "postgres_changes",
+        'postgres_changes',
         {
-          event: "*",
-          schema: "public",
-          table: "club_memberships",
-          filter: `club_id=eq.${clubId}`,
+          event: '*',
+          schema: 'public',
+          table: 'club_memberships',
+          filter: `club_id=eq.${clubId}`
         },
         () => {
           checkMembership();
           fetchClubDetails(); // Auto refresh when memberships change
-        },
+        }
       )
       .subscribe();
 
@@ -91,17 +91,21 @@ export default function ClubDetail() {
 
   const fetchClubDetails = async () => {
     try {
-      const { data, error } = await supabase.from("clubs_profiles").select("*").eq("id", clubId).single();
+      const { data, error } = await supabase
+        .from('clubs_profiles')
+        .select('*')
+        .eq('id', clubId)
+        .single();
 
       if (error) throw error;
       setClub(data);
       setIsOwner(data.user_id === user?.id);
     } catch (error) {
-      console.error("Error fetching club details:", error);
+      console.error('Error fetching club details:', error);
       toast({
         title: "Error",
         description: "Failed to load club details",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
@@ -110,39 +114,39 @@ export default function ClubDetail() {
 
   const checkMembership = async () => {
     if (!user || !clubId) return;
-
+    
     try {
       // Check membership
       const { data: memberData, error: memberError } = await supabase
-        .from("club_memberships")
-        .select("id")
-        .eq("club_id", clubId)
-        .eq("user_id", user.id)
+        .from('club_memberships')
+        .select('id')
+        .eq('club_id', clubId)
+        .eq('user_id', user.id)
         .maybeSingle();
 
-      if (memberError && memberError.code !== "PGRST116") {
-        console.error("Error checking membership:", memberError);
+      if (memberError && memberError.code !== 'PGRST116') {
+        console.error('Error checking membership:', memberError);
       }
 
       setIsMember(!!memberData);
 
       // Check for pending student request (not invitation)
       const { data: requestData, error: requestError } = await supabase
-        .from("club_join_requests")
-        .select("id, status")
-        .eq("club_id", clubId)
-        .eq("student_id", user.id)
-        .eq("request_type", "request")
-        .eq("status", "pending")
+        .from('club_join_requests')
+        .select('id, status')
+        .eq('club_id', clubId)
+        .eq('student_id', user.id)
+        .eq('request_type', 'request')
+        .eq('status', 'pending')
         .maybeSingle();
 
-      if (requestError && requestError.code !== "PGRST116") {
-        console.error("Error checking pending request:", requestError);
+      if (requestError && requestError.code !== 'PGRST116') {
+        console.error('Error checking pending request:', requestError);
       }
 
       setHasPendingRequest(!!requestData);
     } catch (error) {
-      console.error("Error in checkMembership:", error);
+      console.error('Error in checkMembership:', error);
       setIsMember(false);
       setHasPendingRequest(false);
     }
@@ -153,27 +157,27 @@ export default function ClubDetail() {
 
     // If already has pending request, cancel it
     if (hasPendingRequest) {
-      await cancelJoinRequest(clubId, user.id, "request");
+      await cancelJoinRequest(clubId, user.id, 'request');
       setHasPendingRequest(false);
       return;
     }
 
     // Send new join request
     try {
-      await sendJoinRequest(clubId, user.id, "request");
-
+      await sendJoinRequest(clubId, user.id, 'request');
+      
       toast({
         title: "Success",
-        description: "Join request sent! Waiting for club approval.",
+        description: "Join request sent! Waiting for club approval."
       });
 
       setHasPendingRequest(true);
     } catch (error) {
-      console.error("Error sending join request:", error);
+      console.error('Error sending join request:', error);
       toast({
         title: "Error",
         description: "Failed to send join request",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -184,36 +188,36 @@ export default function ClubDetail() {
     try {
       // Delete membership record
       const { error: membershipError } = await supabase
-        .from("club_memberships")
+        .from('club_memberships')
         .delete()
-        .eq("club_id", clubId)
-        .eq("user_id", user.id);
+        .eq('club_id', clubId)
+        .eq('user_id', user.id);
 
       if (membershipError) throw membershipError;
 
       // Also delete any related join requests (both types) to make rejoining easier
       const { error: requestsError } = await supabase
-        .from("club_join_requests")
+        .from('club_join_requests')
         .delete()
-        .eq("club_id", clubId)
-        .eq("student_id", user.id);
+        .eq('club_id', clubId)
+        .eq('student_id', user.id);
 
       if (requestsError) throw requestsError;
 
       toast({
         title: "Success",
-        description: "You've left the club",
+        description: "You've left the club"
       });
 
       setIsMember(false);
       setHasPendingRequest(false);
       fetchClubDetails();
     } catch (error) {
-      console.error("Error leaving club:", error);
+      console.error('Error leaving club:', error);
       toast({
         title: "Error",
         description: "Failed to leave club",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
@@ -234,7 +238,7 @@ export default function ClubDetail() {
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <p className="text-muted-foreground mb-4">Club not found</p>
-            <Button onClick={() => navigate("/clubs")}>Back to Clubs</Button>
+            <Button onClick={() => navigate('/clubs')}>Back to Clubs</Button>
           </div>
         </div>
       </Layout>
@@ -242,9 +246,13 @@ export default function ClubDetail() {
   }
 
   return (
-    <Layout
+    <Layout 
       rightSidebar={
-        <ClubMembersRightSidebar clubId={clubId} isClubOwner={isOwner} isStudent={userType === "student"} />
+        <ClubMembersRightSidebar 
+          clubId={clubId}
+          isClubOwner={isOwner}
+          isStudent={userType === 'student'}
+        />
       }
     >
       <div className="max-w-3xl mx-auto space-y-6">
@@ -253,7 +261,7 @@ export default function ClubDetail() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate("/clubs")}
+            onClick={() => navigate('/clubs')}
             className="text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -267,8 +275,10 @@ export default function ClubDetail() {
             <div className="flex flex-col md:flex-row gap-6">
               {/* Logo */}
               <Avatar className="w-32 h-32">
-                <AvatarImage src={club.logo_url || ""} />
-                <AvatarFallback className="text-3xl">{club.club_name.slice(0, 2).toUpperCase()}</AvatarFallback>
+                <AvatarImage src={club.logo_url || ''} />
+                <AvatarFallback className="text-3xl">
+                  {club.club_name.slice(0, 2).toUpperCase()}
+                </AvatarFallback>
               </Avatar>
 
               {/* Details */}
@@ -282,13 +292,13 @@ export default function ClubDetail() {
                       </Badge>
                     )}
                   </div>
-
-                  {!isOwner && userType === "student" && (
+                  
+                  {!isOwner && userType === 'student' && (
                     <Button
                       onClick={isMember ? handleLeaveClub : handleRequestToJoin}
                       variant={isMember ? "outline" : hasPendingRequest ? "secondary" : "default"}
                     >
-                      {isMember ? "Leave Club" : hasPendingRequest ? "Pending... (Click to Cancel)" : "Request to Join"}
+                      {isMember ? 'Leave Club' : hasPendingRequest ? 'Pending... (Click to Cancel)' : 'Request to Join'}
                     </Button>
                   )}
                 </div>
@@ -298,7 +308,9 @@ export default function ClubDetail() {
                   <span>{club.member_count} members</span>
                 </div>
 
-                {club.club_description && <p className="text-foreground">{club.club_description}</p>}
+                {club.club_description && (
+                  <p className="text-foreground">{club.club_description}</p>
+                )}
 
                 {/* Manage Members Button - Only for owners */}
                 {isOwner && (
@@ -334,12 +346,7 @@ export default function ClubDetail() {
                   {club.website_url && (
                     <div className="flex items-center gap-2 text-sm">
                       <Globe className="w-4 h-4 text-muted-foreground" />
-                      <a
-                        href={club.website_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
+                      <a href={club.website_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                         {club.website_url}
                       </a>
                     </div>
