@@ -249,6 +249,20 @@ export const useClubJoinRequests = (clubId: string | null, isStudent: boolean = 
 
   const acceptRequest = async (requestId: string, studentId: string, clubId: string) => {
     try {
+      // Get club details before accepting
+      const { data: clubData } = await supabase
+        .from('clubs_profiles')
+        .select('club_name, user_id')
+        .eq('id', clubId)
+        .single();
+
+      // Get student profile
+      const { data: studentProfile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('user_id', studentId)
+        .single();
+
       // Call the database function to handle acceptance atomically
       const { error } = await supabase.rpc('accept_club_join_request', {
         request_id_param: requestId,
@@ -257,6 +271,19 @@ export const useClubJoinRequests = (clubId: string | null, isStudent: boolean = 
       });
 
       if (error) throw error;
+
+      // Create notification for the student
+      if (clubData && studentProfile) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: studentId,
+            type: 'club_accepted',
+            title: 'Club Request Accepted',
+            message: `Your request to join ${clubData.club_name} has been accepted!`,
+            related_user_id: clubData.user_id
+          });
+      }
 
       toast({
         title: "Success",
