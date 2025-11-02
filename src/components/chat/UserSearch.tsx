@@ -1,11 +1,12 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, MessageCircle } from 'lucide-react';
+import { Search, MessageCircle, Users } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useUsers } from '@/hooks/useUsers';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import CreateGroupModal from './CreateGroupModal';
 
 interface UserSearchProps {
   onStartChat: (userId: string) => void;
@@ -15,6 +16,7 @@ export default function UserSearch({ onStartChat }: UserSearchProps) {
   const { user } = useAuth();
   const [query, setQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
+  const [showGroupModal, setShowGroupModal] = useState(false);
   const { users, loading, searchUsers } = useUsers();
   const navigate = useNavigate();
   const searchRef = useRef<HTMLDivElement>(null);
@@ -70,16 +72,27 @@ export default function UserSearch({ onStartChat }: UserSearchProps) {
   const filteredUsers = users.filter(searchUser => searchUser.user_id !== user?.id);
 
   return (
-    <div className="relative" ref={searchRef}>
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-        <Input 
-          placeholder="Search users to chat with..." 
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="pl-10 bg-muted/50 border-muted text-foreground placeholder:text-muted-foreground focus:border-primary"
-        />
-      </div>
+    <>
+      <div className="relative" ref={searchRef}>
+        <div className="relative flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input 
+              placeholder="Search users to chat with..." 
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="pl-10 bg-muted/50 border-muted text-foreground placeholder:text-muted-foreground focus:border-primary"
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setShowGroupModal(true)}
+            className="shrink-0"
+          >
+            <Users className="w-4 h-4" />
+          </Button>
+        </div>
       
       {showResults && (
         <div className="absolute top-full left-0 right-0 bg-card border border-border rounded-lg mt-1 shadow-lg z-50 max-h-80 overflow-y-auto">
@@ -130,6 +143,11 @@ export default function UserSearch({ onStartChat }: UserSearchProps) {
           ) : null}
         </div>
       )}
-    </div>
+      </div>
+      <CreateGroupModal
+        open={showGroupModal}
+        onOpenChange={setShowGroupModal}
+      />
+    </>
   );
 }
