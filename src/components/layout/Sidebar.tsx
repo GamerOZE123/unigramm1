@@ -20,22 +20,25 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const [userType, setUserType] = useState<string>('Student');
+  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
-    fetchUserType();
+    fetchUserData();
   }, [user]);
 
-  const fetchUserType = async () => {
+  const fetchUserData = async () => {
     if (!user) return;
     
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('user_type')
+        .select('user_type, username, avatar_url')
         .eq('user_id', user.id)
         .single();
       
       if (error) throw error;
+      
+      setProfile(data);
       
       if (data?.user_type === 'clubs') {
         setUserType('Club');
@@ -45,7 +48,7 @@ export default function Sidebar() {
         setUserType('Student');
       }
     } catch (error) {
-      console.error('Error fetching user type:', error);
+      console.error('Error fetching user data:', error);
     }
   };
 
@@ -114,14 +117,18 @@ export default function Sidebar() {
           </Button>
           
           <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface transition-colors cursor-pointer">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
-              <span className="text-sm font-bold text-white">
-                {user?.email?.charAt(0).toUpperCase() || 'U'}
-              </span>
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center overflow-hidden">
+              {profile?.avatar_url ? (
+                <img src={profile.avatar_url} alt={profile.username || 'User'} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-sm font-bold text-white">
+                  {profile?.username?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+                </span>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">
-                {user?.email || 'User'}
+                {profile?.username || user?.email || 'User'}
               </p>
               <p className="text-xs text-muted-foreground truncate">{userType}</p>
             </div>
