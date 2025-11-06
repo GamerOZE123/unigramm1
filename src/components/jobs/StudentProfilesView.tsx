@@ -19,7 +19,6 @@ interface StudentProfile {
     avatar_url: string;
     university: string;
     major: string;
-    email: string;
   };
 }
 
@@ -34,6 +33,8 @@ export default function StudentProfilesView() {
 
   const fetchStudentProfiles = async () => {
     try {
+      // SECURITY: Email addresses removed from query
+      // Companies should only contact students who have applied to their jobs
       const { data, error } = await supabase
         .from('student_profiles')
         .select(`
@@ -42,8 +43,7 @@ export default function StudentProfilesView() {
             full_name,
             avatar_url,
             university,
-            major,
-            email
+            major
           )
         `)
         .limit(20);
@@ -57,8 +57,9 @@ export default function StudentProfilesView() {
     }
   };
 
-  const handleContactStudent = (email: string) => {
-    window.location.href = `mailto:${email}`;
+  const handleViewProfile = (userId: string) => {
+    // Navigate to student profile page (to be implemented)
+    console.log('View profile:', userId);
   };
 
   if (loading) {
@@ -155,19 +156,19 @@ export default function StudentProfilesView() {
               )}
             </div>
 
-            <div className="flex gap-2">
+            <div className="space-y-2">
               <Button 
-                size="sm" 
-                onClick={() => handleContactStudent(student.profiles.email)}
-                className="flex-1"
+                variant="outline" 
+                size="sm"
+                onClick={() => handleViewProfile(student.user_id)}
+                className="w-full"
               >
-                <Mail className="w-4 h-4 mr-2" />
-                Contact
-              </Button>
-              <Button size="sm" variant="outline">
                 <ExternalLink className="w-4 h-4 mr-2" />
                 View Profile
               </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                💡 To contact students, they must apply to your job postings
+              </p>
             </div>
           </Card>
         ))}
