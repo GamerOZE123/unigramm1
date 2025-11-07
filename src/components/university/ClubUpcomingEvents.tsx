@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Calendar, Plus, MapPin, Clock, Loader2 } from 'lucide-react';
+import { Calendar, Plus, MapPin, Clock, Loader2, Edit } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -14,6 +14,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import EditClubEventModal from './EditClubEventModal';
 
 interface ClubEvent {
   id: string;
@@ -25,18 +27,33 @@ interface ClubEvent {
   image_url: string | null;
   max_attendees: number | null;
   current_attendees: number;
+  club_id: string;
+  clubs_profiles?: {
+    logo_url: string | null;
+    club_name: string;
+  };
 }
 
 interface ClubUpcomingEventsProps {
   clubId?: string;
   isOwner?: boolean;
+  limit?: number;
+  showClubInfo?: boolean;
+  horizontal?: boolean;
 }
 
-export default function ClubUpcomingEvents({ clubId, isOwner = false }: ClubUpcomingEventsProps) {
+export default function ClubUpcomingEvents({ 
+  clubId, 
+  isOwner = false, 
+  limit, 
+  showClubInfo = false,
+  horizontal = false 
+}: ClubUpcomingEventsProps) {
   const [events, setEvents] = useState<ClubEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<ClubEvent | null>(null);
   const { toast } = useToast();
 
   const [newEvent, setNewEvent] = useState({
@@ -55,15 +72,22 @@ export default function ClubUpcomingEvents({ clubId, isOwner = false }: ClubUpco
   }, [clubId]);
 
   const fetchEvents = async () => {
-    if (!clubId) return;
-    
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('club_events')
-        .select('*')
-        .eq('club_id', clubId)
+        .select('*, clubs_profiles(logo_url, club_name)')
         .gte('event_date', new Date().toISOString().split('T')[0])
         .order('event_date', { ascending: true });
+
+      if (clubId) {
+        query = query.eq('club_id', clubId);
+      }
+
+      if (limit) {
+        query = query.limit(limit);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setEvents(data || []);
@@ -224,34 +248,71 @@ export default function ClubUpcomingEvents({ clubId, isOwner = false }: ClubUpco
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className={horizontal ? "flex gap-3 overflow-x-auto pb-2" : "space-y-3"}>
           {events.map((event) => (
-            <div key={event.id} className="p-4 border rounded-lg space-y-2">
-              <h3 className="font-semibold text-foreground">{event.title}</h3>
-              {event.description && (
-                <p className="text-sm text-muted-foreground">{event.description}</p>
-              )}
-              <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-3 h-3" />
-                  <span>{format(new Date(event.event_date), 'PPP')}</span>
+            <div key={event.id} className={`p-4 border rounded-lg space-y-2 ${horizontal ? 'min-w-[300px]' : ''}`}>
+              <div className="flex items-start gap-3">
+                {showClubInfo && event.clubs_profiles && (
+                  <Avatar className="w-10 h-10">
+                    <AvatarImage src={event.clubs_profiles.logo_url || ''} />
+                    <AvatarFallback>
+                      {event.clubs_profiles.club_name.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="font-semibold text-foreground">{event.title}</h3>
+                    {isOwner && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 shrink-0"
+                        onClick={() => setEditingEvent(event)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                  {showClubInfo && event.clubs_profiles && (
+                    <p className="text-xs text-primary mb-1">{event.clubs_profiles.club_name}</p>
+                  )}
+                  {event.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">{event.description}</p>
+                  )}
+                  <div className="flex flex-col gap-1 text-xs text-muted-foreground mt-2">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-3 h-3" />
+                      <span>{format(new Date(event.event_date), 'MMM dd, yyyy')}</span>
+                    </div>
+                    {event.event_time && (
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-3 h-3" />
+                        <span>{event.event_time}</span>
+                      </div>
+                    )}
+                    {event.location && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-3 h-3" />
+                        <span className="truncate">{event.location}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                {event.event_time && (
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-3 h-3" />
-                    <span>{event.event_time}</span>
-                  </div>
-                )}
-                {event.location && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-3 h-3" />
-                    <span>{event.location}</span>
-                  </div>
-                )}
               </div>
             </div>
           ))}
         </div>
+      )}
+
+      {/* Edit Event Modal */}
+      {editingEvent && (
+        <EditClubEventModal
+          open={!!editingEvent}
+          onOpenChange={(open) => !open && setEditingEvent(null)}
+          event={editingEvent}
+          onSuccess={fetchEvents}
+        />
       )}
     </div>
   );

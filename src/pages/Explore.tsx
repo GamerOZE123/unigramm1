@@ -13,6 +13,7 @@ import { useTrendingUniversities } from '@/hooks/useTrendingUniversities';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
+import ClubUpcomingEvents from '@/components/university/ClubUpcomingEvents';
 
 interface PostImage {
   id: string;
@@ -154,7 +155,6 @@ export default function Explore() {
     setSearchPostsLoading(true);
     try {
       if (type === 'hashtag') {
-        // Fetch posts by hashtag
         const { data: allPosts, error: postsError } = await supabase
           .from('posts')
           .select('*')
@@ -189,7 +189,6 @@ export default function Explore() {
 
         setSearchPosts(transformedPosts);
       } else {
-        // Fetch posts by university
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('user_id, username, full_name, avatar_url, university')
@@ -222,6 +221,22 @@ export default function Explore() {
         }));
 
         setSearchPosts(transformedPosts);
+        
+        // Fetch upcoming events for this university
+        const today = new Date().toISOString().split('T')[0];
+        const { data: eventsData } = await supabase
+          .from('club_events')
+          .select('id, title, event_date, event_time, location, club_id, clubs_profiles(club_name, logo_url, university)')
+          .gte('event_date', today)
+          .order('event_date', { ascending: true })
+          .limit(3);
+        
+        // Filter events by matching university
+        const universityEvents = eventsData?.filter(event => 
+          event.clubs_profiles?.university?.toLowerCase().includes(searchTerm.toLowerCase())
+        ) || [];
+        
+        setUpcomingEvents(universityEvents);
       }
     } catch (error) {
       console.error('Error fetching search posts:', error);
@@ -580,6 +595,21 @@ export default function Explore() {
               </div>
             ) : searchPosts.length > 0 ? (
               <div className="space-y-4">
+                {/* Show upcoming events for university search (not hashtag) */}
+                {!searchQuery.startsWith('#') && upcomingEvents.length > 0 && (
+                  <div className="post-card mb-4">
+                    <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-primary" />
+                      Upcoming Events
+                    </h3>
+                    <ClubUpcomingEvents 
+                      limit={3} 
+                      showClubInfo={true} 
+                      horizontal={true}
+                    />
+                  </div>
+                )}
+                
                 {searchPosts.map((post) => (
                   <PostCard
                     key={post.id}

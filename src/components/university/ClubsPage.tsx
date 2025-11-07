@@ -3,13 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Mail, Phone, Globe, Edit } from 'lucide-react';
+import { Users, Mail, Phone, Globe, Edit, Upload } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import EditClubModal from './EditClubModal';
 import ClubUpcomingEvents from './ClubUpcomingEvents';
 import ClubMembersRightSidebar from './ClubMembersRightSidebar';
+import ProfilePictureUploadStep from '@/components/auth/onboarding/ProfilePictureUploadStep';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface ClubProfile {
   id: string;
@@ -38,6 +40,7 @@ export default function ClubsPage() {
   const [otherClubs, setOtherClubs] = useState<ClubProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [isClubOwner, setIsClubOwner] = useState(false);
   const [isStudent, setIsStudent] = useState(false);
 
@@ -144,14 +147,24 @@ export default function ClubsPage() {
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-semibold">Your Club</h2>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditModalOpen(true)}
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit Club
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setUploadModalOpen(true)}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Logo
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditModalOpen(true)}
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit Club
+                      </Button>
+                    </div>
                   </div>
                   <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <Card 
@@ -340,19 +353,37 @@ export default function ClubsPage() {
         )}
       </div>
 
-      {/* Right Sidebar - Always show upcoming events */}
+      {/* Right Sidebar - Show upcoming events with limit */}
       <div className="lg:sticky lg:top-4 lg:h-fit space-y-4">
-        <ClubUpcomingEvents />
+        <ClubUpcomingEvents limit={3} showClubInfo={true} />
       </div>
 
       {/* Edit Modal */}
       {ownClub && (
-        <EditClubModal
-          open={editModalOpen}
-          onOpenChange={setEditModalOpen}
-          club={ownClub}
-          onSuccess={fetchClubs}
-        />
+        <>
+          <EditClubModal
+            open={editModalOpen}
+            onOpenChange={setEditModalOpen}
+            club={ownClub}
+            onSuccess={fetchClubs}
+          />
+          
+          {/* Upload Logo Modal */}
+          <Dialog open={uploadModalOpen} onOpenChange={setUploadModalOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Upload Club Logo</DialogTitle>
+              </DialogHeader>
+              <ProfilePictureUploadStep
+                currentLogoUrl={ownClub.logo_url}
+                onUploadSuccess={(url) => {
+                  setUploadModalOpen(false);
+                  fetchClubs();
+                }}
+              />
+            </DialogContent>
+          </Dialog>
+        </>
       )}
     </div>
   );
