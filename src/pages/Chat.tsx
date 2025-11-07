@@ -308,9 +308,9 @@ export default function Chat() {
   if (!isMobile) {
     return (
       <Layout>
-        <div className="h-[calc(100vh-6rem)] flex gap-4 pt-2">
+        <div className="h-[calc(100vh-4rem)] flex gap-4">
           {/* Left column - user list */}
-          <div className="w-1/3 bg-card border border-border rounded-2xl p-4 overflow-y-auto">
+          <div className="w-80 bg-card border border-border rounded-2xl p-4 overflow-y-auto flex-shrink-0">
             <h2 className="text-xl font-bold text-foreground mb-4">Messages</h2>
             <UserSearch onStartChat={handleUserClick} />
             <div className="mt-6 space-y-4">

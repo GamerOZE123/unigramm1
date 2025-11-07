@@ -65,6 +65,25 @@
     @apply bg-background text-foreground font-sans;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+
+  /* Mobile size reduction */
+  @media (max-width: 768px) {
+    html {
+      font-size: 14px;
+    }
+    
+    h1 {
+      @apply text-xl;
+    }
+    
+    h2 {
+      @apply text-lg;
+    }
+    
+    h3 {
+      @apply text-base;
+    }
+  }
   
   /* Scrollbar Styling */
   ::-webkit-scrollbar {

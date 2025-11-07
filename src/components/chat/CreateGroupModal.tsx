@@ -135,9 +135,9 @@ export default function CreateGroupModal({ open, onOpenChange, onGroupCreated }:
       setSearchQuery('');
       onOpenChange(false);
       onGroupCreated?.();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating group:', error);
-      toast.error('Failed to create group');
+      toast.error(error?.message || 'Failed to create group. Please check your connection.');
     } finally {
       setLoading(false);
     }

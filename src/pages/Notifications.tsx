@@ -42,10 +42,10 @@ export default function Notifications() {
 
     // Handle different notification types
     if (notification.type === "message" && notification.related_user_id) {
-      // Create conversation and navigate to chat
+      // Create conversation and navigate to chat with conversation ID
       const conversationId = await createConversation(notification.related_user_id);
       if (conversationId) {
-        navigate("/chat");
+        navigate(`/chat?conversation=${conversationId}`);
       }
     } else if (notification.type === "carpool_request" || notification.type === "carpool_accepted") {
       // Navigate to carpooling page

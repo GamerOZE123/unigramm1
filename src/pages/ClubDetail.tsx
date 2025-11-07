@@ -14,7 +14,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useClubJoinRequests } from '@/hooks/useClubJoinRequests';
 import ClubMemberManagement from '@/components/university/ClubMemberManagement';
+import EditClubModal from '@/components/university/EditClubModal';
+import ProfilePictureUploadStep from '@/components/auth/onboarding/ProfilePictureUploadStep';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Edit } from 'lucide-react';
 
 interface ClubProfile {
   id: string;
@@ -41,6 +44,7 @@ export default function ClubDetail() {
   const [isOwner, setIsOwner] = useState(false);
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
   const [showManageMembersModal, setShowManageMembersModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const { sendJoinRequest, cancelJoinRequest } = useClubJoinRequests(clubId || null, false);
 
   useEffect(() => {
@@ -293,14 +297,23 @@ export default function ClubDetail() {
                     )}
                   </div>
                   
-                  {!isOwner && userType === 'student' && (
-                    <Button
-                      onClick={isMember ? handleLeaveClub : handleRequestToJoin}
-                      variant={isMember ? "outline" : hasPendingRequest ? "secondary" : "default"}
-                    >
-                      {isMember ? 'Leave Club' : hasPendingRequest ? 'Pending... (Click to Cancel)' : 'Request to Join'}
-                    </Button>
-                  )}
+                  <div className="flex gap-2">
+                    {isOwner && (
+                      <Button onClick={() => setShowEditModal(true)} variant="outline" size="sm">
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit Profile
+                      </Button>
+                    )}
+                    
+                    {!isOwner && userType === 'student' && (
+                      <Button
+                        onClick={isMember ? handleLeaveClub : handleRequestToJoin}
+                        variant={isMember ? "outline" : hasPendingRequest ? "secondary" : "default"}
+                      >
+                        {isMember ? 'Leave Club' : hasPendingRequest ? 'Pending... (Click to Cancel)' : 'Request to Join'}
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -312,9 +325,19 @@ export default function ClubDetail() {
                   <p className="text-foreground">{club.club_description}</p>
                 )}
 
-                {/* Manage Members Button - Only for owners */}
+                {/* Logo Upload & Manage Members - Only for owners */}
                 {isOwner && (
-                  <div className="pt-4">
+                  <div className="pt-4 space-y-3">
+                    <ProfilePictureUploadStep 
+                      currentLogoUrl={club.logo_url || undefined}
+                      onUploadSuccess={(url) => {
+                        setClub({ ...club, logo_url: url });
+                        toast({
+                          title: "Success",
+                          description: "Logo updated successfully"
+                        });
+                      }}
+                    />
                     <Button onClick={() => setShowManageMembersModal(true)} variant="outline" className="w-full">
                       <Users className="w-4 h-4 mr-2" />
                       Manage Members
@@ -389,6 +412,19 @@ export default function ClubDetail() {
           {clubId && <ClubMemberManagement clubId={clubId} />}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Club Modal */}
+      {club && (
+        <EditClubModal
+          open={showEditModal}
+          onOpenChange={setShowEditModal}
+          club={club}
+          onSuccess={() => {
+            fetchClubDetails();
+            setShowEditModal(false);
+          }}
+        />
+      )}
     </Layout>
   );
 }
