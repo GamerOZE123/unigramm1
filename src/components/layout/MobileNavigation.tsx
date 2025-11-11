@@ -52,8 +52,13 @@ export default function MobileNavigation() {
     return item;
   });
 
+  const isGhostRoute = location.pathname === '/ghost-chat';
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border md:hidden">
+    <nav className={cn(
+      "fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border md:hidden",
+      isGhostRoute && "ghost-mode"
+    )}>
       <div className="grid grid-cols-5 h-16">
         {updatedNavigation.map((item) => {
           const isActive = location.pathname === item.href;
