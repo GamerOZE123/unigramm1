@@ -5,9 +5,10 @@ import UserSearch from '@/components/chat/UserSearch';
 import MobileChatHeader from '@/components/chat/MobileChatHeader';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Send, MoreVertical, Trash2, MessageSquareX, UserX, Loader2, ImagePlus, Smile } from 'lucide-react';
+import { Send, MoreVertical, Trash2, MessageSquareX, UserX, Loader2, ImagePlus, Smile, Search, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/hooks/useChat';
 import { useRecentChats } from '@/hooks/useRecentChats';
@@ -16,8 +17,11 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useMessageReactions } from '@/hooks/useMessageReactions';
+import { useMessageSearch } from '@/hooks/useMessageSearch';
 
 const TEXT_EMOJIS = ["😀", "😂", "🥰", "😍", "🤔", "👍", "❤️", "🎉", "🔥", "✨", "💯", "🙏"];
+const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
 export default function Chat() {
   const { user } = useAuth();
@@ -35,10 +39,14 @@ export default function Chat() {
   const [selectedChatsForBulk, setSelectedChatsForBulk] = useState<Set<string>>(new Set()); // For bulk delete
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const previousMessagesLength = useRef(0);
+  const { reactions, toggleReaction } = useMessageReactions(selectedConversationId);
+  const { searchResults, loading: searchLoading, searchMessages, clearSearch } = useMessageSearch();
   const {
     conversations,
     currentMessages,
@@ -254,6 +262,28 @@ export default function Chat() {
     setNewMessage((prev) => prev + emoji);
   };
 
+  const handleSearch = () => {
+    if (selectedConversationId && searchQuery.trim()) {
+      searchMessages(selectedConversationId, searchQuery);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    clearSearch();
+    setShowSearch(false);
+  };
+
+  const scrollToMessage = (messageId: string) => {
+    const messageElement = document.getElementById(`message-${messageId}`);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      messageElement.classList.add('bg-primary/10');
+      setTimeout(() => messageElement.classList.remove('bg-primary/10'), 2000);
+    }
+    handleClearSearch();
+  };
+
   const renderMessageContent = (content: string) => {
     const imageMatch = content.match(/\[IMAGE\](.*?)\[\/IMAGE\]/);
     if (imageMatch) {
@@ -435,45 +465,94 @@ export default function Chat() {
             {!chatLoading && selectedUser ? (
               <>
                 {/* Chat header */}
-                <div className="p-4 border-b border-border flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center overflow-hidden">
-                      {selectedUser.avatar_url ? (
-                        <img src={selectedUser.avatar_url} alt={selectedUser.full_name || selectedUser.username} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-sm font-bold text-white">
-                          {selectedUser.full_name?.charAt(0) || selectedUser.username?.charAt(0) || 'U'}
-                        </span>
-                      )}
+                <div className="p-4 border-b border-border">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center overflow-hidden">
+                        {selectedUser.avatar_url ? (
+                          <img src={selectedUser.avatar_url} alt={selectedUser.full_name || selectedUser.username} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-sm font-bold text-white">
+                            {selectedUser.full_name?.charAt(0) || selectedUser.username?.charAt(0) || 'U'}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <h3
+                          className="font-semibold text-foreground cursor-pointer hover:text-primary"
+                          onClick={() => navigate(`/profile/${selectedUser.user_id}`)}
+                        >
+                          {selectedUser.full_name || selectedUser.username}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">{selectedUser.university}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h3
-                        className="font-semibold text-foreground cursor-pointer hover:text-primary"
-                        onClick={() => navigate(`/profile/${selectedUser.user_id}`)}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setShowSearch(!showSearch)}
                       >
-                        {selectedUser.full_name || selectedUser.username}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">{selectedUser.university}</p>
+                        <Search className="w-4 h-4" />
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={handleClearChat}>
+                            <MessageSquareX className="w-4 h-4 mr-2" /> Clear Chat
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDeleteChat(selectedConversationId!, selectedUser.user_id)}>
+                            <Trash2 className="w-4 h-4 mr-2" /> Delete Chat
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={handleBlockUser} className="text-destructive">
+                            <UserX className="w-4 h-4 mr-2" /> Block User
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="w-4 h-4" />
+                  
+                  {/* Search bar */}
+                  {showSearch && (
+                    <div className="flex gap-2 mt-2">
+                      <Input
+                        placeholder="Search messages..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                        className="flex-1"
+                      />
+                      <Button onClick={handleSearch} size="sm" disabled={searchLoading}>
+                        Search
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={handleClearChat}>
-                        <MessageSquareX className="w-4 h-4 mr-2" /> Clear Chat
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDeleteChat(selectedConversationId!, selectedUser.user_id)}>
-                        <Trash2 className="w-4 h-4 mr-2" /> Delete Chat
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={handleBlockUser} className="text-destructive">
-                        <UserX className="w-4 h-4 mr-2" /> Block User
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                      <Button onClick={handleClearSearch} size="sm" variant="ghost">
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Search results */}
+                  {searchResults.length > 0 && (
+                    <div className="mt-2 max-h-40 overflow-y-auto bg-muted/30 rounded-lg p-2">
+                      <p className="text-xs text-muted-foreground mb-2">Found {searchResults.length} message(s)</p>
+                      {searchResults.map((msg) => (
+                        <div
+                          key={msg.id}
+                          onClick={() => scrollToMessage(msg.id)}
+                          className="p-2 hover:bg-muted rounded cursor-pointer text-sm"
+                        >
+                          <p className="truncate">{msg.content}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(msg.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 {/* Chat messages */}
                 <div
@@ -482,27 +561,80 @@ export default function Chat() {
                   className="flex-1 p-4 overflow-y-auto space-y-4 relative"
                 >
                   {currentMessages.length ? (
-                    currentMessages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
-                      >
+                    currentMessages.map((message) => {
+                      const messageReactions = reactions[message.id] || [];
+                      const isMine = message.sender_id === user?.id;
+                      return (
                         <div
-                          className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
-                           message.sender_id === user?.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
-                          }`}
+                          key={message.id}
+                          id={`message-${message.id}`}
+                          className={`flex gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'} transition-colors duration-500`}
                         >
-                          {renderMessageContent(message.content)}
-                          <p
+                          <div className={`max-w-xs lg:max-w-md flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
+                            <div
+                              className={`px-4 py-2 rounded-2xl ${
+                                isMine ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                              }`}
+                            >
+                              {renderMessageContent(message.content)}
+                              <p
                             className={`text-xs mt-1 ${
                               message.sender_id === user?.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                            }`}
-                          >
-                            {new Date(message.created_at).toLocaleTimeString()}
-                          </p>
+                                 }`}
+                              >
+                                {new Date(message.created_at).toLocaleTimeString()}
+                              </p>
+                            </div>
+                            
+                            {/* Reactions */}
+                            {messageReactions.length > 0 && (
+                              <div className="flex items-center gap-1 mt-1 flex-wrap">
+                                {messageReactions.map((r) => (
+                                  <button
+                                    key={r.emoji}
+                                    onClick={() => toggleReaction(message.id, r.emoji)}
+                                    className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 transition-colors ${
+                                      r.hasReacted
+                                        ? "bg-primary/30 border border-primary/50"
+                                        : "bg-card border border-border hover:bg-muted"
+                                    }`}
+                                  >
+                                    <span>{r.emoji}</span>
+                                    <span className="text-muted-foreground">{r.count}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            
+                            {/* Add reaction button */}
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <Smile className="w-3 h-3" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-2" align={isMine ? "end" : "start"}>
+                                <div className="flex gap-1">
+                                  {REACTION_EMOJIS.map((e) => (
+                                    <button
+                                      key={e}
+                                      onClick={() => toggleReaction(message.id, e)}
+                                      className="w-8 h-8 rounded hover:bg-muted flex items-center justify-center transition-colors"
+                                    >
+                                      {e}
+                                    </button>
+                                  ))}
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="flex items-center justify-center h-full text-center">
                       <div>
@@ -704,27 +836,80 @@ export default function Chat() {
                 </div>
               )}
               {!chatLoading && currentMessages.length ? (
-                currentMessages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`flex ${message.sender_id === user?.id ? 'justify-end' : 'justify-start'}`}
-                  >
+                currentMessages.map((message) => {
+                  const messageReactions = reactions[message.id] || [];
+                  const isMine = message.sender_id === user?.id;
+                  return (
                     <div
-                      className={`max-w-xs px-4 py-2 rounded-2xl ${
-                       message.sender_id === user?.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
-                      }`}
+                      key={message.id}
+                      id={`message-${message.id}`}
+                      className={`flex gap-2 group ${isMine ? 'flex-row-reverse' : 'flex-row'} transition-colors duration-500`}
                     >
-                      {renderMessageContent(message.content)}
-                      <p
+                      <div className={`max-w-xs flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
+                        <div
+                          className={`px-4 py-2 rounded-2xl ${
+                            isMine ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                          }`}
+                        >
+                          {renderMessageContent(message.content)}
+                          <p
                         className={`text-xs mt-1 ${
-                          message.sender_id === user?.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                        }`}
-                      >
-                        {new Date(message.created_at).toLocaleTimeString()}
-                      </p>
+                            isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                          }`}
+                        >
+                          {new Date(message.created_at).toLocaleTimeString()}
+                        </p>
+                      </div>
+                      
+                      {/* Reactions */}
+                      {messageReactions.length > 0 && (
+                        <div className="flex items-center gap-1 mt-1 flex-wrap">
+                          {messageReactions.map((r) => (
+                            <button
+                              key={r.emoji}
+                              onClick={() => toggleReaction(message.id, r.emoji)}
+                              className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 transition-colors ${
+                                r.hasReacted
+                                  ? "bg-primary/30 border border-primary/50"
+                                  : "bg-card border border-border hover:bg-muted"
+                              }`}
+                            >
+                              <span>{r.emoji}</span>
+                              <span className="text-muted-foreground">{r.count}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Add reaction button */}
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Smile className="w-3 h-3" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-2" align={isMine ? "end" : "start"}>
+                          <div className="flex gap-1">
+                            {REACTION_EMOJIS.map((e) => (
+                              <button
+                                key={e}
+                                onClick={() => toggleReaction(message.id, e)}
+                                className="w-8 h-8 rounded hover:bg-muted flex items-center justify-center transition-colors"
+                              >
+                                {e}
+                              </button>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                   </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="flex items-center justify-center h-full text-center">
                   <div>
