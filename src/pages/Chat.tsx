@@ -8,8 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, MoreVertical, Trash2, MessageSquareX, UserX, Loader2, ImagePlus, Smile, Search, X, Pin } from 'lucide-react';
+import { Send, MoreVertical, Trash2, MessageSquareX, UserX, Loader2, ImagePlus, Smile, Search, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/hooks/useChat';
 import { useRecentChats } from '@/hooks/useRecentChats';
@@ -20,8 +19,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useMessageReactions } from '@/hooks/useMessageReactions';
 import { useMessageSearch } from '@/hooks/useMessageSearch';
-import { useConversationPinnedMessages } from '@/hooks/useConversationPinnedMessages';
-import { formatDistanceToNow } from 'date-fns';
 
 const TEXT_EMOJIS = ["😀", "😂", "🥰", "😍", "🤔", "👍", "❤️", "🎉", "🔥", "✨", "💯", "🙏"];
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
@@ -50,8 +47,6 @@ export default function Chat() {
   const previousMessagesLength = useRef(0);
   const { reactions, toggleReaction } = useMessageReactions(selectedConversationId);
   const { searchResults, loading: searchLoading, searchMessages, clearSearch } = useMessageSearch();
-  const { pinnedMessages, pinMessage, unpinMessage, isPinned, getPinnedMessageId } = useConversationPinnedMessages(selectedConversationId);
-  const [showPinnedPanel, setShowPinnedPanel] = useState(false);
   const {
     conversations,
     currentMessages,
@@ -289,22 +284,6 @@ export default function Chat() {
     handleClearSearch();
   };
 
-  const scrollToPinnedMessage = (messageId: string) => {
-    setShowPinnedPanel(false);
-    scrollToMessage(messageId);
-  };
-
-  const handlePinToggle = async (messageId: string) => {
-    if (isPinned(messageId)) {
-      const pinnedId = getPinnedMessageId(messageId);
-      if (pinnedId) {
-        await unpinMessage(pinnedId);
-      }
-    } else {
-      await pinMessage(messageId);
-    }
-  };
-
   const renderMessageContent = (content: string) => {
     const imageMatch = content.match(/\[IMAGE\](.*?)\[\/IMAGE\]/);
     if (imageMatch) {
@@ -512,19 +491,6 @@ export default function Chat() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => setShowPinnedPanel(!showPinnedPanel)}
-                        className="relative"
-                      >
-                        <Pin className="w-4 h-4" />
-                        {pinnedMessages.length > 0 && (
-                          <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground rounded-full text-xs flex items-center justify-center">
-                            {pinnedMessages.length}
-                          </span>
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
                         onClick={() => setShowSearch(!showSearch)}
                       >
                         <Search className="w-4 h-4" />
@@ -585,65 +551,6 @@ export default function Chat() {
                           </p>
                         </div>
                       ))}
-                    </div>
-                  )}
-                  
-                  {/* Pinned messages panel */}
-                  {showPinnedPanel && pinnedMessages.length > 0 && (
-                    <div className="mt-2 max-h-60 bg-muted/30 rounded-lg">
-                      <ScrollArea className="h-full">
-                        <div className="p-3 space-y-2">
-                          <div className="flex items-center justify-between mb-2">
-                            <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                              <Pin className="w-3 h-3" />
-                              {pinnedMessages.length} Pinned Message{pinnedMessages.length !== 1 ? 's' : ''}
-                            </p>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setShowPinnedPanel(false)}
-                              className="h-6 px-2"
-                            >
-                              <X className="w-3 h-3" />
-                            </Button>
-                          </div>
-                          {pinnedMessages.map((pinned) => (
-                            <div
-                              key={pinned.id}
-                              onClick={() => scrollToPinnedMessage(pinned.message_id)}
-                              className="p-2 hover:bg-muted rounded cursor-pointer"
-                            >
-                              <div className="flex items-start gap-2">
-                                <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
-                                  {pinned.message?.sender?.avatar_url ? (
-                                    <img src={pinned.message.sender.avatar_url} alt="" className="w-full h-full object-cover" />
-                                  ) : (
-                                    <span className="text-xs font-bold text-white">
-                                      {pinned.message?.sender?.full_name?.charAt(0) || 
-                                       pinned.message?.sender?.username?.charAt(0) || 'U'}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <p className="text-xs font-medium truncate">
-                                      {pinned.message?.sender?.full_name || 
-                                       pinned.message?.sender?.username || 'Unknown'}
-                                    </p>
-                                    <span className="text-xs text-muted-foreground">
-                                      {pinned.message?.created_at &&
-                                        formatDistanceToNow(new Date(pinned.message.created_at), {
-                                          addSuffix: true,
-                                        })}
-                                    </span>
-                                  </div>
-                                  <p className="text-xs truncate">{pinned.message?.content}</p>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </ScrollArea>
                     </div>
                   )}
                 </div>
@@ -707,8 +614,7 @@ export default function Chat() {
                                   size="sm"
                                   className="h-6 px-2 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                 >
-                                  <Smile className="w-3 h-3 mr-1" />
-                                  React
+                                  <Smile className="w-3 h-3" />
                                 </Button>
                               </PopoverTrigger>
                               <PopoverContent className="w-auto p-2" align={isMine ? "end" : "start"}>
@@ -725,19 +631,6 @@ export default function Chat() {
                                 </div>
                               </PopoverContent>
                             </Popover>
-                            
-                            {/* Pin button */}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handlePinToggle(message.id)}
-                              className={`h-6 px-2 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity ${
-                                isPinned(message.id) ? 'text-primary' : ''
-                              }`}
-                            >
-                              <Pin className="w-3 h-3 mr-1" />
-                              {isPinned(message.id) ? 'Unpin' : 'Pin'}
-                            </Button>
                           </div>
                         </div>
                       );
@@ -996,8 +889,7 @@ export default function Chat() {
                             size="sm"
                             className="h-6 px-2 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity"
                           >
-                            <Smile className="w-3 h-3 mr-1" />
-                            React
+                            <Smile className="w-3 h-3" />
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-2" align={isMine ? "end" : "start"}>
@@ -1014,19 +906,6 @@ export default function Chat() {
                           </div>
                         </PopoverContent>
                       </Popover>
-                      
-                      {/* Pin button */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handlePinToggle(message.id)}
-                        className={`h-6 px-2 text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity ${
-                          isPinned(message.id) ? 'text-primary' : ''
-                        }`}
-                      >
-                        <Pin className="w-3 h-3 mr-1" />
-                        {isPinned(message.id) ? 'Unpin' : 'Pin'}
-                      </Button>
                     </div>
                   </div>
                   );

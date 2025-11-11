@@ -887,30 +887,6 @@ export type Database = {
           },
         ]
       }
-      conversation_pinned_messages: {
-        Row: {
-          conversation_id: string
-          id: string
-          message_id: string
-          pinned_at: string
-          pinned_by: string
-        }
-        Insert: {
-          conversation_id: string
-          id?: string
-          message_id: string
-          pinned_at?: string
-          pinned_by: string
-        }
-        Update: {
-          conversation_id?: string
-          id?: string
-          message_id?: string
-          pinned_at?: string
-          pinned_by?: string
-        }
-        Relationships: []
-      }
       conversations: {
         Row: {
           created_at: string
