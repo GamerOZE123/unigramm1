@@ -15,7 +15,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useClubJoinRequests } from '@/hooks/useClubJoinRequests';
 import ClubMemberManagement from '@/components/university/ClubMemberManagement';
 import EditClubModal from '@/components/university/EditClubModal';
-import ProfilePictureUploadStep from '@/components/auth/onboarding/ProfilePictureUploadStep';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Edit } from 'lucide-react';
 
@@ -340,22 +339,9 @@ export default function ClubDetail() {
                   </div>
                 )}
 
-                {/* Logo Upload & Manage Members - Only for owners */}
+                {/* Manage Members Button - Only for owners */}
                 {isOwner && (
-                  <div className="pt-4 space-y-3 border-t">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">Upload Profile Picture</label>
-                      <ProfilePictureUploadStep 
-                        currentLogoUrl={club.logo_url || undefined}
-                        onUploadSuccess={(url) => {
-                          setClub({ ...club, logo_url: url });
-                          toast({
-                            title: "Success",
-                            description: "Profile picture updated successfully"
-                          });
-                        }}
-                      />
-                    </div>
+                  <div className="pt-4 border-t">
                     <Button onClick={() => setShowManageMembersModal(true)} variant="outline" className="w-full">
                       <Users className="w-4 h-4 mr-2" />
                       Manage Members

@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import ProfilePictureUploadStep from '@/components/auth/onboarding/ProfilePictureUploadStep';
 
 interface ClubProfile {
   id: string;
@@ -29,6 +30,7 @@ interface EditClubModalProps {
 export default function EditClubModal({ open, onOpenChange, club, onSuccess }: EditClubModalProps) {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const [logoUrl, setLogoUrl] = useState(club.logo_url || '');
   const [formData, setFormData] = useState({
     club_name: club.club_name,
     club_description: club.club_description || '',
@@ -84,6 +86,20 @@ export default function EditClubModal({ open, onOpenChange, club, onSuccess }: E
           <DialogTitle>Edit Club Profile</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label>Profile Picture</Label>
+            <ProfilePictureUploadStep 
+              currentLogoUrl={logoUrl}
+              onUploadSuccess={(url) => {
+                setLogoUrl(url);
+                toast({
+                  title: "Success",
+                  description: "Profile picture updated successfully"
+                });
+              }}
+            />
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="club_name">Club Name*</Label>
             <Input

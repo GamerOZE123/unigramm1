@@ -46,7 +46,7 @@ export default function ProfilePictureUploadStep({ currentLogoUrl, onUploadSucce
     setUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `club-${user.id}-${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}/club-logo-${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
