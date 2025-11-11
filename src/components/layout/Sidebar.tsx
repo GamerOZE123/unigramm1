@@ -4,17 +4,16 @@ import { Home, MessageCircle, User, GraduationCap, LogOut, Search, Bell, Setting
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import { useGhostMode } from '@/contexts/GhostModeContext';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 const navigation = [
   { name: 'Home', href: '/', icon: Home },
   { name: 'Explore', href: '/explore', icon: Search },
   { name: 'University', href: '/university', icon: GraduationCap },
   { name: 'Chat', href: '/chat', icon: MessageCircle },
+  { name: 'Ghost Chat', href: '/ghost-chat', icon: Ghost },
   { name: 'Profile', href: '/profile', icon: User }
 ];
 
@@ -22,7 +21,6 @@ export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
-  const { isGhostMode, toggleGhostMode } = useGhostMode();
   const [userType, setUserType] = useState<string>('Student');
   const [profile, setProfile] = useState<any>(null);
 
@@ -64,13 +62,6 @@ export default function Sidebar() {
     }
   };
 
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
-    if (isGhostMode) {
-      e.preventDefault();
-      toast.error('Turn off Ghost Mode to navigate');
-    }
-  };
-
   return (
     <aside className="fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border hidden md:block">
       <div className="flex flex-col h-full">
@@ -95,11 +86,9 @@ export default function Sidebar() {
                 <li key={item.name}>
                   <NavLink
                     to={item.href}
-                    onClick={(e) => handleNavClick(e, item.href)}
                     className={cn(
                       'nav-item relative',
-                      isActive && 'active',
-                      isGhostMode && 'opacity-50 cursor-not-allowed'
+                      isActive && 'active'
                     )}
                   >
                     <item.icon className="w-5 h-5" />
@@ -113,18 +102,7 @@ export default function Sidebar() {
 
         {/* User Profile at Bottom */}
         <div className="p-4 border-t border-border space-y-2">
-          <Button 
-            variant="ghost" 
-            onClick={toggleGhostMode}
-            className={`w-full justify-start hover:bg-muted/50 ${isGhostMode ? 'text-purple-400' : 'text-muted-foreground hover:text-foreground'}`}
-          >
-            <Ghost className="w-4 h-4 mr-2" />
-            <span className="text-sm">Ghost Mode</span>
-          </Button>
-          
-          <Separator className="my-2" />
-          
-          <Button 
+          <Button
             variant="ghost" 
             onClick={() => navigate('/notifications')}
             className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted/50"

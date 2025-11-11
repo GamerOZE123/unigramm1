@@ -28,6 +28,7 @@ import Post from '@/pages/Post';
 import Fitness from '@/pages/Fitness';
 import Advertising from '@/pages/Advertising';
 import Carpooling from '@/pages/Carpooling';
+import GhostChat from '@/pages/GhostChat';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,6 +66,7 @@ function App() {
               <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
               <Route path="/holidays" element={<ProtectedRoute><Holidays /></ProtectedRoute>} />
               <Route path="/fitness" element={<ProtectedRoute><Fitness /></ProtectedRoute>} />
+              <Route path="/ghost-chat" element={<ProtectedRoute><GhostChat /></ProtectedRoute>} />
               <Route path="/post/:postId" element={<ProtectedRoute><Post /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
