@@ -28,9 +28,10 @@ interface EditClubEventModalProps {
   onOpenChange: (open: boolean) => void;
   event: ClubEvent;
   onSuccess: () => void;
+  canDelete?: boolean;
 }
 
-export default function EditClubEventModal({ open, onOpenChange, event, onSuccess }: EditClubEventModalProps) {
+export default function EditClubEventModal({ open, onOpenChange, event, onSuccess, canDelete = true }: EditClubEventModalProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -187,9 +188,11 @@ export default function EditClubEventModal({ open, onOpenChange, event, onSucces
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Save Changes
             </Button>
-            <Button onClick={handleDelete} disabled={loading} variant="destructive">
-              Delete
-            </Button>
+            {canDelete && (
+              <Button onClick={handleDelete} disabled={loading} variant="destructive">
+                Delete
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

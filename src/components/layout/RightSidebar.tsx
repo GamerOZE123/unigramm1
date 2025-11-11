@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useTrendingUniversityPosts } from '@/hooks/useTrendingUniversityPosts';
 import { format } from 'date-fns';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface RandomUser {
   user_id: string;
@@ -26,6 +27,7 @@ interface UpcomingEvent {
   club_id: string;
   clubs_profiles?: {
     club_name: string;
+    logo_url: string | null;
   };
 }
 
@@ -48,7 +50,7 @@ export default function RightSidebar() {
       const today = new Date().toISOString().split('T')[0];
       const { data, error } = await supabase
         .from('club_events')
-        .select('id, title, event_date, event_time, location, club_id, clubs_profiles(club_name)')
+        .select('id, title, event_date, event_time, location, club_id, clubs_profiles(club_name, logo_url)')
         .gte('event_date', today)
         .order('event_date', { ascending: true })
         .limit(5);
@@ -157,14 +159,26 @@ export default function RightSidebar() {
                 className="p-3 rounded-lg hover:bg-muted/20 transition-colors cursor-pointer border border-border/50"
                 onClick={() => navigate('/explore?view=events')}
               >
-                <p className="text-sm font-medium text-foreground line-clamp-1">{event.title}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {format(new Date(event.event_date), 'MMM dd, yyyy')}
-                  {event.event_time && ` · ${event.event_time}`}
-                </p>
-                {event.clubs_profiles?.club_name && (
-                  <p className="text-xs text-primary mt-1">{event.clubs_profiles.club_name}</p>
-                )}
+                <div className="flex items-start gap-3">
+                  {event.clubs_profiles && (
+                    <Avatar className="w-10 h-10 shrink-0">
+                      <AvatarImage src={event.clubs_profiles.logo_url || ''} />
+                      <AvatarFallback className="text-xs">
+                        {event.clubs_profiles.club_name.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground line-clamp-1">{event.title}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {format(new Date(event.event_date), 'MMM dd, yyyy')}
+                      {event.event_time && ` · ${event.event_time}`}
+                    </p>
+                    {event.clubs_profiles?.club_name && (
+                      <p className="text-xs text-primary mt-1">{event.clubs_profiles.club_name}</p>
+                    )}
+                  </div>
+                </div>
               </div>
             ))
           )}

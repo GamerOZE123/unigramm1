@@ -36,7 +36,10 @@ interface ClubEvent {
 
 interface ClubUpcomingEventsProps {
   clubId?: string;
-  isOwner?: boolean;
+  canCreate?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  isOwner?: boolean; // Deprecated: use canCreate, canEdit, canDelete
   limit?: number;
   showClubInfo?: boolean;
   horizontal?: boolean;
@@ -44,11 +47,18 @@ interface ClubUpcomingEventsProps {
 
 export default function ClubUpcomingEvents({ 
   clubId, 
-  isOwner = false, 
+  canCreate = false,
+  canEdit = false,
+  canDelete = false,
+  isOwner = false, // Deprecated
   limit, 
   showClubInfo = false,
   horizontal = false 
 }: ClubUpcomingEventsProps) {
+  // Support legacy isOwner prop
+  const hasCreatePermission = canCreate || isOwner;
+  const hasEditPermission = canEdit || isOwner;
+  const hasDeletePermission = canDelete || isOwner;
   const [events, setEvents] = useState<ClubEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -161,7 +171,7 @@ export default function ClubUpcomingEvents({
 
   return (
     <div className="space-y-4">
-      {isOwner && (
+      {hasCreatePermission && (
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button className="w-full">
@@ -263,7 +273,7 @@ export default function ClubUpcomingEvents({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="font-semibold text-foreground">{event.title}</h3>
-                    {isOwner && (
+                    {hasEditPermission && (
                       <Button
                         variant="ghost"
                         size="icon"
@@ -312,6 +322,7 @@ export default function ClubUpcomingEvents({
           onOpenChange={(open) => !open && setEditingEvent(null)}
           event={editingEvent}
           onSuccess={fetchEvents}
+          canDelete={hasDeletePermission}
         />
       )}
     </div>

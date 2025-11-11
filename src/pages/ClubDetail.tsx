@@ -17,6 +17,7 @@ import ClubMemberManagement from '@/components/university/ClubMemberManagement';
 import EditClubModal from '@/components/university/EditClubModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Edit } from 'lucide-react';
+import { useClubPermissions } from '@/hooks/useClubPermissions';
 
 interface ClubProfile {
   id: string;
@@ -45,6 +46,7 @@ export default function ClubDetail() {
   const [showManageMembersModal, setShowManageMembersModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const { sendJoinRequest, cancelJoinRequest } = useClubJoinRequests(clubId || null, false);
+  const { permissions, loading: loadingPermissions } = useClubPermissions(clubId || null, club?.user_id);
 
   useEffect(() => {
     if (clubId) {
@@ -251,11 +253,11 @@ export default function ClubDetail() {
   return (
     <Layout 
       rightSidebar={
-        <ClubMembersRightSidebar 
-          clubId={clubId}
-          isClubOwner={isOwner}
-          isStudent={userType === 'student'}
-        />
+      <ClubMembersRightSidebar 
+        clubId={clubId}
+        isClubOwner={permissions.isOwner}
+        isStudent={userType === 'student'}
+      />
       }
     >
       <div className="max-w-3xl mx-auto space-y-6">
@@ -297,14 +299,14 @@ export default function ClubDetail() {
                   </div>
                   
                   <div className="flex gap-2">
-                    {isOwner && (
+                    {permissions.canEditClubProfile && (
                       <Button onClick={() => setShowEditModal(true)} variant="outline" size="sm">
                         <Edit className="w-4 h-4 mr-2" />
                         Edit Profile
                       </Button>
                     )}
                     
-                    {!isOwner && userType === 'student' && (
+                    {!permissions.isOwner && userType === 'student' && (
                       <Button
                         onClick={isMember ? handleLeaveClub : handleRequestToJoin}
                         variant={isMember ? "outline" : hasPendingRequest ? "secondary" : "default"}
@@ -339,13 +341,18 @@ export default function ClubDetail() {
                   </div>
                 )}
 
-                {/* Manage Members Button - Only for owners */}
-                {isOwner && (
+                {/* Manage Members Button - For owners and admins */}
+                {permissions.canManageMembers && (
                   <div className="pt-4 border-t">
                     <Button onClick={() => setShowManageMembersModal(true)} variant="outline" className="w-full">
                       <Users className="w-4 h-4 mr-2" />
                       Manage Members
                     </Button>
+                    {permissions.role && (
+                      <p className="text-xs text-muted-foreground mt-2 text-center">
+                        Your role: <Badge variant="secondary" className="text-xs">{permissions.role}</Badge>
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -394,14 +401,19 @@ export default function ClubDetail() {
           </CardContent>
         </Card>
 
-        {/* Upcoming Events Section */}
-        {isOwner && (
+        {/* Upcoming Events Section - For members who can create events */}
+        {(permissions.canCreateEvents || permissions.isMember) && (
           <Card>
             <CardHeader>
               <CardTitle>Upcoming Events</CardTitle>
             </CardHeader>
             <CardContent>
-              <ClubUpcomingEvents clubId={clubId} isOwner={isOwner} />
+              <ClubUpcomingEvents 
+                clubId={clubId} 
+                canCreate={permissions.canCreateEvents}
+                canEdit={permissions.canEditEvents}
+                canDelete={permissions.canDeleteEvents}
+              />
             </CardContent>
           </Card>
         )}
