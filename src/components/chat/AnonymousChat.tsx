@@ -1,40 +1,37 @@
-import { useState, useRef, useEffect } from 'react';
-import { Send, Ghost, Smile } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useAnonymousChat } from '@/hooks/useAnonymousChat';
-import { useAuth } from '@/contexts/AuthContext';
-import { formatDistanceToNow } from 'date-fns';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { useState, useRef, useEffect } from "react";
+import { Send, Ghost, Smile } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useAnonymousChat } from "@/hooks/useAnonymousChat";
+import { useAuth } from "@/contexts/AuthContext";
+import { formatDistanceToNow } from "date-fns";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-const EMOJI_OPTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+const EMOJI_OPTIONS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
 export function AnonymousChat() {
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const { user } = useAuth();
   const { messages, loading, sendMessage, toggleReaction } = useAnonymousChat();
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
 
+  // Auto-scroll to bottom on new messages
   useEffect(() => {
-    // Scroll to bottom when messages change
-    if (scrollRef.current) {
-      const scrollElement = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
-      if (scrollElement) {
-        scrollElement.scrollTop = scrollElement.scrollHeight;
-      }
+    if (viewportRef.current) {
+      const el = viewportRef.current.querySelector("[data-radix-scroll-area-viewport]");
+      el?.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     }
   }, [messages]);
 
   const handleSend = async () => {
     if (!message.trim()) return;
-    
     await sendMessage(message);
-    setMessage('');
+    setMessage("");
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
@@ -55,12 +52,11 @@ export function AnonymousChat() {
         </div>
       </div>
 
-      {/* Messages Area */}
-      <ScrollArea className="flex-1 p-4">
-        <div ref={scrollRef}>
+      {/* Messages */}
+      <ScrollArea className="flex-1 p-4" ref={viewportRef}>
         {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-muted-foreground">Loading messages...</div>
+          <div className="flex h-full items-center justify-center">
+            <p className="text-muted-foreground">Loading…</p>
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
@@ -71,18 +67,19 @@ export function AnonymousChat() {
         ) : (
           <div className="space-y-4">
             {messages.map((msg) => {
-              const isSent = msg.user_id === user?.id;
+              const mine = msg.user_id === user?.id;
               return (
-                <div key={msg.id} className={`flex gap-3 ${isSent ? 'flex-row-reverse' : ''}`}>
+                <div key={msg.id} className={`flex gap-3 ${mine ? "flex-row-reverse" : ""}`}>
                   <div className="w-8 h-8 rounded-full bg-purple-500/20 flex-shrink-0 flex items-center justify-center">
                     <Ghost className="w-4 h-4 text-purple-400" />
                   </div>
-                  <div className={`flex-1 max-w-[70%] ${isSent ? 'items-end' : 'items-start'} flex flex-col`}>
-                    <div className={`rounded-lg p-3 border ${
-                      isSent 
-                        ? 'bg-purple-500/20 border-purple-500/30' 
-                        : 'bg-card border-border'
-                    }`}>
+
+                  <div className={`flex-1 max-w-[70%] flex flex-col ${mine ? "items-end" : "items-start"}`}>
+                    <div
+                      className={`rounded-lg p-3 border ${
+                        mine ? "bg-purple-500/20 border-purple-500/30" : "bg-card border-border"
+                      }`}
+                    >
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-sm font-medium text-purple-400">Anonymous</span>
                         <span className="text-xs text-muted-foreground">
@@ -91,40 +88,40 @@ export function AnonymousChat() {
                       </div>
                       <p className="text-foreground">{msg.message}</p>
                     </div>
-                    
+
                     {/* Reactions */}
                     <div className="flex items-center gap-1 mt-1 flex-wrap">
-                      {msg.reactions.map((reaction) => (
+                      {msg.reactions.map((r) => (
                         <button
-                          key={reaction.emoji}
-                          onClick={() => toggleReaction(msg.id, reaction.emoji)}
+                          key={r.emoji}
+                          onClick={() => toggleReaction(msg.id, r.emoji)}
                           className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 transition-colors ${
-                            reaction.hasReacted
-                              ? 'bg-purple-500/30 border border-purple-500/50'
-                              : 'bg-card border border-border hover:bg-muted'
+                            r.hasReacted
+                              ? "bg-purple-500/30 border border-purple-500/50"
+                              : "bg-card border border-border hover:bg-muted"
                           }`}
                         >
-                          <span>{reaction.emoji}</span>
-                          <span className="text-muted-foreground">{reaction.count}</span>
+                          <span>{r.emoji}</span>
+                          <span className="text-muted-foreground">{r.count}</span>
                         </button>
                       ))}
-                      
-                      {/* Add reaction button */}
+
+                      {/* Add reaction */}
                       <Popover>
                         <PopoverTrigger asChild>
                           <button className="w-6 h-6 rounded-full bg-card border border-border hover:bg-muted flex items-center justify-center transition-colors">
                             <Smile className="w-3 h-3 text-muted-foreground" />
                           </button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-2" align={isSent ? 'end' : 'start'}>
+                        <PopoverContent className="w-auto p-2" align={mine ? "end" : "start"}>
                           <div className="flex gap-1">
-                            {EMOJI_OPTIONS.map((emoji) => (
+                            {EMOJI_OPTIONS.map((e) => (
                               <button
-                                key={emoji}
-                                onClick={() => toggleReaction(msg.id, emoji)}
+                                key={e}
+                                onClick={() => toggleReaction(msg.id, e)}
                                 className="w-8 h-8 rounded hover:bg-muted flex items-center justify-center transition-colors"
                               >
-                                {emoji}
+                                {e}
                               </button>
                             ))}
                           </div>
@@ -137,17 +134,16 @@ export function AnonymousChat() {
             })}
           </div>
         )}
-        </div>
       </ScrollArea>
 
-      {/* Input Area */}
+      {/* Input */}
       <div className="border-t border-border p-4 bg-card">
         <div className="flex gap-2">
           <Input
+            placeholder="Send an anonymous message..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Send an anonymous message..."
+            onKeyPress={handleKey}
             className="flex-1"
           />
           <Button onClick={handleSend} disabled={!message.trim()}>
