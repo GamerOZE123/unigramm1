@@ -2439,6 +2439,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_group_member: {
+        Args: { check_user_id: string; group_uuid: string }
+        Returns: boolean
+      }
       mark_messages_as_read: {
         Args: { conversation_uuid: string; reader_user_id: string }
         Returns: undefined
