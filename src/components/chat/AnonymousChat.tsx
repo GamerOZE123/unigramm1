@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Ghost, Smile } from "lucide-react";
+import { Send, Ghost, Smile, ImagePlus, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -7,14 +7,24 @@ import { useAnonymousChat } from "@/hooks/useAnonymousChat";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDistanceToNow } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const EMOJI_OPTIONS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+const TEXT_EMOJIS = ["😀", "😂", "🥰", "😍", "🤔", "👍", "❤️", "🎉", "🔥", "✨", "💯", "🙏"];
 
 export function AnonymousChat() {
   const [message, setMessage] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { messages, loading, sendMessage, toggleReaction } = useAnonymousChat();
   const viewportRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -24,10 +34,54 @@ export function AnonymousChat() {
     }
   }, [messages]);
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${user?.id}-${Date.now()}.${fileExt}`;
+      const { data, error } = await supabase.storage
+        .from("post-images")
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("post-images")
+        .getPublicUrl(data.path);
+
+      setImageUrl(publicUrl);
+      toast.success("Image uploaded");
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast.error("Failed to upload image");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleSend = async () => {
-    if (!message.trim()) return;
-    await sendMessage(message);
+    if (!message.trim() && !imageUrl) return;
+    const messageContent = imageUrl 
+      ? `${message.trim()}\n[IMAGE]${imageUrl}[/IMAGE]` 
+      : message.trim();
+    await sendMessage(messageContent);
     setMessage("");
+    setImageUrl(null);
   };
 
   const handleKey = (e: React.KeyboardEvent) => {
@@ -37,17 +91,50 @@ export function AnonymousChat() {
     }
   };
 
+  const addEmoji = (emoji: string) => {
+    setMessage((prev) => prev + emoji);
+  };
+
+  const renderMessageContent = (content: string) => {
+    const imageMatch = content.match(/\[IMAGE\](.*?)\[\/IMAGE\]/);
+    if (imageMatch) {
+      const [fullMatch, imageUrl] = imageMatch;
+      const textContent = content.replace(fullMatch, "").trim();
+      return (
+        <>
+          {textContent && <p className="text-foreground mb-2">{textContent}</p>}
+          <img 
+            src={imageUrl} 
+            alt="Shared image" 
+            className="rounded-lg max-w-full h-auto max-h-64 object-cover"
+          />
+        </>
+      );
+    }
+    return <p className="text-foreground">{content}</p>;
+  };
+
   return (
     <div className="flex flex-col h-screen bg-background">
       {/* Header */}
       <div className="border-b border-border p-4 bg-card">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center">
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/home")}
+              className="flex-shrink-0"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          )}
+          <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
             <Ghost className="w-6 h-6 text-purple-400" />
           </div>
-          <div>
-            <h2 className="text-lg font-semibold text-foreground">Ghost Chat</h2>
-            <p className="text-sm text-muted-foreground">University-wide anonymous messaging</p>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-semibold text-foreground truncate">Ghost Chat</h2>
+            <p className="text-sm text-muted-foreground truncate">University-wide anonymous messaging</p>
           </div>
         </div>
       </div>
@@ -86,7 +173,7 @@ export function AnonymousChat() {
                           {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
                         </span>
                       </div>
-                      <p className="text-foreground">{msg.message}</p>
+                      {renderMessageContent(msg.message)}
                     </div>
 
                     {/* Reactions */}
@@ -138,7 +225,54 @@ export function AnonymousChat() {
 
       {/* Input */}
       <div className="border-t border-border p-4 bg-card">
-        <div className="flex gap-2">
+        {imageUrl && (
+          <div className="mb-2 relative inline-block">
+            <img src={imageUrl} alt="Preview" className="h-20 rounded-lg" />
+            <button
+              onClick={() => setImageUrl(null)}
+              className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs"
+            >
+              ×
+            </button>
+          </div>
+        )}
+        <div className="flex gap-2 items-end">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImageUpload}
+            accept="image/*"
+            className="hidden"
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadingImage}
+            className="flex-shrink-0"
+          >
+            <ImagePlus className="w-4 h-4" />
+          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="flex-shrink-0">
+                <Smile className="w-4 h-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2" align="start">
+              <div className="grid grid-cols-6 gap-1">
+                {TEXT_EMOJIS.map((e) => (
+                  <button
+                    key={e}
+                    onClick={() => addEmoji(e)}
+                    className="w-8 h-8 rounded hover:bg-muted flex items-center justify-center transition-colors text-lg"
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
           <Input
             placeholder="Send an anonymous message..."
             value={message}
@@ -146,7 +280,11 @@ export function AnonymousChat() {
             onKeyPress={handleKey}
             className="flex-1"
           />
-          <Button onClick={handleSend} disabled={!message.trim()}>
+          <Button 
+            onClick={handleSend} 
+            disabled={(!message.trim() && !imageUrl) || uploadingImage}
+            className="flex-shrink-0"
+          >
             <Send className="w-4 h-4" />
           </Button>
         </div>

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Home, MessageCircle, User, Search, Ghost } from 'lucide-react';
+import { Home, MessageCircle, User, Search, GraduationCap } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,8 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 const navigation = [
   { name: 'Home', href: '/home', icon: Home },
   { name: 'Explore', href: '/explore', icon: Search },
+  { name: 'University', href: '/university', icon: GraduationCap },
   { name: 'Chat', href: '/chat', icon: MessageCircle },
-  { name: 'Ghost', href: '/ghost-chat', icon: Ghost },
   { name: 'Profile', href: '/profile', icon: User },
 ];
 
@@ -52,13 +52,8 @@ export default function MobileNavigation() {
     return item;
   });
 
-  const isGhostRoute = location.pathname === '/ghost-chat';
-
   return (
-    <nav className={cn(
-      "fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border md:hidden",
-      isGhostRoute && "ghost-mode"
-    )}>
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border md:hidden">
       <div className="grid grid-cols-5 h-16">
         {updatedNavigation.map((item) => {
           const isActive = location.pathname === item.href;

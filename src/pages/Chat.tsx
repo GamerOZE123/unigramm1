@@ -6,7 +6,8 @@ import MobileChatHeader from '@/components/chat/MobileChatHeader';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Send, MoreVertical, Trash2, MessageSquareX, UserX, Loader2 } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Send, MoreVertical, Trash2, MessageSquareX, UserX, Loader2, ImagePlus, Smile } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/hooks/useChat';
 import { useRecentChats } from '@/hooks/useRecentChats';
@@ -15,6 +16,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+const TEXT_EMOJIS = ["😀", "😂", "🥰", "😍", "🤔", "👍", "❤️", "🎉", "🔥", "✨", "💯", "🙏"];
 
 export default function Chat() {
   const { user } = useAuth();
@@ -30,6 +33,9 @@ export default function Chat() {
   const [newMessageNotification, setNewMessageNotification] = useState(false);
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null); // For confirmation dialog
   const [selectedChatsForBulk, setSelectedChatsForBulk] = useState<Set<string>>(new Set()); // For bulk delete
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const previousMessagesLength = useRef(0);
@@ -204,11 +210,78 @@ export default function Chat() {
     setSelectedUser(null);
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image size must be less than 5MB");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${user?.id}-${Date.now()}.${fileExt}`;
+      const { data, error } = await supabase.storage
+        .from("post-images")
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("post-images")
+        .getPublicUrl(data.path);
+
+      setImageUrl(publicUrl);
+      toast.success("Image uploaded");
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast.error("Failed to upload image");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const addEmoji = (emoji: string) => {
+    setNewMessage((prev) => prev + emoji);
+  };
+
+  const renderMessageContent = (content: string) => {
+    const imageMatch = content.match(/\[IMAGE\](.*?)\[\/IMAGE\]/);
+    if (imageMatch) {
+      const [fullMatch, imageUrl] = imageMatch;
+      const textContent = content.replace(fullMatch, "").trim();
+      return (
+        <>
+          {textContent && <p className="text-sm break-words overflow-wrap-anywhere mb-2">{textContent}</p>}
+          <img 
+            src={imageUrl} 
+            alt="Shared image" 
+            className="rounded-lg max-w-full h-auto max-h-64 object-cover cursor-pointer"
+            onClick={() => window.open(imageUrl, '_blank')}
+          />
+        </>
+      );
+    }
+    return <p className="text-sm break-words overflow-wrap-anywhere">{content}</p>;
+  };
+
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !selectedConversationId) return;
-    const msg = newMessage.trim();
+    if ((!newMessage.trim() && !imageUrl) || !selectedConversationId) return;
+    const messageContent = imageUrl 
+      ? `${newMessage.trim()}\n[IMAGE]${imageUrl}[/IMAGE]` 
+      : newMessage.trim();
     setNewMessage('');
-    const result = await sendMessage(selectedConversationId, msg);
+    setImageUrl(null);
+    const result = await sendMessage(selectedConversationId, messageContent);
     if (!result.success) {
       toast.error('Failed to send message');
     }
@@ -416,10 +489,10 @@ export default function Chat() {
                       >
                         <div
                           className={`max-w-xs lg:max-w-md px-4 py-2 rounded-2xl ${
-                            message.sender_id === user?.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                           message.sender_id === user?.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
                           }`}
                         >
-                          <p className="text-sm break-words overflow-wrap-anywhere">{message.content}</p>
+                          {renderMessageContent(message.content)}
                           <p
                             className={`text-xs mt-1 ${
                               message.sender_id === user?.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
@@ -456,7 +529,54 @@ export default function Chat() {
                 </div>
                 {/* Input */}
                 <div className="border-t border-border p-4">
-                  <div className="flex gap-2">
+                  {imageUrl && (
+                    <div className="mb-2 relative inline-block">
+                      <img src={imageUrl} alt="Preview" className="h-20 rounded-lg" />
+                      <button
+                        onClick={() => setImageUrl(null)}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex gap-2 items-end">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleImageUpload}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingImage}
+                      className="flex-shrink-0"
+                    >
+                      <ImagePlus className="w-4 h-4" />
+                    </Button>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon" className="flex-shrink-0">
+                          <Smile className="w-4 h-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-2" align="start">
+                        <div className="grid grid-cols-6 gap-1">
+                          {TEXT_EMOJIS.map((e) => (
+                            <button
+                              key={e}
+                              onClick={() => addEmoji(e)}
+                              className="w-8 h-8 rounded hover:bg-muted flex items-center justify-center transition-colors text-lg"
+                            >
+                              {e}
+                            </button>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                     <Textarea
                       placeholder="Type your message..."
                       value={newMessage}
@@ -470,7 +590,11 @@ export default function Chat() {
                       className="flex-1 resize-none"
                       rows={1}
                     />
-                    <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
+                    <Button 
+                      onClick={handleSendMessage} 
+                      disabled={(!newMessage.trim() && !imageUrl) || uploadingImage}
+                      className="flex-shrink-0"
+                    >
                       <Send className="w-4 h-4" />
                     </Button>
                   </div>
@@ -587,10 +711,10 @@ export default function Chat() {
                   >
                     <div
                       className={`max-w-xs px-4 py-2 rounded-2xl ${
-                        message.sender_id === user?.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                       message.sender_id === user?.id ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
                       }`}
                     >
-                      <p className="text-sm">{message.content}</p>
+                      {renderMessageContent(message.content)}
                       <p
                         className={`text-xs mt-1 ${
                           message.sender_id === user?.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
@@ -626,7 +750,54 @@ export default function Chat() {
               )}
             </div>
             <div className="border-t border-border p-4 bg-card/95 backdrop-blur-sm sticky bottom-0">
-              <div className="flex gap-2">
+              {imageUrl && (
+                <div className="mb-2 relative inline-block">
+                  <img src={imageUrl} alt="Preview" className="h-20 rounded-lg" />
+                  <button
+                    onClick={() => setImageUrl(null)}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+              <div className="flex gap-2 items-end">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingImage}
+                  className="flex-shrink-0"
+                >
+                  <ImagePlus className="w-4 h-4" />
+                </Button>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" className="flex-shrink-0">
+                      <Smile className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-2" align="start">
+                    <div className="grid grid-cols-6 gap-1">
+                      {TEXT_EMOJIS.map((e) => (
+                        <button
+                          key={e}
+                          onClick={() => addEmoji(e)}
+                          className="w-8 h-8 rounded hover:bg-muted flex items-center justify-center transition-colors text-lg"
+                        >
+                          {e}
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
                 <Textarea
                   placeholder="Type your message..."
                   value={newMessage}
@@ -640,7 +811,11 @@ export default function Chat() {
                   className="flex-1 resize-none max-h-32"
                   rows={1}
                 />
-                <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
+                <Button 
+                  onClick={handleSendMessage} 
+                  disabled={(!newMessage.trim() && !imageUrl) || uploadingImage}
+                  className="flex-shrink-0"
+                >
                   <Send className="w-4 h-4" />
                 </Button>
               </div>
