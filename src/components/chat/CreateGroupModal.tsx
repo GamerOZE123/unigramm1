@@ -106,12 +106,13 @@ export default function CreateGroupModal({ open, onOpenChange, onGroupCreated }:
     try {
       const validatedData = validationResult.data;
       
-      // Create the group (created_by is set automatically by database)
+      // Create the group
       const { data: groupData, error: groupError } = await supabase
         .from('chat_groups')
         .insert({
           name: validatedData.name,
           description: validatedData.description || null,
+          created_by: user.id,
         })
         .select()
         .single();
