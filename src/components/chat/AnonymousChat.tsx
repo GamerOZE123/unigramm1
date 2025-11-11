@@ -1,14 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Ghost } from 'lucide-react';
+import { Send, Ghost, Smile } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAnonymousChat } from '@/hooks/useAnonymousChat';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
+const EMOJI_OPTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
 export function AnonymousChat() {
   const [message, setMessage] = useState('');
-  const { messages, loading, sendMessage } = useAnonymousChat();
+  const { user } = useAuth();
+  const { messages, loading, sendMessage, toggleReaction } = useAnonymousChat();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -60,22 +65,71 @@ export function AnonymousChat() {
           </div>
         ) : (
           <div className="space-y-4">
-            {messages.map((msg) => (
-              <div key={msg.id} className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-purple-500/20 flex-shrink-0 flex items-center justify-center">
-                  <Ghost className="w-4 h-4 text-purple-400" />
-                </div>
-                <div className="flex-1 bg-card rounded-lg p-3 border border-border">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium text-purple-400">Anonymous</span>
-                    <span className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
-                    </span>
+            {messages.map((msg) => {
+              const isSent = msg.user_id === user?.id;
+              return (
+                <div key={msg.id} className={`flex gap-3 ${isSent ? 'flex-row-reverse' : ''}`}>
+                  <div className="w-8 h-8 rounded-full bg-purple-500/20 flex-shrink-0 flex items-center justify-center">
+                    <Ghost className="w-4 h-4 text-purple-400" />
                   </div>
-                  <p className="text-foreground">{msg.message}</p>
+                  <div className={`flex-1 max-w-[70%] ${isSent ? 'items-end' : 'items-start'} flex flex-col`}>
+                    <div className={`rounded-lg p-3 border ${
+                      isSent 
+                        ? 'bg-purple-500/20 border-purple-500/30' 
+                        : 'bg-card border-border'
+                    }`}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-medium text-purple-400">Anonymous</span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
+                        </span>
+                      </div>
+                      <p className="text-foreground">{msg.message}</p>
+                    </div>
+                    
+                    {/* Reactions */}
+                    <div className="flex items-center gap-1 mt-1 flex-wrap">
+                      {msg.reactions.map((reaction) => (
+                        <button
+                          key={reaction.emoji}
+                          onClick={() => toggleReaction(msg.id, reaction.emoji)}
+                          className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 transition-colors ${
+                            reaction.hasReacted
+                              ? 'bg-purple-500/30 border border-purple-500/50'
+                              : 'bg-card border border-border hover:bg-muted'
+                          }`}
+                        >
+                          <span>{reaction.emoji}</span>
+                          <span className="text-muted-foreground">{reaction.count}</span>
+                        </button>
+                      ))}
+                      
+                      {/* Add reaction button */}
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button className="w-6 h-6 rounded-full bg-card border border-border hover:bg-muted flex items-center justify-center transition-colors">
+                            <Smile className="w-3 h-3 text-muted-foreground" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-2" align={isSent ? 'end' : 'start'}>
+                          <div className="flex gap-1">
+                            {EMOJI_OPTIONS.map((emoji) => (
+                              <button
+                                key={emoji}
+                                onClick={() => toggleReaction(msg.id, emoji)}
+                                className="w-8 h-8 rounded hover:bg-muted flex items-center justify-center transition-colors"
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </ScrollArea>

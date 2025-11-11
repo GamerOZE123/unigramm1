@@ -3,10 +3,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
+interface MessageReaction {
+  emoji: string;
+  count: number;
+  hasReacted: boolean;
+}
+
 interface AnonymousMessage {
   id: string;
   message: string;
   created_at: string;
+  user_id: string;
+  reactions: MessageReaction[];
 }
 
 export function useAnonymousChat() {
@@ -42,14 +50,45 @@ export function useAnonymousChat() {
 
   const fetchMessages = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: messagesData, error } = await supabase
         .from('anonymous_messages')
-        .select('id, message, created_at')
+        .select('id, message, created_at, user_id')
         .order('created_at', { ascending: false })
         .limit(50);
 
       if (error) throw error;
-      setMessages(data || []);
+
+      // Fetch reactions for all messages
+      const messageIds = messagesData?.map(m => m.id) || [];
+      const { data: reactionsData } = await supabase
+        .from('anonymous_message_reactions')
+        .select('message_id, emoji, user_id')
+        .in('message_id', messageIds);
+
+      // Group reactions by message
+      const messageReactions = (reactionsData || []).reduce((acc, reaction) => {
+        if (!acc[reaction.message_id]) {
+          acc[reaction.message_id] = {};
+        }
+        if (!acc[reaction.message_id][reaction.emoji]) {
+          acc[reaction.message_id][reaction.emoji] = { users: [], count: 0 };
+        }
+        acc[reaction.message_id][reaction.emoji].users.push(reaction.user_id);
+        acc[reaction.message_id][reaction.emoji].count++;
+        return acc;
+      }, {} as Record<string, Record<string, { users: string[], count: number }>>);
+
+      // Attach reactions to messages
+      const messagesWithReactions = (messagesData || []).map(msg => ({
+        ...msg,
+        reactions: Object.entries(messageReactions[msg.id] || {}).map(([emoji, data]) => ({
+          emoji,
+          count: data.count,
+          hasReacted: data.users.includes(user?.id || ''),
+        })),
+      }));
+
+      setMessages(messagesWithReactions);
     } catch (error) {
       console.error('Error fetching anonymous messages:', error);
       toast.error('Failed to load messages');
@@ -88,9 +127,48 @@ export function useAnonymousChat() {
     }
   };
 
+  const toggleReaction = async (messageId: string, emoji: string) => {
+    if (!user) return;
+
+    try {
+      // Check if user already reacted with this emoji
+      const { data: existing } = await supabase
+        .from('anonymous_message_reactions')
+        .select('id')
+        .eq('message_id', messageId)
+        .eq('user_id', user.id)
+        .eq('emoji', emoji)
+        .single();
+
+      if (existing) {
+        // Remove reaction
+        await supabase
+          .from('anonymous_message_reactions')
+          .delete()
+          .eq('id', existing.id);
+      } else {
+        // Add reaction
+        await supabase
+          .from('anonymous_message_reactions')
+          .insert({
+            message_id: messageId,
+            user_id: user.id,
+            emoji,
+          });
+      }
+
+      // Refresh messages to update reactions
+      fetchMessages();
+    } catch (error) {
+      console.error('Error toggling reaction:', error);
+      toast.error('Failed to update reaction');
+    }
+  };
+
   return {
     messages,
     loading,
     sendMessage,
+    toggleReaction,
   };
 }

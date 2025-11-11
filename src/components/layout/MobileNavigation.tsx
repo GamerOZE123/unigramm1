@@ -5,6 +5,8 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useGhostMode } from '@/contexts/GhostModeContext';
+import { toast } from 'sonner';
 
 const navigation = [
   { name: 'Home', href: '/home', icon: Home },
@@ -19,6 +21,14 @@ export default function MobileNavigation() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [userType, setUserType] = useState<string>('student');
+  const { isGhostMode } = useGhostMode();
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (isGhostMode) {
+      e.preventDefault();
+      toast.error('Turn off Ghost Mode to navigate');
+    }
+  };
 
   useEffect(() => {
     const fetchUserType = async () => {
@@ -61,11 +71,13 @@ export default function MobileNavigation() {
             <NavLink
               key={item.name}
               to={item.href}
+              onClick={(e) => handleNavClick(e, item.href)}
               className={cn(
                 'flex flex-col items-center justify-center gap-1 transition-colors',
                 isActive 
                   ? 'text-primary' 
-                  : 'text-muted-foreground hover:text-foreground'
+                  : 'text-muted-foreground hover:text-foreground',
+                isGhostMode && 'opacity-50 cursor-not-allowed'
               )}
             >
               <item.icon className={cn('w-5 h-5', isActive && 'text-primary')} />

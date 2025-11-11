@@ -8,6 +8,7 @@ import { useGhostMode } from '@/contexts/GhostModeContext';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const navigation = [
   { name: 'Home', href: '/', icon: Home },
@@ -63,6 +64,13 @@ export default function Sidebar() {
     }
   };
 
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (isGhostMode) {
+      e.preventDefault();
+      toast.error('Turn off Ghost Mode to navigate');
+    }
+  };
+
   return (
     <aside className="fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border hidden md:block">
       <div className="flex flex-col h-full">
@@ -87,9 +95,11 @@ export default function Sidebar() {
                 <li key={item.name}>
                   <NavLink
                     to={item.href}
+                    onClick={(e) => handleNavClick(e, item.href)}
                     className={cn(
                       'nav-item relative',
-                      isActive && 'active'
+                      isActive && 'active',
+                      isGhostMode && 'opacity-50 cursor-not-allowed'
                     )}
                   >
                     <item.icon className="w-5 h-5" />
