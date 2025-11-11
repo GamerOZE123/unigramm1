@@ -2479,7 +2479,7 @@ export type Database = {
         Returns: boolean
       }
       is_group_member: {
-        Args: { check_user_id: string; group_uuid: string }
+        Args: { p_group_id: string; p_user_id: string }
         Returns: boolean
       }
       mark_messages_as_read: {
