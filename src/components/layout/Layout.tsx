@@ -4,6 +4,8 @@ import Header from './Header';
 import RightSidebar from './RightSidebar';
 import MobileNavigation from './MobileNavigation';
 import { useLocation } from 'react-router-dom';
+import { useGhostMode } from '@/contexts/GhostModeContext';
+import { AnonymousChat } from '@/components/chat/AnonymousChat';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,9 +14,28 @@ interface LayoutProps {
 
 export default function Layout({ children, rightSidebar }: LayoutProps) {
   const location = useLocation();
+  const { isGhostMode } = useGhostMode();
   const showRightSidebar = location.pathname === '/' || location.pathname === '/home' || location.pathname.startsWith('/post/');
   const hasCustomSidebar = !!rightSidebar;
   const isFitnessPage = location.pathname === '/fitness';
+
+  // If ghost mode is active, show anonymous chat instead of normal content
+  if (isGhostMode && !isFitnessPage) {
+    return (
+      <div className="min-h-screen bg-background flex">
+        {/* Desktop Sidebar */}
+        <Sidebar />
+        
+        {/* Anonymous Chat Area */}
+        <main className="flex-1 md:ml-64 pb-20 md:pb-0">
+          <AnonymousChat />
+        </main>
+        
+        {/* Mobile Navigation */}
+        <MobileNavigation />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
