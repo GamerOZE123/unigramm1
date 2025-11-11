@@ -2301,6 +2301,22 @@ export type Database = {
         Returns: string
       }
       extract_hashtags: { Args: { content: string }; Returns: string[] }
+      get_available_carpool_rides: {
+        Args: never
+        Returns: {
+          available_seats: number
+          baggage_allowed: number
+          car_type: string
+          created_at: string
+          driver_id: string
+          from_location: string
+          id: string
+          price: number
+          ride_date: string
+          ride_time: string
+          to_location: string
+        }[]
+      }
       get_challenge_participant_count: {
         Args: { challenge_uuid: string }
         Returns: number
@@ -2326,6 +2342,48 @@ export type Database = {
         Returns: string
       }
       get_public_profile_columns: { Args: never; Returns: string }
+      get_public_profiles: {
+        Args: never
+        Returns: {
+          area: string | null
+          avatar_url: string | null
+          banner_height: number | null
+          banner_position: number | null
+          banner_url: string | null
+          bio: string | null
+          campus_groups: string[] | null
+          campus_year: string | null
+          country: string | null
+          created_at: string
+          email: string | null
+          followers_count: number | null
+          following_count: number | null
+          full_name: string | null
+          id: string
+          instagram_url: string | null
+          interests: string[] | null
+          linkedin_url: string | null
+          major: string | null
+          preferred_event_types: string[] | null
+          profile_completed: boolean | null
+          profile_completion_date: string | null
+          state: string | null
+          status_message: string | null
+          twitter_url: string | null
+          university: string | null
+          updated_at: string
+          user_id: string
+          user_type: Database["public"]["Enums"]["user_type"] | null
+          username: string
+          website_url: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_public_student_info: {
         Args: { target_user_id: string }
         Returns: {
