@@ -7,6 +7,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Upload, Image as ImageIcon } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { z } from 'zod';
+
+const fileSchema = z.object({
+  size: z.number().max(5 * 1024 * 1024, 'File must be under 5MB'),
+  type: z.string().regex(/^image\/(jpeg|jpg|png|gif|webp)$/i, 'Invalid image type. Please upload JPEG, PNG, GIF, or WebP')
+});
 
 interface ProfilePictureUploadStepProps {
   currentLogoUrl?: string;
@@ -25,8 +31,15 @@ export default function ProfilePictureUploadStep({ currentLogoUrl, onUploadSucce
       return;
     }
 
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
+    // Validate file with Zod
+    const validationResult = fileSchema.safeParse({
+      size: file.size,
+      type: file.type
+    });
+
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(e => e.message).join(', ');
+      toast.error(errors);
       return;
     }
 

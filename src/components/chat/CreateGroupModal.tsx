@@ -10,6 +10,13 @@ import { toast } from 'sonner';
 import { Users, Search, X } from 'lucide-react';
 import { useUsers } from '@/hooks/useUsers';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { z } from 'zod';
+
+const groupSchema = z.object({
+  name: z.string().trim().min(1, 'Group name is required').max(50, 'Group name must be less than 50 characters'),
+  description: z.string().trim().max(200, 'Description must be less than 200 characters').optional(),
+  member_ids: z.array(z.string().uuid()).max(50, 'Cannot add more than 50 members')
+});
 
 interface CreateGroupModalProps {
   open: boolean;
@@ -76,25 +83,35 @@ export default function CreateGroupModal({ open, onOpenChange, onGroupCreated }:
   };
 
   const handleCreateGroup = async () => {
-    if (!groupName.trim()) {
-      toast.error('Please enter a group name');
+    if (!user) {
+      toast.error('You must be logged in to create a group');
       return;
     }
 
-    if (!user) {
-      toast.error('You must be logged in to create a group');
+    // Validate input with Zod
+    const validationResult = groupSchema.safeParse({
+      name: groupName,
+      description: description || undefined,
+      member_ids: selectedUsers.map(u => u.user_id)
+    });
+
+    if (!validationResult.success) {
+      const errors = validationResult.error.errors.map(e => e.message).join(', ');
+      toast.error(errors);
       return;
     }
 
     setLoading(true);
 
     try {
+      const validatedData = validationResult.data;
+      
       // Create the group
       const { data: groupData, error: groupError } = await supabase
         .from('chat_groups')
         .insert({
-          name: groupName.trim(),
-          description: description.trim() || null,
+          name: validatedData.name,
+          description: validatedData.description || null,
           created_by: user.id,
         })
         .select()
