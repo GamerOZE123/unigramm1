@@ -38,13 +38,35 @@ export function useAnonymousChat() {
           table: 'anonymous_messages',
         },
         (payload) => {
-          setMessages((current) => [payload.new as AnonymousMessage, ...current]);
+          const newMessage = {
+            ...(payload.new as any),
+            reactions: [],
+          };
+          setMessages((current) => [...current, newMessage]);
+        }
+      )
+      .subscribe();
+
+    // Subscribe to reaction changes
+    const reactionsChannel = supabase
+      .channel('anonymous-reactions')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'anonymous_message_reactions',
+        },
+        () => {
+          // Refresh messages when reactions change
+          fetchMessages();
         }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(reactionsChannel);
     };
   }, [user]);
 
@@ -53,7 +75,7 @@ export function useAnonymousChat() {
       const { data: messagesData, error } = await supabase
         .from('anonymous_messages')
         .select('id, message, created_at, user_id')
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: true })
         .limit(50);
 
       if (error) throw error;

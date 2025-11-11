@@ -17,8 +17,12 @@ export function AnonymousChat() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // Scroll to bottom when messages change
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      const scrollElement = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollElement) {
+        scrollElement.scrollTop = scrollElement.scrollHeight;
+      }
     }
   }, [messages]);
 
@@ -52,7 +56,8 @@ export function AnonymousChat() {
       </div>
 
       {/* Messages Area */}
-      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+      <ScrollArea className="flex-1 p-4">
+        <div ref={scrollRef}>
         {loading ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-muted-foreground">Loading messages...</div>
@@ -132,6 +137,7 @@ export function AnonymousChat() {
             })}
           </div>
         )}
+        </div>
       </ScrollArea>
 
       {/* Input Area */}
