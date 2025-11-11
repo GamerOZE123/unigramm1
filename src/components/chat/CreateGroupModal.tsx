@@ -88,6 +88,13 @@ export default function CreateGroupModal({ open, onOpenChange, onGroupCreated }:
       return;
     }
 
+    // Verify session is valid
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+      toast.error('Session expired. Please refresh the page and try again.');
+      return;
+    }
+
     // Validate input with Zod
     const validationResult = groupSchema.safeParse({
       name: groupName,
@@ -112,12 +119,16 @@ export default function CreateGroupModal({ open, onOpenChange, onGroupCreated }:
         .insert({
           name: validatedData.name,
           description: validatedData.description || null,
-          created_by: user.id,
+          created_by: session.user.id,
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (groupError) throw groupError;
+      
+      if (!groupData) {
+        throw new Error('Failed to create group. No data returned.');
+      }
 
       // Add creator as admin member
       const { error: memberError } = await supabase
