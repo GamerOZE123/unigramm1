@@ -325,19 +325,37 @@ export default function ClubDetail() {
                   <p className="text-foreground">{club.club_description}</p>
                 )}
 
+                {/* Website Link - Below description */}
+                {club.website_url && (
+                  <div className="pt-2">
+                    <a 
+                      href={club.website_url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-primary hover:underline font-medium inline-flex items-center gap-2"
+                    >
+                      <Globe className="w-4 h-4" />
+                      Website
+                    </a>
+                  </div>
+                )}
+
                 {/* Logo Upload & Manage Members - Only for owners */}
                 {isOwner && (
-                  <div className="pt-4 space-y-3">
-                    <ProfilePictureUploadStep 
-                      currentLogoUrl={club.logo_url || undefined}
-                      onUploadSuccess={(url) => {
-                        setClub({ ...club, logo_url: url });
-                        toast({
-                          title: "Success",
-                          description: "Logo updated successfully"
-                        });
-                      }}
-                    />
+                  <div className="pt-4 space-y-3 border-t">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-foreground">Upload Profile Picture</label>
+                      <ProfilePictureUploadStep 
+                        currentLogoUrl={club.logo_url || undefined}
+                        onUploadSuccess={(url) => {
+                          setClub({ ...club, logo_url: url });
+                          toast({
+                            title: "Success",
+                            description: "Profile picture updated successfully"
+                          });
+                        }}
+                      />
+                    </div>
                     <Button onClick={() => setShowManageMembersModal(true)} variant="outline" className="w-full">
                       <Users className="w-4 h-4 mr-2" />
                       Manage Members
