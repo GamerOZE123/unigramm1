@@ -12,7 +12,7 @@ export const useTrendingUniversities = () => {
 
   const fetchTrendingUniversities = async () => {
     try {
-      // Get all posts (no time limit - universities remain trending based on overall activity)
+      // Get all posts - no time limit, universities remain trending based on overall activity
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select('user_id, created_at');

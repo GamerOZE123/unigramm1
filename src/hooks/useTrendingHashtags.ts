@@ -77,12 +77,11 @@ export const useTrendingHashtags = () => {
 
   const fetchTrendingHashtags = async () => {
     try {
-      // Fetch posts from last 30 days to keep showing hashtags even when activity is low
+      // Fetch all posts - no time limit, old trends remain until new ones surpass them
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select('hashtags, user_id, created_at')
         .not('hashtags', 'is', null)
-        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
         .order('created_at', { ascending: false });
       
       if (postsError) throw postsError;
