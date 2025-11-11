@@ -1,13 +1,16 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Bell } from 'lucide-react';
+import { ArrowLeft, Bell, Ghost } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useGhostMode } from '@/contexts/GhostModeContext';
+import { Separator } from '@/components/ui/separator';
 
 export default function MobileHeader() {
   const navigate = useNavigate();
   const location = useLocation();
   const { unreadCount } = useNotifications();
+  const { isGhostMode, toggleGhostMode } = useGhostMode();
 
   const isProfilePage = location.pathname.startsWith('/profile');
   const isExplorePage = location.pathname.startsWith('/explore');
@@ -44,6 +47,17 @@ export default function MobileHeader() {
         </h1>
       </div>
       <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={toggleGhostMode}
+          className={`p-2 ${isGhostMode ? 'text-purple-400' : ''}`}
+        >
+          <Ghost className="h-5 w-5" />
+        </Button>
+        
+        <Separator orientation="vertical" className="h-6" />
+        
         <Button
           variant="ghost"
           size="sm"

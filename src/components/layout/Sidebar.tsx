@@ -1,10 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { Home, MessageCircle, User, GraduationCap, LogOut, Search, Bell, Settings } from 'lucide-react';
+import { Home, MessageCircle, User, GraduationCap, LogOut, Search, Bell, Settings, Ghost } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useGhostMode } from '@/contexts/GhostModeContext';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 
 const navigation = [
@@ -19,6 +21,7 @@ export default function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
+  const { isGhostMode, toggleGhostMode } = useGhostMode();
   const [userType, setUserType] = useState<string>('Student');
   const [profile, setProfile] = useState<any>(null);
 
@@ -100,6 +103,17 @@ export default function Sidebar() {
 
         {/* User Profile at Bottom */}
         <div className="p-4 border-t border-border space-y-2">
+          <Button 
+            variant="ghost" 
+            onClick={toggleGhostMode}
+            className={`w-full justify-start hover:bg-muted/50 ${isGhostMode ? 'text-purple-400' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            <Ghost className="w-4 h-4 mr-2" />
+            <span className="text-sm">Ghost Mode</span>
+          </Button>
+          
+          <Separator className="my-2" />
+          
           <Button 
             variant="ghost" 
             onClick={() => navigate('/notifications')}

@@ -3,6 +3,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { GhostModeProvider } from '@/contexts/GhostModeContext';
 import { Toaster } from '@/components/ui/sonner';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import Index from '@/pages/Index';
@@ -41,33 +42,35 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-            <Route path="/profile/:userId?" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/explore" element={<ProtectedRoute><Explore /></ProtectedRoute>} />
-            <Route path="/chat/:conversationId?" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
-            <Route path="/university" element={<ProtectedRoute><University /></ProtectedRoute>} />
-            <Route path="/clubs" element={<ProtectedRoute><Clubs /></ProtectedRoute>} />
-            <Route path="/clubs/:clubId" element={<ProtectedRoute><ClubDetail /></ProtectedRoute>} />
-            <Route path="/buy-sell" element={<ProtectedRoute><BuySell /></ProtectedRoute>} />
-            <Route path="/auction" element={<ProtectedRoute><Auction /></ProtectedRoute>} />
-            <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
-            <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
-            <Route path="/jobs-internships" element={<ProtectedRoute><JobsInternships /></ProtectedRoute>} />
-            <Route path="/advertising" element={<ProtectedRoute><Advertising /></ProtectedRoute>} />
-            <Route path="/carpooling" element={<ProtectedRoute><Carpooling /></ProtectedRoute>} />
-            <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-            <Route path="/holidays" element={<ProtectedRoute><Holidays /></ProtectedRoute>} />
-            <Route path="/fitness" element={<ProtectedRoute><Fitness /></ProtectedRoute>} />
-            <Route path="/post/:postId" element={<ProtectedRoute><Post /></ProtectedRoute>} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <Toaster />
-        </Router>
+        <GhostModeProvider>
+          <Router>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+              <Route path="/profile/:userId?" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/explore" element={<ProtectedRoute><Explore /></ProtectedRoute>} />
+              <Route path="/chat/:conversationId?" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+              <Route path="/university" element={<ProtectedRoute><University /></ProtectedRoute>} />
+              <Route path="/clubs" element={<ProtectedRoute><Clubs /></ProtectedRoute>} />
+              <Route path="/clubs/:clubId" element={<ProtectedRoute><ClubDetail /></ProtectedRoute>} />
+              <Route path="/buy-sell" element={<ProtectedRoute><BuySell /></ProtectedRoute>} />
+              <Route path="/auction" element={<ProtectedRoute><Auction /></ProtectedRoute>} />
+              <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+              <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
+              <Route path="/jobs-internships" element={<ProtectedRoute><JobsInternships /></ProtectedRoute>} />
+              <Route path="/advertising" element={<ProtectedRoute><Advertising /></ProtectedRoute>} />
+              <Route path="/carpooling" element={<ProtectedRoute><Carpooling /></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+              <Route path="/holidays" element={<ProtectedRoute><Holidays /></ProtectedRoute>} />
+              <Route path="/fitness" element={<ProtectedRoute><Fitness /></ProtectedRoute>} />
+              <Route path="/post/:postId" element={<ProtectedRoute><Post /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <Toaster />
+          </Router>
+        </GhostModeProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

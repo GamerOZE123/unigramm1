@@ -2,6 +2,7 @@ import React from 'react';
 import { MoreHorizontal, Edit, Trash, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useGhostMode } from '@/contexts/GhostModeContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +40,8 @@ export default function PostHeader({
   onHashtagClick
 }: PostHeaderProps) {
   const navigate = useNavigate();
+  const { isGhostMode } = useGhostMode();
+  
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -53,23 +56,27 @@ export default function PostHeader({
   const handleProfileClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (userId) {
+    if (userId && !isGhostMode) {
       navigate(`/profile/${userId}`);
     }
   };
+
+  const displayName = isGhostMode ? 'Anonymous' : (fullName || username);
+  const displayUsername = isGhostMode ? 'anonymous' : username;
+  const displayAvatar = isGhostMode ? undefined : avatarUrl;
 
   return (
     <div className="flex gap-3">
       {/* Avatar */}
       <div 
-        className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-primary to-accent flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity"
+        className={`w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-primary to-accent flex items-center justify-center transition-opacity ${!isGhostMode ? 'cursor-pointer hover:opacity-90' : ''}`}
         onClick={handleProfileClick}
       >
-        {avatarUrl ? (
-          <img src={avatarUrl} alt={fullName} className="w-full h-full object-cover" />
+        {displayAvatar ? (
+          <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
         ) : (
           <span className="text-sm font-bold text-white">
-            {fullName?.charAt(0) || username?.charAt(0) || 'U'}
+            {isGhostMode ? '?' : (displayName?.charAt(0) || 'U')}
           </span>
         )}
       </div>
@@ -80,17 +87,17 @@ export default function PostHeader({
           {/* User info */}
           <div className="flex items-center gap-2 flex-wrap">
             <p 
-              className="font-semibold text-foreground cursor-pointer hover:underline"
+              className={`font-semibold text-foreground ${!isGhostMode ? 'cursor-pointer hover:underline' : ''}`}
               onClick={handleProfileClick}
             >
-              {fullName || username}
+              {displayName}
             </p>
-            {isVerified && <CheckCircle2 className="w-4 h-4 text-sky-500" />}
+            {isVerified && !isGhostMode && <CheckCircle2 className="w-4 h-4 text-sky-500" />}
             <p 
-              className="text-sm text-muted-foreground cursor-pointer hover:underline"
+              className={`text-sm text-muted-foreground ${!isGhostMode ? 'cursor-pointer hover:underline' : ''}`}
               onClick={handleProfileClick}
             >
-              @{username}
+              @{displayUsername}
             </p>
             <span className="text-sm text-muted-foreground">· {formatDate(createdAt)}</span>
           </div>
