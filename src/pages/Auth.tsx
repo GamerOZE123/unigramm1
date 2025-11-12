@@ -296,12 +296,28 @@ export default function Auth() {
     }
   };
 
-  // Check for reset mode from URL
+  // Handle password recovery from email link
   useEffect(() => {
+    // Check URL params for mode
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('mode') === 'reset') {
+    const urlMode = urlParams.get('mode');
+    
+    // Listen for auth state changes (password recovery)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setMode('reset');
+        setMessage('Please enter your new password.');
+      }
+    });
+
+    // Check if we're in reset mode from URL
+    if (urlMode === 'reset') {
       setMode('reset');
     }
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
