@@ -42,12 +42,18 @@ export default function Auth() {
     companyName: ''
   });
 
-  // Check if user is already logged in
+  // Check if user is already logged in (but not in password recovery)
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        navigate('/home');
+      // Check if this is a password recovery flow by looking at URL hash
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const isRecovery = hashParams.get('type') === 'recovery';
+      
+      if (!isRecovery) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          navigate('/home');
+        }
       }
     };
     checkUser();
@@ -298,15 +304,25 @@ export default function Auth() {
 
   // Handle password recovery from email link
   useEffect(() => {
-    // Listen for auth state changes (password recovery)
+    // Check URL hash for recovery token on mount
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const isRecovery = hashParams.get('type') === 'recovery';
+    
+    if (isRecovery) {
+      setMode('reset');
+      setMessage('Please enter your new password below.');
+    }
+
+    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         setMode('reset');
         setMessage('Please enter your new password below.');
+        return; // Don't redirect, stay on reset page
       }
       
-      // If user is signed in and not in password recovery, redirect to home
-      if (event === 'SIGNED_IN' && mode !== 'reset' && session) {
+      // Only handle SIGNED_IN if not in password recovery mode
+      if (event === 'SIGNED_IN' && mode !== 'reset' && !isRecovery && session) {
         const { data: profileData } = await supabase
           .from('profiles')
           .select('profile_completed, user_type')
