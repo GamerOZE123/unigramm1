@@ -7,6 +7,7 @@ import HashtagSelector from './HashtagSelector';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { postSchema } from '@/lib/validation';
 
 export default function CreatePost() {
   const { user } = useAuth();
@@ -19,12 +20,25 @@ export default function CreatePost() {
 
     setIsPosting(true);
     try {
+      // Validate input
+      const validationResult = postSchema.safeParse({
+        content: content.trim(),
+        hashtags: hashtags.length > 0 ? hashtags : undefined
+      });
+
+      if (!validationResult.success) {
+        const errorMessage = validationResult.error.errors[0]?.message || 'Invalid input';
+        toast.error(errorMessage);
+        setIsPosting(false);
+        return;
+      }
+
       const { error } = await supabase
         .from('posts')
         .insert({
           user_id: user.id,
-          content: content.trim(),
-          hashtags: hashtags.length > 0 ? hashtags : null
+          content: validationResult.data.content,
+          hashtags: validationResult.data.hashtags || null
         });
 
       if (error) throw error;

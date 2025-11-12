@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { commentSchema } from '@/lib/validation';
 
 interface Comment {
   id: string;
@@ -72,10 +73,22 @@ export default function NewCommentSection({ postId }: NewCommentSectionProps) {
     
     setSubmitting(true);
     try {
+      // Validate input
+      const validationResult = commentSchema.safeParse({
+        content: newComment.trim()
+      });
+
+      if (!validationResult.success) {
+        const errorMessage = validationResult.error.errors[0]?.message || 'Invalid input';
+        toast.error(errorMessage);
+        setSubmitting(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('comments')
         .insert({
-          content: newComment.trim(),
+          content: validationResult.data.content,
           post_id: postId,
           user_id: user.id
         })

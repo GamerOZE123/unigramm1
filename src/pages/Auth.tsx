@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { ProfileCompletionFlow } from '@/components/auth/ProfileCompletionFlow';
 import CompanyOnboardingFlow from '@/components/auth/CompanyOnboardingFlow';
 import ClubOnboardingFlow from '@/components/auth/ClubOnboardingFlow';
+import { signUpSchema, signInSchema, resetPasswordSchema } from '@/lib/validation';
 import {
   Select,
   SelectContent,
@@ -106,9 +107,22 @@ export default function Auth() {
     setError('');
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // Validate input
+      const validationResult = signInSchema.safeParse({
         email: formData.email,
-        password: formData.password,
+        password: formData.password
+      });
+
+      if (!validationResult.success) {
+        const errorMessage = validationResult.error.errors[0]?.message || 'Invalid input';
+        setError(errorMessage);
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: validationResult.data.email,
+        password: validationResult.data.password,
       });
 
       if (error) throw error;
@@ -167,30 +181,34 @@ export default function Auth() {
     setError('');
     setMessage('');
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      setLoading(false);
-      return;
-    }
-
     try {
-      const { data, error } = await supabase.auth.signUp({
+      // Validate input
+      const validationResult = signUpSchema.safeParse({
         email: formData.email,
         password: formData.password,
+        confirmPassword: formData.confirmPassword,
+        fullName: formData.name,
+        username: formData.name || formData.email.split('@')[0]
+      });
+
+      if (!validationResult.success) {
+        const errorMessage = validationResult.error.errors[0]?.message || 'Invalid input';
+        setError(errorMessage);
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email: validationResult.data.email,
+        password: validationResult.data.password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth`,
           data: {
-            full_name: formData.name,
+            full_name: validationResult.data.fullName,
             university: (userType === 'student' || userType === 'clubs') ? formData.university : undefined,
             company_name: userType === 'company' ? formData.companyName : undefined,
-            club_name: userType === 'clubs' ? formData.name : undefined,
-            username: formData.name || formData.email.split('@')[0],
+            club_name: userType === 'clubs' ? validationResult.data.fullName : undefined,
+            username: validationResult.data.username,
             user_type: userType,
           }
         }
@@ -235,27 +253,33 @@ export default function Auth() {
     setLoading(true);
     setError('');
 
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      setLoading(false);
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      setLoading(false);
-      return;
-    }
-
     try {
-      const { error } = await supabase.auth.updateUser({
+      // Validate input
+      const validationResult = resetPasswordSchema.safeParse({
         password: formData.password
+      });
+
+      if (!validationResult.success) {
+        const errorMessage = validationResult.error.errors[0]?.message || 'Invalid password';
+        setError(errorMessage);
+        setLoading(false);
+        return;
+      }
+
+      if (formData.password !== formData.confirmPassword) {
+        setError('Passwords do not match');
+        setLoading(false);
+        return;
+      }
+
+      const { error } = await supabase.auth.updateUser({
+        password: validationResult.data.password
       });
 
       if (error) throw error;
 
-      setMessage('Password updated successfully! Redirecting...');
-      setTimeout(() => navigate('/home'), 2000);
+      setMessage('Password updated successfully! You can now login with your new password.');
+      setMode('login');
     } catch (error: any) {
       setError(error.message || 'Failed to reset password. Please try again.');
     } finally {
