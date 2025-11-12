@@ -211,12 +211,12 @@ export default function Auth() {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-        redirectTo: `${window.location.origin}/auth?mode=reset`,
+        redirectTo: `${window.location.origin}/auth`,
       });
 
       if (error) throw error;
 
-      setMessage('Password reset email sent! Please check your inbox.');
+      setMessage('Password reset email sent! Please check your inbox and click the link to reset your password.');
     } catch (error: any) {
       setError(error.message || 'Failed to send reset email. Please try again.');
     } finally {
@@ -298,27 +298,39 @@ export default function Auth() {
 
   // Handle password recovery from email link
   useEffect(() => {
-    // Check URL params for mode
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlMode = urlParams.get('mode');
-    
     // Listen for auth state changes (password recovery)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         setMode('reset');
-        setMessage('Please enter your new password.');
+        setMessage('Please enter your new password below.');
+      }
+      
+      // If user is signed in and not in password recovery, redirect to home
+      if (event === 'SIGNED_IN' && mode !== 'reset' && session) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('profile_completed, user_type')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (profileData && !profileData.profile_completed) {
+          if (profileData.user_type === 'company') {
+            setShowCompanyOnboarding(true);
+          } else if (profileData.user_type === 'clubs') {
+            setShowClubOnboarding(true);
+          } else {
+            setShowOnboarding(true);
+          }
+        } else {
+          navigate('/home');
+        }
       }
     });
-
-    // Check if we're in reset mode from URL
-    if (urlMode === 'reset') {
-      setMode('reset');
-    }
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [mode, navigate]);
 
   return (
     <>
