@@ -107,12 +107,12 @@ export default function Explore() {
 
   const fetchTopPostsOfDay = async () => {
     try {
-      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select('*')
-        .gte('created_at', yesterday);
+        .gte('created_at', sevenDaysAgo);
 
       if (postsError) throw postsError;
 
@@ -506,7 +506,7 @@ export default function Explore() {
                     </Button>
                   )}
                 </div>
-                <ScrollArea className="h-[300px] md:h-[500px] pr-4">
+                <ScrollArea className="h-[200px] md:h-[300px] pr-4">
                   <div className="space-y-2">
                     {(isMobile ? trendingHashtags.slice(0, 3) : trendingHashtags).map((hashtag, index) => (
                       <div
@@ -549,7 +549,7 @@ export default function Explore() {
                     </Button>
                   )}
                 </div>
-                <ScrollArea className="h-[300px] md:h-[500px] pr-4">
+                <ScrollArea className="h-[200px] md:h-[300px] pr-4">
                   <div className="space-y-2">
                     {(isMobile ? trendingUniversities.slice(0, 3) : trendingUniversities).map((uni, index) => (
                       <div
@@ -684,14 +684,14 @@ export default function Explore() {
           <>
             {/* Random Posts Section */}
             <div className="post-card mb-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Random Posts</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Posts</h3>
               {imagesLoading ? (
                 <div className="text-center py-8">
                   <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
                   <p className="text-muted-foreground mt-2">Loading...</p>
                 </div>
               ) : randomImages.length > 0 ? (
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 gap-2 max-h-[200px] overflow-hidden">
                   {randomImages.map((image, index) => (
                     <div
                       key={`${image.id}-${index}`}
@@ -713,10 +713,10 @@ export default function Explore() {
               )}
             </div>
 
-            {/* Top Posts of the Day Section */}
+            {/* Top Posts Section */}
             <div className="post-card">
               <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                <span>🔥</span> Top Posts of the Day
+                <span>🔥</span> Top Posts
               </h3>
               {topPostsLoading ? (
                 <div className="text-center py-8">
