@@ -27,6 +27,10 @@ const isImageUrl = (url: string) => {
   );
 };
 
+const isVideoUrl = (url: string) => {
+  return /\.(mp4|webm|ogg|mov)$/i.test(url);
+};
+
 const isPlaceholder = (url: string) => {
   return url.startsWith('uploading-');
 };
@@ -140,28 +144,37 @@ export default function MultipleImageDisplay({
 
   if (!imageUrls || imageUrls.length === 0) return null;
 
-  // Single image display
+  // Single image/video display
   if (imageUrls.length === 1) {
-    const imageUrl = imageUrls[0];
+    const mediaUrl = imageUrls[0];
     const aspectRatio = imageAspectRatios[0];
+    const isVideo = isVideoUrl(mediaUrl);
     
-    // Determine display ratio with constraints
+    // Determine display ratio with constraints (only for images)
     let displayRatio = aspectRatio || 16/9;
     
-    // Constrain portrait images (taller than square) to max 4:3
-    if (displayRatio < 1) {
-      displayRatio = Math.max(displayRatio, 3/4);
-    }
-    // Constrain very wide images to max 16:9
-    if (displayRatio > 2) {
-      displayRatio = 16/9;
+    if (!isVideo) {
+      // Constrain portrait images (taller than square) to max 4:3
+      if (displayRatio < 1) {
+        displayRatio = Math.max(displayRatio, 3/4);
+      }
+      // Constrain very wide images to max 16:9
+      if (displayRatio > 2) {
+        displayRatio = 16/9;
+      }
     }
     
     return (
       <>
         <div className={`w-full max-w-md ${className}`} data-image-container>
-          {isPlaceholder(imageUrl) ? (
+          {isPlaceholder(mediaUrl) ? (
             <ImagePlaceholder status="loading" className="max-w-md" />
+          ) : isVideo ? (
+            <video
+              src={mediaUrl}
+              controls
+              className="w-full rounded-xl"
+            />
           ) : (
             <div 
               className="relative w-full bg-muted rounded-xl overflow-hidden cursor-pointer hover:opacity-95 transition-opacity group"
@@ -169,7 +182,7 @@ export default function MultipleImageDisplay({
               onClick={() => handleImageClick(0)}
             >
               <img
-                src={imageUrl}
+                src={mediaUrl}
                 alt="Post content"
                 className="w-full h-full object-cover"
                 loading="lazy"
@@ -178,9 +191,9 @@ export default function MultipleImageDisplay({
           )}
         </div>
         
-        {!isPlaceholder(imageUrl) && (
+        {!isPlaceholder(mediaUrl) && !isVideo && (
           <ImageModal
-            imageUrl={imageUrl}
+            imageUrl={mediaUrl}
             isOpen={showFullImage}
             onClose={() => setShowFullImage(false)}
             alt="Post content"
@@ -209,41 +222,51 @@ export default function MultipleImageDisplay({
           }}
         >
           <CarouselContent>
-            {imageUrls.map((imageUrl, index) => (
-              <CarouselItem key={index}>
-                <div className="relative">
-                  {isPlaceholder(imageUrl) ? (
-                    <ImagePlaceholder status="loading" />
-                  ) : (
-                    <div 
-                      className="relative w-full bg-muted rounded-xl overflow-hidden cursor-pointer hover:opacity-95 transition-opacity group"
-                      style={{ 
-                        aspectRatio: (() => {
-                          const ratio = imageAspectRatios[index] || 16/9;
-                          // Constrain portrait to 4:3, wide to 16:9
-                          if (ratio < 1) return Math.max(ratio, 3/4);
-                          if (ratio > 2) return 16/9;
-                          return ratio;
-                        })()
-                      }}
-                      onClick={() => handleImageClick(index)}
-                    >
-                      <img
-                        src={imageUrl}
-                        alt={`Post content ${index + 1}`}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
+            {imageUrls.map((mediaUrl, index) => {
+              const isVideo = isVideoUrl(mediaUrl);
+              
+              return (
+                <CarouselItem key={index}>
+                  <div className="relative">
+                    {isPlaceholder(mediaUrl) ? (
+                      <ImagePlaceholder status="loading" />
+                    ) : isVideo ? (
+                      <video
+                        src={mediaUrl}
+                        controls
+                        className="w-full rounded-xl"
                       />
+                    ) : (
+                      <div 
+                        className="relative w-full bg-muted rounded-xl overflow-hidden cursor-pointer hover:opacity-95 transition-opacity group"
+                        style={{ 
+                          aspectRatio: (() => {
+                            const ratio = imageAspectRatios[index] || 16/9;
+                            // Constrain portrait to 4:3, wide to 16:9
+                            if (ratio < 1) return Math.max(ratio, 3/4);
+                            if (ratio > 2) return 16/9;
+                            return ratio;
+                          })()
+                        }}
+                        onClick={() => handleImageClick(index)}
+                      >
+                        <img
+                          src={mediaUrl}
+                          alt={`Post content ${index + 1}`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Image counter */}
+                    <div className="absolute top-3 right-3 bg-black/60 text-white px-2 py-1 rounded-full text-xs">
+                      {index + 1}/{imageUrls.length}
                     </div>
-                  )}
-                  
-                  {/* Image counter */}
-                  <div className="absolute top-3 right-3 bg-black/60 text-white px-2 py-1 rounded-full text-xs">
-                    {index + 1}/{imageUrls.length}
                   </div>
-                </div>
-              </CarouselItem>
-            ))}
+                </CarouselItem>
+              );
+            })}
           </CarouselContent>
           
           {/* Navigation arrows */}
