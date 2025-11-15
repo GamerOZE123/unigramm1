@@ -684,7 +684,17 @@ export default function Explore() {
           <>
             {/* Random Posts Section */}
             <div className="post-card mb-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Posts</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-foreground">Posts</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/all-posts')}
+                  className="text-primary hover:text-primary/80"
+                >
+                  See All
+                </Button>
+              </div>
               {imagesLoading ? (
                 <div className="text-center py-8">
                   <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
