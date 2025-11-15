@@ -19,6 +19,8 @@ interface Message {
   sender_id: string;
   content: string;
   created_at: string;
+  media_url?: string | null;
+  media_type?: string | null;
 }
 
 export const useChat = () => {
@@ -97,18 +99,30 @@ export const useChat = () => {
     await fetchMessages(conversationId, offset);
   };
 
-  const sendMessage = async (conversationId: string, content: string) => {
+  const sendMessage = async (conversationId: string, content: string, mediaUrl?: string | null) => {
     if (!user || !content.trim()) {
       return { success: false, error: 'No user or empty content' };
     }
     try {
+      const messageData: any = {
+        conversation_id: conversationId,
+        sender_id: user.id,
+        content: content.trim(),
+      };
+      
+      if (mediaUrl) {
+        messageData.media_url = mediaUrl;
+        // Determine media type from URL
+        if (mediaUrl.match(/\.(mp4|webm|ogg)$/i)) {
+          messageData.media_type = 'video';
+        } else {
+          messageData.media_type = 'image';
+        }
+      }
+      
       const { data, error } = await supabase
         .from('messages')
-        .insert({
-          conversation_id: conversationId,
-          sender_id: user.id,
-          content: content.trim(),
-        })
+        .insert(messageData)
         .select()
         .single();
       if (error) throw error;
