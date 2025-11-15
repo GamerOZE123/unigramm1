@@ -32,13 +32,25 @@ export default function AllPosts() {
 
       const postsWithProfiles = await Promise.all(
         (postsData || []).map(async (post) => {
-          const { data: profile } = await supabase
+          const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('username, avatar_url, full_name, university')
             .eq('user_id', post.user_id)
             .single();
 
-          return { ...post, profile };
+          if (profileError) {
+            console.error('Error fetching profile for post:', post.id, profileError);
+          }
+
+          return { 
+            ...post, 
+            profile: profile || {
+              username: 'Unknown User',
+              avatar_url: null,
+              full_name: 'Unknown User',
+              university: null
+            }
+          };
         })
       );
 
