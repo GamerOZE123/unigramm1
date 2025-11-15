@@ -291,7 +291,7 @@ export default function Chat() {
       const textContent = content.replace(fullMatch, "").trim();
       return (
         <>
-          {textContent && <p className="text-sm break-words overflow-wrap-anywhere mb-2">{textContent}</p>}
+          {textContent && <p className="text-sm break-words overflow-wrap-anywhere mb-2 whitespace-pre-wrap">{formatTextWithLinks(textContent)}</p>}
           <img 
             src={imageUrl} 
             alt="Shared image" 
@@ -301,7 +301,30 @@ export default function Chat() {
         </>
       );
     }
-    return <p className="text-sm break-words overflow-wrap-anywhere">{content}</p>;
+    return <p className="text-sm break-words overflow-wrap-anywhere whitespace-pre-wrap">{formatTextWithLinks(content)}</p>;
+  };
+
+  const formatTextWithLinks = (text: string) => {
+    const urlPattern = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlPattern);
+    
+    return parts.map((part, index) => {
+      if (part.match(urlPattern)) {
+        return (
+          <a
+            key={index}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline hover:text-primary/80"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
   };
 
   const handleSendMessage = async () => {
