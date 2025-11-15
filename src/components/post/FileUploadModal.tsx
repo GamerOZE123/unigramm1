@@ -33,15 +33,26 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
     if (!files || files.length === 0) return;
 
     if (selectedFiles.length + files.length > 10) {
-      toast.error('You can upload a maximum of 10 images');
+      toast.error('You can upload a maximum of 10 media files');
       return;
     }
 
     const newFiles = Array.from(files).filter(file => {
-      if (!file.type.startsWith('image/')) {
-        toast.error(`${file.name} is not an image file`);
+      const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
+      
+      if (!isImage && !isVideo) {
+        toast.error(`${file.name} is not an image or video file`);
         return false;
       }
+
+      // Check file size limits
+      const maxSize = isImage ? 5 * 1024 * 1024 : 50 * 1024 * 1024; // 5MB for images, 50MB for videos
+      if (file.size > maxSize) {
+        toast.error(`${file.name} exceeds the ${isImage ? '5MB' : '50MB'} limit`);
+        return false;
+      }
+
       return true;
     });
 
@@ -111,7 +122,7 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
 
       if (error) throw error;
 
-      toast.info('Uploading images...');
+      toast.info('Uploading media files...');
 
       // Upload images in parallel
       let imageUrls: string[] = [];
@@ -174,13 +185,13 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
                 className="flex items-center gap-2"
               >
                 <Upload className="w-4 h-4" />
-                Add Images ({selectedFiles.length}/10)
+                Add Media ({selectedFiles.length}/10)
               </Button>
               
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,video/*"
                 multiple
                 className="hidden"
                 onChange={handleFileSelect}
@@ -194,37 +205,57 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
                 uploadingImages.length === 3 ? 'grid-cols-3' : 
                 'grid-cols-2'
               }`}>
-                {uploadingImages.map((img, index) => (
-                  <div key={index} className="relative group">
-                    <div className="w-full aspect-square rounded-lg overflow-hidden border border-border bg-muted">
-                      {img.uploaded && img.url ? (
-                        <img
-                          src={img.url}
-                          alt={`Uploaded ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <>
-                          <img
-                            src={URL.createObjectURL(img.file)}
-                            alt={`Preview ${index + 1}`}
-                            className="w-full h-full object-cover opacity-50"
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          </div>
-                        </>
-                      )}
+                {uploadingImages.map((img, index) => {
+                  const isVideo = img.file.type.startsWith('video/');
+                  const previewUrl = URL.createObjectURL(img.file);
+                  
+                  return (
+                    <div key={index} className="relative group">
+                      <div className="w-full aspect-square rounded-lg overflow-hidden border border-border bg-muted">
+                        {img.uploaded && img.url ? (
+                          isVideo ? (
+                            <video
+                              src={img.url}
+                              className="w-full h-full object-cover"
+                              controls
+                            />
+                          ) : (
+                            <img
+                              src={img.url}
+                              alt={`Uploaded ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          )
+                        ) : (
+                          <>
+                            {isVideo ? (
+                              <video
+                                src={previewUrl}
+                                className="w-full h-full object-cover opacity-50"
+                              />
+                            ) : (
+                              <img
+                                src={previewUrl}
+                                alt={`Preview ${index + 1}`}
+                                className="w-full h-full object-cover opacity-50"
+                              />
+                            )}
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                              <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 

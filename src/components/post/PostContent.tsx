@@ -26,6 +26,10 @@ const isImageUrl = (url: string) => {
   );
 };
 
+const isVideoUrl = (url: string) => {
+  return /\.(mp4|webm|ogg|mov)$/i.test(url);
+};
+
 const getImageAspectRatio = (url: string): Promise<number> => {
   return new Promise((resolve) => {
     const img = new Image();
@@ -117,10 +121,18 @@ export default function PostContent({
         </p>
       )}
 
-      {/* Image or file preview */}
+      {/* Image, video, or file preview */}
       {imageUrl && (
         <div className="flex justify-center" data-image-container>
-          {isImageUrl(imageUrl) ? (
+          {isVideoUrl(imageUrl) ? (
+            <div className="w-full max-w-md">
+              <video
+                src={imageUrl}
+                controls
+                className="w-full rounded-xl"
+              />
+            </div>
+          ) : isImageUrl(imageUrl) ? (
             <div className="w-full max-w-md">
               <div 
                 className="relative w-full aspect-video bg-muted rounded-xl overflow-hidden cursor-pointer hover:opacity-95 transition-opacity group"
