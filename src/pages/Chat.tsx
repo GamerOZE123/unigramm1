@@ -218,16 +218,20 @@ export default function Chat() {
     setSelectedUser(null);
   };
 
-  const uploadImageFile = async (file: File) => {
+  const uploadMediaFile = async (file: File) => {
     // Validate file type
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please upload an image file");
+    const isImage = file.type.startsWith("image/");
+    const isVideo = file.type.startsWith("video/");
+    
+    if (!isImage && !isVideo) {
+      toast.error("Please upload an image or video file");
       return null;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image size must be less than 5MB");
+    // Validate file size (max 50MB for videos, 5MB for images)
+    const maxSize = isVideo ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error(`File size must be less than ${isVideo ? '50MB' : '5MB'}`);
       return null;
     }
 
@@ -245,7 +249,7 @@ export default function Chat() {
         .from("post-images")
         .getPublicUrl(data.path);
 
-      toast.success("Image uploaded");
+      toast.success(file.type.startsWith("image/") ? "Image uploaded" : "Video uploaded");
       return publicUrl;
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -260,7 +264,7 @@ export default function Chat() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const url = await uploadImageFile(file);
+    const url = await uploadMediaFile(file);
     if (url) {
       setImageUrl(url);
     }
@@ -272,11 +276,11 @@ export default function Chat() {
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      if (item.type.startsWith('image/')) {
+      if (item.type.startsWith('image/') || item.type.startsWith('video/')) {
         e.preventDefault();
         const file = item.getAsFile();
         if (file) {
-          const url = await uploadImageFile(file);
+          const url = await uploadMediaFile(file);
           if (url) {
             setImageUrl(url);
           }
@@ -357,12 +361,11 @@ export default function Chat() {
 
   const handleSendMessage = async () => {
     if ((!newMessage.trim() && !imageUrl) || !selectedConversationId) return;
-    const messageContent = imageUrl 
-      ? `${newMessage.trim()}\n[IMAGE]${imageUrl}[/IMAGE]` 
-      : newMessage.trim();
+    const messageContent = newMessage.trim() || ' '; // Use space if only media
     setNewMessage('');
+    const mediaToSend = imageUrl;
     setImageUrl(null);
-    const result = await sendMessage(selectedConversationId, messageContent);
+    const result = await sendMessage(selectedConversationId, messageContent, mediaToSend);
     if (!result.success) {
       toast.error('Failed to send message');
     }
@@ -627,6 +630,24 @@ export default function Chat() {
                                 isMine ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
                               }`}
                             >
+                              {message.media_url && (
+                                <div className="mb-2">
+                                  {message.media_url.match(/\.(mp4|webm|ogg)$/i) ? (
+                                    <video
+                                      src={message.media_url}
+                                      className="max-w-xs rounded-lg"
+                                      controls
+                                    />
+                                  ) : (
+                                    <img
+                                      src={message.media_url}
+                                      alt="Message attachment"
+                                      className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                      onClick={() => window.open(message.media_url!, '_blank')}
+                                    />
+                                  )}
+                                </div>
+                              )}
                               {renderMessageContent(message.content)}
                               <p
                             className={`text-xs mt-1 ${
@@ -714,7 +735,11 @@ export default function Chat() {
                 <div className="border-t border-border p-4">
                   {imageUrl && (
                     <div className="mb-2 relative inline-block">
-                      <img src={imageUrl} alt="Preview" className="h-20 rounded-lg" />
+                      {imageUrl.match(/\.(mp4|webm|ogg)$/i) ? (
+                        <video src={imageUrl} className="h-20 rounded-lg" controls />
+                      ) : (
+                        <img src={imageUrl} alt="Preview" className="h-20 rounded-lg" />
+                      )}
                       <button
                         onClick={() => setImageUrl(null)}
                         className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs"
@@ -724,13 +749,13 @@ export default function Chat() {
                     </div>
                   )}
                   <div className="flex gap-2 items-end">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleImageUpload}
-                      accept="image/*"
-                      className="hidden"
-                    />
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleImageUpload}
+                        accept="image/*,video/*"
+                        className="hidden"
+                      />
                     <Button
                       variant="ghost"
                       size="icon"
@@ -903,6 +928,24 @@ export default function Chat() {
                             isMine ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
                           }`}
                         >
+                          {message.media_url && (
+                            <div className="mb-2">
+                              {message.media_url.match(/\.(mp4|webm|ogg)$/i) ? (
+                                <video
+                                  src={message.media_url}
+                                  className="max-w-xs rounded-lg"
+                                  controls
+                                />
+                              ) : (
+                                <img
+                                  src={message.media_url}
+                                  alt="Message attachment"
+                                  className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                  onClick={() => window.open(message.media_url!, '_blank')}
+                                />
+                              )}
+                            </div>
+                          )}
                           {renderMessageContent(message.content)}
                           <p
                         className={`text-xs mt-1 ${
@@ -989,7 +1032,11 @@ export default function Chat() {
             <div className="border-t border-border p-4 bg-card/95 backdrop-blur-sm sticky bottom-0">
               {imageUrl && (
                 <div className="mb-2 relative inline-block">
-                  <img src={imageUrl} alt="Preview" className="h-20 rounded-lg" />
+                  {imageUrl.match(/\.(mp4|webm|ogg)$/i) ? (
+                    <video src={imageUrl} className="h-20 rounded-lg" controls />
+                  ) : (
+                    <img src={imageUrl} alt="Preview" className="h-20 rounded-lg" />
+                  )}
                   <button
                     onClick={() => setImageUrl(null)}
                     className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs"
@@ -999,13 +1046,13 @@ export default function Chat() {
                 </div>
               )}
               <div className="flex gap-2 items-end">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleImageUpload}
-                  accept="image/*"
-                  className="hidden"
-                />
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleImageUpload}
+                    accept="image/*,video/*"
+                    className="hidden"
+                  />
                 <Button
                   variant="ghost"
                   size="icon"
