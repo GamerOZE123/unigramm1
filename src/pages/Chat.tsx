@@ -218,20 +218,17 @@ export default function Chat() {
     setSelectedUser(null);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const uploadImageFile = async (file: File) => {
     // Validate file type
     if (!file.type.startsWith("image/")) {
       toast.error("Please upload an image file");
-      return;
+      return null;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error("Image size must be less than 5MB");
-      return;
+      return null;
     }
 
     setUploadingImage(true);
@@ -248,13 +245,44 @@ export default function Chat() {
         .from("post-images")
         .getPublicUrl(data.path);
 
-      setImageUrl(publicUrl);
       toast.success("Image uploaded");
+      return publicUrl;
     } catch (error) {
       console.error("Error uploading image:", error);
       toast.error("Failed to upload image");
+      return null;
     } finally {
       setUploadingImage(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const url = await uploadImageFile(file);
+    if (url) {
+      setImageUrl(url);
+    }
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (file) {
+          const url = await uploadImageFile(file);
+          if (url) {
+            setImageUrl(url);
+          }
+        }
+        break;
+      }
     }
   };
 
@@ -736,6 +764,7 @@ export default function Chat() {
                       placeholder="Type your message..."
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
+                      onPaste={handlePaste}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
@@ -1010,6 +1039,7 @@ export default function Chat() {
                   placeholder="Type your message..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
+                  onPaste={handlePaste}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
