@@ -316,7 +316,7 @@ export default function Chat() {
             href={part}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-primary underline hover:text-primary/80"
+            className="text-blue-500 dark:text-blue-400 underline hover:text-blue-600 dark:hover:text-blue-300 font-medium"
             onClick={(e) => e.stopPropagation()}
           >
             {part}
