@@ -129,7 +129,9 @@ export default function PostContent({
               <video
                 src={imageUrl}
                 controls
-                className="w-full rounded-xl"
+                className="w-full rounded-xl bg-black"
+                controlsList="nodownload"
+                playsInline
               />
             </div>
           ) : isImageUrl(imageUrl) ? (

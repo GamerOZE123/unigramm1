@@ -38,7 +38,7 @@ export default function Chat() {
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null); // For confirmation dialog
   const [selectedChatsForBulk, setSelectedChatsForBulk] = useState<Set<string>>(new Set()); // For bulk delete
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -260,13 +260,19 @@ export default function Chat() {
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const uploadMultipleMedia = async (files: FileList): Promise<string[]> => {
+    const uploadPromises = Array.from(files).map(file => uploadMediaFile(file));
+    const results = await Promise.all(uploadPromises);
+    return results.filter((url): url is string => url !== null);
+  };
 
-    const url = await uploadMediaFile(file);
-    if (url) {
-      setImageUrl(url);
+  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    const urls = await uploadMultipleMedia(files);
+    if (urls.length > 0) {
+      setMediaUrls(prev => [...prev, ...urls]);
     }
   };
 
@@ -274,18 +280,23 @@ export default function Chat() {
     const items = e.clipboardData?.items;
     if (!items) return;
 
+    const mediaFiles: File[] = [];
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       if (item.type.startsWith('image/') || item.type.startsWith('video/')) {
-        e.preventDefault();
         const file = item.getAsFile();
         if (file) {
-          const url = await uploadMediaFile(file);
-          if (url) {
-            setImageUrl(url);
-          }
+          mediaFiles.push(file);
         }
-        break;
+      }
+    }
+
+    if (mediaFiles.length > 0) {
+      e.preventDefault();
+      const urls = await Promise.all(mediaFiles.map(file => uploadMediaFile(file)));
+      const validUrls = urls.filter((url): url is string => url !== null);
+      if (validUrls.length > 0) {
+        setMediaUrls(prev => [...prev, ...validUrls]);
       }
     }
   };
@@ -360,15 +371,17 @@ export default function Chat() {
   };
 
   const handleSendMessage = async () => {
-    if ((!newMessage.trim() && !imageUrl) || !selectedConversationId) return;
-    const messageContent = newMessage.trim() || ' '; // Use space if only media
+    if ((!newMessage.trim() && mediaUrls.length === 0) || !selectedConversationId) return;
+    const messageContent = newMessage.trim() || ' ';
     setNewMessage('');
-    const mediaToSend = imageUrl;
-    setImageUrl(null);
-    const result = await sendMessage(selectedConversationId, messageContent, mediaToSend);
-    if (!result.success) {
-      toast.error('Failed to send message');
+    
+    // Send first media with message, rest as separate messages
+    await sendMessage(selectedConversationId, messageContent, mediaUrls[0]);
+    for (let i = 1; i < mediaUrls.length; i++) {
+      await sendMessage(selectedConversationId, ' ', mediaUrls[i]);
     }
+    
+    setMediaUrls([]);
   };
 
   const handleClearChat = async () => {
@@ -648,7 +661,7 @@ export default function Chat() {
                                   )}
                                 </div>
                               )}
-                              {renderMessageContent(message.content)}
+                              <div className="break-words whitespace-pre-wrap">{renderMessageContent(message.content)}</div>
                               <p
                             className={`text-xs mt-1 ${
                               message.sender_id === user?.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
@@ -733,26 +746,30 @@ export default function Chat() {
                 </div>
                 {/* Input */}
                 <div className="border-t border-border p-4">
-                  {imageUrl && (
-                    <div className="mb-2 relative inline-block">
-                      {imageUrl.match(/\.(mp4|webm|ogg)$/i) ? (
-                        <video src={imageUrl} className="h-20 rounded-lg" controls />
-                      ) : (
-                        <img src={imageUrl} alt="Preview" className="h-20 rounded-lg" />
-                      )}
-                      <button
-                        onClick={() => setImageUrl(null)}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs"
-                      >
-                        ×
-                      </button>
+                  {mediaUrls.length > 0 && (
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      {mediaUrls.map((url, index) => (
+                        <div key={index} className="relative inline-block">
+                          {url.match(/\.(mp4|webm|ogg)$/i) ? (
+                            <video src={url} className="h-20 rounded-lg" controls />
+                          ) : (
+                            <img src={url} alt="Preview" className="h-20 rounded-lg" />
+                          )}
+                          <button
+                            onClick={() => setMediaUrls(prev => prev.filter((_, i) => i !== index))}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   )}
                   <div className="flex gap-2 items-end">
                       <input
                         type="file"
                         ref={fileInputRef}
-                        onChange={handleImageUpload}
+                        onChange={handleMediaUpload}
                         accept="image/*,video/*"
                         className="hidden"
                       />
@@ -801,7 +818,7 @@ export default function Chat() {
                     />
                     <Button 
                       onClick={handleSendMessage} 
-                      disabled={(!newMessage.trim() && !imageUrl) || uploadingImage}
+                      disabled={(!newMessage.trim() && mediaUrls.length === 0) || uploadingImage}
                       className="flex-shrink-0"
                     >
                       <Send className="w-4 h-4" />
@@ -946,7 +963,7 @@ export default function Chat() {
                               )}
                             </div>
                           )}
-                          {renderMessageContent(message.content)}
+                        <div className="break-words whitespace-pre-wrap">{renderMessageContent(message.content)}</div>
                           <p
                         className={`text-xs mt-1 ${
                             isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'
@@ -1030,26 +1047,30 @@ export default function Chat() {
               )}
             </div>
             <div className="border-t border-border p-4 bg-card/95 backdrop-blur-sm sticky bottom-0">
-              {imageUrl && (
-                <div className="mb-2 relative inline-block">
-                  {imageUrl.match(/\.(mp4|webm|ogg)$/i) ? (
-                    <video src={imageUrl} className="h-20 rounded-lg" controls />
-                  ) : (
-                    <img src={imageUrl} alt="Preview" className="h-20 rounded-lg" />
-                  )}
-                  <button
-                    onClick={() => setImageUrl(null)}
-                    className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs"
-                  >
-                    ×
-                  </button>
+              {mediaUrls.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-2">
+                  {mediaUrls.map((url, index) => (
+                    <div key={index} className="relative inline-block">
+                      {url.match(/\.(mp4|webm|ogg)$/i) ? (
+                        <video src={url} className="h-20 rounded-lg" controls />
+                      ) : (
+                        <img src={url} alt="Preview" className="h-20 rounded-lg" />
+                      )}
+                      <button
+                        onClick={() => setMediaUrls(prev => prev.filter((_, i) => i !== index))}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
               <div className="flex gap-2 items-end">
                   <input
                     type="file"
                     ref={fileInputRef}
-                    onChange={handleImageUpload}
+                    onChange={handleMediaUpload}
                     accept="image/*,video/*"
                     className="hidden"
                   />
@@ -1098,7 +1119,7 @@ export default function Chat() {
                 />
                 <Button 
                   onClick={handleSendMessage} 
-                  disabled={(!newMessage.trim() && !imageUrl) || uploadingImage}
+                  disabled={(!newMessage.trim() && mediaUrls.length === 0) || uploadingImage}
                   className="flex-shrink-0"
                 >
                   <Send className="w-4 h-4" />
