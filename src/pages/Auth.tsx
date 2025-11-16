@@ -107,9 +107,29 @@ export default function Auth() {
     setError('');
 
     try {
+      // Check if input is email or username
+      const isEmail = formData.email.includes('@');
+      let emailToUse = formData.email;
+
+      // If it's a username, look up the email
+      if (!isEmail) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('email')
+          .eq('username', formData.email)
+          .single();
+
+        if (profileError || !profile?.email) {
+          setError('Username not found');
+          setLoading(false);
+          return;
+        }
+        emailToUse = profile.email;
+      }
+
       // Validate input
       const validationResult = signInSchema.safeParse({
-        email: formData.email,
+        email: emailToUse,
         password: formData.password
       });
 
@@ -328,14 +348,19 @@ export default function Auth() {
 
   // Handle password recovery from email link
   useEffect(() => {
-    // Check URL hash for recovery token on mount
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const isRecovery = hashParams.get('type') === 'recovery';
-    
-    if (isRecovery) {
-      setMode('reset');
-      setMessage('Please enter your new password below.');
-    }
+    // Check URL hash for recovery token on mount and on hash change
+    const checkForRecovery = () => {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const isRecovery = hashParams.get('type') === 'recovery';
+      const accessToken = hashParams.get('access_token');
+      
+      if (isRecovery && accessToken) {
+        setMode('reset');
+        setMessage('Please enter your new password below.');
+      }
+    };
+
+    checkForRecovery();
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -346,7 +371,15 @@ export default function Auth() {
       }
       
       // Only handle SIGNED_IN if not in password recovery mode
-      if (event === 'SIGNED_IN' && mode !== 'reset' && !isRecovery && session) {
+      if (event === 'SIGNED_IN' && mode !== 'reset' && session) {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const isRecovery = hashParams.get('type') === 'recovery';
+        
+        if (isRecovery) {
+          // Still in recovery mode, don't redirect
+          return;
+        }
+        
         const { data: profileData } = await supabase
           .from('profiles')
           .select('profile_completed, user_type')
@@ -508,14 +541,14 @@ export default function Auth() {
 
             {(mode === 'login' || mode === 'signup' || mode === 'forgot') && (
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{mode === 'login' ? 'Email or Username' : 'Email'}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
                     id="email"
                     name="email"
-                    type="email"
-                    placeholder="Enter your email"
+                    type={mode === 'login' ? 'text' : 'email'}
+                    placeholder={mode === 'login' ? 'Enter your email or username' : 'Enter your email'}
                     className="pl-10 bg-surface border-border"
                     value={formData.email}
                     onChange={handleInputChange}

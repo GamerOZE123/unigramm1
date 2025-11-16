@@ -661,7 +661,7 @@ export default function Chat() {
                                   )}
                                 </div>
                               )}
-                              <div className="break-words whitespace-pre-wrap">{renderMessageContent(message.content)}</div>
+                              <div className="break-all whitespace-pre-wrap">{renderMessageContent(message.content)}</div>
                               <p
                             className={`text-xs mt-1 ${
                               message.sender_id === user?.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
@@ -963,7 +963,7 @@ export default function Chat() {
                               )}
                             </div>
                           )}
-                        <div className="break-words whitespace-pre-wrap">{renderMessageContent(message.content)}</div>
+                        <div className="break-all whitespace-pre-wrap">{renderMessageContent(message.content)}</div>
                           <p
                         className={`text-xs mt-1 ${
                             isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'
