@@ -2074,6 +2074,92 @@ export type Database = {
           },
         ]
       }
+      student_store_items: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          digital_file_url: string | null
+          id: string
+          image_urls: string[] | null
+          is_active: boolean | null
+          price: number
+          product_type: string
+          stock_quantity: number | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          digital_file_url?: string | null
+          id?: string
+          image_urls?: string[] | null
+          is_active?: boolean | null
+          price: number
+          product_type: string
+          stock_quantity?: number | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          digital_file_url?: string | null
+          id?: string
+          image_urls?: string[] | null
+          is_active?: boolean | null
+          price?: number
+          product_type?: string
+          stock_quantity?: number | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      student_store_purchases: {
+        Row: {
+          buyer_id: string
+          id: string
+          item_id: string
+          purchased_at: string
+          quantity: number
+          total_price: number
+        }
+        Insert: {
+          buyer_id: string
+          id?: string
+          item_id: string
+          purchased_at?: string
+          quantity?: number
+          total_price: number
+        }
+        Update: {
+          buyer_id?: string
+          id?: string
+          item_id?: string
+          purchased_at?: string
+          quantity?: number
+          total_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_store_purchases_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "student_store_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           analytics_tier: string | null
