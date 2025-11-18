@@ -1,171 +1,77 @@
 import React from 'react';
-import { Heart, Info, ChevronLeft, ChevronRight, Download, Package } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Package, Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface StudentStoreProduct {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   price: number;
-  product_type: 'physical' | 'digital';
-  category: string;
-  image_urls: string[];
-  stock_quantity: number;
-  tags: string[];
+  product_type: string;
+  category: string | null;
+  image_urls: string[] | null;
+  stock_quantity: number | null;
+  tags: string[] | null;
+  digital_file_url: string | null;
   created_at: string;
-  profiles?: {
-    full_name: string;
-    username: string;
-    avatar_url: string;
-  };
+  user_id: string;
 }
 
 interface StudentStoreProductCardProps {
   product: StudentStoreProduct;
-  isFavorited: boolean;
-  onToggleFavorite: () => void;
-  onShowDetails: () => void;
-  onNext: () => void;
-  onPrevious: () => void;
-  canGoNext: boolean;
-  canGoPrevious: boolean;
 }
 
-export default function StudentStoreProductCard({
-  product,
-  isFavorited,
-  onToggleFavorite,
-  onShowDetails,
-  onNext,
-  onPrevious,
-  canGoNext,
-  canGoPrevious,
-}: StudentStoreProductCardProps) {
+export default function StudentStoreProductCard({ product }: StudentStoreProductCardProps) {
   const imageUrl = product.image_urls?.[0] || '/placeholder.svg';
 
   return (
-    <div className="bg-card rounded-xl shadow-lg overflow-hidden border border-border hover:shadow-xl transition-shadow">
-      {/* Image */}
-      <div className="relative h-64 bg-muted">
-        <img
-          src={imageUrl}
+    <div className="post-card overflow-hidden group cursor-pointer hover:shadow-lg transition-shadow">
+      <div className="aspect-square relative overflow-hidden bg-muted">
+        <img 
+          src={imageUrl} 
           alt={product.title}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
         />
-        
-        {/* Navigation Arrows */}
-        {canGoPrevious && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onPrevious}
-            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-background/90 hover:bg-background rounded-full p-2"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </Button>
-        )}
-        
-        {canGoNext && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onNext}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-background/90 hover:bg-background rounded-full p-2"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </Button>
-        )}
-
-        {/* Action Buttons */}
-        <div className="absolute top-3 right-3 flex gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onToggleFavorite}
-            className={`rounded-full p-2 bg-background/90 hover:bg-background ${
-              isFavorited ? 'text-red-500' : 'text-muted-foreground'
-            }`}
-          >
-            <Heart className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onShowDetails}
-            className="rounded-full p-2 bg-background/90 hover:bg-background text-foreground"
-          >
-            <Info className="w-4 h-4" />
-          </Button>
-        </div>
-
-        {/* Product Type Badge */}
-        <div className="absolute top-3 left-3 flex gap-2">
-          <Badge variant={product.product_type === 'digital' ? 'default' : 'secondary'} className="flex items-center gap-1">
+        <div className="absolute top-2 right-2">
+          <Badge variant="secondary" className="text-xs flex items-center gap-1">
             {product.product_type === 'digital' ? (
-              <><Download className="w-3 h-3" /> Digital</>
+              <><Download className="h-3 w-3" /> Digital</>
             ) : (
-              <><Package className="w-3 h-3" /> Physical</>
+              <><Package className="h-3 w-3" /> Physical</>
             )}
           </Badge>
         </div>
+        {product.category && (
+          <div className="absolute top-2 left-2">
+            <Badge variant="outline" className="text-xs bg-background/80 backdrop-blur-sm">
+              {product.category}
+            </Badge>
+          </div>
+        )}
       </div>
 
-      {/* Content */}
-      <div className="p-5">
-        <div className="mb-3">
-          <h3 className="text-lg font-bold text-foreground mb-1 line-clamp-1">{product.title}</h3>
-          <p className="text-muted-foreground text-sm line-clamp-2">{product.description}</p>
-        </div>
-
-        {/* Category & Stock */}
-        <div className="flex items-center gap-2 mb-3">
-          {product.category && (
-            <Badge variant="outline" className="text-xs">{product.category}</Badge>
-          )}
-          {product.product_type === 'physical' && (
-            <span className="text-xs text-muted-foreground">
-              {product.stock_quantity > 0 ? `${product.stock_quantity} in stock` : 'Out of stock'}
-            </span>
-          )}
-        </div>
-
-        {/* Tags */}
+      <div className="p-4">
+        <h3 className="font-semibold text-lg mb-1 line-clamp-1">{product.title}</h3>
+        {product.description && (
+          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{product.description}</p>
+        )}
+        
         {product.tags && product.tags.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3">
-            {product.tags.slice(0, 3).map((tag, index) => (
-              <span key={index} className="text-xs bg-muted px-2 py-1 rounded-md text-muted-foreground">
-                #{tag}
-              </span>
+            {product.tags.slice(0, 3).map((tag, idx) => (
+              <Badge key={idx} variant="outline" className="text-xs">{tag}</Badge>
             ))}
           </div>
         )}
 
         <div className="flex items-center justify-between">
-          <div className="text-2xl font-bold text-primary">
-            ₹{product.price}
-          </div>
+          <span className="text-xl font-bold text-primary">${product.price}</span>
+          {product.product_type === 'physical' && product.stock_quantity !== null && (
+            <span className="text-xs text-muted-foreground">
+              {product.stock_quantity > 0 ? `${product.stock_quantity} in stock` : 'Out of stock'}
+            </span>
+          )}
         </div>
-
-        {/* Seller Info */}
-        {product.profiles && (
-          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border">
-            <img
-              src={product.profiles.avatar_url || '/placeholder.svg'}
-              alt={product.profiles.full_name}
-              className="w-8 h-8 rounded-full object-cover"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">
-                {product.profiles.full_name}
-              </p>
-              <p className="text-xs text-muted-foreground truncate">
-                @{product.profiles.username}
-              </p>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
