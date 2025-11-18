@@ -2086,6 +2086,7 @@ export type Database = {
           price: number
           product_type: string
           stock_quantity: number | null
+          store_id: string | null
           tags: string[] | null
           title: string
           updated_at: string
@@ -2102,6 +2103,7 @@ export type Database = {
           price: number
           product_type: string
           stock_quantity?: number | null
+          store_id?: string | null
           tags?: string[] | null
           title: string
           updated_at?: string
@@ -2118,12 +2120,21 @@ export type Database = {
           price?: number
           product_type?: string
           stock_quantity?: number | null
+          store_id?: string | null
           tags?: string[] | null
           title?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "student_store_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "student_stores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_store_purchases: {
         Row: {
@@ -2159,6 +2170,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      student_stores: {
+        Row: {
+          bank_details: Json | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          payment_methods: Json | null
+          store_description: string | null
+          store_logo_url: string | null
+          store_name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          bank_details?: Json | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          payment_methods?: Json | null
+          store_description?: string | null
+          store_logo_url?: string | null
+          store_name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          bank_details?: Json | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          payment_methods?: Json | null
+          store_description?: string | null
+          store_logo_url?: string | null
+          store_name?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       subscriptions: {
         Row: {
