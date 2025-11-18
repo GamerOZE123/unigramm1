@@ -45,8 +45,8 @@ export default function StoreSetupModal({ open, onOpenChange, onSuccess }: Store
     if (!logoFile || !user) return null;
 
     const fileExt = logoFile.name.split('.').pop();
-    const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-    const filePath = `store-logos/${fileName}`;
+    const fileName = `store-logo-${Date.now()}.${fileExt}`;
+    const filePath = `${user.id}/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
