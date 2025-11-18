@@ -15,11 +15,12 @@ import {
 } from "@/components/ui/select";
 
 interface CreateStudentStoreItemModalProps {
+  storeId: string;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export default function CreateStudentStoreItemModal({ onClose, onSuccess }: CreateStudentStoreItemModalProps) {
+export default function CreateStudentStoreItemModal({ storeId, onClose, onSuccess }: CreateStudentStoreItemModalProps) {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -129,6 +130,7 @@ export default function CreateStudentStoreItemModal({ onClose, onSuccess }: Crea
 
       const itemData = {
         user_id: user.id,
+        store_id: storeId,
         title: formData.title,
         description: formData.description,
         price: parseFloat(formData.price),

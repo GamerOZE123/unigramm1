@@ -30,6 +30,7 @@ import Advertising from '@/pages/Advertising';
 import Carpooling from '@/pages/Carpooling';
 import GhostChat from '@/pages/GhostChat';
 import AllPosts from '@/pages/AllPosts';
+import StoreManagement from '@/pages/StoreManagement';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,6 +61,7 @@ function App() {
               <Route path="/buy-sell" element={<ProtectedRoute><BuySell /></ProtectedRoute>} />
               <Route path="/auction" element={<ProtectedRoute><Auction /></ProtectedRoute>} />
               <Route path="/marketplace" element={<ProtectedRoute><Marketplace /></ProtectedRoute>} />
+              <Route path="/store-management" element={<ProtectedRoute><StoreManagement /></ProtectedRoute>} />
               <Route path="/jobs" element={<ProtectedRoute><Jobs /></ProtectedRoute>} />
               <Route path="/jobs-internships" element={<ProtectedRoute><JobsInternships /></ProtectedRoute>} />
               <Route path="/advertising" element={<ProtectedRoute><Advertising /></ProtectedRoute>} />

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Store, ShoppingBag, Gavel } from 'lucide-react';
+import { Plus, Store, ShoppingBag, Gavel, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import CreateMarketplaceItemModal from './CreateMarketplaceItemModal';
 import CreateAuctionModal from './CreateAuctionModal';
 import CreateStudentStoreItemModal from './CreateStudentStoreItemModal';
+import StoreSetupModal from './StoreSetupModal';
 import StudentStoreProductCard from './StudentStoreProductCard';
 import {
   Select,
@@ -61,31 +63,46 @@ export default function MarketplacePage() {
   const [storeProducts, setStoreProducts] = useState<StudentStoreProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [userUniversity, setUserUniversity] = useState<string>('');
+  const [userStore, setUserStore] = useState<any>(null);
   
   // Filters
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [productTypeFilter, setProductTypeFilter] = useState<string>('all');
   
   // Modals
+  const [showStoreSetupModal, setShowStoreSetupModal] = useState(false);
   const [showStoreModal, setShowStoreModal] = useState(false);
   const [showMarketplaceModal, setShowMarketplaceModal] = useState(false);
   const [showAuctionModal, setShowAuctionModal] = useState(false);
   
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchUserUniversity = async () => {
+    const fetchUserData = async () => {
       if (!user) return;
-      const { data } = await supabase
+      
+      // Fetch university
+      const { data: profileData } = await supabase
         .from('profiles')
         .select('university')
         .eq('user_id', user.id)
         .single();
-      if (data) {
-        setUserUniversity(data.university || '');
+      
+      if (profileData) {
+        setUserUniversity(profileData.university || '');
       }
+
+      // Fetch user's store
+      const { data: storeData } = await supabase
+        .from('student_stores')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      setUserStore(storeData);
     };
-    fetchUserUniversity();
+    fetchUserData();
   }, [user]);
 
   useEffect(() => {
@@ -216,10 +233,28 @@ export default function MarketplacePage() {
           <h1 className="text-3xl md:text-4xl font-bold">Marketplace</h1>
           <p className="text-muted-foreground mt-1">Discover and sell items in your campus community</p>
         </div>
-        <Button onClick={() => setShowStoreModal(true)} size="lg" className="gap-2">
-          <Plus className="h-5 w-5" />
-          <span>Create Store Listing</span>
-        </Button>
+        <div className="flex gap-2">
+          {userStore && (
+            <Button onClick={() => navigate('/store-management')} variant="outline" size="lg" className="gap-2">
+              <Settings className="h-5 w-5" />
+              <span className="hidden sm:inline">Manage Store</span>
+            </Button>
+          )}
+          <Button 
+            onClick={() => {
+              if (userStore) {
+                setShowStoreModal(true);
+              } else {
+                setShowStoreSetupModal(true);
+              }
+            }} 
+            size="lg" 
+            className="gap-2"
+          >
+            <Plus className="h-5 w-5" />
+            <span>{userStore ? 'Add Product' : 'Create Store'}</span>
+          </Button>
+        </div>
       </div>
 
       {/* Student Store Section */}
@@ -423,8 +458,25 @@ export default function MarketplacePage() {
       </section>
 
       {/* Modals */}
-      {showStoreModal && (
+      <StoreSetupModal 
+        open={showStoreSetupModal}
+        onOpenChange={setShowStoreSetupModal}
+        onSuccess={() => {
+          const fetchUserData = async () => {
+            if (!user) return;
+            const { data: storeData } = await supabase
+              .from('student_stores')
+              .select('*')
+              .eq('user_id', user.id)
+              .single();
+            setUserStore(storeData);
+          };
+          fetchUserData();
+        }}
+      />
+      {showStoreModal && userStore && (
         <CreateStudentStoreItemModal 
+          storeId={userStore.id}
           onClose={() => setShowStoreModal(false)}
           onSuccess={() => {
             fetchStoreProducts();
