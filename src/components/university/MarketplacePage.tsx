@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Heart, Info, Filter, Search, Edit, Trash2, Clock, Users, TrendingUp, ShoppingBag, Gavel } from 'lucide-react';
+import { Plus, Heart, Info, Filter, Search, Edit, Trash2, Clock, Users, TrendingUp, ShoppingBag, Gavel, Store } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CreateMarketplaceItemModal from './CreateMarketplaceItemModal';
 import CreateAuctionModal from './CreateAuctionModal';
+import CreateStudentStoreItemModal from './CreateStudentStoreItemModal';
 import ItemDetailModal from './ItemDetailModal';
 import AuctionDetailModal from './AuctionDetailModal';
+import StudentStoreProductCard from './StudentStoreProductCard';
 import MarketplaceFloatingButton from '@/components/marketplace/MarketplaceFloatingButton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Carousel,
   CarouselContent,
@@ -55,17 +64,42 @@ interface Auction {
   bid_count?: number;
 }
 
+interface StudentStoreProduct {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  product_type: 'physical' | 'digital';
+  category: string;
+  image_urls: string[];
+  stock_quantity: number;
+  tags: string[];
+  created_at: string;
+  user_id: string;
+  profiles?: {
+    full_name: string;
+    username: string;
+    avatar_url: string;
+  };
+}
+
 export default function MarketplacePage() {
   const [items, setItems] = useState<MarketplaceItem[]>([]);
   const [auctions, setAuctions] = useState<Auction[]>([]);
+  const [storeProducts, setStoreProducts] = useState<StudentStoreProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('buysell');
   const [userUniversity, setUserUniversity] = useState<string>('');
   
+  // Filters for Student Store
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [productTypeFilter, setProductTypeFilter] = useState<string>('all');
+  
   // Modals
   const [showCreateItemModal, setShowCreateItemModal] = useState(false);
   const [showCreateAuctionModal, setShowCreateAuctionModal] = useState(false);
+  const [showCreateStoreItemModal, setShowCreateStoreItemModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MarketplaceItem | null>(null);
   const [selectedAuction, setSelectedAuction] = useState<Auction | null>(null);
   const [editingItem, setEditingItem] = useState<MarketplaceItem | null>(null);
@@ -92,6 +126,7 @@ export default function MarketplacePage() {
     if (userUniversity) {
       fetchItems();
       fetchAuctions();
+      fetchStoreProducts();
     }
   }, [userUniversity]);
 
@@ -179,6 +214,33 @@ export default function MarketplacePage() {
       console.error('Error fetching auctions:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchStoreProducts = async () => {
+    try {
+      const { data: productsData, error: productsError } = await supabase
+        .from('student_store_items')
+        .select(`
+          *,
+          profiles(full_name, username, avatar_url, university)
+        `)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (productsError) throw productsError;
+
+      // Filter by university
+      const filteredProducts = (productsData?.filter(
+        (product: any) => product.profiles?.university === userUniversity
+      ) || []).map((product: any) => ({
+        ...product,
+        product_type: product.product_type as 'physical' | 'digital'
+      }));
+
+      setStoreProducts(filteredProducts);
+    } catch (error) {
+      console.error('Error fetching store products:', error);
     }
   };
 
@@ -296,14 +358,18 @@ export default function MarketplacePage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="buysell" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-3 gap-2">
+            <TabsTrigger value="buysell" className="flex items-center gap-2 text-xs sm:text-sm">
               <ShoppingBag className="w-4 h-4" />
-              Buy & Sell
+              <span className="hidden sm:inline">Buy &</span> Sell
             </TabsTrigger>
-            <TabsTrigger value="auctions" className="flex items-center gap-2">
+            <TabsTrigger value="auctions" className="flex items-center gap-2 text-xs sm:text-sm">
               <Gavel className="w-4 h-4" />
               Auctions
+            </TabsTrigger>
+            <TabsTrigger value="store" className="flex items-center gap-2 text-xs sm:text-sm">
+              <Store className="w-4 h-4" />
+              <span className="hidden sm:inline">Student</span> Store
             </TabsTrigger>
           </TabsList>
 
@@ -500,6 +566,100 @@ export default function MarketplacePage() {
               </div>
             )}
           </TabsContent>
+
+          <TabsContent value="store" className="space-y-4">
+            {/* Filters for Student Store */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  <SelectItem value="Art & Design">Art & Design</SelectItem>
+                  <SelectItem value="Handmade Crafts">Handmade Crafts</SelectItem>
+                  <SelectItem value="Digital Art">Digital Art</SelectItem>
+                  <SelectItem value="Photography">Photography</SelectItem>
+                  <SelectItem value="Music & Audio">Music & Audio</SelectItem>
+                  <SelectItem value="Writing & Books">Writing & Books</SelectItem>
+                  <SelectItem value="Software & Apps">Software & Apps</SelectItem>
+                  <SelectItem value="Templates & Guides">Templates & Guides</SelectItem>
+                  <SelectItem value="Fashion & Accessories">Fashion & Accessories</SelectItem>
+                  <SelectItem value="Home Decor">Home Decor</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={productTypeFilter} onValueChange={setProductTypeFilter}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="physical">Physical Products</SelectItem>
+                  <SelectItem value="digital">Digital Products</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button 
+                onClick={() => setShowCreateStoreItemModal(true)} 
+                className="sm:ml-auto"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Upload Product
+              </Button>
+            </div>
+
+            {storeProducts
+              .filter(product => 
+                (categoryFilter === 'all' || product.category === categoryFilter) &&
+                (productTypeFilter === 'all' || product.product_type === productTypeFilter) &&
+                (product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                 product.description?.toLowerCase().includes(searchQuery.toLowerCase()))
+              )
+              .length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {storeProducts
+                  .filter(product => 
+                    (categoryFilter === 'all' || product.category === categoryFilter) &&
+                    (productTypeFilter === 'all' || product.product_type === productTypeFilter) &&
+                    (product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                     product.description?.toLowerCase().includes(searchQuery.toLowerCase()))
+                  )
+                  .map((product) => (
+                    <StudentStoreProductCard
+                      key={product.id}
+                      product={product}
+                      isFavorited={false}
+                      onToggleFavorite={() => {}}
+                      onShowDetails={() => {}}
+                      onNext={() => {}}
+                      onPrevious={() => {}}
+                      canGoNext={product.image_urls ? product.image_urls.length > 1 : false}
+                      canGoPrevious={false}
+                    />
+                  ))}
+              </div>
+            ) : (
+              <div className="post-card text-center py-12">
+                <Store className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground text-lg mb-2">
+                  {searchQuery || categoryFilter !== 'all' || productTypeFilter !== 'all' 
+                    ? 'No products found matching your filters.' 
+                    : 'No student products yet.'}
+                </p>
+                <p className="text-muted-foreground text-sm mb-4">
+                  Be the first to showcase your creative work!
+                </p>
+                {!searchQuery && categoryFilter === 'all' && productTypeFilter === 'all' && (
+                  <Button onClick={() => setShowCreateStoreItemModal(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Upload Your First Product
+                  </Button>
+                )}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
 
@@ -558,6 +718,16 @@ export default function MarketplacePage() {
           auction={selectedAuction}
           onClose={() => setSelectedAuction(null)}
           onBidPlaced={fetchAuctions}
+        />
+      )}
+
+      {showCreateStoreItemModal && (
+        <CreateStudentStoreItemModal
+          onClose={() => setShowCreateStoreItemModal(false)}
+          onSuccess={() => {
+            setShowCreateStoreItemModal(false);
+            fetchStoreProducts();
+          }}
         />
       )}
 
