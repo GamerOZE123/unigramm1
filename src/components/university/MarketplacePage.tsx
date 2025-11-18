@@ -98,7 +98,7 @@ export default function MarketplacePage() {
         .from('student_stores')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
       
       setUserStore(storeData);
     };
