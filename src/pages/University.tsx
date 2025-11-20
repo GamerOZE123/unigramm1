@@ -14,7 +14,8 @@ import {
   Target,
   Dumbbell,
   CarTaxiFront,
-  UserCircle
+  UserCircle,
+  Rocket
 } from 'lucide-react';
 import MobileHeader from '@/components/layout/MobileHeader';
 // Re-importing to force refresh
@@ -73,6 +74,15 @@ const universityOptions = [
     icon: Calendar,
     path: '/holidays',
     color: 'bg-pink-500',
+    allowedFor: ['student']
+  },
+  {
+    id: 'startups',
+    title: 'Startups & Ideas',
+    description: 'Share your startup, find co-founders, and discover student innovations',
+    icon: Rocket,
+    path: '/startups',
+    color: 'bg-cyan-500',
     allowedFor: ['student']
   }
 ];
