@@ -2012,6 +2012,42 @@ export type Database = {
           },
         ]
       }
+      startup_interests: {
+        Row: {
+          created_at: string | null
+          id: string
+          startup_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          startup_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          startup_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "startup_interests_startup_id_fkey"
+            columns: ["startup_id"]
+            isOneToOne: false
+            referencedRelation: "student_startups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "startup_interests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       student_profiles: {
         Row: {
           certificates: string[] | null
