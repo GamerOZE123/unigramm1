@@ -16,16 +16,16 @@ import { supabase } from '@/integrations/supabase/client';
 
 export default function Explore() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchPosts, setSearchPosts] = useState<any[]>([]);
+  const [searchPosts, setSearchPosts] = useState([]);
   const [searchPostsLoading, setSearchPostsLoading] = useState(false);
   const { users, loading, searchUsers } = useUsers();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearch = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
-    
+
     if (query.startsWith('#')) {
       const searchTerm = query.slice(1).toLowerCase();
       fetchSearchPosts(searchTerm, 'hashtag');
@@ -37,21 +37,21 @@ export default function Explore() {
     }
   };
 
-  const handleUserClick = (userId: string) => {
+  const handleUserClick = (userId) => {
     navigate(`/profile/${userId}`);
   };
 
-  const handleHashtagClick = (hashtag: string) => {
+  const handleHashtagClick = (hashtag) => {
     setSearchQuery(`#${hashtag}`);
     fetchSearchPosts(hashtag, 'hashtag');
   };
 
-  const handleUniversityClick = (university: string) => {
+  const handleUniversityClick = (university) => {
     setSearchQuery(university);
     fetchSearchPosts(university, 'university');
   };
 
-  const fetchSearchPosts = async (searchTerm: string, searchType: 'hashtag' | 'university') => {
+  const fetchSearchPosts = async (searchTerm, searchType) => {
     setSearchPostsLoading(true);
     try {
       if (searchType === 'hashtag') {
@@ -70,9 +70,7 @@ export default function Explore() {
           .in('user_id', userIds);
 
         const profileMap = new Map();
-        profiles?.forEach(profile => {
-          profileMap.set(profile.user_id, profile);
-        });
+        profiles?.forEach(profile => profileMap.set(profile.user_id, profile));
 
         const transformedPosts = (posts || []).map(post => ({
           ...post,
@@ -87,7 +85,7 @@ export default function Explore() {
           .ilike('university', `%${searchTerm}%`);
 
         const userIds = profiles?.map(p => p.user_id) || [];
-        
+
         const { data: posts, error: postsError } = await supabase
           .from('posts')
           .select('id, content, image_url, hashtags, user_id, created_at, likes_count, comments_count')
@@ -102,9 +100,7 @@ export default function Explore() {
           .in('user_id', userIds);
 
         const profileMap = new Map();
-        profilesWithDetails?.forEach(profile => {
-          profileMap.set(profile.user_id, profile);
-        });
+        profilesWithDetails?.forEach(profile => profileMap.set(profile.user_id, profile));
 
         const transformedPosts = (posts || []).map(post => ({
           ...post,
@@ -180,7 +176,7 @@ export default function Explore() {
             </div>
           )}
 
-          {searchPostsLoading || loading ? (
+          {(searchPostsLoading || loading) ? (
             <div className="text-center py-8">
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
             </div>
@@ -197,9 +193,13 @@ export default function Explore() {
   return (
     <Layout>
       {isMobile && <MobileHeader />}
-      <div className="space-y-8 px-2 mt-6 pb-8">
+
+      {/* CENTER CONTENT UPDATED TO MATCH MOBILE LAYOUT */}
+      <div className="max-w-2xl mx-auto space-y-10 mt-6 pb-12 px-2 w-full">
+
+        {/* SEARCH BAR — unchanged */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <input
             type="text"
             placeholder="Search users, hashtags, or universities..."
@@ -209,13 +209,5 @@ export default function Explore() {
           />
         </div>
 
-        <HeroBanner />
-        <TrendingHashtagsRow onHashtagClick={handleHashtagClick} />
-        <TrendingPostsRow />
-        <TrendingUniversitiesRow onUniversityClick={handleUniversityClick} />
-        <UpcomingEventsRow />
-        <StudentStartupsRow />
-      </div>
-    </Layout>
-  );
-}
+        {/* TRENDING NOW */}
+        <TrendingHashtagsRow on
