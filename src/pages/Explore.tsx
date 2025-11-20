@@ -210,4 +210,18 @@ export default function Explore() {
         </div>
 
         {/* TRENDING NOW */}
-        <TrendingHashtagsRow on
+        <TrendingHashtagsRow onHashtagClick={handleHashtagClick} />
+
+        <HeroBanner />
+
+        <TrendingPostsRow />
+
+        <TrendingUniversitiesRow onUniversityClick={handleUniversityClick} />
+
+        <UpcomingEventsRow />
+
+        <StudentStartupsRow />
+      </div>
+    </Layout>
+  );
+}
