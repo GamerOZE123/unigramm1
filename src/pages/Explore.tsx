@@ -120,7 +120,6 @@ export default function Explore() {
     }
   };
 
-  // Search results view
   if (searchQuery) {
     return (
       <Layout>
@@ -195,12 +194,10 @@ export default function Explore() {
     );
   }
 
-  // Main explore page
   return (
     <Layout>
       {isMobile && <MobileHeader />}
       <div className="space-y-8 px-2 mt-6 pb-8">
-        {/* Search Bar */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <input
@@ -212,22 +209,11 @@ export default function Explore() {
           />
         </div>
 
-        {/* Hero Banner */}
         <HeroBanner />
-
-        {/* Trending Hashtags Row */}
         <TrendingHashtagsRow onHashtagClick={handleHashtagClick} />
-
-        {/* Trending Posts Row */}
         <TrendingPostsRow />
-
-        {/* Trending Universities Row */}
         <TrendingUniversitiesRow onUniversityClick={handleUniversityClick} />
-
-        {/* Upcoming Events Row */}
         <UpcomingEventsRow />
-
-        {/* Student Startups Row */}
         <StudentStartupsRow />
       </div>
     </Layout>
