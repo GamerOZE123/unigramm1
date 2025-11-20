@@ -70,7 +70,7 @@ export default function Startups() {
   const fetchStartups = async () => {
     try {
       const { data, error } = await supabase
-        .from('student_startups')
+        .from('student_startups' as any)
         .select(`
           *,
           profiles (
@@ -84,7 +84,7 @@ export default function Startups() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setStartups(data || []);
+      setStartups(data as any || []);
     } catch (error) {
       console.error('Error fetching startups:', error);
     } finally {
@@ -103,7 +103,7 @@ export default function Startups() {
         .filter(item => item);
 
       const { error } = await supabase
-        .from('student_startups')
+        .from('student_startups' as any)
         .insert({
           user_id: user.id,
           title: formData.title,
