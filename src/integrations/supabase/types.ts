@@ -2074,6 +2074,48 @@ export type Database = {
           },
         ]
       }
+      student_startups: {
+        Row: {
+          category: string
+          contact_email: string | null
+          created_at: string | null
+          description: string
+          id: string
+          looking_for: string[] | null
+          stage: string
+          title: string
+          updated_at: string | null
+          user_id: string
+          website_url: string | null
+        }
+        Insert: {
+          category: string
+          contact_email?: string | null
+          created_at?: string | null
+          description: string
+          id?: string
+          looking_for?: string[] | null
+          stage: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+          website_url?: string | null
+        }
+        Update: {
+          category?: string
+          contact_email?: string | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          looking_for?: string[] | null
+          stage?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       student_store_items: {
         Row: {
           category: string | null

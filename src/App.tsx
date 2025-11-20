@@ -29,8 +29,9 @@ import Fitness from '@/pages/Fitness';
 import Advertising from '@/pages/Advertising';
 import Carpooling from '@/pages/Carpooling';
 import GhostChat from '@/pages/GhostChat';
-import AllPosts from '@/pages/AllPosts';
 import StoreManagement from '@/pages/StoreManagement';
+import AllPosts from '@/pages/AllPosts';
+import Startups from '@/pages/Startups';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -72,6 +73,7 @@ function App() {
               <Route path="/ghost-chat" element={<ProtectedRoute><GhostChat /></ProtectedRoute>} />
               <Route path="/post/:postId" element={<ProtectedRoute><Post /></ProtectedRoute>} />
               <Route path="/all-posts" element={<ProtectedRoute><AllPosts /></ProtectedRoute>} />
+              <Route path="/startups" element={<ProtectedRoute><Startups /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <Toaster />
