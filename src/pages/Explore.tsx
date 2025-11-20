@@ -12,6 +12,7 @@ import TrendingPostsRow from '@/components/explore/TrendingPostsRow';
 import TrendingUniversitiesRow from '@/components/explore/TrendingUniversitiesRow';
 import UpcomingEventsRow from '@/components/explore/UpcomingEventsRow';
 import StudentStartupsRow from '@/components/explore/StudentStartupsRow';
+import ExploreSidebar from '@/components/explore/ExploreSidebar';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function Explore() {
@@ -194,33 +195,40 @@ export default function Explore() {
     <Layout>
       {isMobile && <MobileHeader />}
 
-      {/* CENTER CONTENT UPDATED TO MATCH MOBILE LAYOUT */}
-      <div className="max-w-2xl mx-auto space-y-10 mt-6 pb-12 px-2 w-full">
+      <div className="flex gap-6">
+        {/* CENTER CONTENT */}
+        <div className="flex-1 max-w-2xl mx-auto space-y-10 mt-6 pb-12 px-2">
+          {/* SEARCH BAR */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search users, hashtags, or universities..."
+              value={searchQuery}
+              onChange={handleSearch}
+              className="w-full pl-10 pr-4 py-2 bg-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
 
-        {/* SEARCH BAR — unchanged */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Search users, hashtags, or universities..."
-            value={searchQuery}
-            onChange={handleSearch}
-            className="w-full pl-10 pr-4 py-2 bg-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-          />
+          <TrendingHashtagsRow onHashtagClick={handleHashtagClick} />
+
+          <HeroBanner />
+
+          <TrendingPostsRow />
+
+          <TrendingUniversitiesRow onUniversityClick={handleUniversityClick} />
+
+          <UpcomingEventsRow />
+
+          <StudentStartupsRow />
         </div>
 
-        {/* TRENDING NOW */}
-        <TrendingHashtagsRow onHashtagClick={handleHashtagClick} />
-
-        <HeroBanner />
-
-        <TrendingPostsRow />
-
-        <TrendingUniversitiesRow onUniversityClick={handleUniversityClick} />
-
-        <UpcomingEventsRow />
-
-        <StudentStartupsRow />
+        {/* RIGHT SIDEBAR - Hidden on mobile */}
+        {!isMobile && (
+          <div className="w-80 hidden lg:block">
+            <ExploreSidebar onHashtagClick={handleHashtagClick} />
+          </div>
+        )}
       </div>
     </Layout>
   );
