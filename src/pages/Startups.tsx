@@ -70,21 +70,32 @@ export default function Startups() {
   const fetchStartups = async () => {
     try {
       const { data, error } = await supabase
-        .from('student_startups' as any)
-        .select(`
-          *,
-          profiles (
-            full_name,
-            username,
-            avatar_url,
-            university,
-            linkedin_url
-          )
-        `)
+        .from('student_startups')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setStartups(data as any || []);
+
+      // Fetch profiles separately
+      if (data && data.length > 0) {
+        const userIds = data.map((s: any) => s.user_id);
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, username, avatar_url, university, linkedin_url')
+          .in('user_id', userIds);
+
+        if (profilesError) throw profilesError;
+
+        // Map profiles to startups
+        const startupsWithProfiles = data.map((startup: any) => ({
+          ...startup,
+          profiles: profilesData?.find((p: any) => p.user_id === startup.user_id)
+        }));
+
+        setStartups(startupsWithProfiles as any || []);
+      } else {
+        setStartups([]);
+      }
     } catch (error) {
       console.error('Error fetching startups:', error);
     } finally {
