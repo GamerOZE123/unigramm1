@@ -32,6 +32,7 @@ import GhostChat from '@/pages/GhostChat';
 import StoreManagement from '@/pages/StoreManagement';
 import AllPosts from '@/pages/AllPosts';
 import Startups from '@/pages/Startups';
+import StartupDetail from '@/pages/StartupDetail';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -73,7 +74,8 @@ function App() {
               <Route path="/ghost-chat" element={<ProtectedRoute><GhostChat /></ProtectedRoute>} />
               <Route path="/post/:postId" element={<ProtectedRoute><Post /></ProtectedRoute>} />
               <Route path="/all-posts" element={<ProtectedRoute><AllPosts /></ProtectedRoute>} />
-              <Route path="/startups" element={<ProtectedRoute><Startups /></ProtectedRoute>} />
+            <Route path="/startups" element={<ProtectedRoute><Startups /></ProtectedRoute>} />
+            <Route path="/startups/:id" element={<ProtectedRoute><StartupDetail /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <Toaster />

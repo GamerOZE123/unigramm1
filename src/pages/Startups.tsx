@@ -328,7 +328,11 @@ export default function Startups() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {startups.map((startup) => (
-                <Card key={startup.id} className="p-6 hover:shadow-lg transition-shadow">
+                <Card 
+                  key={startup.id} 
+                  className="p-6 hover:shadow-lg transition-shadow cursor-pointer"
+                  onClick={() => navigate(`/startups/${startup.id}`)}
+                >
                   <div className="space-y-4">
                     {/* Header */}
                     <div className="flex items-start justify-between">
