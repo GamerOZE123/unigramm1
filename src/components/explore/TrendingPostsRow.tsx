@@ -27,6 +27,26 @@ export default function TrendingPostsRow() {
 
   useEffect(() => {
     fetchTrendingPosts();
+
+    // Real-time subscription for new posts
+    const channel = supabase
+      .channel('trending_posts')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'posts'
+        },
+        () => {
+          fetchTrendingPosts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchTrendingPosts = async () => {

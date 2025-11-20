@@ -105,6 +105,31 @@ export default function StartupDetail() {
     }
   }, [id, user]);
 
+  // Real-time subscription for posts
+  useEffect(() => {
+    if (!startup?.user_id) return;
+
+    const channel = supabase
+      .channel('startup_posts')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'posts',
+          filter: `user_id=eq.${startup.user_id}`
+        },
+        () => {
+          fetchStartupPosts();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [startup?.user_id]);
+
   const fetchStartupDetails = async () => {
     try {
       const { data, error } = await supabase
