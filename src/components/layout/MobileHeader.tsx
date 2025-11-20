@@ -16,6 +16,7 @@ export default function MobileHeader() {
   const isChatPage = location.pathname.startsWith('/chat');
   const isPostPage = location.pathname.startsWith('/post');
   const isGhostChatPage = location.pathname === '/ghost-chat';
+  const isNotificationsPage = location.pathname === '/notifications';
 
   return (
     <div
@@ -46,38 +47,42 @@ export default function MobileHeader() {
             ? 'Chat'
             : isPostPage
             ? 'Post'
+            : isNotificationsPage
+            ? 'Notifications'
             : 'Unigramm'}
         </h1>
       </div>
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate('/ghost-chat')}
-          className={cn(
-            "p-2",
-            isGhostChatPage && "text-primary"
-          )}
-        >
-          <Ghost className="h-5 w-5" />
-        </Button>
-        
-        <Separator orientation="vertical" className="h-6" />
-        
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate('/notifications')}
-          className="p-2 relative"
-        >
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-              <span className="text-xs text-white font-bold sr-only">{unreadCount}</span>
-            </div>
-          )}
-        </Button>
-      </div>
+      {!isNotificationsPage && (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/ghost-chat')}
+            className={cn(
+              "p-2",
+              isGhostChatPage && "text-primary"
+            )}
+          >
+            <Ghost className="h-5 w-5" />
+          </Button>
+          
+          <Separator orientation="vertical" className="h-6" />
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/notifications')}
+            className="p-2 relative"
+          >
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 && (
+              <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
+                <span className="text-xs text-white font-bold sr-only">{unreadCount}</span>
+              </div>
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
