@@ -2772,8 +2772,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_group_admin: {
+        Args: { group_id: string; user_id: string }
+        Returns: boolean
+      }
       is_group_member: {
         Args: { p_group_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      is_group_member_or_creator: {
+        Args: { group_id: string; user_id: string }
         Returns: boolean
       }
       mark_messages_as_read: {

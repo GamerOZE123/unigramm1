@@ -18,7 +18,9 @@ import {
   Plus,
   Mail,
   Linkedin,
-  Globe
+  Globe,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -53,6 +55,8 @@ export default function Startups() {
   const [startups, setStartups] = useState<Startup[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingStartup, setEditingStartup] = useState<Startup | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -143,6 +147,85 @@ export default function Startups() {
     } catch (error: any) {
       console.error('Error creating startup:', error);
       toast.error(error.message || 'Failed to post startup');
+    }
+  };
+
+  const handleEdit = (startup: Startup, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingStartup(startup);
+    setFormData({
+      title: startup.title,
+      description: startup.description,
+      category: startup.category,
+      stage: startup.stage,
+      looking_for: startup.looking_for?.join(', ') || '',
+      website_url: startup.website_url || '',
+      contact_email: startup.contact_email || ''
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !editingStartup) return;
+
+    try {
+      const lookingForArray = formData.looking_for
+        .split(',')
+        .map(item => item.trim())
+        .filter(item => item);
+
+      const { error } = await supabase
+        .from('student_startups')
+        .update({
+          title: formData.title,
+          description: formData.description,
+          category: formData.category,
+          stage: formData.stage,
+          looking_for: lookingForArray,
+          website_url: formData.website_url || null,
+          contact_email: formData.contact_email || null
+        })
+        .eq('id', editingStartup.id);
+
+      if (error) throw error;
+
+      toast.success('Startup updated successfully!');
+      setIsEditModalOpen(false);
+      setEditingStartup(null);
+      setFormData({
+        title: '',
+        description: '',
+        category: '',
+        stage: 'idea',
+        looking_for: '',
+        website_url: '',
+        contact_email: ''
+      });
+      fetchStartups();
+    } catch (error: any) {
+      console.error('Error updating startup:', error);
+      toast.error(error.message || 'Failed to update startup');
+    }
+  };
+
+  const handleDelete = async (startupId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this startup?')) return;
+
+    try {
+      const { error } = await supabase
+        .from('student_startups')
+        .delete()
+        .eq('id', startupId);
+
+      if (error) throw error;
+
+      toast.success('Startup deleted successfully!');
+      fetchStartups();
+    } catch (error: any) {
+      console.error('Error deleting startup:', error);
+      toast.error(error.message || 'Failed to delete startup');
     }
   };
 
@@ -280,6 +363,104 @@ export default function Startups() {
               </form>
             </DialogContent>
           </Dialog>
+
+          {/* Edit Modal */}
+          <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Startup</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleUpdate} className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Startup Name *</label>
+                  <Input
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="e.g., EduConnect"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Description *</label>
+                  <Textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Describe your startup, what problem it solves, and your vision..."
+                    rows={5}
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Category *</label>
+                    <Input
+                      value={formData.category}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      placeholder="e.g., EdTech, FinTech, SaaS"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Stage *</label>
+                    <select
+                      value={formData.stage}
+                      onChange={(e) => setFormData({ ...formData, stage: e.target.value })}
+                      className="w-full px-3 py-2 bg-background border border-input rounded-md"
+                      required
+                    >
+                      <option value="idea">Idea</option>
+                      <option value="mvp">MVP</option>
+                      <option value="launched">Launched</option>
+                      <option value="growing">Growing</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Looking For</label>
+                  <Input
+                    value={formData.looking_for}
+                    onChange={(e) => setFormData({ ...formData, looking_for: e.target.value })}
+                    placeholder="e.g., Co-founder, Developer, Investor (comma separated)"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Website</label>
+                    <Input
+                      value={formData.website_url}
+                      onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
+                      placeholder="https://yourstartup.com"
+                      type="url"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Contact Email</label>
+                    <Input
+                      value={formData.contact_email}
+                      onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+                      placeholder="contact@yourstartup.com"
+                      type="email"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" className="flex-1" onClick={() => setIsEditModalOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="flex-1">
+                    Update Startup
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Stats Cards */}
@@ -350,7 +531,10 @@ export default function Startups() {
                       <div className="flex items-center gap-3 flex-1">
                         <Avatar
                           className="h-12 w-12 cursor-pointer"
-                          onClick={() => navigate(`/profile/${startup.user_id}`)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/profile/${startup.user_id}`);
+                          }}
                         >
                           <AvatarImage src={startup.profiles?.avatar_url} />
                           <AvatarFallback>
@@ -364,9 +548,29 @@ export default function Startups() {
                           </p>
                         </div>
                       </div>
-                      <Badge className={getStageColor(startup.stage)}>
-                        {startup.stage.toUpperCase()}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className={getStageColor(startup.stage)}>
+                          {startup.stage.toUpperCase()}
+                        </Badge>
+                        {user?.id === startup.user_id && (
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => handleEdit(startup, e)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => handleDelete(startup.id, e)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* Description */}
