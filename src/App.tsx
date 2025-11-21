@@ -33,6 +33,7 @@ import StoreManagement from '@/pages/StoreManagement';
 import AllPosts from '@/pages/AllPosts';
 import Startups from '@/pages/Startups';
 import StartupDetail from '@/pages/StartupDetail';
+import Settings from '@/pages/Settings';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,6 +77,7 @@ function App() {
               <Route path="/all-posts" element={<ProtectedRoute><AllPosts /></ProtectedRoute>} />
             <Route path="/startups" element={<ProtectedRoute><Startups /></ProtectedRoute>} />
             <Route path="/startups/:id" element={<ProtectedRoute><StartupDetail /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <Toaster />
