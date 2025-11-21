@@ -10,6 +10,7 @@ interface TrendingPost {
   id: string;
   content: string;
   image_url?: string;
+  image_urls?: string[];
   likes_count: number;
   comments_count: number;
   user_id: string;
@@ -55,7 +56,7 @@ export default function TrendingPostsRow() {
       
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
-        .select('id, content, image_url, likes_count, comments_count, user_id, created_at')
+        .select('id, content, image_url, image_urls, likes_count, comments_count, user_id, created_at')
         .gte('created_at', threeDaysAgo)
         .order('likes_count', { ascending: false })
         .limit(10);
@@ -120,10 +121,10 @@ export default function TrendingPostsRow() {
               className="w-[280px] shrink-0 cursor-pointer hover:shadow-lg transition-shadow overflow-hidden"
               onClick={() => navigate(`/post/${post.id}`)}
             >
-              {post.image_url && (
+              {(post.image_url || (post.image_urls && post.image_urls.length > 0)) && (
                 <div className="h-[140px] w-full overflow-hidden">
                   <img
-                    src={post.image_url}
+                    src={post.image_url || post.image_urls?.[0]}
                     alt="Post"
                     className="w-full h-full object-cover"
                   />

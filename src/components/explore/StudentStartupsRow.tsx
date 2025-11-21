@@ -8,14 +8,21 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 
 interface StudentStartup {
+  id: string;
   user_id: string;
-  full_name: string;
-  username: string;
-  avatar_url?: string;
-  university?: string;
-  bio?: string;
+  title: string;
+  description: string;
+  category: string;
+  stage: string;
+  looking_for?: string[];
   website_url?: string;
-  linkedin_url?: string;
+  contact_email?: string;
+  profiles?: {
+    full_name: string;
+    username: string;
+    avatar_url?: string;
+    university?: string;
+  };
 }
 
 export default function StudentStartupsRow() {
@@ -28,16 +35,33 @@ export default function StudentStartupsRow() {
 
   const fetchStudentStartups = async () => {
     try {
-      // Look for profiles with startup-related keywords in bio or with website URLs
       const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, username, avatar_url, university, bio, website_url, linkedin_url')
-        .eq('user_type', 'student')
-        .not('website_url', 'is', null)
+        .from('student_startups')
+        .select('*')
+        .order('created_at', { ascending: false })
         .limit(10);
 
       if (error) throw error;
-      setStartups(data || []);
+
+      // Fetch profiles separately
+      if (data && data.length > 0) {
+        const userIds = data.map((s: any) => s.user_id);
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, username, avatar_url, university')
+          .in('user_id', userIds);
+
+        if (profilesError) throw profilesError;
+
+        const startupsWithProfiles = data.map((startup: any) => ({
+          ...startup,
+          profiles: profilesData?.find((p: any) => p.user_id === startup.user_id)
+        }));
+
+        setStartups(startupsWithProfiles || []);
+      } else {
+        setStartups([]);
+      }
     } catch (error) {
       console.error('Error fetching student startups:', error);
     } finally {
@@ -74,47 +98,45 @@ export default function StudentStartupsRow() {
       <ScrollArea className="w-full whitespace-nowrap">
         <div className="flex gap-4 pb-4">
           {startups.map((startup) => (
-            <Card key={startup.user_id} className="w-[280px] shrink-0 p-4 hover:shadow-lg transition-shadow">
+            <Card 
+              key={startup.id} 
+              className="w-[280px] shrink-0 p-4 hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => window.location.href = `/startups/${startup.id}`}
+            >
               <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={startup.avatar_url} />
-                    <AvatarFallback>{startup.full_name?.[0] || startup.username?.[0]}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-sm line-clamp-1">{startup.full_name || startup.username}</h3>
-                    <p className="text-xs text-muted-foreground line-clamp-1">{startup.university}</p>
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3 flex-1">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={startup.profiles?.avatar_url} />
+                      <AvatarFallback>
+                        {startup.profiles?.full_name?.[0] || startup.profiles?.username?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-sm line-clamp-1">{startup.title}</h3>
+                      <p className="text-xs text-muted-foreground line-clamp-1">
+                        {startup.profiles?.full_name || startup.profiles?.username}
+                      </p>
+                    </div>
                   </div>
+                  <Badge variant="secondary" className="text-xs">{startup.category}</Badge>
                 </div>
 
-                {startup.bio && (
-                  <p className="text-sm text-muted-foreground line-clamp-3">{startup.bio}</p>
+                <p className="text-sm text-muted-foreground line-clamp-2">{startup.description}</p>
+
+                {startup.profiles?.university && (
+                  <Badge variant="outline" className="text-xs">{startup.profiles.university}</Badge>
                 )}
 
-                <div className="flex gap-2">
-                  {startup.website_url && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1 flex-1"
-                      onClick={() => window.open(startup.website_url, '_blank')}
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      Website
-                    </Button>
-                  )}
-                  {startup.linkedin_url && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1 flex-1"
-                      onClick={() => window.open(startup.linkedin_url, '_blank')}
-                    >
-                      <Users className="w-3 h-3" />
-                      LinkedIn
-                    </Button>
-                  )}
-                </div>
+                {startup.looking_for && startup.looking_for.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {startup.looking_for.slice(0, 2).map((item, idx) => (
+                      <Badge key={idx} variant="outline" className="text-xs">
+                        {item}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
             </Card>
           ))}
