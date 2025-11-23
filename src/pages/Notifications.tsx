@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useNavigate } from "react-router-dom";
 import { useChat } from "@/hooks/useChat";
@@ -13,6 +14,7 @@ export default function Notifications() {
   const { createConversation } = useChat();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState("all");
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -72,37 +74,15 @@ export default function Notifications() {
     return isMobile ? <MobileLayout>{LoadingComponent}</MobileLayout> : <Layout>{LoadingComponent}</Layout>;
   }
 
-  const groupedNotifications = notifications.reduce((acc, notification) => {
-    let category = "";
-    switch (notification.type) {
-      case "like":
-        category = "Likes";
-        break;
-      case "comment":
-        category = "Mentions";
-        break;
-      case "follow":
-        category = "Follows";
-        break;
-      case "message":
-        category = "Messages";
-        break;
-      case "carpool_request":
-      case "carpool_accepted":
-        category = "Carpool";
-        break;
-      case "club_accepted":
-        category = "Clubs";
-        break;
-      default:
-        category = "Other";
-    }
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(notification);
-    return acc;
-  }, {} as Record<string, typeof notifications>);
+  const getFilteredNotifications = () => {
+    if (activeTab === "all") return notifications;
+    if (activeTab === "likes") return notifications.filter(n => n.type === "like");
+    if (activeTab === "messages") return notifications.filter(n => n.type === "message");
+    if (activeTab === "mentions") return notifications.filter(n => n.type === "comment");
+    return notifications;
+  };
+
+  const filteredNotifications = getFilteredNotifications();
 
   const NotificationContent = (
     <div className="space-y-6 pt-6">
@@ -116,47 +96,49 @@ export default function Notifications() {
         )}
       </div>
 
-      <div className="space-y-6">
-        {notifications.length > 0 ? (
-          Object.entries(groupedNotifications).map(([category, categoryNotifications]) => (
-            <div key={category} className="space-y-3">
-              <h2 className="text-lg font-semibold text-foreground">{category}</h2>
-              <div className="space-y-3">
-                {categoryNotifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={`bg-card border border-border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors ${
-                      !notification.is_read ? "bg-muted/30" : ""
-                    }`}
-                    onClick={() => handleNotificationClick(notification)}
-                  >
-                    <div className="flex items-start gap-3">
-                      {getNotificationIcon(notification.type)}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-foreground">{notification.title}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {new Date(notification.created_at).toLocaleDateString()} at{" "}
-                          {new Date(notification.created_at).toLocaleTimeString()}
-                        </p>
-                      </div>
-                      {!notification.is_read && <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>}
-                    </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="w-full justify-start">
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="likes">Likes</TabsTrigger>
+          <TabsTrigger value="messages">Messages</TabsTrigger>
+          <TabsTrigger value="mentions">Mentions</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value={activeTab} className="space-y-3 mt-6">
+          {filteredNotifications.length > 0 ? (
+            filteredNotifications.map((notification) => (
+              <div
+                key={notification.id}
+                className={`bg-card border border-border rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors ${
+                  !notification.is_read ? "bg-muted/30" : ""
+                }`}
+                onClick={() => handleNotificationClick(notification)}
+              >
+                <div className="flex items-start gap-3">
+                  {getNotificationIcon(notification.type)}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-foreground">{notification.title}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {new Date(notification.created_at).toLocaleDateString()} at{" "}
+                      {new Date(notification.created_at).toLocaleTimeString()}
+                    </p>
                   </div>
-                ))}
+                  {!notification.is_read && <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>}
+                </div>
               </div>
+            ))
+          ) : (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <Check className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">No notifications</h3>
+              <p className="text-muted-foreground">You're all caught up!</p>
             </div>
-          ))
-        ) : (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-              <Check className="w-8 h-8 text-muted-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">No notifications</h3>
-            <p className="text-muted-foreground">You're all caught up!</p>
-          </div>
-        )}
-      </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 

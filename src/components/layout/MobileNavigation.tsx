@@ -61,6 +61,12 @@ export default function MobileNavigation() {
             <NavLink
               key={item.name}
               to={item.href}
+              onClick={(e) => {
+                if (isActive) {
+                  e.preventDefault();
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              }}
               className={cn(
                 'flex flex-col items-center justify-center gap-1 transition-colors',
                 isActive 
