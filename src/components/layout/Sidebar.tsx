@@ -90,6 +90,12 @@ export default function Sidebar() {
                 <li key={item.name}>
                   <NavLink
                     to={item.href}
+                    onClick={(e) => {
+                      if (isActive) {
+                        e.preventDefault();
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }
+                    }}
                     className={cn(
                       'nav-item relative',
                       isActive && 'active'
