@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { GhostModeProvider } from '@/contexts/GhostModeContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Toaster } from '@/components/ui/sonner';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import Index from '@/pages/Index';
@@ -48,9 +49,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <GhostModeProvider>
-          <Router>
-            <Routes>
+        <ThemeProvider>
+          <GhostModeProvider>
+            <Router>
+              <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/auth" element={<Auth />} />
@@ -79,10 +81,11 @@ function App() {
             <Route path="/startups/:id" element={<ProtectedRoute><StartupDetail /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
-            </Routes>
-            <Toaster />
-          </Router>
-        </GhostModeProvider>
+              </Routes>
+              <Toaster />
+            </Router>
+          </GhostModeProvider>
+        </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

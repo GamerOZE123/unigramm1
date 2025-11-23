@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { User, Bell, Lock, Shield, LogOut, Moon, Sun, Eye, Trash2, Camera } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
@@ -22,8 +23,8 @@ export default function Settings() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
 
   // Profile state
   const [profile, setProfile] = useState({
@@ -128,7 +129,6 @@ export default function Settings() {
 
   const handleThemeChange = (newTheme: "light" | "dark") => {
     setTheme(newTheme);
-    document.documentElement.classList.toggle("dark", newTheme === "dark");
     toast({
       title: "Theme updated",
       description: `Switched to ${newTheme} mode.`,

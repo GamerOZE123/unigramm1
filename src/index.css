@@ -55,6 +55,53 @@
     --popover-foreground: 213 31% 91%;
   }
 
+  /* Light Mode Theme */
+  .light-mode {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    
+    /* Surface Colors */
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --surface: 210 40% 96%;
+    --surface-hover: 210 40% 92%;
+    
+    /* Interactive Elements */
+    --primary: 259 94% 51%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    
+    /* Accent & Status */
+    --accent: 268 83% 58%;
+    --accent-foreground: 0 0% 100%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    
+    /* Borders & Inputs */
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 259 94% 51%;
+    
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* University Brand */
+    --university: 221 83% 53%;
+    --university-foreground: 0 0% 100%;
+    --success: 142 71% 45%;
+    --warning: 38 92% 50%;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(259 94% 51%) 0%, hsl(268 83% 58%) 100%);
+    --gradient-surface: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 40% 98%) 100%);
+    
+    /* Popover & Toast */
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+  }
+
   /* Ghost Mode Theme */
   .ghost-mode {
     --background: 220 13% 8%;
