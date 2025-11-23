@@ -125,14 +125,21 @@ export default function Sidebar() {
           </Button>
           <Button
             variant="ghost" 
-            onClick={() => navigate('/notifications')}
+            onClick={() => {
+              if (location.pathname === '/notifications') {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              } else {
+                navigate('/notifications');
+              }
+            }}
             className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted/50"
           >
             <Bell className="w-4 h-4 mr-2" />
             <span className="text-sm">Notifications</span>
           </Button>
           <Button 
-            variant="ghost" 
+            variant="ghost"
+            onClick={() => navigate('/settings')}
             className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted/50"
           >
             <Settings className="w-4 h-4 mr-2" />
