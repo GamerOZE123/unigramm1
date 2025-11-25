@@ -121,7 +121,7 @@ export default function Explore() {
     return (
       <Layout>
         {isMobile && <MobileHeader />}
-        <div className="space-y-6 px-2 mt-6">
+        <div className="space-y-6 px-4 mt-6">
           <div className="flex items-center gap-3 mb-4">
             <button
               onClick={() => setSearchQuery('')}
@@ -197,7 +197,7 @@ export default function Explore() {
 
       <div className="flex gap-6">
         {/* CENTER CONTENT */}
-        <div className="flex-1 max-w-2xl mx-auto space-y-10 mt-6 pb-12 px-2">
+        <div className="flex-1 max-w-2xl mx-auto space-y-10 mt-6 pb-12 px-4">
           {/* SEARCH BAR */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />

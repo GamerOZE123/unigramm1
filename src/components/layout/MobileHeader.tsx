@@ -17,6 +17,8 @@ export default function MobileHeader() {
   const isPostPage = location.pathname.startsWith('/post');
   const isGhostChatPage = location.pathname === '/ghost-chat';
   const isNotificationsPage = location.pathname === '/notifications';
+  
+  const showBackButton = isProfilePage || isExplorePage || isChatPage || isPostPage || isNotificationsPage;
 
   return (
     <div
@@ -27,7 +29,7 @@ export default function MobileHeader() {
       style={{ paddingTop: '10px', paddingBottom: '8px' }}
     >
       <div className="flex items-center gap-4">
-        {(isProfilePage || isExplorePage || isChatPage || isPostPage) && (
+        {showBackButton && (
           <Button
             variant="ghost"
             size="sm"
@@ -38,19 +40,19 @@ export default function MobileHeader() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
         )}
-        <h1 className="text-xl font-bold text-foreground">
-          {isProfilePage
-            ? 'Profile'
-            : isExplorePage
-            ? 'Explore'
-            : isChatPage
-            ? 'Chat'
-            : isPostPage
-            ? 'Post'
-            : isNotificationsPage
-            ? 'Notifications'
-            : 'Unigramm'}
-        </h1>
+        {!isNotificationsPage && (
+          <h1 className="text-xl font-bold text-foreground">
+            {isProfilePage
+              ? 'Profile'
+              : isExplorePage
+              ? 'Explore'
+              : isChatPage
+              ? 'Chat'
+              : isPostPage
+              ? 'Post'
+              : 'Unigramm'}
+          </h1>
+        )}
       </div>
       {!isNotificationsPage && (
         <div className="flex items-center gap-2">
