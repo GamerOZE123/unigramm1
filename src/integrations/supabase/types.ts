@@ -2566,12 +2566,10 @@ export type Database = {
     Views: {
       ranked_posts: {
         Row: {
-          age_hours: number | null
           avatar_url: string | null
           comments_count: number | null
           content: string | null
           created_at: string | null
-          engagement_score: number | null
           full_name: string | null
           hashtags: string[] | null
           id: string | null
@@ -2581,7 +2579,8 @@ export type Database = {
           image_url: string | null
           image_urls: string[] | null
           likes_count: number | null
-          recency_score: number | null
+          major: string | null
+          score: number | null
           university: string | null
           updated_at: string | null
           user_id: string | null

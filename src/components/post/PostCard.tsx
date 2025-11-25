@@ -96,7 +96,7 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
       }
 
       toast.success('Post deleted successfully!');
-      onPostUpdated?.();
+      // ✅ UPGRADE 2: No full refresh - delete handled by realtime subscription
     } catch (error) {
       console.error('Error deleting post:', error);
       toast.error('Failed to delete post');
@@ -194,7 +194,7 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
           isOpen={showEditModal}
           onClose={() => setShowEditModal(false)}
           onPostUpdated={() => {
-            onPostUpdated?.();
+            // ✅ UPGRADE 2: No full refresh - update handled by realtime subscription
             setShowEditModal(false);
           }}
           post={{
