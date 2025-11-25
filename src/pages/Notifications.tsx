@@ -85,9 +85,8 @@ export default function Notifications() {
   const filteredNotifications = getFilteredNotifications();
 
   const NotificationContent = (
-    <div className="space-y-6 pt-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-foreground">Notifications</h1>
+    <div className="space-y-6 pt-6 px-4">
+      <div className="flex items-center justify-end">
         {notifications.some((n) => !n.is_read) && (
           <Button onClick={markAllAsRead} variant="outline" size="sm">
             <Check className="w-4 h-4 mr-2" />
