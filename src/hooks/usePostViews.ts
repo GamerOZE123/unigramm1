@@ -17,7 +17,13 @@ export const usePostViews = () => {
   const [viewedPosts, setViewedPosts] = useState<Set<string>>(new Set());
 
   const recordPostView = useCallback(async (postId: string) => {
-    // Check if already viewed in this session
+    // ✅ UPGRADE 6: Check sessionStorage first
+    const viewKey = `viewed-${postId}`;
+    if (sessionStorage.getItem(viewKey)) {
+      return;
+    }
+
+    // Check if already viewed in memory
     if (viewedPosts.has(postId)) {
       return;
     }
@@ -39,7 +45,8 @@ export const usePostViews = () => {
         return;
       }
 
-      // Mark as viewed in session
+      // Mark as viewed in sessionStorage and memory
+      sessionStorage.setItem(viewKey, 'true');
       setViewedPosts(prev => new Set([...prev, postId]));
     } catch (error) {
       console.error('Error recording post view:', error);

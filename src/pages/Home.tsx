@@ -131,7 +131,6 @@ export default function Home() {
     try {
       if (isInitial) {
         setLoading(true);
-        // Keep seen posts history to prioritize unseen posts
       } else {
         setLoadingMore(true);
       }
@@ -152,142 +151,69 @@ export default function Home() {
         setUserProfile(currentUserProfile);
       }
 
-      // Fetch ALL posts with pagination using ranking algorithm
+      // ✅ UPGRADE 1 & 3: Use single JOIN query with ranked_posts view
       let postsQuery = supabase
-        .from('posts')
+        .from('ranked_posts')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('score', { ascending: false });
 
       // Filter by university if in university mode
       if (viewMode === 'university' && currentUserProfile?.university) {
-        const { data: universityProfiles } = await supabase
-          .from('profiles')
-          .select('user_id')
-          .eq('university', currentUserProfile.university);
-        
-        if (universityProfiles && universityProfiles.length > 0) {
-          const userIds = universityProfiles.map(p => p.user_id);
-          postsQuery = postsQuery.in('user_id', userIds);
-        }
+        postsQuery = postsQuery.eq('university', currentUserProfile.university);
       }
 
       const { data: allPostsData, error: postsError } = await postsQuery.range(startIndex, endIndex);
 
       if (postsError) throw postsError;
 
+      // Transform posts data (profiles are already joined)
       let rankedPosts: TransformedPost[] = [];
       if (allPostsData) {
-        const userIds = [...new Set(allPostsData.map(post => post.user_id))];
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, username, university, major, avatar_url')
-          .in('user_id', userIds);
-
-        const profilesMap = new Map();
-        profiles?.forEach(profile => profilesMap.set(profile.user_id, profile));
-
-        // Apply improved ranking algorithm to ALL posts
-        rankedPosts = allPostsData.map(post => {
-          const profile = profilesMap.get(post.user_id);
-          const ageInHours = (Date.now() - new Date(post.created_at).getTime()) / (1000 * 60 * 60);
-          
-          // Recency as primary factor (favors fresh content)
-          const recencyScore = Math.max(0, 100 - ageInHours);
-          
-          // Enhanced engagement scoring (viral content gets boosted)
-          const engagementScore = 
-            (post.likes_count * 3) +      // Likes are important
-            (post.comments_count * 5) +   // Comments show deeper engagement  
-            (post.views_count * 0.05);    // Views matter but less
-          
-          // User affinity bonus (same university)
-          const affinityBonus = (
-            profile?.university === currentUserProfile?.university ? 20 : 0
-          );
-          
-          // Large random factor for variety in all cases
-          const randomFactor = Math.random() * 150;
-          
-          return {
-            id: post.id,
-            content: post.content || '',
-            image_url: post.image_url,
-            image_urls: post.image_urls,
-            created_at: post.created_at,
-            likes_count: post.likes_count || 0,
-            comments_count: post.comments_count || 0,
-            views_count: post.views_count || 0,
-            user_id: post.user_id,
-            user_name: profile?.full_name || profile?.username || 'Anonymous',
-            user_username: profile?.username || 'user',
-            user_university: profile?.university,
-            hashtags: post.hashtags || [],
-            profiles: {
-              full_name: profile?.full_name || 'Anonymous',
-              username: profile?.username || 'user',
-              avatar_url: profile?.avatar_url,
-              university: profile?.university
-            },
-            score: recencyScore + engagementScore + affinityBonus + randomFactor
-          };
-        }).sort((a, b) => (b.score || 0) - (a.score || 0));
+        rankedPosts = allPostsData.map(post => ({
+          id: post.id,
+          content: post.content || '',
+          image_url: post.image_url,
+          image_urls: post.image_urls,
+          created_at: post.created_at,
+          likes_count: post.likes_count || 0,
+          comments_count: post.comments_count || 0,
+          views_count: post.views_count || 0,
+          user_id: post.user_id,
+          user_name: post.full_name || post.username || 'Anonymous',
+          user_username: post.username || 'user',
+          user_university: post.university,
+          hashtags: post.hashtags || [],
+          profiles: {
+            full_name: post.full_name || 'Anonymous',
+            username: post.username || 'user',
+            avatar_url: post.avatar_url,
+            university: post.university
+          },
+          score: post.score
+        }));
       }
 
-      // Fetch targeted ads only on first page
+      // ✅ UPGRADE 4: SQL-based ad targeting
       let targetedAds: any[] = [];
-      if (pageNum === 0) {
-        const { data: adsData } = await supabase
+      if (pageNum === 0 && currentUserProfile) {
+        let adsQuery = supabase
           .from('advertising_posts')
-          .select('*')
+          .select(`
+            *,
+            company_profiles:company_id(company_name, logo_url)
+          `)
           .eq('is_active', true);
 
-        if (adsData && adsData.length > 0 && currentUserProfile) {
-          // Filter ads based on targeting criteria
-          const matchingAds = adsData.filter((ad: any) => {
-            // If no targeting is set, show to everyone
-            const hasNoTargeting = 
-              (!ad.target_universities || ad.target_universities.length === 0) &&
-              (!ad.target_majors || ad.target_majors.length === 0) &&
-              (!ad.target_locations || ad.target_locations.length === 0);
-            
-            if (hasNoTargeting) return true;
-
-            // Check if user matches any targeting criteria
-            let matches = false;
-
-            // University targeting
-            if (ad.target_universities && ad.target_universities.length > 0 && currentUserProfile.university) {
-              matches = matches || ad.target_universities.includes(currentUserProfile.university);
-            }
-
-            // Major targeting
-            if (ad.target_majors && ad.target_majors.length > 0 && currentUserProfile.major) {
-              matches = matches || ad.target_majors.includes(currentUserProfile.major);
-            }
-
-            // Location targeting
-            if (ad.target_locations && ad.target_locations.length > 0 && currentUserProfile.country && currentUserProfile.state) {
-              const userLocation = `${currentUserProfile.state}, ${currentUserProfile.country}`;
-              matches = matches || ad.target_locations.some((loc: string) => 
-                userLocation.toLowerCase().includes(loc.toLowerCase())
-              );
-            }
-
-            return matches;
-          });
-
-          // Fetch company profiles for matching ads
-          const companyIds = [...new Set(matchingAds.map((ad: any) => ad.company_id))];
-          const { data: companyProfiles } = await supabase
-            .from('company_profiles')
-            .select('user_id, company_name, logo_url')
-            .in('user_id', companyIds);
-
-          targetedAds = matchingAds.map((ad: any) => ({
-            ...ad,
-            company_profiles: companyProfiles?.find(cp => cp.user_id === ad.company_id) || null
-          })).sort(() => Math.random() - 0.5);
+        // Apply SQL-level targeting filters
+        if (currentUserProfile.university) {
+          adsQuery = adsQuery.or(`target_universities.cs.{${currentUserProfile.university}},target_universities.is.null`);
         }
+        if (currentUserProfile.major) {
+          adsQuery = adsQuery.or(`target_majors.cs.{${currentUserProfile.major}},target_majors.is.null`);
+        }
+
+        const { data: adsData } = await adsQuery;
+        targetedAds = adsData || [];
       }
 
       // Separate unseen and seen posts
@@ -304,7 +230,6 @@ export default function Home() {
         }
       });
 
-      // Prioritize unseen posts, then add seen posts if needed
       const postsToShow = [...unseenPosts, ...seenPosts];
 
       // Convert posts to MixedPost format
@@ -313,35 +238,21 @@ export default function Home() {
         data: post
       }));
 
-      // Insert ads ONLY if we have at least 3 unseen posts and NEVER in first post
-      if (pageNum === 0 && targetedAds.length > 0 && mixedArray.length >= 3) {
+      // ✅ UPGRADE 5: Stable ad placement - no ad in first 2 posts, then every 5 posts
+      if (pageNum === 0 && targetedAds.length > 0 && mixedArray.length > 2) {
         const finalMixedArray: MixedPost[] = [];
-        
-        // ALWAYS add first post without ad (user requirement: first post never ad)
-        finalMixedArray.push(mixedArray[0]);
-        
-        // Add second and third posts
-        if (mixedArray.length > 1) finalMixedArray.push(mixedArray[1]);
-        if (mixedArray.length > 2) finalMixedArray.push(mixedArray[2]);
-        
-        // Now insert ads starting from position 4+
         let adIndex = 0;
-        let postCount = 0;
-        const insertInterval = () => Math.random() > 0.5 ? 3 : 4;
-        let nextInsertPosition = insertInterval();
         
-        for (let i = 3; i < mixedArray.length; i++) {
+        for (let i = 0; i < mixedArray.length; i++) {
           finalMixedArray.push(mixedArray[i]);
-          postCount++;
           
-          if (postCount === nextInsertPosition && adIndex < targetedAds.length) {
+          // Insert ad after every 5 posts, but skip first 2 positions
+          if (i >= 1 && (i + 1) % 5 === 0 && adIndex < targetedAds.length) {
             finalMixedArray.push({ 
               type: 'advertising', 
               data: targetedAds[adIndex] 
             });
             adIndex++;
-            postCount = 0;
-            nextInsertPosition = insertInterval();
           }
         }
         
@@ -350,7 +261,6 @@ export default function Home() {
       
       setSeenPostIds(newSeenIds);
 
-      // Determine if there are more posts
       const gotFullBatch = rankedPosts.length >= POSTS_PER_PAGE;
       setHasMore(gotFullBatch);
 
@@ -390,29 +300,14 @@ export default function Home() {
         { event: 'INSERT', schema: 'public', table: 'posts' },
         async (payload) => {
           try {
-            // Fetch full post data
+            // Use ranked_posts view for consistency
             const { data: newPost, error: postError } = await supabase
-              .from('posts')
+              .from('ranked_posts')
               .select('*')
               .eq('id', payload.new.id)
               .single();
 
             if (postError || !newPost) return;
-
-            // Fetch profile separately
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('user_id, username, full_name, avatar_url, university, major')
-              .eq('user_id', newPost.user_id)
-              .single();
-
-            // Apply ranking score
-            const ageInHours = 0; // Brand new post
-            const recencyScore = 100;
-            const engagementScore = 0; // No engagement yet
-            const affinityBonus = (profile?.university === userProfile?.university ? 20 : 0);
-            const randomFactor = Math.random() * 10;
-            const score = recencyScore + engagementScore + affinityBonus + randomFactor;
 
             const transformedPost: TransformedPost = {
               id: newPost.id,
@@ -426,19 +321,18 @@ export default function Home() {
               comments_count: newPost.comments_count || 0,
               views_count: newPost.views_count || 0,
               hashtags: newPost.hashtags || [],
-              user_name: profile?.full_name || profile?.username || 'Anonymous',
-              user_username: profile?.username || 'user',
-              user_university: profile?.university,
-              profiles: profile ? {
-                full_name: profile.full_name || 'Anonymous',
-                username: profile.username || 'user',
-                avatar_url: profile.avatar_url,
-                university: profile.university
-              } : undefined,
-              score
+              user_name: newPost.full_name || newPost.username || 'Anonymous',
+              user_username: newPost.username || 'user',
+              user_university: newPost.university,
+              profiles: {
+                full_name: newPost.full_name || 'Anonymous',
+                username: newPost.username || 'user',
+                avatar_url: newPost.avatar_url,
+                university: newPost.university
+              },
+              score: newPost.score
             };
 
-            // Add to pending new posts instead of auto-inserting
             setPendingNewPosts(prev => [transformedPost, ...prev]);
             setNewPostsAvailable(true);
           } catch (error) {
@@ -450,7 +344,7 @@ export default function Home() {
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'posts' },
         (payload) => {
-          // Update post metrics in real-time
+          // ✅ UPGRADE 2: Update only changed fields
           setMixedPosts(prev => prev.map(item => {
             if (item.type === 'regular' && item.data.id === payload.new.id) {
               const postData = item.data as TransformedPost;
@@ -604,13 +498,11 @@ export default function Home() {
                 <PostCard 
                   key={`regular-${mixedPost.data.id}`}
                   post={mixedPost.data as TransformedPost} 
-                  onPostUpdated={() => fetchPosts(0, true)}
                 />
               ) : (
                 <AdvertisingPostCard
                   key={`ad-${mixedPost.data.id}`}
                   post={mixedPost.data as AdvertisingPost}
-                  onLikeUpdate={() => fetchPosts(0, true)}
                 />
               )
             )
@@ -636,7 +528,9 @@ export default function Home() {
         </div>
       </div>
       
-      <ImageUploadButton onPostCreated={() => fetchPosts(0, true)} />
+      <ImageUploadButton onPostCreated={() => {
+        // ✅ UPGRADE 2: Realtime subscription handles new posts
+      }} />
     </Layout>
   );
 }
