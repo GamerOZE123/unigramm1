@@ -643,22 +643,26 @@ export default function Chat() {
                                 isMine ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
                               }`}
                             >
-                              {message.media_url && (
-                                <div className="mb-2">
-                                  {message.media_url.match(/\.(mp4|webm|ogg)$/i) ? (
-                                    <video
-                                      src={message.media_url}
-                                      className="max-w-xs rounded-lg"
-                                      controls
-                                    />
-                                  ) : (
-                                    <img
-                                      src={message.media_url}
-                                      alt="Message attachment"
-                                      className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                                      onClick={() => window.open(message.media_url!, '_blank')}
-                                    />
-                                  )}
+                              {message.media_url && message.media_url.length > 0 && (
+                                <div className="mb-2 space-y-2">
+                                  {message.media_url.map((url, idx) => (
+                                    url.match(/\.(mp4|webm|ogg)$/i) ? (
+                                      <video
+                                        key={idx}
+                                        src={url}
+                                        className="max-w-xs rounded-lg"
+                                        controls
+                                      />
+                                    ) : (
+                                      <img
+                                        key={idx}
+                                        src={url}
+                                        alt="Message attachment"
+                                        className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                        onClick={() => window.open(url, '_blank')}
+                                      />
+                                    )
+                                  ))}
                                 </div>
                               )}
                               <div className="break-all whitespace-pre-wrap">{renderMessageContent(message.content)}</div>
@@ -945,22 +949,26 @@ export default function Chat() {
                             isMine ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
                           }`}
                         >
-                          {message.media_url && (
-                            <div className="mb-2">
-                              {message.media_url.match(/\.(mp4|webm|ogg)$/i) ? (
-                                <video
-                                  src={message.media_url}
-                                  className="max-w-xs rounded-lg"
-                                  controls
-                                />
-                              ) : (
-                                <img
-                                  src={message.media_url}
-                                  alt="Message attachment"
-                                  className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                                  onClick={() => window.open(message.media_url!, '_blank')}
-                                />
-                              )}
+                          {message.media_url && message.media_url.length > 0 && (
+                            <div className="mb-2 space-y-2">
+                              {message.media_url.map((url, idx) => (
+                                url.match(/\.(mp4|webm|ogg)$/i) ? (
+                                  <video
+                                    key={idx}
+                                    src={url}
+                                    className="max-w-xs rounded-lg"
+                                    controls
+                                  />
+                                ) : (
+                                  <img
+                                    key={idx}
+                                    src={url}
+                                    alt="Message attachment"
+                                    className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                    onClick={() => window.open(url, '_blank')}
+                                  />
+                                )
+                              ))}
                             </div>
                           )}
                         <div className="break-all whitespace-pre-wrap">{renderMessageContent(message.content)}</div>

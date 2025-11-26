@@ -1605,7 +1605,7 @@ export type Database = {
           created_at: string
           id: string
           media_type: string | null
-          media_url: string | null
+          media_url: string[] | null
           message_type: string | null
           reply_to_message_id: string | null
           sender_id: string
@@ -1616,7 +1616,7 @@ export type Database = {
           created_at?: string
           id?: string
           media_type?: string | null
-          media_url?: string | null
+          media_url?: string[] | null
           message_type?: string | null
           reply_to_message_id?: string | null
           sender_id: string
@@ -1627,7 +1627,7 @@ export type Database = {
           created_at?: string
           id?: string
           media_type?: string | null
-          media_url?: string | null
+          media_url?: string[] | null
           message_type?: string | null
           reply_to_message_id?: string | null
           sender_id?: string

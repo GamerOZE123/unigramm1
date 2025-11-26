@@ -19,7 +19,7 @@ interface Message {
   sender_id: string;
   content: string;
   created_at: string;
-  media_url?: string | null;
+  media_url?: string[] | null;
   media_type?: string | null;
 }
 
@@ -111,7 +111,7 @@ export const useChat = () => {
       };
       
       if (mediaUrl) {
-        messageData.media_url = mediaUrl;
+        messageData.media_url = [mediaUrl]; // Store as array
         // Determine media type from URL
         if (mediaUrl.match(/\.(mp4|webm|ogg)$/i)) {
           messageData.media_type = 'video';
