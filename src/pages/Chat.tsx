@@ -239,9 +239,19 @@ export default function Chat() {
     try {
       const fileExt = file.name.split(".").pop();
       const fileName = `${user?.id}/${Date.now()}.${fileExt}`;
+      
+      // Use resumable upload for files larger than 6MB
+      const useResumable = file.size > 6 * 1024 * 1024;
+      
+      const uploadOptions = useResumable ? {
+        cacheControl: '3600',
+        upsert: false,
+        contentType: file.type
+      } : {};
+
       const { data, error } = await supabase.storage
         .from("chat-media")
-        .upload(fileName, file);
+        .upload(fileName, file, uploadOptions);
 
       if (error) throw error;
 
@@ -253,7 +263,7 @@ export default function Chat() {
       return publicUrl;
     } catch (error) {
       console.error("Error uploading media:", error);
-      toast.error("Failed to upload media");
+      toast.error(`Failed to upload media: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return null;
     } finally {
       setUploadingImage(false);
