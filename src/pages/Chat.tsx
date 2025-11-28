@@ -238,22 +238,22 @@ export default function Chat() {
     setUploadingImage(true);
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `${user?.id}-${Date.now()}.${fileExt}`;
+      const fileName = `${user?.id}/${Date.now()}.${fileExt}`;
       const { data, error } = await supabase.storage
-        .from("post-images")
+        .from("chat-media")
         .upload(fileName, file);
 
       if (error) throw error;
 
       const { data: { publicUrl } } = supabase.storage
-        .from("post-images")
+        .from("chat-media")
         .getPublicUrl(data.path);
 
       toast.success(file.type.startsWith("image/") ? "Image uploaded" : "Video uploaded");
       return publicUrl;
     } catch (error) {
-      console.error("Error uploading image:", error);
-      toast.error("Failed to upload image");
+      console.error("Error uploading media:", error);
+      toast.error("Failed to upload media");
       return null;
     } finally {
       setUploadingImage(false);
@@ -775,6 +775,7 @@ export default function Chat() {
                         ref={fileInputRef}
                         onChange={handleMediaUpload}
                         accept="image/*,video/*"
+                        multiple
                         className="hidden"
                       />
                     <Button
@@ -1080,6 +1081,7 @@ export default function Chat() {
                     ref={fileInputRef}
                     onChange={handleMediaUpload}
                     accept="image/*,video/*"
+                    multiple
                     className="hidden"
                   />
                 <Button
