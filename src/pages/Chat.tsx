@@ -488,66 +488,87 @@ export default function Chat() {
   if (!isMobile) {
     return (
       <Layout>
-        <div className="h-[calc(100vh-4rem)] flex gap-4">
+        <div className="h-[calc(100vh-4rem)] flex gap-6">
           {/* Left column - user list */}
-          <div className="w-80 bg-card border border-border rounded-2xl p-4 overflow-y-auto flex-shrink-0">
-            <h2 className="text-xl font-bold text-foreground mb-4">Messages</h2>
-            <UserSearch onStartChat={handleUserClick} />
-            <div className="mt-6 space-y-4">
-                <h3 className="text-sm font-medium text-muted-foreground">
-                 Recent Chats
-               </h3>
-              {loading && (
-                <div className="flex items-center justify-center">
-                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-                </div>
-              )}
-              {!loading && recentChats.length === 0 && (
-                <p className="text-muted-foreground text-sm">No recent chats. Start one!</p>
-              )}
-              {!loading &&
-                recentChats.map((chat) => (
-                   <div
-                     key={chat.other_user_id}
-                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                     onClick={() => handleUserClick(chat.other_user_id)}
-                   >
-                     <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center relative overflow-hidden">
-                       {chat.other_user_avatar ? (
-                         <img src={chat.other_user_avatar} alt={chat.other_user_name} className="w-full h-full object-cover" />
-                       ) : (
-                         <span className="text-sm font-bold text-white">
-                           {chat.other_user_name?.charAt(0) || 'U'}
-                         </span>
-                       )}
-                       {unreadMessages.has(chat.other_user_id) && (
-                         <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
-                       )}
-                     </div>
-                     <div className="flex-1">
-                       <p className="font-medium text-foreground">{chat.other_user_name}</p>
-                       <p className="text-sm text-muted-foreground">{chat.other_user_university}</p>
-                     </div>
-                   </div>
-                ))}
+          <div className="w-[380px] bg-card border border-border rounded-2xl overflow-hidden flex-shrink-0 flex flex-col">
+            <div className="p-5 border-b border-border bg-surface/30">
+              <h2 className="text-xl font-bold text-foreground mb-4">Messages</h2>
+              <UserSearch onStartChat={handleUserClick} />
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-4">
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3 px-2">
+                  Recent Chats
+                </h3>
+                {loading && (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  </div>
+                )}
+                {!loading && recentChats.length === 0 && (
+                  <div className="text-center py-12 px-4">
+                    <p className="text-muted-foreground text-sm mb-1">No recent chats</p>
+                    <p className="text-muted-foreground/60 text-xs">Search for someone to start</p>
+                  </div>
+                )}
+                {!loading &&
+                  recentChats.map((chat) => {
+                    const isSelected = selectedUser?.user_id === chat.other_user_id;
+                    return (
+                      <div
+                        key={chat.other_user_id}
+                        className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 ${
+                          isSelected 
+                            ? 'bg-primary/10 shadow-sm border-l-4 border-l-primary' 
+                            : 'hover:bg-surface/80 border-l-4 border-l-transparent'
+                        }`}
+                        onClick={() => handleUserClick(chat.other_user_id)}
+                      >
+                        <div className="relative">
+                          <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center relative overflow-hidden ring-2 ring-border">
+                            {chat.other_user_avatar ? (
+                              <img src={chat.other_user_avatar} alt={chat.other_user_name} className="w-full h-full object-cover" />
+                            ) : (
+                              <span className="text-sm font-bold text-white">
+                                {chat.other_user_name?.charAt(0) || 'U'}
+                              </span>
+                            )}
+                          </div>
+                          {unreadMessages.has(chat.other_user_id) && (
+                            <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-primary rounded-full ring-2 ring-card"></div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-foreground text-sm truncate">{chat.other_user_name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{chat.other_user_university}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
             </div>
           </div>
           {/* Right column - chat */}
-          <div className="flex-1 bg-card border border-border rounded-2xl flex flex-col h-full">
+          <div className="flex-1 bg-card border border-border rounded-2xl flex flex-col h-full overflow-hidden">
             {chatLoading && (
               <div className="flex-1 flex items-center justify-center">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
             )}
             {!chatLoading && selectedUser ? (
               <>
                 {/* Chat header */}
-                <div className="p-4 border-b border-border">
+                <div className="p-5 border-b border-border bg-surface/30 backdrop-blur-sm">
                   <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center overflow-hidden">
+                    <div className="flex items-center gap-4">
+                      <div className="w-11 h-11 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center overflow-hidden ring-2 ring-border cursor-pointer hover:ring-primary transition-all">
                         {selectedUser.avatar_url ? (
-                          <img src={selectedUser.avatar_url} alt={selectedUser.full_name || selectedUser.username} className="w-full h-full object-cover" />
+                          <img 
+                            src={selectedUser.avatar_url} 
+                            alt={selectedUser.full_name || selectedUser.username} 
+                            className="w-full h-full object-cover" 
+                            onClick={() => navigate(`/profile/${selectedUser.user_id}`)}
+                          />
                         ) : (
                           <span className="text-sm font-bold text-white">
                             {selectedUser.full_name?.charAt(0) || selectedUser.username?.charAt(0) || 'U'}
@@ -556,12 +577,12 @@ export default function Chat() {
                       </div>
                       <div>
                         <h3
-                          className="font-semibold text-foreground cursor-pointer hover:text-primary"
+                          className="font-semibold text-foreground text-base cursor-pointer hover:text-primary transition-colors"
                           onClick={() => navigate(`/profile/${selectedUser.user_id}`)}
                         >
                           {selectedUser.full_name || selectedUser.username}
                         </h3>
-                        <p className="text-sm text-muted-foreground">{selectedUser.university}</p>
+                        <p className="text-xs text-muted-foreground">{selectedUser.university}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -635,22 +656,26 @@ export default function Chat() {
                 <div
                   ref={messagesContainerRef}
                   onScroll={handleScroll}
-                  className="flex-1 p-4 overflow-y-auto space-y-4 relative"
+                  className="flex-1 p-6 overflow-y-auto space-y-3 relative bg-background/50"
                 >
                   {currentMessages.length ? (
-                    currentMessages.map((message) => {
+                    currentMessages.map((message, index) => {
                       const messageReactions = reactions[message.id] || [];
                       const isMine = message.sender_id === user?.id;
+                      const isSameSenderAsPrev = index > 0 && currentMessages[index - 1].sender_id === message.sender_id;
+                      
                       return (
                         <div
                           key={message.id}
                           id={`message-${message.id}`}
-                          className={`flex gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'} transition-colors duration-500`}
+                          className={`flex gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'} ${
+                            isSameSenderAsPrev ? 'mt-1' : 'mt-4'
+                          } transition-all duration-200 group`}
                         >
                           <div className={`max-w-xs lg:max-w-md flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
                             <div
-                              className={`px-4 py-2 rounded-2xl ${
-                                isMine ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                              className={`px-4 py-3 rounded-2xl shadow-sm transition-all hover:shadow-md ${
+                                isMine ? 'bg-primary text-primary-foreground' : 'bg-card border border-border'
                               }`}
                             >
                               {message.media_url && message.media_url.length > 0 && (
@@ -675,11 +700,11 @@ export default function Chat() {
                                   ))}
                                 </div>
                               )}
-                              <div className="break-all whitespace-pre-wrap">{renderMessageContent(message.content)}</div>
+                              <div className="break-all whitespace-pre-wrap text-sm">{renderMessageContent(message.content)}</div>
                               <p
-                            className={`text-xs mt-1 ${
-                              message.sender_id === user?.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                                 }`}
+                                className={`text-xs mt-2 font-medium ${
+                                  message.sender_id === user?.id ? 'text-primary-foreground/80' : 'text-muted-foreground'
+                                }`}
                               >
                                 {new Date(message.created_at).toLocaleTimeString()}
                               </p>
@@ -687,15 +712,15 @@ export default function Chat() {
                             
                             {/* Reactions */}
                             {messageReactions.length > 0 && (
-                              <div className="flex items-center gap-1 mt-1 flex-wrap">
+                              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                                 {messageReactions.map((r) => (
                                   <button
                                     key={r.emoji}
                                     onClick={() => toggleReaction(message.id, r.emoji)}
-                                    className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 transition-colors ${
+                                    className={`px-2.5 py-1 rounded-full text-xs flex items-center gap-1 font-medium transition-all hover:scale-105 ${
                                       r.hasReacted
-                                        ? "bg-primary/30 border border-primary/50"
-                                        : "bg-card border border-border hover:bg-muted"
+                                        ? "bg-primary/20 border border-primary/40 shadow-sm"
+                                        : "bg-surface border border-border hover:bg-surface-hover"
                                     }`}
                                   >
                                     <span>{r.emoji}</span>
@@ -736,9 +761,9 @@ export default function Chat() {
                     })
                   ) : (
                     <div className="flex items-center justify-center h-full text-center">
-                      <div>
-                        <h3 className="text-lg font-medium text-foreground mb-2">No messages yet</h3>
-                        <p className="text-muted-foreground">Start the conversation!</p>
+                      <div className="p-8 rounded-2xl bg-surface/50">
+                        <h3 className="text-lg font-semibold text-foreground mb-2">No messages yet</h3>
+                        <p className="text-sm text-muted-foreground">Start the conversation!</p>
                       </div>
                     </div>
                   )}
@@ -759,21 +784,21 @@ export default function Chat() {
                   )}
                 </div>
                 {/* Input */}
-                <div className="border-t border-border p-4">
+                <div className="border-t border-border p-4 bg-card/50 backdrop-blur-sm">
                   {mediaUrls.length > 0 && (
-                    <div className="mb-2 flex flex-wrap gap-2">
+                    <div className="mb-3 flex flex-wrap gap-2">
                       {mediaUrls.map((url, index) => (
-                        <div key={index} className="relative inline-block">
+                        <div key={index} className="relative inline-block group">
                           {url.match(/\.(mp4|webm|ogg)$/i) ? (
-                            <video src={url} className="h-20 rounded-lg" controls />
+                            <video src={url} className="h-24 rounded-xl ring-2 ring-border" controls />
                           ) : (
-                            <img src={url} alt="Preview" className="h-20 rounded-lg" />
+                            <img src={url} alt="Preview" className="h-24 rounded-xl ring-2 ring-border" />
                           )}
                           <button
                             onClick={() => setMediaUrls(prev => prev.filter((_, i) => i !== index))}
-                            className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs"
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-sm font-bold shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
                           >
-                            ×
+                            <X className="h-3 w-3" />
                           </button>
                         </div>
                       ))}
@@ -793,13 +818,13 @@ export default function Chat() {
                       size="icon"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploadingImage}
-                      className="flex-shrink-0"
+                      className="flex-shrink-0 hover:bg-surface"
                     >
-                      <ImagePlus className="w-4 h-4" />
+                      {uploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
                     </Button>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="ghost" size="icon" className="flex-shrink-0">
+                        <Button variant="ghost" size="icon" className="flex-shrink-0 hover:bg-surface">
                           <Smile className="w-4 h-4" />
                         </Button>
                       </PopoverTrigger>
@@ -809,7 +834,7 @@ export default function Chat() {
                             <button
                               key={e}
                               onClick={() => addEmoji(e)}
-                              className="w-8 h-8 rounded hover:bg-muted flex items-center justify-center transition-colors text-lg"
+                              className="w-9 h-9 rounded-lg hover:bg-surface flex items-center justify-center transition-colors text-xl hover:scale-110"
                             >
                               {e}
                             </button>
@@ -842,10 +867,10 @@ export default function Chat() {
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-center">
-                <div>
-                  <h3 className="text-lg font-medium text-foreground mb-2">Select a conversation</h3>
-                  <p className="text-muted-foreground">Choose a user to start chatting</p>
+              <div className="flex-1 flex items-center justify-center text-center p-8">
+                <div className="p-12 rounded-3xl bg-surface/50 max-w-md">
+                  <h3 className="text-xl font-semibold text-foreground mb-3">Welcome to Messages</h3>
+                  <p className="text-sm text-muted-foreground">Select a conversation from the left to start chatting</p>
                 </div>
               </div>
             )}
