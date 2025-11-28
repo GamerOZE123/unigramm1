@@ -228,10 +228,10 @@ export default function Chat() {
       return null;
     }
 
-    // Validate file size (max 50MB for videos, 5MB for images)
-    const maxSize = isVideo ? 50 * 1024 * 1024 : 5 * 1024 * 1024;
+    // Validate file size (max 100MB for videos, 50MB for images)
+    const maxSize = isVideo ? 100 * 1024 * 1024 : 50 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast.error(`File size must be less than ${isVideo ? '50MB' : '5MB'}`);
+      toast.error(`File size must be less than ${isVideo ? '100MB' : '50MB'}`);
       return null;
     }
 
