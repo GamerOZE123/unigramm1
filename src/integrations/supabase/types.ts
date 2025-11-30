@@ -2589,6 +2589,7 @@ export type Database = {
           user_id: string | null
           username: string | null
           views_count: number | null
+          visibility: string | null
         }
         Relationships: []
       }
