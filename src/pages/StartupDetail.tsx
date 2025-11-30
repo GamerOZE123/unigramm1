@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, ArrowLeft, Globe, Mail, Heart, Users } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Loader2, ArrowLeft, Globe, Mail, Heart, Users, CheckCircle2, Circle } from 'lucide-react';
 import { toast } from 'sonner';
 import PostCard from '@/components/post/PostCard';
 
@@ -22,6 +23,7 @@ interface StartupResponse {
   website_url: string | null;
   contact_email: string | null;
   created_at: string;
+  logo_url: string | null;
   profiles: {
     full_name: string;
     avatar_url: string;
@@ -42,6 +44,7 @@ interface Startup {
   website_url: string | null;
   contact_email: string | null;
   created_at: string;
+  logo_url: string | null;
   profiles: {
     full_name: string;
     avatar_url: string;
@@ -78,6 +81,7 @@ interface Post {
   content: string;
   created_at: string;
   image_url: string | null;
+  image_urls: string[] | null;
   likes_count: number;
   comments_count: number;
   views_count: number;
@@ -195,13 +199,13 @@ export default function StartupDetail() {
   };
 
   const fetchStartupPosts = async () => {
-    if (!startup?.user_id) return;
+    if (!id) return;
     
     try {
       const { data, error } = await supabase
         .from('posts')
         .select('*')
-        .eq('user_id', startup.user_id)
+        .eq('startup_id', id)
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -288,168 +292,202 @@ export default function StartupDetail() {
     );
   }
 
-  const getStageColor = (stage: string) => {
-    const colors = {
-      'Idea': 'bg-blue-100 text-blue-800',
-      'MVP': 'bg-purple-100 text-purple-800',
-      'Launched': 'bg-green-100 text-green-800',
-      'Growing': 'bg-orange-100 text-orange-800'
-    };
-    return colors[stage as keyof typeof colors] || 'bg-gray-100 text-gray-800';
-  };
+  const stages = [
+    { key: 'Ideation', label: 'Ideation', description: 'Basic problem → solution understanding, initial vision created' },
+    { key: 'Research', label: 'Research', description: 'Market research and validation' },
+    { key: 'MVP Build', label: 'MVP Build', description: 'Building minimum viable product' },
+    { key: 'Testing', label: 'Testing', description: 'Testing with early users' },
+    { key: 'Launch', label: 'Launch', description: 'Public launch and growth' },
+  ];
+
+  const currentStageIndex = stages.findIndex(s => s.key === startup?.stage) ?? 0;
+  const progressPercentage = currentStageIndex >= 0 ? ((currentStageIndex + 1) / stages.length) * 100 : 0;
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Main Content */}
-          <div className="flex-1">
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/startups')}
-              className="mb-4"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Startups
-            </Button>
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <Button
+          variant="ghost"
+          onClick={() => navigate('/startups')}
+          className="mb-4"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back
+        </Button>
 
-            <Card className="p-6 mb-6">
-              <div className="flex items-start gap-4 mb-6">
-                <Avatar className="h-16 w-16">
+        <Card className="overflow-hidden">
+          {/* Logo & Header */}
+          <div className="p-6 text-center border-b">
+            <div className="flex justify-center mb-4">
+              <div className="w-32 h-32 rounded-2xl overflow-hidden bg-muted">
+                {startup.logo_url ? (
+                  <img 
+                    src={startup.logo_url} 
+                    alt={startup.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-muted-foreground">
+                    {startup.title.charAt(0)}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <h1 className="text-2xl font-bold mb-1">{startup.title}</h1>
+            <p className="text-sm text-muted-foreground mb-4">
+              by {startup.profiles.full_name}
+            </p>
+
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {startup.description}
+            </p>
+
+            <div className="flex justify-center gap-2 mt-4">
+              {startup.website_url && (
+                <Button size="sm" variant="outline" asChild>
+                  <a href={startup.website_url} target="_blank" rel="noopener noreferrer">
+                    <Globe className="mr-2 h-4 w-4" />
+                    Website
+                  </a>
+                </Button>
+              )}
+              {startup.contact_email && (
+                <Button size="sm" variant="outline" asChild>
+                  <a href={`mailto:${startup.contact_email}`}>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Contact
+                  </a>
+                </Button>
+              )}
+              <Button
+                size="sm"
+                onClick={toggleInterest}
+                variant={isInterested ? 'default' : 'outline'}
+              >
+                <Heart className={`mr-2 h-4 w-4 ${isInterested ? 'fill-current' : ''}`} />
+                {isInterested ? 'Interested' : 'Show Interest'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Post Images */}
+          {posts.filter(p => p.image_url || p.image_urls).length > 0 && (
+            <div className="grid grid-cols-2 gap-2 p-6 border-b">
+              {posts
+                .filter(p => p.image_url || (p.image_urls && p.image_urls.length > 0))
+                .slice(0, 4)
+                .map((post) => (
+                  <div 
+                    key={post.id}
+                    className="aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => navigate(`/post/${post.id}`)}
+                  >
+                    <img
+                      src={post.image_url || (post.image_urls ? post.image_urls[0] : '')}
+                      alt="Post"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+            </div>
+          )}
+
+          {/* Contributors */}
+          <div className="p-6 border-b">
+            <h2 className="text-lg font-semibold mb-4">Contributors</h2>
+            <div className="flex flex-wrap gap-6">
+              {/* Founder */}
+              <div className="text-center">
+                <Avatar 
+                  className="h-16 w-16 mb-2 cursor-pointer mx-auto"
+                  onClick={() => navigate(`/${startup.profiles.username}`)}
+                >
                   <AvatarImage src={startup.profiles.avatar_url} />
                   <AvatarFallback>
                     {startup.profiles.full_name.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1">
-                  <h1 className="text-3xl font-bold mb-2">{startup.title}</h1>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                    <span>by {startup.profiles.full_name}</span>
-                    <span>•</span>
-                    <span>{startup.profiles.university}</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="secondary">{startup.category}</Badge>
-                    <Badge className={getStageColor(startup.stage)}>
-                      {startup.stage}
-                    </Badge>
-                  </div>
-                </div>
-                <Button
-                  onClick={toggleInterest}
-                  variant={isInterested ? 'default' : 'outline'}
-                  className="gap-2"
-                >
-                  <Heart className={`h-4 w-4 ${isInterested ? 'fill-current' : ''}`} />
-                  {isInterested ? 'Interested' : 'Show Interest'}
-                </Button>
+                <p className="text-xs font-medium">{startup.profiles.full_name.split(' ')[0]}</p>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold mb-2">About</h3>
-                  <p className="text-muted-foreground">{startup.description}</p>
+              {/* Interested Contributors */}
+              {interestedUsers.slice(0, 7).map((interest) => (
+                <div key={interest.id} className="text-center">
+                  <Avatar 
+                    className="h-16 w-16 mb-2 cursor-pointer mx-auto"
+                    onClick={() => navigate(`/${interest.profiles.username}`)}
+                  >
+                    <AvatarImage src={interest.profiles.avatar_url} />
+                    <AvatarFallback>
+                      {interest.profiles.full_name.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <p className="text-xs font-medium">
+                    {interest.profiles.full_name.split(' ')[0]}
+                  </p>
                 </div>
-
-                {startup.looking_for && startup.looking_for.length > 0 && (
-                  <div>
-                    <h3 className="font-semibold mb-2">Looking For</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {startup.looking_for.map((item, index) => (
-                        <Badge key={index} variant="outline">
-                          {item}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-4 pt-4 border-t">
-                  {startup.website_url && (
-                    <Button variant="outline" asChild>
-                      <a
-                        href={startup.website_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Globe className="mr-2 h-4 w-4" />
-                        Website
-                      </a>
-                    </Button>
-                  )}
-                  {startup.contact_email && (
-                    <Button variant="outline" asChild>
-                      <a href={`mailto:${startup.contact_email}`}>
-                        <Mail className="mr-2 h-4 w-4" />
-                        Contact
-                      </a>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </Card>
-
-            {/* Posts Section */}
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Recent Updates</h2>
-              {posts.length > 0 ? (
-                <div className="space-y-4">
-                  {posts.map((post) => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
-                </div>
-              ) : (
-                <Card className="p-8 text-center">
-                  <p className="text-muted-foreground">No updates yet</p>
-                </Card>
-              )}
+              ))}
             </div>
           </div>
 
-          {/* Right Sidebar - Interested Users */}
-          <aside className="lg:w-80 space-y-6">
-            <Card className="p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Users className="h-5 w-5" />
-                <h3 className="font-semibold">Interested Users</h3>
-                <Badge variant="secondary" className="ml-auto">
-                  {interestedUsers.length}
-                </Badge>
-              </div>
-
-              {interestedUsers.length > 0 ? (
-                <div className="space-y-4">
-                  {interestedUsers.map((interest) => (
-                    <div
-                      key={interest.id}
-                      className="flex items-center gap-3 cursor-pointer hover:bg-accent/50 p-2 rounded-lg transition-colors"
-                      onClick={() => navigate(`/${interest.profiles.username}`)}
-                    >
-                      <Avatar>
-                        <AvatarImage src={interest.profiles.avatar_url} />
-                        <AvatarFallback>
-                          {interest.profiles.full_name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">
-                          {interest.profiles.full_name}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {interest.profiles.university}
-                        </p>
+          {/* Progress */}
+          <div className="p-6">
+            <h2 className="text-lg font-semibold mb-4">Progress</h2>
+            
+            {/* Stage Timeline */}
+            <div className="relative mb-8">
+              <Progress value={progressPercentage} className="h-2 mb-4" />
+              
+              <div className="flex justify-between">
+                {stages.map((stage, index) => {
+                  const isActive = index <= currentStageIndex;
+                  const isCurrent = index === currentStageIndex;
+                  
+                  return (
+                    <div key={stage.key} className="flex flex-col items-center flex-1">
+                      <div className={`
+                        rounded-full p-1 mb-1
+                        ${isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}
+                      `}>
+                        {isActive ? (
+                          <CheckCircle2 className="h-3 w-3" />
+                        ) : (
+                          <Circle className="h-3 w-3" />
+                        )}
                       </div>
+                      <span className={`text-xs text-center ${isCurrent ? 'font-semibold' : ''}`}>
+                        {stage.label}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No one has shown interest yet. Be the first!
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Current Stage Details */}
+            {currentStageIndex >= 0 && (
+              <div className="bg-muted/50 rounded-lg p-4">
+                <h3 className="font-semibold mb-2">{stages[currentStageIndex].label}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {stages[currentStageIndex].description}
                 </p>
-              )}
-            </Card>
-          </aside>
-        </div>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Posts Section */}
+        {posts.length > 0 && (
+          <div className="mt-6">
+            <h2 className="text-xl font-bold mb-4">Recent Updates</h2>
+            <div className="space-y-4">
+              {posts.map((post) => (
+                <PostCard key={post.id} post={post} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );

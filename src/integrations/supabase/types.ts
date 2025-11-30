@@ -2131,6 +2131,7 @@ export type Database = {
           created_at: string | null
           description: string
           id: string
+          logo_url: string | null
           looking_for: string[] | null
           stage: string
           title: string
@@ -2144,6 +2145,7 @@ export type Database = {
           created_at?: string | null
           description: string
           id?: string
+          logo_url?: string | null
           looking_for?: string[] | null
           stage: string
           title: string
@@ -2157,6 +2159,7 @@ export type Database = {
           created_at?: string | null
           description?: string
           id?: string
+          logo_url?: string | null
           looking_for?: string[] | null
           stage?: string
           title?: string
