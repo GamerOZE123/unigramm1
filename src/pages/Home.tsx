@@ -53,6 +53,10 @@ interface TransformedPost {
     university?: string;
   };
   score?: number;
+  startup_id?: string;
+  startup?: {
+    title: string;
+  };
 }
 
 interface AdvertisingPost {
@@ -151,7 +155,7 @@ export default function Home() {
         setUserProfile(currentUserProfile);
       }
 
-      // Query based on view mode - avoid TS deep inference with ranked_posts view
+      // Query based on view mode using ranked_posts view
       let allPostsData: any[] | null;
       let postsError: any;
       
@@ -186,7 +190,27 @@ export default function Home() {
 
       if (postsError) throw postsError;
 
-      // Transform posts data (profiles are already joined)
+      // Fetch startup info for posts that have startup_id
+      const postIds = allPostsData?.filter((p: any) => p.startup_id).map((p: any) => p.startup_id) || [];
+      let startupsMap: Record<string, any> = {};
+      
+      if (postIds.length > 0) {
+        const { data: startupData } = await supabase
+          .from('student_startups')
+          .select('id, title')
+          .in('id', postIds);
+        
+        if (startupData) {
+          startupsMap = startupData.reduce((acc: any, startup: any) => {
+            acc[startup.id] = startup;
+            return acc;
+          }, {});
+        }
+      }
+
+      if (postsError) throw postsError;
+
+      // Transform posts data
       let rankedPosts: TransformedPost[] = [];
       if (allPostsData) {
         rankedPosts = allPostsData.map(post => ({
@@ -209,7 +233,9 @@ export default function Home() {
             avatar_url: post.avatar_url,
             university: post.university
           },
-          score: post.score
+          score: post.score,
+          startup_id: post.startup_id,
+          startup: post.startup_id && startupsMap[post.startup_id] ? { title: startupsMap[post.startup_id].title } : undefined
         }));
       }
 

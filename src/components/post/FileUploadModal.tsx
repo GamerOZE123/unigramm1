@@ -13,6 +13,11 @@ interface FileUploadModalProps {
   onPostCreated: () => void;
 }
 
+interface Startup {
+  id: string;
+  title: string;
+}
+
 interface UploadingImage {
   file: File;
   url?: string;
@@ -26,7 +31,29 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
   const [caption, setCaption] = useState('');
   const [uploading, setUploading] = useState(false);
   const [visibility, setVisibility] = useState<'global' | 'university'>('global');
+  const [userStartups, setUserStartups] = useState<Startup[]>([]);
+  const [selectedStartupId, setSelectedStartupId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch user's startups
+  React.useEffect(() => {
+    const fetchUserStartups = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('student_startups')
+        .select('id, title')
+        .eq('user_id', user.id);
+      
+      if (!error && data) {
+        setUserStartups(data);
+      }
+    };
+    
+    if (isOpen) {
+      fetchUserStartups();
+    }
+  }, [user, isOpen]);
 
   // Handle file selection
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -113,7 +140,8 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
         user_id: user.id,
         content: caption.trim() || 'New post',
         image_urls: null,
-        visibility: visibility
+        visibility: visibility,
+        startup_id: selectedStartupId
       };
 
       const { data: post, error } = await supabase
@@ -217,14 +245,15 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
                 Add Media ({selectedFiles.length}/10)
               </Button>
               
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*,video/*"
-                multiple
-                className="hidden"
-                onChange={handleFileSelect}
-              />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,image/heic,image/heif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska"
+        capture="environment"
+        multiple
+        className="hidden"
+        onChange={handleFileSelect}
+      />
             </div>
 
             {uploadingImages.length > 0 && (
@@ -296,6 +325,25 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
               </div>
             )}
           </div>
+
+          {/* Startup Selection */}
+          {userStartups.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Link to Startup (Optional)</label>
+              <select
+                value={selectedStartupId || ''}
+                onChange={(e) => setSelectedStartupId(e.target.value || null)}
+                className="w-full p-2 rounded-lg border border-border bg-background text-foreground"
+              >
+                <option value="">No startup linked</option>
+                {userStartups.map((startup) => (
+                  <option key={startup.id} value={startup.id}>
+                    {startup.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Caption Section */}
           <div>
