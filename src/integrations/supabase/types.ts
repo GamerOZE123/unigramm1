@@ -1749,6 +1749,95 @@ export type Database = {
           },
         ]
       }
+      poll_votes: {
+        Row: {
+          created_at: string | null
+          id: string
+          option_index: number
+          post_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          option_index: number
+          post_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          option_index?: number
+          post_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_votes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_votes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ranked_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_votes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      post_startup_mentions: {
+        Row: {
+          created_at: string | null
+          id: string
+          post_id: string | null
+          startup_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          post_id?: string | null
+          startup_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          post_id?: string | null
+          startup_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_startup_mentions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_startup_mentions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ranked_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_startup_mentions_startup_id_fkey"
+            columns: ["startup_id"]
+            isOneToOne: false
+            referencedRelation: "student_startups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_views: {
         Row: {
           id: string
@@ -1785,8 +1874,13 @@ export type Database = {
           image_thumbnail_url: string | null
           image_url: string | null
           image_urls: string[] | null
+          is_approved_for_startup: boolean | null
           likes_count: number | null
+          poll_ends_at: string | null
+          poll_options: Json | null
+          poll_question: string | null
           startup_id: string | null
+          survey_questions: Json | null
           updated_at: string | null
           user_id: string
           views_count: number
@@ -1803,8 +1897,13 @@ export type Database = {
           image_thumbnail_url?: string | null
           image_url?: string | null
           image_urls?: string[] | null
+          is_approved_for_startup?: boolean | null
           likes_count?: number | null
+          poll_ends_at?: string | null
+          poll_options?: Json | null
+          poll_question?: string | null
           startup_id?: string | null
+          survey_questions?: Json | null
           updated_at?: string | null
           user_id: string
           views_count?: number
@@ -1821,8 +1920,13 @@ export type Database = {
           image_thumbnail_url?: string | null
           image_url?: string | null
           image_urls?: string[] | null
+          is_approved_for_startup?: boolean | null
           likes_count?: number | null
+          poll_ends_at?: string | null
+          poll_options?: Json | null
+          poll_question?: string | null
           startup_id?: string | null
+          survey_questions?: Json | null
           updated_at?: string | null
           user_id?: string
           views_count?: number
@@ -2355,6 +2459,52 @@ export type Database = {
           user_type?: string
         }
         Relationships: []
+      }
+      survey_responses: {
+        Row: {
+          created_at: string | null
+          id: string
+          post_id: string | null
+          responses: Json
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          post_id?: string | null
+          responses: Json
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          post_id?: string | null
+          responses?: Json
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_responses_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_responses_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ranked_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "survey_responses_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       typing_status: {
         Row: {
