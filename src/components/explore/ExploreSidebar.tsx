@@ -63,7 +63,7 @@ export default function ExploreSidebar({ onHashtagClick }: ExploreSidebarProps) 
             suggestedUsers.map((user) => (
               <button
                 key={user.user_id}
-                onClick={() => navigate(`/profile/${user.user_id}`)}
+                onClick={() => navigate(`/${user.username}`)}
                 className="w-full flex items-center gap-3 p-2 hover:bg-muted rounded-lg transition-colors"
               >
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">

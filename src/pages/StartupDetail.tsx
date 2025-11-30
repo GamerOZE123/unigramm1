@@ -423,7 +423,7 @@ export default function StartupDetail() {
                     <div
                       key={interest.id}
                       className="flex items-center gap-3 cursor-pointer hover:bg-accent/50 p-2 rounded-lg transition-colors"
-                      onClick={() => navigate(`/profile/${interest.user_id}`)}
+                      onClick={() => navigate(`/${interest.profiles.username}`)}
                     >
                       <Avatar>
                         <AvatarImage src={interest.profiles.avatar_url} />

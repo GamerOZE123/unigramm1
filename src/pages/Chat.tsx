@@ -567,7 +567,7 @@ export default function Chat() {
                             src={selectedUser.avatar_url} 
                             alt={selectedUser.full_name || selectedUser.username} 
                             className="w-full h-full object-cover" 
-                            onClick={() => navigate(`/profile/${selectedUser.user_id}`)}
+                            onClick={() => navigate(`/${selectedUser.username}`)}
                           />
                         ) : (
                           <span className="text-sm font-bold text-white">
@@ -578,7 +578,7 @@ export default function Chat() {
                       <div>
                         <h3
                           className="font-semibold text-foreground text-base cursor-pointer hover:text-primary transition-colors"
-                          onClick={() => navigate(`/profile/${selectedUser.user_id}`)}
+                          onClick={() => navigate(`/${selectedUser.username}`)}
                         >
                           {selectedUser.full_name || selectedUser.username}
                         </h3>

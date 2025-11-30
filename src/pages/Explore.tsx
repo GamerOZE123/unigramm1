@@ -38,8 +38,8 @@ export default function Explore() {
     }
   };
 
-  const handleUserClick = (userId) => {
-    navigate(`/profile/${userId}`);
+  const handleUserClick = (username: string) => {
+    navigate(`/${username}`);
   };
 
   const handleHashtagClick = (hashtag) => {
@@ -154,22 +154,22 @@ export default function Explore() {
             <div className="space-y-4">
               <h2 className="text-lg font-semibold">Users</h2>
               <div className="space-y-2">
-                {users.map((user) => (
+                {users.map((userResult) => (
                   <div
-                    key={user.id}
-                    onClick={() => handleUserClick(user.user_id)}
+                    key={userResult.id}
+                    onClick={() => handleUserClick(userResult.username || '')}
                     className="flex items-center gap-3 p-3 hover:bg-muted rounded-lg cursor-pointer transition-colors"
                   >
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      {user.avatar_url ? (
-                        <img src={user.avatar_url} alt={user.username} className="w-full h-full rounded-full object-cover" />
+                      {userResult.avatar_url ? (
+                        <img src={userResult.avatar_url} alt={userResult.username} className="w-full h-full rounded-full object-cover" />
                       ) : (
                         <User className="w-5 h-5 text-primary" />
                       )}
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium">{user.full_name || user.username}</p>
-                      <p className="text-sm text-muted-foreground">@{user.username}</p>
+                      <p className="font-medium">{userResult.full_name || userResult.username}</p>
+                      <p className="text-sm text-muted-foreground">@{userResult.username}</p>
                     </div>
                   </div>
                 ))}

@@ -56,7 +56,7 @@ export default function UserSearch({ onStartChat }: UserSearchProps) {
 
   const handleUserClick = (selectedUser: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(`/profile/${selectedUser.user_id}`);
+    navigate(`/${selectedUser.username}`);
     setShowResults(false);
     setQuery('');
   };

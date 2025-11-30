@@ -56,8 +56,8 @@ export default function PostHeader({
   const handleProfileClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (userId && !isGhostMode) {
-      navigate(`/profile/${userId}`);
+    if (username && !isGhostMode) {
+      navigate(`/${username}`);
     }
   };
 

@@ -42,8 +42,8 @@ export default function UsersSidebar() {
     }
   };
 
-  const handleUserClick = (userId: string) => {
-    navigate(`/profile/${userId}`);
+  const handleUserClick = (username: string) => {
+    navigate(`/${username}`);
   };
 
   return (
@@ -66,7 +66,7 @@ export default function UsersSidebar() {
               <div key={suggestedUser.user_id} className="flex items-center justify-between">
                 <div 
                   className="flex items-center gap-3 cursor-pointer flex-1"
-                  onClick={() => handleUserClick(suggestedUser.user_id)}
+                  onClick={() => handleUserClick(suggestedUser.username || '')}
                 >
                   <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center overflow-hidden">
                     {suggestedUser.avatar_url ? (

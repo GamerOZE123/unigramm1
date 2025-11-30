@@ -25,6 +25,7 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
   const [uploadingImages, setUploadingImages] = useState<UploadingImage[]>([]);
   const [caption, setCaption] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [visibility, setVisibility] = useState<'global' | 'university'>('global');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Handle file selection
@@ -111,7 +112,8 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
       const postData = {
         user_id: user.id,
         content: caption.trim() || 'New post',
-        image_urls: null
+        image_urls: null,
+        visibility: visibility
       };
 
       const { data: post, error } = await supabase
@@ -158,6 +160,7 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
     setSelectedFiles([]);
     setUploadingImages([]);
     setCaption('');
+    setVisibility('global');
     onClose();
   };
 
@@ -174,6 +177,32 @@ export default function FileUploadModal({ isOpen, onClose, onPostCreated }: File
         </DialogHeader>
         
         <div className="space-y-4">
+          {/* Visibility Selector */}
+          <div className="flex gap-2 p-3 bg-muted/30 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setVisibility('global')}
+              className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
+                visibility === 'global'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-background text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              🌍 Global
+            </button>
+            <button
+              type="button"
+              onClick={() => setVisibility('university')}
+              className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
+                visibility === 'university'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-background text-muted-foreground hover:bg-muted'
+              }`}
+            >
+              🎓 University Only
+            </button>
+          </div>
+
           {/* Image Upload Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
