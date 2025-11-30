@@ -151,19 +151,37 @@ export default function Home() {
         setUserProfile(currentUserProfile);
       }
 
-      // ✅ UPGRADE 1 & 3: Use single JOIN query - avoid TS type depth issue
-      let allPostsData: any;
+      // Query based on view mode - avoid TS deep inference with ranked_posts view
+      let allPostsData: any[] | null;
       let postsError: any;
       
       if (viewMode === 'global') {
-        const r = await supabase.from('ranked_posts').select('*').eq('visibility', 'global').order('score', { ascending: false }).range(startIndex, endIndex);
-        allPostsData = r.data; postsError = r.error;
+        const result = await (supabase as any)
+          .from('ranked_posts')
+          .select('*')
+          .eq('visibility', 'global')
+          .order('score', { ascending: false })
+          .range(startIndex, endIndex);
+        allPostsData = result.data;
+        postsError = result.error;
       } else if (viewMode === 'university' && currentUserProfile?.university) {
-        const r = await supabase.from('ranked_posts').select('*').eq('visibility', 'university').eq('university', currentUserProfile.university).order('score', { ascending: false }).range(startIndex, endIndex);
-        allPostsData = r.data; postsError = r.error;
+        const result = await (supabase as any)
+          .from('ranked_posts')
+          .select('*')
+          .eq('visibility', 'university')
+          .eq('university', currentUserProfile.university)
+          .order('score', { ascending: false })
+          .range(startIndex, endIndex);
+        allPostsData = result.data;
+        postsError = result.error;
       } else {
-        const r = await supabase.from('ranked_posts').select('*').order('score', { ascending: false }).range(startIndex, endIndex);
-        allPostsData = r.data; postsError = r.error;
+        const result = await (supabase as any)
+          .from('ranked_posts')
+          .select('*')
+          .order('score', { ascending: false })
+          .range(startIndex, endIndex);
+        allPostsData = result.data;
+        postsError = result.error;
       }
 
       if (postsError) throw postsError;
