@@ -136,27 +136,27 @@ export default function StartupDetail() {
 
   const fetchStartupDetails = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: startupData, error: startupError } = await supabase
         .from('student_startups')
-        .select(`
-          *,
-          profiles!student_startups_user_id_fkey (
-            full_name,
-            avatar_url,
-            username,
-            university,
-            linkedin_url
-          )
-        `)
+        .select('*')
         .eq('id', id)
         .single();
 
-      if (error) throw error;
+      if (startupError) throw startupError;
+
+      // Fetch the profile separately
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url, username, university, linkedin_url')
+        .eq('user_id', startupData.user_id)
+        .single();
+
+      if (profileError) throw profileError;
       
-      // Transform the response to match Startup interface
+      // Combine the data
       const transformedData: Startup = {
-        ...data,
-        profiles: data.profiles[0] // Get first profile from array
+        ...startupData,
+        profiles: profileData
       };
       
       setStartup(transformedData);
@@ -170,27 +170,34 @@ export default function StartupDetail() {
 
   const fetchInterestedUsers = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: interests, error } = await supabase
         .from('startup_interests')
-        .select(`
-          id,
-          user_id,
-          profiles!startup_interests_user_id_fkey (
-            full_name,
-            avatar_url,
-            username,
-            university
-          )
-        `)
+        .select('id, user_id')
         .eq('startup_id', id);
 
       if (error) throw error;
-      
-      // Transform the response to match InterestedUser interface
-      const transformedData: InterestedUser[] = ((data || []) as unknown as InterestedUserResponse[]).map((item) => ({
-        ...item,
-        profiles: item.profiles[0] // Get first profile from array
-      }));
+
+      if (!interests || interests.length === 0) {
+        setInterestedUsers([]);
+        return;
+      }
+
+      // Fetch profiles for all interested users
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, avatar_url, username, university')
+        .in('user_id', interests.map(i => i.user_id));
+
+      if (profilesError) throw profilesError;
+
+      // Combine the data
+      const transformedData: InterestedUser[] = interests.map(interest => {
+        const profile = profiles?.find(p => p.user_id === interest.user_id);
+        return {
+          ...interest,
+          profiles: profile!
+        };
+      }).filter(item => item.profiles);
       
       setInterestedUsers(transformedData);
     } catch (error) {
