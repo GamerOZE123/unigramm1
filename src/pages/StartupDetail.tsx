@@ -8,9 +8,11 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, ArrowLeft, Globe, Mail, Heart, Users, CheckCircle2, Circle } from 'lucide-react';
+import { Loader2, ArrowLeft, Globe, Mail, Heart, Users, CheckCircle2, Circle, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import PostCard from '@/components/post/PostCard';
+import StartupRightSidebar from '@/components/startups/StartupRightSidebar';
+import StartupEditModal from '@/components/startups/StartupEditModal';
 
 interface StartupResponse {
   id: string;
@@ -86,6 +88,7 @@ interface Post {
   comments_count: number;
   views_count: number;
   user_id: string;
+  is_approved_for_startup: boolean;
 }
 
 export default function StartupDetail() {
@@ -95,14 +98,17 @@ export default function StartupDetail() {
   const [startup, setStartup] = useState<Startup | null>(null);
   const [interestedUsers, setInterestedUsers] = useState<InterestedUser[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [taggedPosts, setTaggedPosts] = useState<Post[]>([]);
   const [isInterested, setIsInterested] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     if (id) {
       fetchStartupDetails();
       fetchInterestedUsers();
       fetchStartupPosts();
+      fetchTaggedPosts();
       if (user) {
         checkIfInterested();
       }
@@ -213,6 +219,7 @@ export default function StartupDetail() {
         .from('posts')
         .select('*')
         .eq('startup_id', id)
+        .eq('is_approved_for_startup', true)
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -220,6 +227,33 @@ export default function StartupDetail() {
       setPosts(data || []);
     } catch (error) {
       console.error('Error fetching posts:', error);
+    }
+  };
+
+  const fetchTaggedPosts = async () => {
+    if (!id) return;
+    
+    try {
+      const { data: mentions, error: mentionsError } = await supabase
+        .from('post_startup_mentions')
+        .select('post_id')
+        .eq('startup_id', id);
+
+      if (mentionsError) throw mentionsError;
+      
+      if (mentions && mentions.length > 0) {
+        const postIds = mentions.map(m => m.post_id);
+        const { data, error } = await supabase
+          .from('posts')
+          .select('*')
+          .in('id', postIds)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setTaggedPosts(data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching tagged posts:', error);
     }
   };
 
@@ -310,190 +344,258 @@ export default function StartupDetail() {
   const currentStageIndex = stages.findIndex(s => s.key === startup?.stage) ?? 0;
   const progressPercentage = currentStageIndex >= 0 ? ((currentStageIndex + 1) / stages.length) * 100 : 0;
 
+  const isOwner = user?.id === startup?.user_id;
+
+  const handleApprovePost = async (postId: string) => {
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .update({ is_approved_for_startup: true })
+        .eq('id', postId);
+
+      if (error) throw error;
+      toast.success('Post approved!');
+      fetchTaggedPosts();
+    } catch (error) {
+      console.error('Error approving post:', error);
+      toast.error('Failed to approve post');
+    }
+  };
+
+  const handleRejectPost = async (postId: string) => {
+    try {
+      const { error } = await supabase
+        .from('post_startup_mentions')
+        .delete()
+        .eq('post_id', postId)
+        .eq('startup_id', id);
+
+      if (error) throw error;
+      toast.success('Post removed from mentions');
+      fetchTaggedPosts();
+    } catch (error) {
+      console.error('Error rejecting post:', error);
+      toast.error('Failed to remove post');
+    }
+  };
+
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/startups')}
-          className="mb-4"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        <div className="flex items-center justify-between mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/startups')}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Startups
+          </Button>
+          {isOwner && (
+            <Button onClick={() => setIsEditModalOpen(true)}>
+              <Edit className="mr-2 h-4 w-4" />
+              Edit
+            </Button>
+          )}
+        </div>
 
-        <Card className="overflow-hidden">
-          {/* Logo & Header */}
-          <div className="p-6 text-center border-b">
-            <div className="flex justify-center mb-4">
-              <div className="w-32 h-32 rounded-2xl overflow-hidden bg-muted">
-                {startup.logo_url ? (
-                  <img 
-                    src={startup.logo_url} 
-                    alt={startup.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-muted-foreground">
-                    {startup.title.charAt(0)}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            <Card className="overflow-hidden">
+              {/* Logo & Header */}
+              <div className="p-6 text-center border-b">
+                <div className="flex justify-center mb-4">
+                  <div className="w-32 h-32 rounded-2xl overflow-hidden bg-muted">
+                    {startup.logo_url ? (
+                      <img 
+                        src={startup.logo_url} 
+                        alt={startup.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-muted-foreground">
+                        {startup.title.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <h1 className="text-2xl font-bold mb-1">{startup.title}</h1>
+                <p className="text-sm text-muted-foreground mb-4">
+                  by {startup.profiles.full_name}
+                </p>
+
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {startup.description}
+                </p>
+
+                <div className="flex justify-center gap-2 mt-4">
+                  {startup.website_url && (
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={startup.website_url} target="_blank" rel="noopener noreferrer">
+                        <Globe className="mr-2 h-4 w-4" />
+                        Website
+                      </a>
+                    </Button>
+                  )}
+                  {startup.contact_email && (
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={`mailto:${startup.contact_email}`}>
+                        <Mail className="mr-2 h-4 w-4" />
+                        Contact
+                      </a>
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    onClick={toggleInterest}
+                    variant={isInterested ? 'default' : 'outline'}
+                  >
+                    <Heart className={`mr-2 h-4 w-4 ${isInterested ? 'fill-current' : ''}`} />
+                    {isInterested ? 'Interested' : 'Show Interest'}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Post Images */}
+              {posts.filter(p => p.image_url || p.image_urls).length > 0 && (
+                <div className="grid grid-cols-2 gap-2 p-6 border-b">
+                  {posts
+                    .filter(p => p.image_url || (p.image_urls && p.image_urls.length > 0))
+                    .slice(0, 4)
+                    .map((post) => (
+                      <div 
+                        key={post.id}
+                        className="aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => navigate(`/post/${post.id}`)}
+                      >
+                        <img
+                          src={post.image_url || (post.image_urls ? post.image_urls[0] : '')}
+                          alt="Post"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {/* Contributors */}
+              <div className="p-6 border-b">
+                <h2 className="text-lg font-semibold mb-4">Contributors</h2>
+                <div className="flex flex-wrap gap-6">
+                  {/* Founder */}
+                  <div className="text-center">
+                    <Avatar 
+                      className="h-16 w-16 mb-2 cursor-pointer mx-auto"
+                      onClick={() => navigate(`/${startup.profiles.username}`)}
+                    >
+                      <AvatarImage src={startup.profiles.avatar_url} />
+                      <AvatarFallback>
+                        {startup.profiles.full_name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <p className="text-xs font-medium">{startup.profiles.full_name.split(' ')[0]}</p>
+                  </div>
+
+                  {/* Interested Contributors */}
+                  {interestedUsers.slice(0, 7).map((interest) => (
+                    <div key={interest.id} className="text-center">
+                      <Avatar 
+                        className="h-16 w-16 mb-2 cursor-pointer mx-auto"
+                        onClick={() => navigate(`/${interest.profiles.username}`)}
+                      >
+                        <AvatarImage src={interest.profiles.avatar_url} />
+                        <AvatarFallback>
+                          {interest.profiles.full_name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <p className="text-xs font-medium">
+                        {interest.profiles.full_name.split(' ')[0]}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Progress */}
+              <div className="p-6">
+                <h2 className="text-lg font-semibold mb-4">Progress</h2>
+                
+                {/* Stage Timeline */}
+                <div className="relative mb-8">
+                  <Progress value={progressPercentage} className="h-2 mb-4" />
+                  
+                  <div className="flex justify-between">
+                    {stages.map((stage, index) => {
+                      const isActive = index <= currentStageIndex;
+                      const isCurrent = index === currentStageIndex;
+                      
+                      return (
+                        <div key={stage.key} className="flex flex-col items-center flex-1">
+                          <div className={`
+                            rounded-full p-1 mb-1
+                            ${isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}
+                          `}>
+                            {isActive ? (
+                              <CheckCircle2 className="h-3 w-3" />
+                            ) : (
+                              <Circle className="h-3 w-3" />
+                            )}
+                          </div>
+                          <span className={`text-xs text-center ${isCurrent ? 'font-semibold' : ''}`}>
+                            {stage.label}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Current Stage Details */}
+                {currentStageIndex >= 0 && (
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <h3 className="font-semibold mb-2">{stages[currentStageIndex].label}</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {stages[currentStageIndex].description}
+                    </p>
                   </div>
                 )}
               </div>
-            </div>
-            
-            <h1 className="text-2xl font-bold mb-1">{startup.title}</h1>
-            <p className="text-sm text-muted-foreground mb-4">
-              by {startup.profiles.full_name}
-            </p>
+            </Card>
 
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {startup.description}
-            </p>
-
-            <div className="flex justify-center gap-2 mt-4">
-              {startup.website_url && (
-                <Button size="sm" variant="outline" asChild>
-                  <a href={startup.website_url} target="_blank" rel="noopener noreferrer">
-                    <Globe className="mr-2 h-4 w-4" />
-                    Website
-                  </a>
-                </Button>
-              )}
-              {startup.contact_email && (
-                <Button size="sm" variant="outline" asChild>
-                  <a href={`mailto:${startup.contact_email}`}>
-                    <Mail className="mr-2 h-4 w-4" />
-                    Contact
-                  </a>
-                </Button>
-              )}
-              <Button
-                size="sm"
-                onClick={toggleInterest}
-                variant={isInterested ? 'default' : 'outline'}
-              >
-                <Heart className={`mr-2 h-4 w-4 ${isInterested ? 'fill-current' : ''}`} />
-                {isInterested ? 'Interested' : 'Show Interest'}
-              </Button>
-            </div>
-          </div>
-
-          {/* Post Images */}
-          {posts.filter(p => p.image_url || p.image_urls).length > 0 && (
-            <div className="grid grid-cols-2 gap-2 p-6 border-b">
-              {posts
-                .filter(p => p.image_url || (p.image_urls && p.image_urls.length > 0))
-                .slice(0, 4)
-                .map((post) => (
-                  <div 
-                    key={post.id}
-                    className="aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer hover:opacity-90 transition-opacity"
-                    onClick={() => navigate(`/post/${post.id}`)}
-                  >
-                    <img
-                      src={post.image_url || (post.image_urls ? post.image_urls[0] : '')}
-                      alt="Post"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-            </div>
-          )}
-
-          {/* Contributors */}
-          <div className="p-6 border-b">
-            <h2 className="text-lg font-semibold mb-4">Contributors</h2>
-            <div className="flex flex-wrap gap-6">
-              {/* Founder */}
-              <div className="text-center">
-                <Avatar 
-                  className="h-16 w-16 mb-2 cursor-pointer mx-auto"
-                  onClick={() => navigate(`/${startup.profiles.username}`)}
-                >
-                  <AvatarImage src={startup.profiles.avatar_url} />
-                  <AvatarFallback>
-                    {startup.profiles.full_name.charAt(0)}
-                  </AvatarFallback>
-                </Avatar>
-                <p className="text-xs font-medium">{startup.profiles.full_name.split(' ')[0]}</p>
-              </div>
-
-              {/* Interested Contributors */}
-              {interestedUsers.slice(0, 7).map((interest) => (
-                <div key={interest.id} className="text-center">
-                  <Avatar 
-                    className="h-16 w-16 mb-2 cursor-pointer mx-auto"
-                    onClick={() => navigate(`/${interest.profiles.username}`)}
-                  >
-                    <AvatarImage src={interest.profiles.avatar_url} />
-                    <AvatarFallback>
-                      {interest.profiles.full_name.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <p className="text-xs font-medium">
-                    {interest.profiles.full_name.split(' ')[0]}
-                  </p>
+            {/* Posts Section */}
+            {posts.length > 0 && (
+              <div>
+                <h2 className="text-xl font-bold mb-4">Recent Updates</h2>
+                <div className="space-y-4">
+                  {posts.map((post) => (
+                    <PostCard key={post.id} post={post} />
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Progress */}
-          <div className="p-6">
-            <h2 className="text-lg font-semibold mb-4">Progress</h2>
-            
-            {/* Stage Timeline */}
-            <div className="relative mb-8">
-              <Progress value={progressPercentage} className="h-2 mb-4" />
-              
-              <div className="flex justify-between">
-                {stages.map((stage, index) => {
-                  const isActive = index <= currentStageIndex;
-                  const isCurrent = index === currentStageIndex;
-                  
-                  return (
-                    <div key={stage.key} className="flex flex-col items-center flex-1">
-                      <div className={`
-                        rounded-full p-1 mb-1
-                        ${isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}
-                      `}>
-                        {isActive ? (
-                          <CheckCircle2 className="h-3 w-3" />
-                        ) : (
-                          <Circle className="h-3 w-3" />
-                        )}
-                      </div>
-                      <span className={`text-xs text-center ${isCurrent ? 'font-semibold' : ''}`}>
-                        {stage.label}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Current Stage Details */}
-            {currentStageIndex >= 0 && (
-              <div className="bg-muted/50 rounded-lg p-4">
-                <h3 className="font-semibold mb-2">{stages[currentStageIndex].label}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {stages[currentStageIndex].description}
-                </p>
               </div>
             )}
           </div>
-        </Card>
 
-        {/* Posts Section */}
-        {posts.length > 0 && (
-          <div className="mt-6">
-            <h2 className="text-xl font-bold mb-4">Recent Updates</h2>
-            <div className="space-y-4">
-              {posts.map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))}
-            </div>
+          {/* Right Sidebar */}
+          <div className="hidden lg:block">
+            <StartupRightSidebar
+              interestedUsers={interestedUsers}
+              taggedPosts={taggedPosts}
+              isOwner={isOwner}
+              onApprovePost={handleApprovePost}
+              onRejectPost={handleRejectPost}
+            />
           </div>
+        </div>
+
+        {/* Edit Modal */}
+        {isOwner && startup && (
+          <StartupEditModal
+            open={isEditModalOpen}
+            onOpenChange={setIsEditModalOpen}
+            startup={startup}
+            onSuccess={fetchStartupDetails}
+          />
         )}
       </div>
     </Layout>

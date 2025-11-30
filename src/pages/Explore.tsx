@@ -12,6 +12,7 @@ import TrendingPostsRow from '@/components/explore/TrendingPostsRow';
 import TrendingUniversitiesRow from '@/components/explore/TrendingUniversitiesRow';
 import UpcomingEventsRow from '@/components/explore/UpcomingEventsRow';
 import StudentStartupsRow from '@/components/explore/StudentStartupsRow';
+import TaggedPostsRow from '@/components/explore/TaggedPostsRow';
 import ExploreSidebar from '@/components/explore/ExploreSidebar';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -221,6 +222,8 @@ export default function Explore() {
           <UpcomingEventsRow />
 
           <StudentStartupsRow />
+
+          <TaggedPostsRow />
         </div>
 
         {/* RIGHT SIDEBAR - Hidden on mobile */}

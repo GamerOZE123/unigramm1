@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import FileUploadModal from './FileUploadModal';
+import CreatePostModal from './CreatePostModal';
 
 interface ImageUploadButtonProps {
   onPostCreated: () => void;
@@ -21,10 +21,10 @@ export default function ImageUploadButton({ onPostCreated }: ImageUploadButtonPr
         <Plus className="h-6 w-6" />
       </Button>
       
-      <FileUploadModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onPostCreated={onPostCreated}
+      <CreatePostModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        onSuccess={onPostCreated}
       />
     </>
   );
