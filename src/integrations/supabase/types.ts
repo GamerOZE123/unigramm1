@@ -1786,6 +1786,7 @@ export type Database = {
           image_url: string | null
           image_urls: string[] | null
           likes_count: number | null
+          startup_id: string | null
           updated_at: string | null
           user_id: string
           views_count: number
@@ -1803,6 +1804,7 @@ export type Database = {
           image_url?: string | null
           image_urls?: string[] | null
           likes_count?: number | null
+          startup_id?: string | null
           updated_at?: string | null
           user_id: string
           views_count?: number
@@ -1820,12 +1822,21 @@ export type Database = {
           image_url?: string | null
           image_urls?: string[] | null
           likes_count?: number | null
+          startup_id?: string | null
           updated_at?: string | null
           user_id?: string
           views_count?: number
           visibility?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posts_startup_id_fkey"
+            columns: ["startup_id"]
+            isOneToOne: false
+            referencedRelation: "student_startups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

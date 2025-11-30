@@ -1,5 +1,5 @@
 import React from 'react';
-import { MoreHorizontal, Edit, Trash, CheckCircle2 } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash, CheckCircle2, Rocket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useGhostMode } from '@/contexts/GhostModeContext';
@@ -23,6 +23,8 @@ interface PostHeaderProps {
   userId?: string; // Add userId for profile navigation
   hashtags?: string[];
   onHashtagClick?: (hashtag: string, e: React.MouseEvent) => void;
+  startupId?: string;
+  startupTitle?: string;
 }
 
 export default function PostHeader({ 
@@ -37,7 +39,9 @@ export default function PostHeader({
   onDelete,
   userId,
   hashtags,
-  onHashtagClick
+  onHashtagClick,
+  startupId,
+  startupTitle
 }: PostHeaderProps) {
   const navigate = useNavigate();
   const { isGhostMode } = useGhostMode();
@@ -161,6 +165,20 @@ export default function PostHeader({
                 #{hashtag}
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Startup Link */}
+        {startupId && startupTitle && (
+          <div 
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/startup/${startupId}`);
+            }}
+            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 rounded-full cursor-pointer transition-colors text-sm"
+          >
+            <Rocket className="w-3.5 h-3.5 text-primary" />
+            <span className="text-primary font-medium">{startupTitle}</span>
           </div>
         )}
       </div>

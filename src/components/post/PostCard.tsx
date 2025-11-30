@@ -33,6 +33,10 @@ interface Post {
     full_name: string;
     avatar_url?: string;
   };
+  startup_id?: string;
+  startup?: {
+    title: string;
+  };
 }
 
 interface PostCardProps {
@@ -126,6 +130,8 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
             userId={post.user_id}
             hashtags={post.hashtags}
             onHashtagClick={handleHashtagClickInternal}
+            startupId={post.startup_id}
+            startupTitle={post.startup?.title}
           />
 
           {/* Images (single or multiple) with hashtags overlay */}
