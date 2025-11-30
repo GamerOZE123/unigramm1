@@ -119,8 +119,8 @@ export default function RightSidebar() {
   }, [user, randomUsers.map(u => u.user_id).join(',')]);
 
 
-  const handleUserClick = (userId: string) => {
-    navigate(`/profile/${userId}`);
+  const handleUserClick = (username: string) => {
+    navigate(`/${username}`);
   };
 
   const handleHashtagClick = (hashtag: string) => {
@@ -210,7 +210,7 @@ export default function RightSidebar() {
               <div 
                 key={randomUser.user_id} 
                 className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-muted/20 transition-colors"
-                onClick={() => handleUserClick(randomUser.user_id)}
+                onClick={() => handleUserClick(randomUser.username || '')}
               >
                 {randomUser.avatar_url ? (
                   <img 

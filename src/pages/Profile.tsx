@@ -72,10 +72,10 @@ interface TransformedPost {
 
 export default function Profile() {
   const { user } = useAuth();
-  const { userId } = useParams<{ userId?: string }>();
-  const isOwnProfile = !userId || userId === user?.id;
-  const profileId = userId || user?.id;
+  const { username } = useParams<{ username?: string }>();
   const isMobile = useIsMobile();
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  const isOwnProfile = !username || (profileUserId && profileUserId === user?.id);
 
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [posts, setPosts] = useState<PostWithProfile[]>([]);
@@ -94,11 +94,33 @@ export default function Profile() {
   }, [profileData?.banner_url, profileData?.banner_height]);
 
   useEffect(() => {
-    if (profileId) {
-      fetchUserData(profileId);
-      fetchUserPosts(profileId);
-    }
-  }, [profileId]);
+    const loadProfile = async () => {
+      if (username) {
+        // Lookup user by username
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .eq('username', username)
+          .single();
+        
+        if (error || !data) {
+          setLoading(false);
+          return;
+        }
+        
+        setProfileUserId(data.user_id);
+        fetchUserData(data.user_id);
+        fetchUserPosts(data.user_id);
+      } else if (user?.id) {
+        // Own profile
+        setProfileUserId(user.id);
+        fetchUserData(user.id);
+        fetchUserPosts(user.id);
+      }
+    };
+    
+    loadProfile();
+  }, [username, user?.id]);
 
   useEffect(() => {
     const checkFollowingStatus = async () => {
@@ -199,7 +221,9 @@ export default function Profile() {
       }
 
       // Refresh profile data to update counts
-      fetchUserData(profileId);
+      if (profileUserId) {
+        fetchUserData(profileUserId);
+      }
     } catch (error) {
       console.error("Error following/unfollowing user:", error);
       toast.error("Failed to follow/unfollow user");
@@ -209,7 +233,9 @@ export default function Profile() {
   };
 
   const handleProfileUpdate = () => {
-    fetchUserData(profileId);
+    if (profileUserId) {
+      fetchUserData(profileUserId);
+    }
   };
 
   // Banner upload handler (for EditProfileModal)

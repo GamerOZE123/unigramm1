@@ -533,7 +533,7 @@ export default function Startups() {
                           className="h-12 w-12 cursor-pointer"
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/profile/${startup.user_id}`);
+                            navigate(`/${startup.profiles?.username || ''}`);
                           }}
                         >
                           <AvatarImage src={startup.profiles?.avatar_url} />

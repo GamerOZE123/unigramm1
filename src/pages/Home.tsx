@@ -151,18 +151,20 @@ export default function Home() {
         setUserProfile(currentUserProfile);
       }
 
-      // ✅ UPGRADE 1 & 3: Use single JOIN query with ranked_posts view
-      let postsQuery = supabase
-        .from('ranked_posts')
-        .select('*')
-        .order('score', { ascending: false });
-
-      // Filter by university if in university mode
-      if (viewMode === 'university' && currentUserProfile?.university) {
-        postsQuery = postsQuery.eq('university', currentUserProfile.university);
+      // ✅ UPGRADE 1 & 3: Use single JOIN query - avoid TS type depth issue
+      let allPostsData: any;
+      let postsError: any;
+      
+      if (viewMode === 'global') {
+        const r = await supabase.from('ranked_posts').select('*').eq('visibility', 'global').order('score', { ascending: false }).range(startIndex, endIndex);
+        allPostsData = r.data; postsError = r.error;
+      } else if (viewMode === 'university' && currentUserProfile?.university) {
+        const r = await supabase.from('ranked_posts').select('*').eq('visibility', 'university').eq('university', currentUserProfile.university).order('score', { ascending: false }).range(startIndex, endIndex);
+        allPostsData = r.data; postsError = r.error;
+      } else {
+        const r = await supabase.from('ranked_posts').select('*').order('score', { ascending: false }).range(startIndex, endIndex);
+        allPostsData = r.data; postsError = r.error;
       }
-
-      const { data: allPostsData, error: postsError } = await postsQuery.range(startIndex, endIndex);
 
       if (postsError) throw postsError;
 

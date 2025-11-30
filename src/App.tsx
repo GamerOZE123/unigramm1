@@ -57,7 +57,6 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-              <Route path="/profile/:userId?" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/explore" element={<ProtectedRoute><Explore /></ProtectedRoute>} />
               <Route path="/chat/:conversationId?" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
               <Route path="/university" element={<ProtectedRoute><University /></ProtectedRoute>} />
@@ -80,6 +79,7 @@ function App() {
             <Route path="/startups" element={<ProtectedRoute><Startups /></ProtectedRoute>} />
             <Route path="/startups/:id" element={<ProtectedRoute><StartupDetail /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
               </Routes>
               <Toaster />

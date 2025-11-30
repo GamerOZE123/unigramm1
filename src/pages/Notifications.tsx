@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { useChat } from "@/hooks/useChat";
 import { Heart, MessageCircle, User, Check, CarTaxiFront } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Notifications() {
   const { notifications, loading, markAsRead, markAllAsRead } = useNotifications();
@@ -59,8 +60,20 @@ export default function Notifications() {
       // Navigate to the specific post
       navigate(`/post/${notification.related_post_id}`);
     } else if (notification.related_user_id) {
-      // Navigate to user profile
-      navigate(`/profile/${notification.related_user_id}`);
+      // Navigate to user profile - need to lookup username first
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('user_id', notification.related_user_id)
+          .single();
+        
+        if (profile?.username) {
+          navigate(`/${profile.username}`);
+        }
+      } catch (error) {
+        console.error('Error looking up username:', error);
+      }
     }
   };
 
