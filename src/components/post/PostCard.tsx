@@ -7,6 +7,8 @@ import EditPostModal from './EditPostModal';
 import ClickablePostCard from './ClickablePostCard';
 import MultipleImageDisplay from './MultipleImageDisplay';
 import InlineCommentSection from './InlineCommentSection';
+import PollDisplay from './PollDisplay';
+import SurveyDisplay from './SurveyDisplay';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLikes } from '@/hooks/useLikes';
@@ -37,6 +39,10 @@ interface Post {
   startup?: {
     title: string;
   };
+  poll_question?: string;
+  poll_options?: any;
+  poll_ends_at?: string;
+  survey_questions?: any;
 }
 
 interface PostCardProps {
@@ -168,6 +174,23 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
                 />
               ) : null}
             </div>
+          )}
+
+          {/* Poll Display */}
+          {post.poll_question && post.poll_options && (
+            <PollDisplay
+              postId={post.id}
+              question={post.poll_question}
+              options={JSON.parse(post.poll_options)}
+              endsAt={post.poll_ends_at}
+            />
+          )}
+
+          {/* Survey Display */}
+          {post.survey_questions && (
+            <SurveyDisplay
+              questions={JSON.parse(post.survey_questions)}
+            />
           )}
 
           {/* Actions */}

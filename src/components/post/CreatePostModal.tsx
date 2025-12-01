@@ -10,6 +10,7 @@ import HashtagSelector from './HashtagSelector';
 import StartupMentionInput from './StartupMentionInput';
 import PollCreator from './PollCreator';
 import SurveyCreator from './SurveyCreator';
+import { MultipleImageUpload } from '@/components/ui/multiple-image-upload';
 
 interface CreatePostModalProps {
   open: boolean;
@@ -25,10 +26,11 @@ export default function CreatePostModal({ open, onOpenChange, onSuccess }: Creat
   const [postType, setPostType] = useState<'text' | 'poll' | 'survey'>('text');
   const [pollData, setPollData] = useState<any>(null);
   const [surveyData, setSurveyData] = useState<any>(null);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [isPosting, setIsPosting] = useState(false);
 
   const handlePost = async () => {
-    if (!user || (!content.trim() && !pollData && !surveyData)) return;
+    if (!user || (!content.trim() && !pollData && !surveyData && imageUrls.length === 0)) return;
 
     setIsPosting(true);
     try {
@@ -37,6 +39,11 @@ export default function CreatePostModal({ open, onOpenChange, onSuccess }: Creat
         content: content.trim() || (pollData ? pollData.question : 'Survey'),
         hashtags: hashtags.length > 0 ? hashtags : null,
       };
+
+      // Add images if present
+      if (imageUrls.length > 0) {
+        postData.image_urls = imageUrls;
+      }
 
       if (pollData) {
         postData.poll_question = pollData.question;
@@ -89,6 +96,7 @@ export default function CreatePostModal({ open, onOpenChange, onSuccess }: Creat
     setPostType('text');
     setPollData(null);
     setSurveyData(null);
+    setImageUrls([]);
   };
 
   return (
@@ -130,6 +138,15 @@ export default function CreatePostModal({ open, onOpenChange, onSuccess }: Creat
             />
 
             <div>
+              <label className="text-sm font-medium mb-2 block">Add Images</label>
+              <MultipleImageUpload
+                onImagesUploaded={setImageUrls}
+                maxImages={10}
+                bucketName="post-images"
+              />
+            </div>
+
+            <div>
               <label className="text-sm font-medium mb-2 block">Add Hashtags</label>
               <HashtagSelector hashtags={hashtags} onHashtagsChange={setHashtags} />
             </div>
@@ -155,7 +172,7 @@ export default function CreatePostModal({ open, onOpenChange, onSuccess }: Creat
 
             <Button
               onClick={handlePost}
-              disabled={!content.trim() || isPosting}
+              disabled={(!content.trim() && imageUrls.length === 0) || isPosting}
               className="w-full"
             >
               {isPosting ? 'Posting...' : 'Post'}
