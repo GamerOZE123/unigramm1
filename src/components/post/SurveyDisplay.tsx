@@ -16,7 +16,14 @@ interface SurveyDisplayProps {
   questions: SurveyQuestion[];
 }
 
-export default function SurveyDisplay({ questions }: SurveyDisplayProps) {
+export default function SurveyDisplay({ questions: initialQuestions }: SurveyDisplayProps) {
+  // Safely parse questions if it's a string
+  const parsedQuestions = typeof initialQuestions === 'string' 
+    ? JSON.parse(initialQuestions) 
+    : Array.isArray(initialQuestions) 
+    ? initialQuestions 
+    : [];
+  const questions = parsedQuestions;
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
 
