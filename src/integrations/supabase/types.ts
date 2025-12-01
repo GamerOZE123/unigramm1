@@ -2130,6 +2130,38 @@ export type Database = {
           },
         ]
       }
+      startup_contributors: {
+        Row: {
+          id: string
+          joined_at: string
+          role: string | null
+          startup_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          role?: string | null
+          startup_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          role?: string | null
+          startup_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "startup_contributors_startup_id_fkey"
+            columns: ["startup_id"]
+            isOneToOne: false
+            referencedRelation: "student_startups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       startup_interests: {
         Row: {
           created_at: string | null
@@ -2237,6 +2269,7 @@ export type Database = {
           id: string
           logo_url: string | null
           looking_for: string[] | null
+          slug: string | null
           stage: string
           title: string
           updated_at: string | null
@@ -2251,6 +2284,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           looking_for?: string[] | null
+          slug?: string | null
           stage: string
           title: string
           updated_at?: string | null
@@ -2265,6 +2299,7 @@ export type Database = {
           id?: string
           logo_url?: string | null
           looking_for?: string[] | null
+          slug?: string | null
           stage?: string
           title?: string
           updated_at?: string | null

@@ -34,6 +34,7 @@ import StoreManagement from '@/pages/StoreManagement';
 import AllPosts from '@/pages/AllPosts';
 import Startups from '@/pages/Startups';
 import StartupDetail from '@/pages/StartupDetail';
+import StartupManagement from '@/pages/StartupManagement';
 import Settings from '@/pages/Settings';
 
 const queryClient = new QueryClient({
@@ -77,7 +78,8 @@ function App() {
               <Route path="/post/:postId" element={<ProtectedRoute><Post /></ProtectedRoute>} />
               <Route path="/all-posts" element={<ProtectedRoute><AllPosts /></ProtectedRoute>} />
             <Route path="/startups" element={<ProtectedRoute><Startups /></ProtectedRoute>} />
-            <Route path="/startups/:id" element={<ProtectedRoute><StartupDetail /></ProtectedRoute>} />
+            <Route path="/startup/:slug" element={<ProtectedRoute><StartupDetail /></ProtectedRoute>} />
+            <Route path="/startup/:slug/manage" element={<ProtectedRoute><StartupManagement /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />

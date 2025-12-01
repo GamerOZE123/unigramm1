@@ -35,6 +35,7 @@ interface Startup {
   description: string;
   category: string;
   stage: string;
+  slug: string | null;
   looking_for: string[];
   website_url?: string;
   contact_email?: string;
@@ -523,7 +524,7 @@ export default function Startups() {
                 <Card 
                   key={startup.id} 
                   className="p-6 hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => navigate(`/startups/${startup.id}`)}
+                  onClick={() => navigate(`/startup/${startup.slug || startup.id}`)}
                 >
                   <div className="space-y-4">
                     {/* Header */}
