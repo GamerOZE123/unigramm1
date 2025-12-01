@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import HashtagSelector from './HashtagSelector';
-import StartupMentionInput from './StartupMentionInput';
+import MentionInput from './MentionInput';
 import PollCreator from './PollCreator';
 import SurveyCreator from './SurveyCreator';
 import { MultipleImageUpload } from '@/components/ui/multiple-image-upload';
@@ -23,6 +23,7 @@ export default function CreatePostModal({ open, onOpenChange, onSuccess }: Creat
   const [content, setContent] = useState('');
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [mentionedStartups, setMentionedStartups] = useState<any[]>([]);
+  const [mentionedUsers, setMentionedUsers] = useState<any[]>([]);
   const [postType, setPostType] = useState<'text' | 'poll' | 'survey'>('text');
   const [pollData, setPollData] = useState<any>(null);
   const [surveyData, setSurveyData] = useState<any>(null);
@@ -93,6 +94,7 @@ export default function CreatePostModal({ open, onOpenChange, onSuccess }: Creat
     setContent('');
     setHashtags([]);
     setMentionedStartups([]);
+    setMentionedUsers([]);
     setPostType('text');
     setPollData(null);
     setSurveyData(null);
@@ -126,15 +128,21 @@ export default function CreatePostModal({ open, onOpenChange, onSuccess }: Creat
           </TabsList>
 
           <TabsContent value="text" className="space-y-4 mt-4">
-            <StartupMentionInput
+            <MentionInput
               value={content}
               onChange={setContent}
-              onStartupSelect={(startup) => {
-                if (!mentionedStartups.find(s => s.id === startup.id)) {
-                  setMentionedStartups([...mentionedStartups, startup]);
+              onMentionSelect={(item) => {
+                if (item.type === 'startup') {
+                  if (!mentionedStartups.find(s => s.id === item.id)) {
+                    setMentionedStartups([...mentionedStartups, item]);
+                  }
+                } else {
+                  if (!mentionedUsers.find(u => u.user_id === item.user_id)) {
+                    setMentionedUsers([...mentionedUsers, item]);
+                  }
                 }
               }}
-              placeholder="What's happening? Use @ to tag startups..."
+              placeholder="What's happening? Use @ to mention users or startups..."
             />
 
             <div>
@@ -151,17 +159,31 @@ export default function CreatePostModal({ open, onOpenChange, onSuccess }: Creat
               <HashtagSelector hashtags={hashtags} onHashtagsChange={setHashtags} />
             </div>
 
-            {mentionedStartups.length > 0 && (
+            {(mentionedStartups.length > 0 || mentionedUsers.length > 0) && (
               <div className="flex flex-wrap gap-2">
+                {mentionedUsers.map((user, index) => (
+                  <div
+                    key={`user-${index}`}
+                    className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm"
+                  >
+                    <span>@{user.username}</span>
+                    <button
+                      onClick={() => setMentionedUsers(mentionedUsers.filter((_, i) => i !== index))}
+                      className="hover:bg-primary/20 rounded-full p-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
                 {mentionedStartups.map((startup, index) => (
                   <div
-                    key={index}
-                    className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm"
+                    key={`startup-${index}`}
+                    className="flex items-center gap-2 bg-secondary/10 text-secondary px-3 py-1 rounded-full text-sm"
                   >
                     <span>@{startup.title}</span>
                     <button
                       onClick={() => setMentionedStartups(mentionedStartups.filter((_, i) => i !== index))}
-                      className="hover:bg-primary/20 rounded-full p-0.5"
+                      className="hover:bg-secondary/20 rounded-full p-0.5"
                     >
                       <X className="w-3 h-3" />
                     </button>

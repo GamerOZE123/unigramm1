@@ -15,7 +15,13 @@ interface PollDisplayProps {
 
 export default function PollDisplay({ postId, question, options: initialOptions, endsAt }: PollDisplayProps) {
   const { user } = useAuth();
-  const [options, setOptions] = useState(initialOptions);
+  // Safely parse options if it's a string
+  const parsedOptions = typeof initialOptions === 'string' 
+    ? JSON.parse(initialOptions) 
+    : Array.isArray(initialOptions) 
+    ? initialOptions 
+    : [];
+  const [options, setOptions] = useState(parsedOptions);
   const [userVote, setUserVote] = useState<number | null>(null);
   const [totalVotes, setTotalVotes] = useState(0);
   const [loading, setLoading] = useState(false);
