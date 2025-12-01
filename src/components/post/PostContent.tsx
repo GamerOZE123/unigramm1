@@ -112,12 +112,53 @@ export default function PostContent({
     }
   }, [imageUrl]);
 
+  // Format content with clickable hashtags and mentions
+  const formatContent = (text: string) => {
+    const parts = text.split(/(\s+|#\w+|@[\w-]+)/g);
+    
+    return parts.map((part, index) => {
+      // Hashtags
+      if (part.startsWith('#')) {
+        const hashtag = part.substring(1);
+        return (
+          <span
+            key={index}
+            className="text-primary hover:underline cursor-pointer font-medium"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.location.href = `/explore?hashtag=${hashtag}`;
+            }}
+          >
+            {part}
+          </span>
+        );
+      }
+      // Startup mentions
+      if (part.startsWith('@')) {
+        const startupSlug = part.substring(1);
+        return (
+          <span
+            key={index}
+            className="text-primary hover:underline cursor-pointer font-medium"
+            onClick={(e) => {
+              e.stopPropagation();
+              window.location.href = `/startup/${startupSlug}`;
+            }}
+          >
+            {part}
+          </span>
+        );
+      }
+      return <span key={index}>{part}</span>;
+    });
+  };
+
   return (
     <div className="space-y-3">
       {/* Caption */}
       {content && (
         <p className="text-foreground leading-relaxed whitespace-pre-line break-words">
-          {content}
+          {formatContent(content)}
         </p>
       )}
 

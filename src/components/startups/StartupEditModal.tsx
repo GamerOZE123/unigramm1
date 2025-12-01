@@ -16,9 +16,10 @@ interface StartupEditModalProps {
     category: string;
     stage: string;
     looking_for: string[];
-    website_url: string | null;
-    contact_email: string | null;
-    logo_url: string | null;
+    website_url?: string | null;
+    contact_email?: string | null;
+    logo_url?: string | null;
+    slug?: string | null;
   };
   onSuccess: () => void;
 }

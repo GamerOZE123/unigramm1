@@ -42,17 +42,18 @@ interface Startup {
   description: string;
   category: string;
   stage: string;
+  slug: string | null;
   looking_for: string[];
-  website_url: string | null;
-  contact_email: string | null;
+  website_url?: string;
+  contact_email?: string;
   created_at: string;
   logo_url: string | null;
   profiles: {
     full_name: string;
-    avatar_url: string;
     username: string;
-    university: string;
-    linkedin_url: string;
+    avatar_url?: string;
+    university?: string;
+    linkedin_url?: string;
   };
 }
 
@@ -92,7 +93,7 @@ interface Post {
 }
 
 export default function StartupDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [startup, setStartup] = useState<Startup | null>(null);
@@ -104,7 +105,7 @@ export default function StartupDetail() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
-    if (id) {
+    if (slug) {
       fetchStartupDetails();
       fetchInterestedUsers();
       fetchStartupPosts();
@@ -113,7 +114,7 @@ export default function StartupDetail() {
         checkIfInterested();
       }
     }
-  }, [id, user]);
+  }, [slug, user]);
 
   // Real-time subscription for posts
   useEffect(() => {
@@ -145,7 +146,7 @@ export default function StartupDetail() {
       const { data: startupData, error: startupError } = await supabase
         .from('student_startups')
         .select('*')
-        .eq('id', id)
+        .eq('slug', slug)
         .single();
 
       if (startupError) throw startupError;
@@ -175,11 +176,13 @@ export default function StartupDetail() {
   };
 
   const fetchInterestedUsers = async () => {
+    if (!startup?.id) return;
+    
     try {
       const { data: interests, error } = await supabase
         .from('startup_interests')
         .select('id, user_id')
-        .eq('startup_id', id);
+        .eq('startup_id', startup.id);
 
       if (error) throw error;
 
@@ -212,13 +215,13 @@ export default function StartupDetail() {
   };
 
   const fetchStartupPosts = async () => {
-    if (!id) return;
+    if (!startup?.id) return;
     
     try {
       const { data, error } = await supabase
         .from('posts')
         .select('*')
-        .eq('startup_id', id)
+        .eq('startup_id', startup.id)
         .eq('is_approved_for_startup', true)
         .order('created_at', { ascending: false })
         .limit(10);
@@ -231,13 +234,13 @@ export default function StartupDetail() {
   };
 
   const fetchTaggedPosts = async () => {
-    if (!id) return;
+    if (!startup?.id) return;
     
     try {
       const { data: mentions, error: mentionsError } = await supabase
         .from('post_startup_mentions')
         .select('post_id')
-        .eq('startup_id', id);
+        .eq('startup_id', startup.id);
 
       if (mentionsError) throw mentionsError;
       
@@ -258,13 +261,13 @@ export default function StartupDetail() {
   };
 
   const checkIfInterested = async () => {
-    if (!user) return;
+    if (!user || !startup?.id) return;
 
     try {
       const { data, error } = await supabase
         .from('startup_interests')
         .select('id')
-        .eq('startup_id', id)
+        .eq('startup_id', startup.id)
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -281,12 +284,14 @@ export default function StartupDetail() {
       return;
     }
 
+    if (!startup?.id) return;
+
     try {
       if (isInterested) {
         const { error } = await supabase
           .from('startup_interests')
           .delete()
-          .eq('startup_id', id)
+          .eq('startup_id', startup.id)
           .eq('user_id', user.id);
 
         if (error) throw error;
@@ -297,7 +302,7 @@ export default function StartupDetail() {
         const { error } = await supabase
           .from('startup_interests')
           .insert({
-            startup_id: id,
+            startup_id: startup.id,
             user_id: user.id,
           });
 
@@ -368,7 +373,7 @@ export default function StartupDetail() {
         .from('post_startup_mentions')
         .delete()
         .eq('post_id', postId)
-        .eq('startup_id', id);
+        .eq('startup_id', startup?.id);
 
       if (error) throw error;
       toast.success('Post removed from mentions');
@@ -391,9 +396,15 @@ export default function StartupDetail() {
             Back to Startups
           </Button>
           {isOwner && (
-            <Button onClick={() => setIsEditModalOpen(true)}>
+            <Button onClick={() => navigate(`/startup/${startup.slug || startup.id}/manage`)}>
               <Edit className="mr-2 h-4 w-4" />
-              Edit
+              Manage Startup
+            </Button>
+          )}
+          {isOwner && (
+            <Button onClick={() => setIsEditModalOpen(true)} variant="outline">
+              <Edit className="mr-2 h-4 w-4" />
+              Quick Edit
             </Button>
           )}
         </div>
