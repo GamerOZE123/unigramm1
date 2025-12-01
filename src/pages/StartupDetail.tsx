@@ -143,13 +143,27 @@ export default function StartupDetail() {
 
   const fetchStartupDetails = async () => {
     try {
-      const { data: startupData, error: startupError } = await supabase
-        .from('student_startups')
-        .select('*')
-        .eq('slug', slug)
-        .single();
+      // Try to fetch by slug first, then by id if slug doesn't exist
+      let query = supabase.from('student_startups').select('*');
+      
+      // Check if slug looks like a UUID (old id-based URL)
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug || '');
+      
+      if (isUUID) {
+        query = query.eq('id', slug);
+      } else {
+        query = query.eq('slug', slug);
+      }
+
+      const { data: startupData, error: startupError } = await query.maybeSingle();
 
       if (startupError) throw startupError;
+      
+      if (!startupData) {
+        setStartup(null);
+        setLoading(false);
+        return;
+      }
 
       // Fetch the profile separately
       const { data: profileData, error: profileError } = await supabase

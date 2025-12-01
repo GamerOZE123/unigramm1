@@ -133,16 +133,18 @@ export default function PostContent({
           </span>
         );
       }
-      // Startup mentions
+      // @ mentions (can be either username or startup)
+      // Will try to navigate - if user exists it goes to profile, if startup exists it goes to startup
       if (part.startsWith('@')) {
-        const startupSlug = part.substring(1);
+        const mention = part.substring(1);
         return (
           <span
             key={index}
             className="text-primary hover:underline cursor-pointer font-medium"
             onClick={(e) => {
               e.stopPropagation();
-              window.location.href = `/startup/${startupSlug}`;
+              // Try user profile first (most common case)
+              window.location.href = `/${mention}`;
             }}
           >
             {part}
