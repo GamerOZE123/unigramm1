@@ -14,6 +14,8 @@ interface TrendingPost {
   likes_count: number;
   comments_count: number;
   user_id: string;
+  poll_question?: string | null;
+  survey_questions?: any;
   profiles: {
     username: string;
     avatar_url: string;
@@ -21,7 +23,11 @@ interface TrendingPost {
   };
 }
 
-export default function TrendingPostsRow() {
+interface TrendingPostsRowProps {
+  excludePolls?: boolean;
+}
+
+export default function TrendingPostsRow({ excludePolls = false }: TrendingPostsRowProps) {
   const [posts, setPosts] = useState<TrendingPost[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -48,7 +54,7 @@ export default function TrendingPostsRow() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [excludePolls]);
 
   const fetchTrendingPosts = async () => {
     try {
@@ -56,10 +62,10 @@ export default function TrendingPostsRow() {
       
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
-        .select('id, content, image_url, image_urls, likes_count, comments_count, user_id, created_at')
+        .select('id, content, image_url, image_urls, likes_count, comments_count, user_id, created_at, poll_question, survey_questions')
         .gte('created_at', threeDaysAgo)
         .order('likes_count', { ascending: false })
-        .limit(10);
+        .limit(excludePolls ? 20 : 10);
 
       if (postsError) throw postsError;
 
@@ -74,10 +80,16 @@ export default function TrendingPostsRow() {
 
       // Combine data
       const profileMap = new Map(profilesData?.map(p => [p.user_id, p]));
-      const combinedData = postsData?.map(post => ({
+      let combinedData = postsData?.map(post => ({
         ...post,
         profiles: profileMap.get(post.user_id)!
       })) || [];
+
+      // Filter out polls/surveys if excludePolls is true
+      if (excludePolls) {
+        combinedData = combinedData.filter(post => !post.poll_question && !post.survey_questions);
+        combinedData = combinedData.slice(0, 10);
+      }
 
       setPosts(combinedData);
     } catch (error) {
