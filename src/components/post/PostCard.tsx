@@ -1,21 +1,21 @@
-import React, { useState } from 'react';
-import { Card } from '@/components/ui/card';
-import PostHeader from './PostHeader';
-import PostContent from './PostContent';
-import PostActions from './PostActions';
-import EditPostModal from './EditPostModal';
-import ClickablePostCard from './ClickablePostCard';
-import MultipleImageDisplay from './MultipleImageDisplay';
-import InlineCommentSection from './InlineCommentSection';
-import PollDisplay from './PollDisplay';
-import SurveyDisplay from './SurveyDisplay';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { useLikes } from '@/hooks/useLikes';
-import { usePostViews } from '@/hooks/usePostViews';
-import { useViewportTracker } from '@/hooks/useViewportTracker';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
+import React, { useState } from "react";
+import { Card } from "@/components/ui/card";
+import PostHeader from "./PostHeader";
+import PostContent from "./PostContent";
+import PostActions from "./PostActions";
+import EditPostModal from "./EditPostModal";
+import ClickablePostCard from "./ClickablePostCard";
+import MultipleImageDisplay from "./MultipleImageDisplay";
+import InlineCommentSection from "./InlineCommentSection";
+import PollDisplay from "./PollDisplay";
+import SurveyDisplay from "./SurveyDisplay";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useLikes } from "@/hooks/useLikes";
+import { usePostViews } from "@/hooks/usePostViews";
+import { useViewportTracker } from "@/hooks/useViewportTracker";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Post {
   id: string;
@@ -61,7 +61,7 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
   const [showComments, setShowComments] = useState(false);
   const { isLiked, likesCount, loading: likesLoading, toggleLike } = useLikes(post.id);
   const { recordPostView } = usePostViews();
-  
+
   // Track when post enters viewport to record view
   const postRef = useViewportTracker(() => {
     recordPostView(post.id);
@@ -87,7 +87,7 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
   const handleCommentClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setShowComments(prev => !prev);
+    setShowComments((prev) => !prev);
   };
 
   const handleShareClick = () => {
@@ -95,27 +95,27 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
   };
 
   const handleDeletePost = async () => {
-    if (!window.confirm('Are you sure you want to delete this post?')) return;
+    if (!window.confirm("Are you sure you want to delete this post?")) return;
 
     try {
-      const { error } = await supabase.from('posts').delete().eq('id', post.id);
+      const { error } = await supabase.from("posts").delete().eq("id", post.id);
 
       if (error) {
-        console.error('Error deleting post:', error);
+        console.error("Error deleting post:", error);
         throw error;
       }
 
-      toast.success('Post deleted successfully!');
+      toast.success("Post deleted successfully!");
       // ✅ UPGRADE 2: No full refresh - delete handled by realtime subscription
     } catch (error) {
-      console.error('Error deleting post:', error);
-      toast.error('Failed to delete post');
+      console.error("Error deleting post:", error);
+      toast.error("Failed to delete post");
     }
   };
 
   // Extract user info
-  const username = post.profiles?.username || post.user_username || 'user';
-  const fullName = post.profiles?.full_name || post.user_name || 'Anonymous User';
+  const username = post.profiles?.username || post.user_username || "user";
+  const fullName = post.profiles?.full_name || post.user_name || "Anonymous User";
   const avatarUrl = post.profiles?.avatar_url;
   const isOwnPost = user?.id === post.user_id;
 
@@ -144,7 +144,7 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
           {(post.image_urls?.length > 0 || post.image_url) && (
             <div className="flex justify-center w-full">
               {post.image_urls?.length > 0 ? (
-                <MultipleImageDisplay 
+                <MultipleImageDisplay
                   imageUrls={post.image_urls}
                   hashtags={post.hashtags}
                   onHashtagClick={handleHashtagClickInternal}
@@ -186,12 +186,7 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
             />
           )}
 
-          {/* Survey Display */}
-          {post.survey_questions && (
-            <SurveyDisplay
-              questions={post.survey_questions}
-            />
-          )}
+          {post.survey_questions && <SurveyDisplay questions={post.survey_questions} />}
 
           {/* Actions */}
           <PostActions
@@ -208,12 +203,7 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
           />
 
           {/* Inline Comments Section */}
-          {showComments && (
-            <InlineCommentSection 
-              postId={post.id} 
-              initialCommentsCount={post.comments_count}
-            />
-          )}
+          {showComments && <InlineCommentSection postId={post.id} initialCommentsCount={post.comments_count} />}
         </div>
       </ClickablePostCard>
 
