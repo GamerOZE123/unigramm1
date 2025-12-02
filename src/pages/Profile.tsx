@@ -215,6 +215,13 @@ export default function Profile() {
     }
   };
 
+  const handleProfileUpdate = () => {
+    if (profileUserId) {
+      fetchUserData(profileUserId);
+      fetchUserPosts(profileUserId);
+    }
+  };
+
   const handleFollow = async () => {
     if (!user || !profileData) return;
 
