@@ -29,32 +29,56 @@ interface PostData {
   } | null;
 }
 
-interface TransformedPost {
+interface PollOption {
+  id: string;
+  text: string;
+  votes: number;
+}
+
+interface SurveyQuestion {
+  id: string;
+  question: string;
+  type: "rating" | "multiple_choice" | "text";
+  options?: string[]; // only for multiple_choice
+}
+
+export interface TransformedPost {
   id: string;
   content: string;
   image_url?: string;
   image_urls?: string[];
+
   created_at: string;
   updated_at?: string;
+
   likes_count: number;
   comments_count: number;
   views_count: number;
+
   user_id: string;
   user_name: string;
   user_username: string;
-  poll_question?: string;
-  poll_options?: any;
-  poll_ends_at?: string;
-  survey_questions?: any;
   user_university?: string;
+
   hashtags?: string[];
+
   profiles?: {
     full_name: string;
     username: string;
     avatar_url?: string;
     university?: string;
   };
+
+  // ⭐ POLL FIELDS
+  poll_question?: string;
+  poll_options?: PollOption[];
+  poll_ends_at?: string;
+
+  // ⭐ SURVEY FIELDS
+  survey_questions?: SurveyQuestion[];
+
   score?: number;
+
   startup_id?: string;
   startup?: {
     title: string;
