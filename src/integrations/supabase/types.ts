@@ -2780,9 +2780,15 @@ export type Database = {
           image_thumbnail_url: string | null
           image_url: string | null
           image_urls: string[] | null
+          is_approved_for_startup: boolean | null
           likes_count: number | null
           major: string | null
+          poll_ends_at: string | null
+          poll_options: Json | null
+          poll_question: string | null
           score: number | null
+          startup_id: string | null
+          survey_questions: Json | null
           university: string | null
           updated_at: string | null
           user_id: string | null
@@ -2790,7 +2796,15 @@ export type Database = {
           views_count: number | null
           visibility: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posts_startup_id_fkey"
+            columns: ["startup_id"]
+            isOneToOne: false
+            referencedRelation: "student_startups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trending_hashtags: {
         Row: {
