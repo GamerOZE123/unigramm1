@@ -181,7 +181,7 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
             <PollDisplay
               postId={post.id}
               question={post.poll_question}
-              options={JSON.parse(post.poll_options)}
+              options={post.poll_options}
               endsAt={post.poll_ends_at}
             />
           )}
@@ -189,7 +189,7 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
           {/* Survey Display */}
           {post.survey_questions && (
             <SurveyDisplay
-              questions={JSON.parse(post.survey_questions)}
+              questions={post.survey_questions}
             />
           )}
 
