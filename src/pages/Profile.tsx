@@ -1,20 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import Layout from '@/components/layout/Layout';
-import PostCard from '@/components/post/PostCard';
-import EditProfileModal from '@/components/profile/EditProfileModal';
-import MessageButton from '@/components/profile/MessageButton';
-import FollowButton from '@/components/profile/FollowButton';
+import React, { useState, useEffect } from "react";
+import Layout from "@/components/layout/Layout";
+import PostCard from "@/components/post/PostCard";
+import EditProfileModal from "@/components/profile/EditProfileModal";
+import MessageButton from "@/components/profile/MessageButton";
+import FollowButton from "@/components/profile/FollowButton";
 
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserPlus, UserMinus, Edit, Camera } from 'lucide-react';
-import MobileHeader from '@/components/layout/MobileHeader';
-// Re-importing to force refresh
-import { useIsMobile } from '@/hooks/use-mobile';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { useParams } from 'react-router-dom';
-import { toast } from 'sonner';
+import { UserPlus, UserMinus, Edit, Camera } from "lucide-react";
+import MobileHeader from "@/components/layout/MobileHeader";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useParams } from "react-router-dom";
+import { toast } from "sonner";
 
 interface ProfileData {
   user_id: string;
@@ -45,6 +44,13 @@ interface PostWithProfile {
   views_count: number;
   user_id: string;
   hashtags?: string[];
+
+  // ⭐ ADD poll + survey fields
+  poll_question?: string | null;
+  poll_options?: any | null;
+  poll_ends_at?: string | null;
+  survey_questions?: any | null;
+
   profiles: {
     username: string;
     full_name: string;
@@ -53,7 +59,6 @@ interface PostWithProfile {
   };
 }
 
-// Transform post for PostCard component
 interface TransformedPost {
   id: string;
   content: string;
@@ -68,6 +73,12 @@ interface TransformedPost {
   user_username: string;
   user_university?: string;
   hashtags?: string[];
+
+  // ⭐ ADD poll + survey fields
+  poll_question?: string | null;
+  poll_options?: any | null;
+  poll_ends_at?: string | null;
+  survey_questions?: any | null;
 }
 
 export default function Profile() {
@@ -84,7 +95,6 @@ export default function Profile() {
   const [followLoading, setFollowLoading] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  // Use profileData.banner_url and banner_height if available
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [bannerHeight, setBannerHeight] = useState<number>(180);
 
@@ -96,29 +106,23 @@ export default function Profile() {
   useEffect(() => {
     const loadProfile = async () => {
       if (username) {
-        // Lookup user by username
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('user_id')
-          .eq('username', username)
-          .single();
-        
+        const { data, error } = await supabase.from("profiles").select("user_id").eq("username", username).single();
+
         if (error || !data) {
           setLoading(false);
           return;
         }
-        
+
         setProfileUserId(data.user_id);
         fetchUserData(data.user_id);
         fetchUserPosts(data.user_id);
       } else if (user?.id) {
-        // Own profile
         setProfileUserId(user.id);
         fetchUserData(user.id);
         fetchUserPosts(user.id);
       }
     };
-    
+
     loadProfile();
   }, [username, user?.id]);
 
@@ -127,13 +131,13 @@ export default function Profile() {
       if (user && profileData && !isOwnProfile) {
         try {
           const { data, error } = await supabase
-            .from('follows')
-            .select('*')
-            .eq('follower_id', user.id)
-            .eq('following_id', profileData.user_id)
+            .from("follows")
+            .select("*")
+            .eq("follower_id", user.id)
+            .eq("following_id", profileData.user_id)
             .single();
 
-          if (error && error.code !== 'PGRST116') throw error;
+          if (error && error.code !== "PGRST116") throw error;
           setIsFollowing(!!data);
         } catch (error) {
           console.error("Error checking following status:", error);
@@ -146,28 +150,44 @@ export default function Profile() {
 
   const fetchUserPosts = async (userId: string) => {
     try {
-      // First get the posts
+      // ⭐ FIX: Fetch posts WITH poll & survey fields
       const { data: postsData, error: postsError } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .from("posts")
+        .select(
+          `
+          id,
+          user_id,
+          content,
+          image_url,
+          image_urls,
+          created_at,
+          likes_count,
+          comments_count,
+          views_count,
+          hashtags,
+
+          poll_question,
+          poll_options,
+          poll_ends_at,
+          survey_questions
+        `,
+        )
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
 
       if (postsError) throw postsError;
 
-      // Then get the current profile data for the user (to ensure updated avatar)
       const { data: currentProfileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('username, full_name, avatar_url, university')
-        .eq('user_id', userId)
+        .from("profiles")
+        .select("username, full_name, avatar_url, university")
+        .eq("user_id", userId)
         .single();
 
       if (profileError) throw profileError;
 
-      // Combine the data using the current profile data to ensure updated avatar
-      const postsWithProfile: PostWithProfile[] = (postsData || []).map(post => ({
+      const postsWithProfile: PostWithProfile[] = (postsData || []).map((post) => ({
         ...post,
-        profiles: currentProfileData
+        profiles: currentProfileData,
       }));
 
       setPosts(postsWithProfile);
@@ -179,9 +199,11 @@ export default function Profile() {
   const fetchUserData = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, username, full_name, avatar_url, university, major, bio, followers_count, following_count, country, state, area, banner_url, banner_height, banner_position')
-        .eq('user_id', userId)
+        .from("profiles")
+        .select(
+          "user_id, username, full_name, avatar_url, university, major, bio, followers_count, following_count, country, state, area, banner_url, banner_height, banner_position",
+        )
+        .eq("user_id", userId)
         .single();
 
       if (error) throw error;
@@ -199,20 +221,18 @@ export default function Profile() {
     setFollowLoading(true);
     try {
       if (isFollowing) {
-        // Unfollow
         const { error } = await supabase
-          .from('follows')
+          .from("follows")
           .delete()
-          .eq('follower_id', user.id)
-          .eq('following_id', profileData.user_id);
+          .eq("follower_id", user.id)
+          .eq("following_id", profileData.user_id);
 
         if (error) throw error;
         setIsFollowing(false);
         toast.success(`Unfollowed ${profileData.full_name || profileData.username}`);
       } else {
-        // Follow
         const { error } = await supabase
-          .from('follows')
+          .from("follows")
           .insert([{ follower_id: user.id, following_id: profileData.user_id }]);
 
         if (error) throw error;
@@ -220,10 +240,7 @@ export default function Profile() {
         toast.success(`Followed ${profileData.full_name || profileData.username}`);
       }
 
-      // Refresh profile data to update counts
-      if (profileUserId) {
-        fetchUserData(profileUserId);
-      }
+      if (profileUserId) fetchUserData(profileUserId);
     } catch (error) {
       console.error("Error following/unfollowing user:", error);
       toast.error("Failed to follow/unfollow user");
@@ -232,20 +249,8 @@ export default function Profile() {
     }
   };
 
-  const handleProfileUpdate = () => {
-    if (profileUserId) {
-      fetchUserData(profileUserId);
-    }
-  };
-
-  // Banner upload handler (for EditProfileModal)
-  const handleBannerChange = (url: string, height: number) => {
-    setBannerUrl(url);
-    setBannerHeight(height);
-  };
-
   const transformPostsForPostCard = (posts: PostWithProfile[]): TransformedPost[] => {
-    return posts.map(post => ({
+    return posts.map((post) => ({
       id: post.id,
       content: post.content,
       image_url: post.image_url,
@@ -255,15 +260,31 @@ export default function Profile() {
       comments_count: post.comments_count,
       views_count: post.views_count || 0,
       user_id: post.user_id,
-      user_name: post.profiles.full_name || post.profiles.username || 'Unknown',
-      user_username: post.profiles.username || 'user',
-      user_university: post.profiles.university || 'University',
-      hashtags: post.hashtags || []
+      user_name: post.profiles.full_name || post.profiles.username,
+      user_username: post.profiles.username,
+      user_university: post.profiles.university,
+      hashtags: post.hashtags || [],
+
+      // ⭐ PASS poll & survey fields to PostCard
+      poll_question: post.poll_question,
+      poll_options: post.poll_options,
+      poll_ends_at: post.poll_ends_at,
+      survey_questions: post.survey_questions,
     }));
   };
 
-  if (loading) return <Layout><div className="text-center py-8">Loading...</div></Layout>;
-  if (!profileData) return <Layout><div className="text-center py-8">User not found</div></Layout>;
+  if (loading)
+    return (
+      <Layout>
+        <div className="text-center py-8">Loading...</div>
+      </Layout>
+    );
+  if (!profileData)
+    return (
+      <Layout>
+        <div className="text-center py-8">User not found</div>
+      </Layout>
+    );
 
   const transformedPosts = transformPostsForPostCard(posts);
 
@@ -277,27 +298,26 @@ export default function Profile() {
           <div
             className="w-full bg-muted/30 rounded-b-xl overflow-hidden"
             style={{
-              aspectRatio: '3/1',
+              aspectRatio: "3/1",
               backgroundImage: bannerUrl ? `url(${bannerUrl})` : undefined,
-              backgroundSize: 'cover',
+              backgroundSize: "cover",
               backgroundPosition: `center ${profileData.banner_position || 50}%`,
-              position: 'relative',
-              borderBottomRightRadius: 0, // <-- added
-              borderBottomLeftRadius: 0,  // <-- added
+              position: "relative",
+              borderBottomRightRadius: 0,
+              borderBottomLeftRadius: 0,
             }}
           >
-            {/* Edit Banner Button (only own profile) */}
             {isOwnProfile && (
               <button
                 className="absolute top-3 right-3 bg-black/60 text-white rounded-full p-2 hover:bg-black/80 transition"
                 onClick={() => setIsEditModalOpen(true)}
                 aria-label="Edit banner"
               >
-                <Edit className="w-5 h-5" /> {/* replaced Camera with Edit icon */}
+                <Edit className="w-5 h-5" />
               </button>
             )}
           </div>
-          {/* Avatar - bottom center, overlapping banner */}
+
           <div className="absolute left-1/2 -bottom-10 transform -translate-x-1/2">
             <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-accent border-4 border-background flex items-center justify-center shadow-lg">
               {profileData.avatar_url ? (
@@ -308,7 +328,7 @@ export default function Profile() {
                 />
               ) : (
                 <span className="text-3xl font-bold text-white">
-                  {profileData.full_name?.charAt(0) || profileData.username?.charAt(0) || 'U'}
+                  {profileData.full_name?.charAt(0) || profileData.username?.charAt(0)}
                 </span>
               )}
             </div>
@@ -316,13 +336,11 @@ export default function Profile() {
         </div>
 
         {/* Profile Info */}
-        <div className="pt-10 pb-4 px-4 text-center"> {/* changed pt-10 to pt-0 */}
-          <h1 className="text-2xl font-bold text-foreground">
-            {profileData.full_name || profileData.username}
-          </h1>
+        <div className="pt-10 pb-4 px-4 text-center">
+          <h1 className="text-2xl font-bold text-foreground">{profileData.full_name || profileData.username}</h1>
           <p className="text-muted-foreground">@{profileData.username}</p>
           {profileData.bio && <p className="mt-2 text-foreground/80">{profileData.bio}</p>}
-          
+
           <div className="flex justify-center gap-6 mt-4">
             <div className="text-center">
               <div className="font-bold text-lg">{posts.length}</div>
@@ -337,14 +355,10 @@ export default function Profile() {
               <div className="text-muted-foreground text-sm">Following</div>
             </div>
           </div>
-          {/* Action Buttons */}
+
           <div className="flex justify-center gap-3 mt-4">
             {isOwnProfile ? (
-              <Button
-                onClick={() => setIsEditModalOpen(true)}
-                variant="outline"
-                size="sm"
-              >
+              <Button onClick={() => setIsEditModalOpen(true)} variant="outline" size="sm">
                 <Edit className="w-4 h-4 mr-2" />
                 Edit Profile
               </Button>
@@ -357,24 +371,24 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Posts */}
+        {/* POSTS */}
         <div className="space-y-4 px-4">
           {transformedPosts.length > 0 ? (
-            transformedPosts.map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))
+            transformedPosts.map((post) => <PostCard key={post.id} post={post} />)
           ) : (
             <div className="text-center py-8 text-muted-foreground">No posts yet</div>
           )}
         </div>
       </div>
 
-      {/* Edit Profile Modal */}
       <EditProfileModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onProfileUpdate={handleProfileUpdate}
-        onBannerChange={handleBannerChange}
+        onBannerChange={(url, height) => {
+          setBannerUrl(url);
+          setBannerHeight(height);
+        }}
         bannerUrl={bannerUrl}
         bannerHeight={bannerHeight}
       />
