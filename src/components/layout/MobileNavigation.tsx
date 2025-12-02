@@ -6,56 +6,43 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
-const navigation = [
+const baseNavigation = [
   { name: 'Home', href: '/home', icon: Home },
   { name: 'Explore', href: '/explore', icon: Search },
   { name: 'University', href: '/university', icon: GraduationCap },
   { name: 'Chat', href: '/chat', icon: MessageCircle },
-  { name: 'Profile', href: '/profile', icon: User },
 ];
 
 export default function MobileNavigation() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [userType, setUserType] = useState<string>('student');
+  const [username, setUsername] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchUserType = async () => {
+    const fetchUsername = async () => {
       if (!user) return;
       
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('user_type')
+        .select('username')
         .eq('user_id', user.id)
         .single();
       
-      if (profileData?.user_type) {
-        setUserType(profileData.user_type);
+      if (profileData?.username) {
+        setUsername(profileData.username);
       }
     };
 
-    fetchUserType();
+    fetchUsername();
   }, [user]);
 
-  const getProfileLink = () => {
-    if (!user) return '/profile';
-    if (userType === 'company') return `/profile/${user.id}`;
-    if (userType === 'clubs') return `/profile/${user.id}`;
-    return `/profile/${user.id}`;
-  };
-
-  const updatedNavigation = navigation.map(item => {
-    if (item.name === 'Profile') {
-      return { ...item, href: getProfileLink() };
-    }
-    return item;
-  });
+  const profileHref = username ? `/${username}` : '/home';
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border md:hidden">
       <div className="grid grid-cols-5 h-16">
-        {updatedNavigation.map((item) => {
+        {baseNavigation.map((item) => {
           const isActive = location.pathname === item.href;
           return (
             <NavLink
@@ -82,6 +69,28 @@ export default function MobileNavigation() {
             </NavLink>
           );
         })}
+        {/* Profile link with dynamic username */}
+        <NavLink
+          to={profileHref}
+          onClick={(e) => {
+            if (location.pathname === profileHref) {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }}
+          className={cn(
+            'flex flex-col items-center justify-center gap-1 transition-colors',
+            location.pathname === profileHref
+              ? 'text-primary' 
+              : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          <User className={cn('w-5 h-5', location.pathname === profileHref && 'text-primary')} />
+          <span className="text-xs font-medium">Profile</span>
+          {location.pathname === profileHref && (
+            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-primary rounded-full" />
+          )}
+        </NavLink>
       </div>
     </nav>
   );

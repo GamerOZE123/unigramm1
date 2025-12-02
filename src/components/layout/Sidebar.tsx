@@ -8,12 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 
-const navigation = [
-  { name: 'Home', href: '/', icon: Home },
+const baseNavigation = [
+  { name: 'Home', href: '/home', icon: Home },
   { name: 'Explore', href: '/explore', icon: Search },
   { name: 'University', href: '/university', icon: GraduationCap },
   { name: 'Chat', href: '/chat', icon: MessageCircle },
-  { name: 'Profile', href: '/profile', icon: User }
 ];
 
 export default function Sidebar() {
@@ -84,7 +83,7 @@ export default function Sidebar() {
         {/* Navigation */}
         <nav className="flex-1 px-4">
           <ul className="space-y-2">
-            {navigation.map((item) => {
+            {baseNavigation.map((item) => {
               const isActive = location.pathname === item.href;
               return (
                 <li key={item.name}>
@@ -107,6 +106,26 @@ export default function Sidebar() {
                 </li>
               );
             })}
+            {/* Profile link with dynamic username */}
+            <li>
+              <NavLink
+                to={profile?.username ? `/${profile.username}` : '/home'}
+                onClick={(e) => {
+                  const profilePath = profile?.username ? `/${profile.username}` : '/home';
+                  if (location.pathname === profilePath) {
+                    e.preventDefault();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }
+                }}
+                className={cn(
+                  'nav-item relative',
+                  (profile?.username && location.pathname === `/${profile.username}`) && 'active'
+                )}
+              >
+                <User className="w-5 h-5" />
+                <span className="font-medium">Profile</span>
+              </NavLink>
+            </li>
           </ul>
         </nav>
 
