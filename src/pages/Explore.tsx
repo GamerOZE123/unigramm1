@@ -1,36 +1,39 @@
-import React, { useState } from 'react';
-import Layout from '@/components/layout/Layout';
-import { Search, User, ArrowLeft } from 'lucide-react';
-import { useUsers } from '@/hooks/useUsers';
-import { useNavigate } from 'react-router-dom';
-import MobileHeader from '@/components/layout/MobileHeader';
-import { useIsMobile } from '@/hooks/use-mobile';
-import PostCard from '@/components/post/PostCard';
-import HeroBanner from '@/components/explore/HeroBanner';
-import TrendingHashtagsRow from '@/components/explore/TrendingHashtagsRow';
-import TrendingPostsRow from '@/components/explore/TrendingPostsRow';
-import TrendingUniversitiesRow from '@/components/explore/TrendingUniversitiesRow';
-import UpcomingEventsRow from '@/components/explore/UpcomingEventsRow';
-import StudentStartupsRow from '@/components/explore/StudentStartupsRow';
-import TaggedPostsRow from '@/components/explore/TaggedPostsRow';
-import ExploreSidebar from '@/components/explore/ExploreSidebar';
-import { supabase } from '@/integrations/supabase/client';
+import React, { useState } from "react";
+import Layout from "@/components/layout/Layout";
+import { Search, User, ArrowLeft } from "lucide-react";
+import { useUsers } from "@/hooks/useUsers";
+import { useNavigate } from "react-router-dom";
+import MobileHeader from "@/components/layout/MobileHeader";
+import { useIsMobile } from "@/hooks/use-mobile";
+import PostCard from "@/components/post/PostCard";
+import HeroBanner from "@/components/explore/HeroBanner";
+import TrendingHashtagsRow from "@/components/explore/TrendingHashtagsRow";
+import TrendingPostsRow from "@/components/explore/TrendingPostsRow";
+import TrendingUniversitiesRow from "@/components/explore/TrendingUniversitiesRow";
+import UpcomingEventsRow from "@/components/explore/UpcomingEventsRow";
+import StudentStartupsRow from "@/components/explore/StudentStartupsRow";
+import TaggedPostsRow from "@/components/explore/TaggedPostsRow";
+import ExploreSidebar from "@/components/explore/ExploreSidebar";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Explore() {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchPosts, setSearchPosts] = useState([]);
   const [searchPostsLoading, setSearchPostsLoading] = useState(false);
   const { users, loading, searchUsers } = useUsers();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
+  // ---------------------------------------------
+  // SEARCH BAR LOGIC
+  // ---------------------------------------------
   const handleSearch = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
 
-    if (query.startsWith('#')) {
+    if (query.startsWith("#")) {
       const searchTerm = query.slice(1).toLowerCase();
-      fetchSearchPosts(searchTerm, 'hashtag');
+      fetchSearchPosts(searchTerm, "hashtag");
     } else if (query.trim()) {
       searchUsers(query);
       setSearchPosts([]);
@@ -39,95 +42,132 @@ export default function Explore() {
     }
   };
 
-  const handleUserClick = (username: string) => {
-    navigate(`/${username}`);
-  };
-
+  const handleUserClick = (username: string) => navigate(`/${username}`);
   const handleHashtagClick = (hashtag) => {
     setSearchQuery(`#${hashtag}`);
-    fetchSearchPosts(hashtag, 'hashtag');
+    fetchSearchPosts(hashtag, "hashtag");
   };
-
   const handleUniversityClick = (university) => {
     setSearchQuery(university);
-    fetchSearchPosts(university, 'university');
+    fetchSearchPosts(university, "university");
   };
 
+  // ---------------------------------------------
+  // FETCH SEARCH POSTS — WITH POLLS & SURVEYS
+  // ---------------------------------------------
   const fetchSearchPosts = async (searchTerm, searchType) => {
     setSearchPostsLoading(true);
     try {
-      if (searchType === 'hashtag') {
-        const { data: posts, error: postsError } = await supabase
-          .from('posts')
-          .select('id, content, image_url, hashtags, user_id, created_at, likes_count, comments_count')
-          .contains('hashtags', [searchTerm.toLowerCase()])
-          .order('created_at', { ascending: false });
+      if (searchType === "hashtag") {
+        const { data: posts, error } = await supabase
+          .from("posts")
+          .select(
+            `
+            id,
+            content,
+            image_url,
+            image_urls,
+            hashtags,
+            user_id,
+            created_at,
+            likes_count,
+            comments_count,
+            views_count,
+            poll_question,
+            poll_options,
+            poll_ends_at,
+            survey_questions
+          `,
+          )
+          .contains("hashtags", [searchTerm.toLowerCase()])
+          .order("created_at", { ascending: false });
 
-        if (postsError) throw postsError;
+        if (error) throw error;
 
-        const userIds = [...new Set(posts?.map(post => post.user_id) || [])];
+        const userIds = [...new Set(posts.map((p) => p.user_id))];
+
         const { data: profiles } = await supabase
-          .from('profiles')
-          .select('user_id, username, full_name, avatar_url, university, major')
-          .in('user_id', userIds);
+          .from("profiles")
+          .select("user_id, username, full_name, avatar_url, university")
+          .in("user_id", userIds);
 
         const profileMap = new Map();
-        profiles?.forEach(profile => profileMap.set(profile.user_id, profile));
+        profiles?.forEach((p) => profileMap.set(p.user_id, p));
 
-        const transformedPosts = (posts || []).map(post => ({
-          ...post,
-          profiles: profileMap.get(post.user_id)
+        const transformed = posts.map((p) => ({
+          ...p,
+          profiles: profileMap.get(p.user_id),
         }));
 
-        setSearchPosts(transformedPosts);
-      } else if (searchType === 'university') {
+        setSearchPosts(transformed);
+      } else if (searchType === "university") {
         const { data: profiles } = await supabase
-          .from('profiles')
-          .select('user_id')
-          .ilike('university', `%${searchTerm}%`);
+          .from("profiles")
+          .select("user_id")
+          .ilike("university", `%${searchTerm}%`);
 
-        const userIds = profiles?.map(p => p.user_id) || [];
+        const userIds = profiles?.map((p) => p.user_id) || [];
 
-        const { data: posts, error: postsError } = await supabase
-          .from('posts')
-          .select('id, content, image_url, hashtags, user_id, created_at, likes_count, comments_count')
-          .in('user_id', userIds)
-          .order('created_at', { ascending: false });
+        const { data: posts, error } = await supabase
+          .from("posts")
+          .select(
+            `
+            id,
+            content,
+            image_url,
+            image_urls,
+            hashtags,
+            user_id,
+            created_at,
+            likes_count,
+            comments_count,
+            views_count,
+            poll_question,
+            poll_options,
+            poll_ends_at,
+            survey_questions
+          `,
+          )
+          .in("user_id", userIds)
+          .order("created_at", { ascending: false });
 
-        if (postsError) throw postsError;
+        if (error) throw error;
 
-        const { data: profilesWithDetails } = await supabase
-          .from('profiles')
-          .select('user_id, username, full_name, avatar_url, university, major')
-          .in('user_id', userIds);
+        const { data: profileDetails } = await supabase
+          .from("profiles")
+          .select("user_id, username, full_name, avatar_url, university")
+          .in("user_id", userIds);
 
-        const profileMap = new Map();
-        profilesWithDetails?.forEach(profile => profileMap.set(profile.user_id, profile));
+        const map = new Map();
+        profileDetails?.forEach((p) => map.set(p.user_id, p));
 
-        const transformedPosts = (posts || []).map(post => ({
-          ...post,
-          profiles: profileMap.get(post.user_id)
+        const transformed = posts.map((p) => ({
+          ...p,
+          profiles: map.get(p.user_id),
         }));
 
-        setSearchPosts(transformedPosts);
+        setSearchPosts(transformed);
       }
-    } catch (error) {
-      console.error('Error fetching search posts:', error);
+    } catch (err) {
+      console.error("Error fetching posts:", err);
     } finally {
       setSearchPostsLoading(false);
     }
   };
 
+  // -----------------------------------------------------------------
+  // SEARCH RESULTS SCREEN
+  // -----------------------------------------------------------------
   if (searchQuery) {
     return (
       <Layout>
         {isMobile && <MobileHeader />}
-        <div className="space-y-6 px-4 mt-6">
+        <div className="space-y-6 px-4 mt-6 max-w-2xl mx-auto">
+          {" "}
+          {/* left-align fix */}
+          {/* SEARCH BAR */}
           <div className="flex items-center gap-3 mb-4">
-            <button
-              onClick={() => setSearchQuery('')}
-              className="p-2 hover:bg-muted rounded-full transition-colors"
-            >
+            <button onClick={() => setSearchQuery("")} className="p-2 hover:bg-muted rounded-full transition-colors">
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div className="relative flex-1">
@@ -141,64 +181,73 @@ export default function Explore() {
               />
             </div>
           </div>
-
+          {/* POSTS */}
           {searchPosts.length > 0 && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold">Posts</h2>
+
               {searchPosts.map((post) => (
                 <PostCard key={post.id} post={post} onHashtagClick={handleHashtagClick} />
               ))}
             </div>
           )}
-
+          {/* USERS */}
           {users.length > 0 && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold">Users</h2>
               <div className="space-y-2">
-                {users.map((userResult) => (
+                {users.map((u) => (
                   <div
-                    key={userResult.id}
-                    onClick={() => handleUserClick(userResult.username || '')}
-                    className="flex items-center gap-3 p-3 hover:bg-muted rounded-lg cursor-pointer transition-colors"
+                    key={u.id}
+                    onClick={() => handleUserClick(u.username || "")}
+                    className="flex items-center gap-3 p-3 hover:bg-muted rounded-lg cursor-pointer"
                   >
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      {userResult.avatar_url ? (
-                        <img src={userResult.avatar_url} alt={userResult.username} className="w-full h-full rounded-full object-cover" />
+                      {u.avatar_url ? (
+                        <img src={u.avatar_url} className="w-full h-full rounded-full object-cover" />
                       ) : (
                         <User className="w-5 h-5 text-primary" />
                       )}
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium">{userResult.full_name || userResult.username}</p>
-                      <p className="text-sm text-muted-foreground">@{userResult.username}</p>
+                    <div>
+                      <p className="font-medium">{u.full_name || u.username}</p>
+                      <p className="text-sm text-muted-foreground">@{u.username}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
           )}
-
-          {(searchPostsLoading || loading) ? (
+          {searchPostsLoading || loading ? (
             <div className="text-center py-8">
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
             </div>
-          ) : searchPosts.length === 0 && users.length === 0 && searchQuery && (
-            <div className="post-card p-8 text-center">
-              <p className="text-muted-foreground">No results found for "{searchQuery}"</p>
-            </div>
+          ) : (
+            searchPosts.length === 0 &&
+            users.length === 0 &&
+            searchQuery && (
+              <div className="post-card p-8 text-center">
+                <p className="text-muted-foreground">No results found for "{searchQuery}"</p>
+              </div>
+            )
           )}
         </div>
       </Layout>
     );
   }
 
+  // -----------------------------------------------------------------
+  // MAIN EXPLORE PAGE (WITHOUT SEARCH)
+  // -----------------------------------------------------------------
   return (
     <Layout>
       {isMobile && <MobileHeader />}
 
-      <div className="flex gap-6">
-        {/* CENTER CONTENT */}
-        <div className="flex-1 max-w-2xl mx-auto space-y-10 mt-6 pb-12 px-4">
+      <div className="flex gap-6 px-4 max-w-7xl mx-auto">
+        {" "}
+        {/* LEFT ALIGN FIX */}
+        {/* CENTER COLUMN */}
+        <div className="flex-1 max-w-2xl space-y-10 mt-6 pb-12">
           {/* SEARCH BAR */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -215,7 +264,8 @@ export default function Explore() {
 
           <HeroBanner />
 
-          <TrendingPostsRow />
+          {/* ⭐ TRENDING POSTS MUST NOT SHOW POLL/SURVEY */}
+          <TrendingPostsRow excludePolls />
 
           <TrendingUniversitiesRow onUniversityClick={handleUniversityClick} />
 
@@ -225,10 +275,9 @@ export default function Explore() {
 
           <TaggedPostsRow />
         </div>
-
-        {/* RIGHT SIDEBAR - Hidden on mobile */}
+        {/* RIGHT SIDEBAR */}
         {!isMobile && (
-          <div className="w-80 hidden lg:block">
+          <div className="w-80">
             <ExploreSidebar onHashtagClick={handleHashtagClick} />
           </div>
         )}
