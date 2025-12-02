@@ -1,33 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import Layout from '@/components/layout/Layout';
-import PostCard from '@/components/post/PostCard';
-import NewCommentSection from '@/components/post/NewCommentSection';
-import RightSidebar from '@/components/layout/RightSidebar';
-import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import MobileHeader from '@/components/layout/MobileHeader';
-import { useIsMobile } from '@/hooks/use-mobile';
-
-interface PostData {
-  id: string;
-  user_id: string;
-  content: string;
-  image_url?: string;
-  image_urls?: string[];
-  likes_count: number;
-  comments_count: number;
-  views_count: number;
-  created_at: string;
-  profiles: {
-    full_name?: string;
-    username?: string;
-    university?: string;
-    major?: string;
-    avatar_url?: string;
-  } | null;
-}
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import Layout from "@/components/layout/Layout";
+import PostCard from "@/components/post/PostCard";
+import NewCommentSection from "@/components/post/NewCommentSection";
+import RightSidebar from "@/components/layout/RightSidebar";
+import { supabase } from "@/integrations/supabase/client";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import MobileHeader from "@/components/layout/MobileHeader";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TransformedPost {
   id: string;
@@ -42,6 +23,14 @@ interface TransformedPost {
   user_name: string;
   user_username: string;
   user_university?: string;
+
+  // ⭐ Add poll + survey fields
+  poll_question?: string | null;
+  poll_options?: any | null;
+  poll_ends_at?: string | null;
+  survey_questions?: any | null;
+
+  hashtags?: string[] | null;
 }
 
 export default function Post() {
@@ -53,55 +42,52 @@ export default function Post() {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    if (postId) {
-      fetchPost();
-    }
+    if (postId) fetchPost();
   }, [postId]);
 
   const fetchPost = async () => {
     try {
-      console.log('Fetching post:', postId);
-      
-      // Fetch the specific post
+      // ⭐ Fetch post WITH poll/survey fields
       const { data: postData, error: postError } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('id', postId)
+        .from("posts")
+        .select(
+          `
+          id,
+          user_id,
+          content,
+          image_url,
+          image_urls,
+          created_at,
+          likes_count,
+          comments_count,
+          views_count,
+          hashtags,
+
+          poll_question,
+          poll_options,
+          poll_ends_at,
+          survey_questions
+        `,
+        )
+        .eq("id", postId)
         .single();
-      
-      if (postError) {
-        console.error('Error fetching post:', postError);
-        throw postError;
-      }
-      
+
+      if (postError) throw postError;
       if (!postData) {
-        setError('Post not found');
+        setError("Post not found");
         return;
       }
-      
-      console.log('Fetched post:', postData);
-      
-      // Fetch the user profile
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, username, university, major, avatar_url')
-        .eq('user_id', postData.user_id)
+
+      // Fetch user profile
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("full_name, username, university, avatar_url")
+        .eq("user_id", postData.user_id)
         .single();
-      
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
-      }
-      
-      console.log('Fetched profile:', profileData);
-      
-      // Transform the post data
-      const userName = profileData?.full_name || profileData?.username || 'Anonymous User';
-      const userUsername = profileData?.username || 'user';
-      const userUniversity = profileData?.university || 'University';
-      
+
       const transformedPost: TransformedPost = {
         id: postData.id,
-        content: postData.content || '',
+        content: postData.content || "",
         image_url: postData.image_url,
         image_urls: postData.image_urls,
         created_at: postData.created_at,
@@ -109,15 +95,23 @@ export default function Post() {
         comments_count: postData.comments_count || 0,
         views_count: postData.views_count || 0,
         user_id: postData.user_id,
-        user_name: userName,
-        user_username: userUsername,
-        user_university: userUniversity
+        user_name: profileData?.full_name || profileData?.username || "Anonymous User",
+        user_username: profileData?.username || "user",
+        user_university: profileData?.university || undefined,
+
+        // ⭐ Add these poll/survey fields
+        poll_question: postData.poll_question,
+        poll_options: postData.poll_options,
+        poll_ends_at: postData.poll_ends_at,
+        survey_questions: postData.survey_questions,
+
+        hashtags: postData.hashtags,
       };
-      
+
       setPost(transformedPost);
-    } catch (error) {
-      console.error('Error fetching post:', error);
-      setError('Failed to load post');
+    } catch (err) {
+      console.error("Error loading post:", err);
+      setError("Failed to load post");
     } finally {
       setLoading(false);
     }
@@ -138,13 +132,11 @@ export default function Post() {
   if (error || !post) {
     return (
       <Layout>
-        <div className="max-w-2xl mx-auto">
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">{error || 'Post not found'}</p>
-            <Button onClick={() => navigate('/')} className="mt-4">
-              Go Home
-            </Button>
-          </div>
+        <div className="max-w-2xl mx-auto text-center py-12">
+          <p className="text-muted-foreground">{error || "Post not found"}</p>
+          <Button onClick={() => navigate("/")} className="mt-4">
+            Go Home
+          </Button>
         </div>
       </Layout>
     );
@@ -154,7 +146,6 @@ export default function Post() {
     <Layout>
       {isMobile && <MobileHeader />}
       <div className="max-w-2xl mx-auto pt-6 px-4">
-        {/* Back Button */}
         <Button
           variant="ghost"
           onClick={() => navigate(-1)}
@@ -163,10 +154,13 @@ export default function Post() {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back
         </Button>
-        
+
+        {/* ⭐ Now PostCard receives poll & survey fields */}
         <PostCard post={post} />
+
         <NewCommentSection postId={post.id} />
       </div>
+
       <RightSidebar />
     </Layout>
   );
