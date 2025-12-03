@@ -12,6 +12,7 @@ import { Send, MoreVertical, Trash2, MessageSquareX, UserX, Loader2, ImagePlus, 
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/hooks/useChat';
 import { useRecentChats } from '@/hooks/useRecentChats';
+import { useChatGroups } from '@/hooks/useChatGroups';
 import { useUsers } from '@/hooks/useUsers';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -59,7 +60,8 @@ export default function Chat() {
     deleteChat,
     refreshConversations,
   } = useChat();
-  const { recentChats, loading, addRecentChat, refreshRecentChats } = useRecentChats(); // Added loading
+  const { recentChats, loading, addRecentChat, refreshRecentChats } = useRecentChats();
+  const { groups, loading: groupsLoading, refreshGroups } = useChatGroups();
   const { getUserById } = useUsers();
 
   // Auto-scroll when new messages arrive
@@ -545,6 +547,46 @@ export default function Chat() {
                       </div>
                     );
                   })}
+
+                {/* Groups Section */}
+                <h3 className="text-sm font-semibold text-muted-foreground mb-3 px-2 mt-6">
+                  Groups
+                </h3>
+                {groupsLoading && (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  </div>
+                )}
+                {!groupsLoading && groups.length === 0 && (
+                  <div className="text-center py-6 px-4">
+                    <p className="text-muted-foreground text-sm mb-1">No groups yet</p>
+                    <p className="text-muted-foreground/60 text-xs">Create or join a group</p>
+                  </div>
+                )}
+                {!groupsLoading &&
+                  groups.map((group) => (
+                    <div
+                      key={group.id}
+                      className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 hover:bg-surface/80 border-l-4 border-l-transparent"
+                      onClick={() => navigate(`/chat/group/${group.id}`)}
+                    >
+                      <div className="w-12 h-12 bg-gradient-to-br from-accent to-primary rounded-full flex items-center justify-center relative overflow-hidden ring-2 ring-border">
+                        {group.avatar_url ? (
+                          <img src={group.avatar_url} alt={group.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-sm font-bold text-white">
+                            {group.name?.charAt(0) || 'G'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-foreground text-sm truncate">{group.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {group.member_count} member{group.member_count !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
               </div>
             </div>
           </div>
@@ -942,6 +984,43 @@ export default function Chat() {
                        <p className="text-sm text-muted-foreground">{chat.other_user_university}</p>
                      </div>
                    </div>
+                ))}
+
+              {/* Groups Section - Mobile */}
+              <h3 className="text-sm font-medium text-muted-foreground mt-6">
+                Groups
+              </h3>
+              {groupsLoading && (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+                </div>
+              )}
+              {!groupsLoading && groups.length === 0 && (
+                <p className="text-muted-foreground text-sm">No groups yet</p>
+              )}
+              {!groupsLoading &&
+                groups.map((group) => (
+                  <div
+                    key={group.id}
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => navigate(`/chat/group/${group.id}`)}
+                  >
+                    <div className="w-12 h-12 bg-gradient-to-br from-accent to-primary rounded-full flex items-center justify-center overflow-hidden">
+                      {group.avatar_url ? (
+                        <img src={group.avatar_url} alt={group.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-sm font-bold text-white">
+                          {group.name?.charAt(0) || 'G'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground">{group.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {group.member_count} member{group.member_count !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  </div>
                 ))}
             </div>
           </div>
