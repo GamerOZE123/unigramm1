@@ -3,12 +3,13 @@ import Layout from '@/components/layout/Layout';
 import MobileLayout from '@/components/layout/MobileLayout';
 import UserSearch from '@/components/chat/UserSearch';
 import MobileChatHeader from '@/components/chat/MobileChatHeader';
+import GroupSettings from '@/components/chat/GroupSettings';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Send, MoreVertical, Trash2, MessageSquareX, UserX, Loader2, ImagePlus, Smile, Search, X, Users } from 'lucide-react';
+import { Send, MoreVertical, Trash2, MessageSquareX, UserX, Loader2, ImagePlus, Smile, Search, X, Users, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/hooks/useChat';
 import { useRecentChats } from '@/hooks/useRecentChats';
@@ -42,6 +43,7 @@ export default function Chat() {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
+  const [showGroupSettings, setShowGroupSettings] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [showUserList, setShowUserList] = useState(true);
   const [unreadMessages, setUnreadMessages] = useState<Set<string>>(new Set());
@@ -213,49 +215,54 @@ export default function Chat() {
   }, [searchParams]);
 
   const handleUserClick = async (userId: string) => {
-  try {
-    // Ensure the current user is authenticated before proceeding
-    if (!user || !user.id) {
-      toast.error('You must be logged in to start a chat.');
-      return;
-    }
+    try {
+      // Ensure the current user is authenticated before proceeding
+      if (!user || !user.id) {
+        toast.error('You must be logged in to start a chat.');
+        return;
+      }
 
-    const userProfile = await getUserById(userId);
-    if (!userProfile) {
-      console.error('Failed to fetch user profile:', userId);
-      toast.error('Failed to load user profile');
-      return;
-    }
-    console.log('Selected user:', userProfile);
-    setSelectedUser(userProfile);
+      const userProfile = await getUserById(userId);
+      if (!userProfile) {
+        console.error('Failed to fetch user profile:', userId);
+        toast.error('Failed to load user profile');
+        return;
+      }
+      console.log('Selected user:', userProfile);
+      
+      // Clear group selection when selecting a user
+      setSelectedGroup(null);
+      setShowGroupSettings(false);
+      setSelectedUser(userProfile);
 
-    // Pass the user's ID to the conversation creation function
-    const conversationId = await createConversation(userId);
-    
-    if (!conversationId) {
-      console.error('Failed to create conversation for user:', userId);
-      toast.error('Failed to create conversation');
-      return;
+      // Pass the user's ID to the conversation creation function
+      const conversationId = await createConversation(userId);
+      
+      if (!conversationId) {
+        console.error('Failed to create conversation for user:', userId);
+        toast.error('Failed to create conversation');
+        return;
+      }
+      
+      setSelectedConversationId(conversationId);
+      setNewMessageNotification(false);
+      setUnreadMessages((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(userId);
+        return newSet;
+      });
+      if (isMobile) setShowUserList(false);
+    } catch (error) {
+      console.error('Error in handleUserClick:', JSON.stringify(error, null, 2));
+      toast.error('An error occurred while starting the chat');
     }
-    
-    setSelectedConversationId(conversationId);
-    setNewMessageNotification(false);
-    setUnreadMessages((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(userId);
-      return newSet;
-    });
-    if (isMobile) setShowUserList(false);
-  } catch (error) {
-    console.error('Error in handleUserClick:', JSON.stringify(error, null, 2));
-    toast.error('An error occurred while starting the chat');
-  }
-};
+  };
 
   const handleGroupClick = (group: any) => {
     setSelectedGroup(group);
     setSelectedUser(null);
     setSelectedConversationId(null);
+    setShowGroupSettings(false);
     setNewMessageNotification(false);
     if (isMobile) setShowUserList(false);
   };
@@ -265,6 +272,7 @@ export default function Chat() {
     setSelectedConversationId(null);
     setSelectedUser(null);
     setSelectedGroup(null);
+    setShowGroupSettings(false);
   };
 
   const uploadMediaFile = async (file: File) => {
@@ -612,6 +620,18 @@ export default function Chat() {
               </div>
             )}
             {!chatLoading && !groupMessagesLoading && selectedGroup ? (
+              showGroupSettings ? (
+                <GroupSettings 
+                  group={selectedGroup}
+                  onClose={() => setShowGroupSettings(false)}
+                  onGroupUpdated={() => {
+                    refreshGroups();
+                    // Update selectedGroup with fresh data
+                    const updatedGroup = groups.find(g => g.id === selectedGroup.id);
+                    if (updatedGroup) setSelectedGroup(updatedGroup);
+                  }}
+                />
+              ) : (
               <>
                 {/* Group Chat header */}
                 <div className="p-5 border-b border-border bg-surface/30 backdrop-blur-sm">
@@ -634,6 +654,9 @@ export default function Chat() {
                         <p className="text-xs text-muted-foreground">{selectedGroup.member_count} member{selectedGroup.member_count !== 1 ? 's' : ''}</p>
                       </div>
                     </div>
+                    <Button variant="ghost" size="icon" onClick={() => setShowGroupSettings(true)}>
+                      <Settings className="w-4 h-4" />
+                    </Button>
                   </div>
                 </div>
                 {/* Group Chat messages */}
@@ -745,6 +768,7 @@ export default function Chat() {
                   </div>
                 </div>
               </>
+              )
             ) : !chatLoading && selectedUser ? (
               <>
                 {/* Chat header */}
@@ -1142,6 +1166,19 @@ export default function Chat() {
           </div>
         </MobileLayout>
       ) : selectedGroup ? (
+        showGroupSettings ? (
+          <div className="h-screen bg-background">
+            <GroupSettings 
+              group={selectedGroup}
+              onClose={() => setShowGroupSettings(false)}
+              onGroupUpdated={() => {
+                refreshGroups();
+                const updatedGroup = groups.find(g => g.id === selectedGroup.id);
+                if (updatedGroup) setSelectedGroup(updatedGroup);
+              }}
+            />
+          </div>
+        ) : (
         <div className="h-screen bg-background flex flex-col">
           <MobileChatHeader
             userName={selectedGroup.name}
@@ -1151,6 +1188,7 @@ export default function Chat() {
             onClearChat={() => {}}
             onDeleteChat={() => {}}
             onBlockUser={() => {}}
+            onSettings={() => setShowGroupSettings(true)}
             isGroup={true}
           />
           <div className="flex-1 flex flex-col overflow-hidden">
@@ -1246,6 +1284,7 @@ export default function Chat() {
             </div>
           </div>
         </div>
+        )
       ) : (
         <div className="h-screen bg-background flex flex-col">
           <MobileChatHeader

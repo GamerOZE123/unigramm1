@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, MoreVertical, MessageSquareX, Trash2, UserX, Users } from 'lucide-react';
+import { ArrowLeft, MoreVertical, MessageSquareX, Trash2, UserX, Users, Settings } from 'lucide-react';
 
 interface MobileChatHeaderProps {
   userName: string;
@@ -12,6 +12,7 @@ interface MobileChatHeaderProps {
   onClearChat?: () => void;
   onDeleteChat?: () => void;
   onBlockUser?: () => void;
+  onSettings?: () => void;
   isGroup?: boolean;
 }
 
@@ -24,6 +25,7 @@ export default function MobileChatHeader({
   onClearChat,
   onDeleteChat,
   onBlockUser,
+  onSettings,
   isGroup = false
 }: MobileChatHeaderProps) {
   return (
@@ -61,6 +63,13 @@ export default function MobileChatHeader({
           </div>
         </div>
         
+        {/* Group Settings Button */}
+        {isGroup && onSettings && (
+          <Button variant="ghost" size="icon" onClick={onSettings}>
+            <Settings className="w-4 h-4" />
+          </Button>
+        )}
+
         {/* Chat Options Menu - Only show for non-group chats */}
         {!isGroup && (
           <DropdownMenu>
