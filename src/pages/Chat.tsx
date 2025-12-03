@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Layout from '@/components/layout/Layout';
 import MobileLayout from '@/components/layout/MobileLayout';
 import UserSearch from '@/components/chat/UserSearch';
@@ -8,11 +8,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Send, MoreVertical, Trash2, MessageSquareX, UserX, Loader2, ImagePlus, Smile, Search, X } from 'lucide-react';
+import { Send, MoreVertical, Trash2, MessageSquareX, UserX, Loader2, ImagePlus, Smile, Search, X, Users } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/hooks/useChat';
 import { useRecentChats } from '@/hooks/useRecentChats';
 import { useChatGroups } from '@/hooks/useChatGroups';
+import { useGroupMessages } from '@/hooks/useGroupMessages';
 import { useUsers } from '@/hooks/useUsers';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -24,6 +25,15 @@ import { useMessageSearch } from '@/hooks/useMessageSearch';
 const TEXT_EMOJIS = ["😀", "😂", "🥰", "😍", "🤔", "👍", "❤️", "🎉", "🔥", "✨", "💯", "🙏"];
 const REACTION_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
 
+interface UnifiedChatItem {
+  id: string;
+  type: 'user' | 'group';
+  name: string;
+  avatar: string | null;
+  subtitle: string;
+  lastActivity: string;
+}
+
 export default function Chat() {
   const { user } = useAuth();
   const isMobile = useIsMobile();
@@ -31,13 +41,14 @@ export default function Chat() {
   const [searchParams] = useSearchParams();
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedGroup, setSelectedGroup] = useState<any>(null);
   const [newMessage, setNewMessage] = useState('');
   const [showUserList, setShowUserList] = useState(true);
   const [unreadMessages, setUnreadMessages] = useState<Set<string>>(new Set());
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [newMessageNotification, setNewMessageNotification] = useState(false);
-  const [deletingChatId, setDeletingChatId] = useState<string | null>(null); // For confirmation dialog
-  const [selectedChatsForBulk, setSelectedChatsForBulk] = useState<Set<string>>(new Set()); // For bulk delete
+  const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
+  const [selectedChatsForBulk, setSelectedChatsForBulk] = useState<Set<string>>(new Set());
   const [uploadingImage, setUploadingImage] = useState(false);
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [showSearch, setShowSearch] = useState(false);
@@ -62,7 +73,33 @@ export default function Chat() {
   } = useChat();
   const { recentChats, loading, addRecentChat, refreshRecentChats } = useRecentChats();
   const { groups, loading: groupsLoading, refreshGroups } = useChatGroups();
+  const { messages: groupMessages, loading: groupMessagesLoading, sendMessage: sendGroupMessage } = useGroupMessages(selectedGroup?.id || null);
   const { getUserById } = useUsers();
+
+  // Merge recent chats and groups into a unified list
+  const unifiedChatList = useMemo<UnifiedChatItem[]>(() => {
+    const userChats: UnifiedChatItem[] = recentChats.map(chat => ({
+      id: chat.other_user_id,
+      type: 'user' as const,
+      name: chat.other_user_name || 'Unknown',
+      avatar: chat.other_user_avatar,
+      subtitle: chat.other_user_university || '',
+      lastActivity: chat.last_interacted_at
+    }));
+
+    const groupChats: UnifiedChatItem[] = groups.map(group => ({
+      id: group.id,
+      type: 'group' as const,
+      name: group.name,
+      avatar: group.avatar_url,
+      subtitle: `${group.member_count || 0} member${(group.member_count || 0) !== 1 ? 's' : ''}`,
+      lastActivity: group.updated_at
+    }));
+
+    return [...userChats, ...groupChats].sort((a, b) => 
+      new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime()
+    );
+  }, [recentChats, groups]);
 
   // Auto-scroll when new messages arrive
   useEffect(() => {
@@ -214,10 +251,20 @@ export default function Chat() {
     toast.error('An error occurred while starting the chat');
   }
 };
+
+  const handleGroupClick = (group: any) => {
+    setSelectedGroup(group);
+    setSelectedUser(null);
+    setSelectedConversationId(null);
+    setNewMessageNotification(false);
+    if (isMobile) setShowUserList(false);
+  };
+
   const handleBackToUserList = () => {
     setShowUserList(true);
     setSelectedConversationId(null);
     setSelectedUser(null);
+    setSelectedGroup(null);
   };
 
   const uploadMediaFile = async (file: File) => {
@@ -500,104 +547,205 @@ export default function Chat() {
             <div className="flex-1 overflow-y-auto">
               <div className="p-4">
                 <h3 className="text-sm font-semibold text-muted-foreground mb-3 px-2">
-                  Recent Chats
+                  Chats
                 </h3>
-                {loading && (
+                {(loading || groupsLoading) && (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                   </div>
                 )}
-                {!loading && recentChats.length === 0 && (
+                {!loading && !groupsLoading && unifiedChatList.length === 0 && (
                   <div className="text-center py-12 px-4">
-                    <p className="text-muted-foreground text-sm mb-1">No recent chats</p>
+                    <p className="text-muted-foreground text-sm mb-1">No chats yet</p>
                     <p className="text-muted-foreground/60 text-xs">Search for someone to start</p>
                   </div>
                 )}
-                {!loading &&
-                  recentChats.map((chat) => {
-                    const isSelected = selectedUser?.user_id === chat.other_user_id;
+                {!loading && !groupsLoading &&
+                  unifiedChatList.map((chat) => {
+                    const isSelected = chat.type === 'user' 
+                      ? selectedUser?.user_id === chat.id 
+                      : selectedGroup?.id === chat.id;
                     return (
                       <div
-                        key={chat.other_user_id}
+                        key={`${chat.type}-${chat.id}`}
                         className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 ${
                           isSelected 
                             ? 'bg-primary/10 shadow-sm border-l-4 border-l-primary' 
                             : 'hover:bg-surface/80 border-l-4 border-l-transparent'
                         }`}
-                        onClick={() => handleUserClick(chat.other_user_id)}
+                        onClick={() => chat.type === 'user' ? handleUserClick(chat.id) : handleGroupClick(groups.find(g => g.id === chat.id))}
                       >
                         <div className="relative">
-                          <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center relative overflow-hidden ring-2 ring-border">
-                            {chat.other_user_avatar ? (
-                              <img src={chat.other_user_avatar} alt={chat.other_user_name} className="w-full h-full object-cover" />
+                          <div className={`w-12 h-12 bg-gradient-to-br ${chat.type === 'group' ? 'from-accent to-primary' : 'from-primary to-accent'} rounded-full flex items-center justify-center relative overflow-hidden ring-2 ring-border`}>
+                            {chat.avatar ? (
+                              <img src={chat.avatar} alt={chat.name} className="w-full h-full object-cover" />
                             ) : (
                               <span className="text-sm font-bold text-white">
-                                {chat.other_user_name?.charAt(0) || 'U'}
+                                {chat.name?.charAt(0) || (chat.type === 'group' ? 'G' : 'U')}
                               </span>
                             )}
+                            {chat.type === 'group' && (
+                              <div className="absolute bottom-0 right-0 w-4 h-4 bg-accent rounded-full flex items-center justify-center ring-2 ring-card">
+                                <Users className="w-2.5 h-2.5 text-white" />
+                              </div>
+                            )}
                           </div>
-                          {unreadMessages.has(chat.other_user_id) && (
+                          {chat.type === 'user' && unreadMessages.has(chat.id) && (
                             <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-primary rounded-full ring-2 ring-card"></div>
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-foreground text-sm truncate">{chat.other_user_name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{chat.other_user_university}</p>
+                          <p className="font-semibold text-foreground text-sm truncate">{chat.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{chat.subtitle}</p>
                         </div>
                       </div>
                     );
                   })}
-
-                {/* Groups Section */}
-                <h3 className="text-sm font-semibold text-muted-foreground mb-3 px-2 mt-6">
-                  Groups
-                </h3>
-                {groupsLoading && (
-                  <div className="flex items-center justify-center py-6">
-                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                  </div>
-                )}
-                {!groupsLoading && groups.length === 0 && (
-                  <div className="text-center py-6 px-4">
-                    <p className="text-muted-foreground text-sm mb-1">No groups yet</p>
-                    <p className="text-muted-foreground/60 text-xs">Create or join a group</p>
-                  </div>
-                )}
-                {!groupsLoading &&
-                  groups.map((group) => (
-                    <div
-                      key={group.id}
-                      className="flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 hover:bg-surface/80 border-l-4 border-l-transparent"
-                      onClick={() => navigate(`/chat/group/${group.id}`)}
-                    >
-                      <div className="w-12 h-12 bg-gradient-to-br from-accent to-primary rounded-full flex items-center justify-center relative overflow-hidden ring-2 ring-border">
-                        {group.avatar_url ? (
-                          <img src={group.avatar_url} alt={group.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-sm font-bold text-white">
-                            {group.name?.charAt(0) || 'G'}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-foreground text-sm truncate">{group.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {group.member_count} member{group.member_count !== 1 ? 's' : ''}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
               </div>
             </div>
           </div>
           {/* Right column - chat */}
           <div className="flex-1 bg-card border border-border rounded-2xl flex flex-col h-full overflow-hidden">
-            {chatLoading && (
+            {(chatLoading || groupMessagesLoading) && (
               <div className="flex-1 flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
             )}
-            {!chatLoading && selectedUser ? (
+            {!chatLoading && !groupMessagesLoading && selectedGroup ? (
+              <>
+                {/* Group Chat header */}
+                <div className="p-5 border-b border-border bg-surface/30 backdrop-blur-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-11 h-11 bg-gradient-to-br from-accent to-primary rounded-full flex items-center justify-center overflow-hidden ring-2 ring-border relative">
+                        {selectedGroup.avatar_url ? (
+                          <img src={selectedGroup.avatar_url} alt={selectedGroup.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-sm font-bold text-white">
+                            {selectedGroup.name?.charAt(0) || 'G'}
+                          </span>
+                        )}
+                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-accent rounded-full flex items-center justify-center ring-2 ring-card">
+                          <Users className="w-2.5 h-2.5 text-white" />
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground text-base">{selectedGroup.name}</h3>
+                        <p className="text-xs text-muted-foreground">{selectedGroup.member_count} member{selectedGroup.member_count !== 1 ? 's' : ''}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* Group Chat messages */}
+                <div
+                  ref={messagesContainerRef}
+                  className="flex-1 p-6 overflow-y-auto space-y-3 relative bg-background/50"
+                >
+                  {groupMessages.length ? (
+                    groupMessages.map((message, index) => {
+                      const isMine = message.sender_id === user?.id;
+                      const isSameSenderAsPrev = index > 0 && groupMessages[index - 1].sender_id === message.sender_id;
+                      
+                      return (
+                        <div
+                          key={message.id}
+                          className={`flex gap-2 ${isMine ? 'flex-row-reverse' : 'flex-row'} ${
+                            isSameSenderAsPrev ? 'mt-1' : 'mt-4'
+                          } transition-all duration-200 group`}
+                        >
+                          {!isMine && !isSameSenderAsPrev && (
+                            <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                              {message.sender?.avatar_url ? (
+                                <img src={message.sender.avatar_url} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-xs font-bold text-white">{message.sender?.full_name?.charAt(0) || 'U'}</span>
+                              )}
+                            </div>
+                          )}
+                          {!isMine && isSameSenderAsPrev && <div className="w-8" />}
+                          <div className={`max-w-xs lg:max-w-md flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
+                            {!isMine && !isSameSenderAsPrev && (
+                              <p className="text-xs text-muted-foreground mb-1 ml-1">{message.sender?.full_name || message.sender?.username}</p>
+                            )}
+                            <div
+                              className={`px-4 py-3 rounded-2xl shadow-sm transition-all hover:shadow-md ${
+                                isMine ? 'bg-primary text-primary-foreground' : 'bg-card border border-border'
+                              }`}
+                            >
+                              <div className="break-all whitespace-pre-wrap text-sm">{message.content}</div>
+                              <p className={`text-xs mt-2 font-medium ${isMine ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                                {new Date(message.created_at).toLocaleTimeString()}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-center">
+                      <div className="p-8 rounded-2xl bg-surface/50">
+                        <h3 className="text-lg font-semibold text-foreground mb-2">No messages yet</h3>
+                        <p className="text-sm text-muted-foreground">Start the conversation!</p>
+                      </div>
+                    </div>
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+                {/* Group Input */}
+                <div className="border-t border-border p-4 bg-card/50 backdrop-blur-sm">
+                  <div className="flex gap-2 items-end">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon" className="flex-shrink-0 hover:bg-surface">
+                          <Smile className="w-4 h-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-2" align="start">
+                        <div className="grid grid-cols-6 gap-1">
+                          {TEXT_EMOJIS.map((e) => (
+                            <button
+                              key={e}
+                              onClick={() => addEmoji(e)}
+                              className="w-9 h-9 rounded-lg hover:bg-surface flex items-center justify-center transition-colors text-xl hover:scale-110"
+                            >
+                              {e}
+                            </button>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <Textarea
+                      placeholder="Type your message..."
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={async (e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          if (newMessage.trim()) {
+                            const success = await sendGroupMessage(newMessage);
+                            if (success) setNewMessage('');
+                          }
+                        }
+                      }}
+                      className="flex-1 resize-none"
+                      rows={1}
+                    />
+                    <Button 
+                      onClick={async () => {
+                        if (newMessage.trim()) {
+                          const success = await sendGroupMessage(newMessage);
+                          if (success) setNewMessage('');
+                        }
+                      }} 
+                      disabled={!newMessage.trim()}
+                      className="flex-shrink-0"
+                    >
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </>
+            ) : !chatLoading && selectedUser ? (
               <>
                 {/* Chat header */}
                 <div className="p-5 border-b border-border bg-surface/30 backdrop-blur-sm">
@@ -950,81 +1098,154 @@ export default function Chat() {
             <UserSearch onStartChat={handleUserClick} />
             <div className="mt-6 space-y-4">
                <h3 className="text-sm font-medium text-muted-foreground">
-                 Recent Chats
+                 Chats
                </h3>
-              {loading && (
+              {(loading || groupsLoading) && (
                 <div className="flex items-center justify-center">
                   <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                 </div>
               )}
-              {!loading && recentChats.length === 0 && (
-                <p className="text-muted-foreground text-sm">No recent chats. Start one!</p>
+              {!loading && !groupsLoading && unifiedChatList.length === 0 && (
+                <p className="text-muted-foreground text-sm">No chats yet. Start one!</p>
               )}
-              {!loading &&
-                recentChats.map((chat) => (
+              {!loading && !groupsLoading &&
+                unifiedChatList.map((chat) => (
                    <div
-                     key={chat.other_user_id}
+                     key={`${chat.type}-${chat.id}`}
                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                     onClick={() => handleUserClick(chat.other_user_id)}
+                     onClick={() => chat.type === 'user' ? handleUserClick(chat.id) : handleGroupClick(groups.find(g => g.id === chat.id))}
                    >
-                      <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center relative overflow-hidden">
-                        {chat.other_user_avatar ? (
-                          <img src={chat.other_user_avatar} alt={chat.other_user_name} className="w-full h-full object-cover" />
+                      <div className={`w-12 h-12 bg-gradient-to-br ${chat.type === 'group' ? 'from-accent to-primary' : 'from-primary to-accent'} rounded-full flex items-center justify-center relative overflow-hidden`}>
+                        {chat.avatar ? (
+                          <img src={chat.avatar} alt={chat.name} className="w-full h-full object-cover" />
                         ) : (
                           <span className="text-sm font-bold text-white">
-                            {chat.other_user_name?.charAt(0) || 'U'}
+                            {chat.name?.charAt(0) || (chat.type === 'group' ? 'G' : 'U')}
                           </span>
                         )}
-                        {unreadMessages.has(chat.other_user_id) && (
+                        {chat.type === 'group' && (
+                          <div className="absolute bottom-0 right-0 w-4 h-4 bg-accent rounded-full flex items-center justify-center ring-2 ring-card">
+                            <Users className="w-2.5 h-2.5 text-white" />
+                          </div>
+                        )}
+                        {chat.type === 'user' && unreadMessages.has(chat.id) && (
                           <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
                         )}
                       </div>
                      <div className="flex-1">
-                       <p className="font-medium text-foreground">{chat.other_user_name}</p>
-                       <p className="text-sm text-muted-foreground">{chat.other_user_university}</p>
+                       <p className="font-medium text-foreground">{chat.name}</p>
+                       <p className="text-sm text-muted-foreground">{chat.subtitle}</p>
                      </div>
                    </div>
-                ))}
-
-              {/* Groups Section - Mobile */}
-              <h3 className="text-sm font-medium text-muted-foreground mt-6">
-                Groups
-              </h3>
-              {groupsLoading && (
-                <div className="flex items-center justify-center py-4">
-                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                </div>
-              )}
-              {!groupsLoading && groups.length === 0 && (
-                <p className="text-muted-foreground text-sm">No groups yet</p>
-              )}
-              {!groupsLoading &&
-                groups.map((group) => (
-                  <div
-                    key={group.id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                    onClick={() => navigate(`/chat/group/${group.id}`)}
-                  >
-                    <div className="w-12 h-12 bg-gradient-to-br from-accent to-primary rounded-full flex items-center justify-center overflow-hidden">
-                      {group.avatar_url ? (
-                        <img src={group.avatar_url} alt={group.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-sm font-bold text-white">
-                          {group.name?.charAt(0) || 'G'}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-foreground">{group.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {group.member_count} member{group.member_count !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  </div>
                 ))}
             </div>
           </div>
         </MobileLayout>
+      ) : selectedGroup ? (
+        <div className="h-screen bg-background flex flex-col">
+          <MobileChatHeader
+            userName={selectedGroup.name}
+            userUniversity={`${selectedGroup.member_count} member${selectedGroup.member_count !== 1 ? 's' : ''}`}
+            userAvatar={selectedGroup.avatar_url}
+            onBackClick={handleBackToUserList}
+            onClearChat={() => {}}
+            onDeleteChat={() => {}}
+            onBlockUser={() => {}}
+            isGroup={true}
+          />
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div
+              ref={messagesContainerRef}
+              className="flex-1 p-4 overflow-y-auto space-y-4 pb-safe relative"
+              style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+            >
+              {groupMessagesLoading && (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                </div>
+              )}
+              {!groupMessagesLoading && groupMessages.length ? (
+                groupMessages.map((message, index) => {
+                  const isMine = message.sender_id === user?.id;
+                  const isSameSenderAsPrev = index > 0 && groupMessages[index - 1].sender_id === message.sender_id;
+                  return (
+                    <div
+                      key={message.id}
+                      className={`flex gap-2 group ${isMine ? 'flex-row-reverse' : 'flex-row'}`}
+                    >
+                      {!isMine && !isSameSenderAsPrev && (
+                        <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {message.sender?.avatar_url ? (
+                            <img src={message.sender.avatar_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-xs font-bold text-white">{message.sender?.full_name?.charAt(0) || 'U'}</span>
+                          )}
+                        </div>
+                      )}
+                      {!isMine && isSameSenderAsPrev && <div className="w-8" />}
+                      <div className={`max-w-xs flex flex-col ${isMine ? 'items-end' : 'items-start'}`}>
+                        {!isMine && !isSameSenderAsPrev && (
+                          <p className="text-xs text-muted-foreground mb-1 ml-1">{message.sender?.full_name || message.sender?.username}</p>
+                        )}
+                        <div
+                          className={`px-4 py-2 rounded-2xl ${
+                            isMine ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                          }`}
+                        >
+                          <div className="break-all whitespace-pre-wrap">{message.content}</div>
+                          <p className={`text-xs mt-1 ${isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                            {new Date(message.created_at).toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="flex items-center justify-center h-full text-center">
+                  <div>
+                    <h3 className="font-medium text-foreground">No messages yet</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Start the conversation!</p>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+            {/* Group Input - Mobile */}
+            <div className="border-t border-border p-3 bg-card safe-bottom">
+              <div className="flex gap-2 items-center">
+                <Textarea
+                  placeholder="Type your message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={async (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      if (newMessage.trim()) {
+                        const success = await sendGroupMessage(newMessage);
+                        if (success) setNewMessage('');
+                      }
+                    }
+                  }}
+                  className="flex-1 resize-none text-base"
+                  rows={1}
+                />
+                <Button 
+                  onClick={async () => {
+                    if (newMessage.trim()) {
+                      const success = await sendGroupMessage(newMessage);
+                      if (success) setNewMessage('');
+                    }
+                  }} 
+                  disabled={!newMessage.trim()}
+                  size="icon"
+                >
+                  <Send className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       ) : (
         <div className="h-screen bg-background flex flex-col">
           <MobileChatHeader
