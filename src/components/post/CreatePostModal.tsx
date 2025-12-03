@@ -35,10 +35,14 @@ export default function CreatePostModal({ open, onOpenChange, onSuccess }: Creat
 
     setIsPosting(true);
     try {
+      // Determine post type
+      const dbPostType = pollData ? 'poll' : surveyData ? 'survey' : 'post';
+      
       const postData: any = {
         user_id: user.id,
         content: content.trim() || (pollData ? pollData.question : 'Survey'),
         hashtags: hashtags.length > 0 ? hashtags : null,
+        post_type: dbPostType,
       };
 
       // Add images if present
