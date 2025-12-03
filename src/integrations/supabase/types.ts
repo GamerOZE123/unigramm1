@@ -1879,6 +1879,7 @@ export type Database = {
           poll_ends_at: string | null
           poll_options: Json | null
           poll_question: string | null
+          post_type: string
           startup_id: string | null
           survey_questions: Json | null
           updated_at: string | null
@@ -1902,6 +1903,7 @@ export type Database = {
           poll_ends_at?: string | null
           poll_options?: Json | null
           poll_question?: string | null
+          post_type?: string
           startup_id?: string | null
           survey_questions?: Json | null
           updated_at?: string | null
@@ -1925,6 +1927,7 @@ export type Database = {
           poll_ends_at?: string | null
           poll_options?: Json | null
           poll_question?: string | null
+          post_type?: string
           startup_id?: string | null
           survey_questions?: Json | null
           updated_at?: string | null

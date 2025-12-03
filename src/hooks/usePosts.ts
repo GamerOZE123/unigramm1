@@ -13,6 +13,7 @@ export interface Post {
   views_count: number;
   created_at: string;
   updated_at: string;
+  post_type: string;
 
   // ⭐ Poll fields
   poll_question?: string | null;
@@ -51,6 +52,7 @@ export const usePosts = () => {
           views_count,
           created_at,
           updated_at,
+          post_type,
           poll_question,
           poll_options,
           poll_ends_at,
@@ -125,6 +127,7 @@ export const usePosts = () => {
           views_count,
           created_at,
           updated_at,
+          post_type,
           poll_question,
           poll_options,
           poll_ends_at,
