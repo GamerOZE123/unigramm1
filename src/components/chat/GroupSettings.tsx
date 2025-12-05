@@ -166,18 +166,12 @@ export default function GroupSettings({ group, onClose, onGroupUpdated }: GroupS
     try {
       const memberIds = members.map(m => m.user_id);
       
-      let queryBuilder = supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('user_id, full_name, username, avatar_url')
         .or(`username.ilike.%${query}%,full_name.ilike.%${query}%`)
+        .not('user_id', 'in', `(${memberIds.join(',')})`)
         .limit(10);
-
-      // Only add the NOT IN filter if there are existing members
-      if (memberIds.length > 0) {
-        queryBuilder = queryBuilder.not('user_id', 'in', `(${memberIds.join(',')})`);
-      }
-
-      const { data, error } = await queryBuilder;
 
       if (error) throw error;
       setSearchResults(data || []);
@@ -426,16 +420,11 @@ export default function GroupSettings({ group, onClose, onGroupUpdated }: GroupS
                         {member.profile?.full_name?.charAt(0) || member.profile?.username?.charAt(0) || 'U'}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium">{member.profile?.full_name || member.profile?.username}</p>
-                        {member.user_id === group.created_by && (
-                          <span className="px-2 py-0.5 text-xs font-semibold bg-primary/10 text-primary rounded-full">
-                            Admin
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground">@{member.profile?.username}</p>
+                    <div>
+                      <p className="text-sm font-medium">{member.profile?.full_name || member.profile?.username}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {member.user_id === group.created_by ? 'Admin' : member.role}
+                      </p>
                     </div>
                   </div>
                   {isAdmin && member.user_id !== user?.id && member.user_id !== group.created_by && (
