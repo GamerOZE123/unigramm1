@@ -4,6 +4,7 @@ import MobileLayout from '@/components/layout/MobileLayout';
 import UserSearch from '@/components/chat/UserSearch';
 import MobileChatHeader from '@/components/chat/MobileChatHeader';
 import GroupSettings from '@/components/chat/GroupSettings';
+import ChatSettings from '@/components/chat/ChatSettings';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
@@ -44,6 +45,7 @@ export default function Chat() {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [selectedGroup, setSelectedGroup] = useState<any>(null);
   const [showGroupSettings, setShowGroupSettings] = useState(false);
+  const [showChatSettings, setShowChatSettings] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [showUserList, setShowUserList] = useState(true);
   const [unreadMessages, setUnreadMessages] = useState<Set<string>>(new Set());
@@ -255,6 +257,7 @@ export default function Chat() {
       // Clear group selection when selecting a user
       setSelectedGroup(null);
       setShowGroupSettings(false);
+      setShowChatSettings(false);
       setSelectedUser(userProfile);
 
       // Pass the user's ID to the conversation creation function
@@ -285,6 +288,7 @@ export default function Chat() {
     setSelectedUser(null);
     setSelectedConversationId(null);
     setShowGroupSettings(false);
+    setShowChatSettings(false);
     setNewMessageNotification(false);
     // Clear unread badge for this group
     setUnreadGroups((prev) => {
@@ -295,12 +299,13 @@ export default function Chat() {
     if (isMobile) setShowUserList(false);
   };
 
-  const handleBackToUserList = () => {
+const handleBackToUserList = () => {
     setShowUserList(true);
     setSelectedConversationId(null);
     setSelectedUser(null);
     setSelectedGroup(null);
     setShowGroupSettings(false);
+    setShowChatSettings(false);
   };
 
   const uploadMediaFile = async (file: File) => {
@@ -798,6 +803,21 @@ export default function Chat() {
               </>
               )
             ) : !chatLoading && selectedUser ? (
+              showChatSettings ? (
+                <ChatSettings
+                  user={selectedUser}
+                  conversationId={selectedConversationId!}
+                  onClose={() => setShowChatSettings(false)}
+                  onClearChat={handleClearChat}
+                  onDeleteChat={() => handleDeleteChat(selectedConversationId!, selectedUser.user_id)}
+                  onChatDeleted={() => {
+                    setSelectedConversationId(null);
+                    setSelectedUser(null);
+                    refreshConversations();
+                    refreshRecentChats();
+                  }}
+                />
+              ) : (
               <>
                 {/* Chat header */}
                 <div className="p-5 border-b border-border bg-surface/30 backdrop-blur-sm">
@@ -835,24 +855,13 @@ export default function Chat() {
                       >
                         <Search className="w-4 h-4" />
                       </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={handleClearChat}>
-                            <MessageSquareX className="w-4 h-4 mr-2" /> Clear Chat
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDeleteChat(selectedConversationId!, selectedUser.user_id)}>
-                            <Trash2 className="w-4 h-4 mr-2" /> Delete Chat
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={handleBlockUser} className="text-destructive">
-                            <UserX className="w-4 h-4 mr-2" /> Block User
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <Button 
+                        variant="ghost" 
+                        size="icon"
+                        onClick={() => setShowChatSettings(true)}
+                      >
+                        <Settings className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                   
@@ -1108,6 +1117,7 @@ export default function Chat() {
                   </div>
                 </div>
               </>
+              )
             ) : (
               <div className="flex-1 flex items-center justify-center text-center p-8">
                 <div className="p-12 rounded-3xl bg-surface/50 max-w-md">
@@ -1313,6 +1323,24 @@ export default function Chat() {
           </div>
         </div>
         )
+      ) : showChatSettings && selectedUser ? (
+        <div className="h-screen bg-background">
+          <ChatSettings
+            user={selectedUser}
+            conversationId={selectedConversationId!}
+            onClose={() => setShowChatSettings(false)}
+            onClearChat={handleClearChat}
+            onDeleteChat={() => handleDeleteChat(selectedConversationId!, selectedUser.user_id)}
+            onChatDeleted={() => {
+              setSelectedConversationId(null);
+              setSelectedUser(null);
+              setShowChatSettings(false);
+              refreshConversations();
+              refreshRecentChats();
+              setShowUserList(true);
+            }}
+          />
+        </div>
       ) : (
         <div className="h-screen bg-background flex flex-col">
           <MobileChatHeader
@@ -1320,9 +1348,7 @@ export default function Chat() {
             userUniversity={selectedUser?.university || 'University'}
             userAvatar={selectedUser?.avatar_url}
             onBackClick={handleBackToUserList}
-            onClearChat={handleClearChat}
-            onDeleteChat={() => handleDeleteChat(selectedConversationId!, selectedUser.user_id)}
-            onBlockUser={handleBlockUser}
+            onSettings={() => setShowChatSettings(true)}
           />
           <div className="flex-1 flex flex-col overflow-hidden">
             <div

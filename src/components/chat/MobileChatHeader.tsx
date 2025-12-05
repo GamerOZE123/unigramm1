@@ -1,7 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { ArrowLeft, MoreVertical, MessageSquareX, Trash2, UserX, Users, Settings } from 'lucide-react';
+import { ArrowLeft, Users, Settings } from 'lucide-react';
 
 interface MobileChatHeaderProps {
   userName: string;
@@ -63,42 +62,11 @@ export default function MobileChatHeader({
           </div>
         </div>
         
-        {/* Group Settings Button */}
-        {isGroup && onSettings && (
+        {/* Settings Button */}
+        {onSettings && (
           <Button variant="ghost" size="icon" onClick={onSettings}>
             <Settings className="w-4 h-4" />
           </Button>
-        )}
-
-        {/* Chat Options Menu - Only show for non-group chats */}
-        {!isGroup && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreVertical className="w-4 h-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {onClearChat && (
-                <DropdownMenuItem onClick={onClearChat}>
-                  <MessageSquareX className="w-4 h-4 mr-2" />
-                  Clear Chat
-                </DropdownMenuItem>
-              )}
-              {onDeleteChat && (
-                <DropdownMenuItem onClick={onDeleteChat}>
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete Chat
-                </DropdownMenuItem>
-              )}
-              {onBlockUser && (
-                <DropdownMenuItem onClick={onBlockUser} className="text-destructive">
-                  <UserX className="w-4 h-4 mr-2" />
-                  Block User
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
         )}
       </div>
     </div>
