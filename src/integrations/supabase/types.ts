@@ -1649,6 +1649,27 @@ export type Database = {
           },
         ]
       }
+      muted_chats: {
+        Row: {
+          chat_id: string
+          id: string
+          muted_at: string
+          user_id: string
+        }
+        Insert: {
+          chat_id: string
+          id?: string
+          muted_at?: string
+          user_id: string
+        }
+        Update: {
+          chat_id?: string
+          id?: string
+          muted_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -1709,6 +1730,27 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      pinned_chats: {
+        Row: {
+          chat_id: string
+          id: string
+          pinned_at: string
+          user_id: string
+        }
+        Insert: {
+          chat_id: string
+          id?: string
+          pinned_at?: string
+          user_id: string
+        }
+        Update: {
+          chat_id?: string
+          id?: string
+          pinned_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       pinned_messages: {
         Row: {

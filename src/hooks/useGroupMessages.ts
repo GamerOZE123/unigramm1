@@ -68,6 +68,13 @@ export const useGroupMessages = (groupId: string | null) => {
         });
 
       if (error) throw error;
+      
+      // Update group's updated_at to move it to top of chat list
+      await supabase
+        .from('chat_groups')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', groupId);
+      
       return true;
     } catch (error) {
       console.error('Error sending group message:', error);

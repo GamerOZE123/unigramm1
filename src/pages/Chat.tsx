@@ -134,9 +134,11 @@ export default function Chat() {
         { event: 'INSERT', schema: 'public', table: 'messages' },
         (payload) => {
           const message = payload.new;
+          // Refresh recent chats to move active chat to top
+          refreshRecentChats();
+          
           if (message.sender_id !== user.id) {
             const chatUserId = message.sender_id;
-            // Move chat to top and add to recentChats (handled by useRecentChats.ts)
             // Add unread badge
             if (selectedUser?.user_id !== chatUserId) {
               setUnreadMessages((prev) => new Set(prev).add(chatUserId));
@@ -144,11 +146,27 @@ export default function Chat() {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'group_messages' },
+        () => {
+          // Refresh groups to update their last activity
+          refreshGroups();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'chat_groups' },
+        () => {
+          // Refresh groups when updated_at changes
+          refreshGroups();
+        }
+      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, selectedUser]);
+  }, [user, selectedUser, refreshRecentChats, refreshGroups]);
 
   const handleScroll = () => {
     if (!messagesContainerRef.current) return;
