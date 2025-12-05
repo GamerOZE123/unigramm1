@@ -33,6 +33,7 @@ interface UnifiedChatItem {
   avatar: string | null;
   subtitle: string;
   lastActivity: string;
+  originalData: any;
 }
 
 export default function Chat() {
@@ -86,7 +87,8 @@ export default function Chat() {
       name: chat.other_user_name || 'Unknown',
       avatar: chat.other_user_avatar,
       subtitle: chat.other_user_university || '',
-      lastActivity: chat.last_interacted_at
+      lastActivity: chat.last_interacted_at,
+      originalData: chat
     }));
 
     const groupChats: UnifiedChatItem[] = groups.map(group => ({
@@ -95,7 +97,8 @@ export default function Chat() {
       name: group.name,
       avatar: group.avatar_url,
       subtitle: `${group.member_count || 0} member${(group.member_count || 0) !== 1 ? 's' : ''}`,
-      lastActivity: group.updated_at
+      lastActivity: group.updated_at,
+      originalData: group
     }));
 
     return [...userChats, ...groupChats].sort((a, b) => 
@@ -581,7 +584,7 @@ export default function Chat() {
                             ? 'bg-primary/10 shadow-sm border-l-4 border-l-primary' 
                             : 'hover:bg-surface/80 border-l-4 border-l-transparent'
                         }`}
-                        onClick={() => chat.type === 'user' ? handleUserClick(chat.id) : handleGroupClick(groups.find(g => g.id === chat.id))}
+                        onClick={() => chat.type === 'user' ? handleUserClick(chat.id) : handleGroupClick(chat.originalData)}
                       >
                         <div className="relative">
                           <div className={`w-12 h-12 bg-gradient-to-br ${chat.type === 'group' ? 'from-accent to-primary' : 'from-primary to-accent'} rounded-full flex items-center justify-center relative overflow-hidden ring-2 ring-border`}>
@@ -1137,7 +1140,7 @@ export default function Chat() {
                    <div
                      key={`${chat.type}-${chat.id}`}
                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                     onClick={() => chat.type === 'user' ? handleUserClick(chat.id) : handleGroupClick(groups.find(g => g.id === chat.id))}
+                     onClick={() => chat.type === 'user' ? handleUserClick(chat.id) : handleGroupClick(chat.originalData)}
                    >
                       <div className={`w-12 h-12 bg-gradient-to-br ${chat.type === 'group' ? 'from-accent to-primary' : 'from-primary to-accent'} rounded-full flex items-center justify-center relative overflow-hidden`}>
                         {chat.avatar ? (
