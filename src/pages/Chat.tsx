@@ -124,49 +124,30 @@ export default function Chat() {
     }
   }, [selectedConversationId]);
 
-  // Realtime: move chats to top + unread badge
+  // Realtime: unread badge only (live updates handled by hooks)
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel('chat-realtime')
+      .channel('chat-unread-badge')
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages' },
         (payload) => {
-          const message = payload.new;
-          // Refresh recent chats to move active chat to top
-          refreshRecentChats();
-          
+          const message = payload.new as { sender_id: string };
           if (message.sender_id !== user.id) {
             const chatUserId = message.sender_id;
-            // Add unread badge
+            // Add unread badge if not viewing that chat
             if (selectedUser?.user_id !== chatUserId) {
               setUnreadMessages((prev) => new Set(prev).add(chatUserId));
             }
           }
         }
       )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'group_messages' },
-        () => {
-          // Refresh groups to update their last activity
-          refreshGroups();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'chat_groups' },
-        () => {
-          // Refresh groups when updated_at changes
-          refreshGroups();
-        }
-      )
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, selectedUser, refreshRecentChats, refreshGroups]);
+  }, [user, selectedUser]);
 
   const handleScroll = () => {
     if (!messagesContainerRef.current) return;

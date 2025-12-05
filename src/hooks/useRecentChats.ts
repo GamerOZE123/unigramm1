@@ -94,7 +94,7 @@ const addRecentChat = async (otherUserId: string) => {
     if (user) {
       fetchRecentChats();
 
-      // Real-time: Refresh on recent_chats updates (database trigger handles both send/receive)
+      // Real-time: Live update on recent_chats changes
       const recentChatsChannel = supabase
         .channel('recent-chats-updates')
         .on(
@@ -106,8 +106,42 @@ const addRecentChat = async (otherUserId: string) => {
             filter: `user_id=eq.${user.id}`,
           },
           (payload) => {
-            console.log('Recent chats update:', payload);
-            fetchRecentChats();
+            const updated = payload.new as RecentChat & { user_id: string };
+            setRecentChats(prev => {
+              const filtered = prev.filter(c => c.other_user_id !== updated.other_user_id);
+              const updatedChat: RecentChat = {
+                other_user_id: updated.other_user_id,
+                other_user_name: updated.other_user_name,
+                other_user_avatar: updated.other_user_avatar,
+                other_user_university: updated.other_user_university,
+                last_interacted_at: updated.last_interacted_at,
+              };
+              return [updatedChat, ...filtered];
+            });
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'recent_chats',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            const inserted = payload.new as RecentChat & { user_id: string };
+            setRecentChats(prev => {
+              const exists = prev.some(c => c.other_user_id === inserted.other_user_id);
+              if (exists) return prev;
+              const newChat: RecentChat = {
+                other_user_id: inserted.other_user_id,
+                other_user_name: inserted.other_user_name,
+                other_user_avatar: inserted.other_user_avatar,
+                other_user_university: inserted.other_user_university,
+                last_interacted_at: inserted.last_interacted_at,
+              };
+              return [newChat, ...prev];
+            });
           }
         )
         .subscribe();

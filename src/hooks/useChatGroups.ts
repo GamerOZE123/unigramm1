@@ -75,30 +75,51 @@ export const useChatGroups = () => {
     if (user) {
       fetchGroups();
 
-      // Subscribe to group changes
+      // Subscribe to group changes with live updates
       const groupsChannel = supabase
         .channel('chat-groups-updates')
         .on(
           'postgres_changes',
           {
-            event: '*',
+            event: 'UPDATE',
             schema: 'public',
             table: 'chat_groups',
           },
+          (payload) => {
+            const updated = payload.new as ChatGroup;
+            setGroups(prev => {
+              const exists = prev.some(g => g.id === updated.id);
+              if (!exists) return prev;
+              const filtered = prev.filter(g => g.id !== updated.id);
+              const existing = prev.find(g => g.id === updated.id);
+              return [{ ...updated, member_count: existing?.member_count || 0 }, ...filtered];
+            });
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'chat_group_members',
+            filter: `user_id=eq.${user.id}`,
+          },
           () => {
+            // When user is added to a new group, fetch all groups
             fetchGroups();
           }
         )
         .on(
           'postgres_changes',
           {
-            event: '*',
+            event: 'DELETE',
             schema: 'public',
             table: 'chat_group_members',
             filter: `user_id=eq.${user.id}`,
           },
-          () => {
-            fetchGroups();
+          (payload) => {
+            const deleted = payload.old as { group_id: string };
+            setGroups(prev => prev.filter(g => g.id !== deleted.group_id));
           }
         )
         .subscribe();
