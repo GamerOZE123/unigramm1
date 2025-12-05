@@ -146,8 +146,37 @@ const addRecentChat = async (otherUserId: string) => {
         )
         .subscribe();
 
+      // Listen for profile changes to update names/avatars in chat list
+      const profilesChannel = supabase
+        .channel('profiles-updates-for-chats')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+          },
+          (payload) => {
+            const updated = payload.new as { user_id: string; full_name: string; avatar_url: string; university: string };
+            setRecentChats(prev => 
+              prev.map(chat => 
+                chat.other_user_id === updated.user_id
+                  ? {
+                      ...chat,
+                      other_user_name: updated.full_name || chat.other_user_name,
+                      other_user_avatar: updated.avatar_url || chat.other_user_avatar,
+                      other_user_university: updated.university || chat.other_user_university,
+                    }
+                  : chat
+              )
+            );
+          }
+        )
+        .subscribe();
+
       return () => {
         supabase.removeChannel(recentChatsChannel);
+        supabase.removeChannel(profilesChannel);
       };
     }
   }, [user]);

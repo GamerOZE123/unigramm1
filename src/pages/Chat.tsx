@@ -47,6 +47,7 @@ export default function Chat() {
   const [newMessage, setNewMessage] = useState('');
   const [showUserList, setShowUserList] = useState(true);
   const [unreadMessages, setUnreadMessages] = useState<Set<string>>(new Set());
+  const [unreadGroups, setUnreadGroups] = useState<Set<string>>(new Set());
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [newMessageNotification, setNewMessageNotification] = useState(false);
   const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
@@ -124,10 +125,12 @@ export default function Chat() {
     }
   }, [selectedConversationId]);
 
-  // Realtime: unread badge only (live updates handled by hooks)
+  // Realtime: unread badge for users and groups
   useEffect(() => {
     if (!user) return;
-    const channel = supabase
+    
+    // Listen for new direct messages
+    const messagesChannel = supabase
       .channel('chat-unread-badge')
       .on(
         'postgres_changes',
@@ -144,10 +147,30 @@ export default function Chat() {
         }
       )
       .subscribe();
+
+    // Listen for new group messages
+    const groupMessagesChannel = supabase
+      .channel('group-unread-badge')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'group_messages' },
+        (payload) => {
+          const message = payload.new as { sender_id: string; group_id: string };
+          if (message.sender_id !== user.id) {
+            // Add unread badge if not viewing that group
+            if (selectedGroup?.id !== message.group_id) {
+              setUnreadGroups((prev) => new Set(prev).add(message.group_id));
+            }
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(groupMessagesChannel);
     };
-  }, [user, selectedUser]);
+  }, [user, selectedUser, selectedGroup]);
 
   const handleScroll = () => {
     if (!messagesContainerRef.current) return;
@@ -263,6 +286,12 @@ export default function Chat() {
     setSelectedConversationId(null);
     setShowGroupSettings(false);
     setNewMessageNotification(false);
+    // Clear unread badge for this group
+    setUnreadGroups((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(group.id);
+      return newSet;
+    });
     if (isMobile) setShowUserList(false);
   };
 
@@ -597,7 +626,7 @@ export default function Chat() {
                               </div>
                             )}
                           </div>
-                          {chat.type === 'user' && unreadMessages.has(chat.id) && (
+                          {((chat.type === 'user' && unreadMessages.has(chat.id)) || (chat.type === 'group' && unreadGroups.has(chat.id))) && (
                             <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-primary rounded-full ring-2 ring-card"></div>
                           )}
                         </div>
@@ -1151,7 +1180,7 @@ export default function Chat() {
                             <Users className="w-2.5 h-2.5 text-white" />
                           </div>
                         )}
-                        {chat.type === 'user' && unreadMessages.has(chat.id) && (
+                        {((chat.type === 'user' && unreadMessages.has(chat.id)) || (chat.type === 'group' && unreadGroups.has(chat.id))) && (
                           <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></div>
                         )}
                       </div>
