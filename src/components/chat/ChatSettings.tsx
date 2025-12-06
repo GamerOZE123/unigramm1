@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   ArrowLeft, 
   Bell, 
@@ -29,6 +28,7 @@ interface ChatSettingsProps {
   onClearChat: () => void;
   onDeleteChat: () => void;
   onChatDeleted?: () => void;
+  onBlockStatusChange?: (isBlocked: boolean) => void;
 }
 
 export default function ChatSettings({ 
@@ -37,17 +37,33 @@ export default function ChatSettings({
   onClose, 
   onClearChat,
   onDeleteChat,
-  onChatDeleted
+  onChatDeleted,
+  onBlockStatusChange
 }: ChatSettingsProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [muteNotifications, setMuteNotifications] = useState(false);
   const [loading, setLoading] = useState(false);
   const [blockLoading, setBlockLoading] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   useEffect(() => {
     checkMuteStatus();
-  }, [conversationId, user?.id]);
+    checkBlockStatus();
+  }, [conversationId, user?.id, chatUser?.user_id]);
+
+  const checkBlockStatus = async () => {
+    if (!user || !chatUser?.user_id) return;
+    
+    const { data } = await supabase
+      .from('blocked_users')
+      .select('id')
+      .eq('blocker_id', user.id)
+      .eq('blocked_id', chatUser.user_id)
+      .maybeSingle();
+    
+    setIsBlocked(!!data);
+  };
 
   const checkMuteStatus = async () => {
     if (!user || !conversationId) return;
@@ -100,12 +116,37 @@ export default function ChatSettings({
       
       if (error) throw error;
       
+      setIsBlocked(true);
+      onBlockStatusChange?.(true);
       toast.success('User blocked');
-      onChatDeleted?.();
       onClose();
     } catch (error) {
       console.error('Error blocking user:', error);
       toast.error('Failed to block user');
+    } finally {
+      setBlockLoading(false);
+    }
+  };
+
+  const handleUnblockUser = async () => {
+    if (!chatUser?.user_id || !user) return;
+    
+    setBlockLoading(true);
+    try {
+      const { error } = await supabase
+        .from('blocked_users')
+        .delete()
+        .eq('blocker_id', user.id)
+        .eq('blocked_id', chatUser.user_id);
+      
+      if (error) throw error;
+      
+      setIsBlocked(false);
+      onBlockStatusChange?.(false);
+      toast.success('User unblocked');
+    } catch (error) {
+      console.error('Error unblocking user:', error);
+      toast.error('Failed to unblock user');
     } finally {
       setBlockLoading(false);
     }
@@ -201,9 +242,9 @@ export default function ChatSettings({
           </Button>
           
           <Button 
-            variant="destructive" 
+            variant={isBlocked ? "outline" : "destructive"}
             className="w-full justify-start"
-            onClick={handleBlockUser}
+            onClick={isBlocked ? handleUnblockUser : handleBlockUser}
             disabled={blockLoading}
           >
             {blockLoading ? (
@@ -211,7 +252,7 @@ export default function ChatSettings({
             ) : (
               <UserX className="w-4 h-4 mr-3" />
             )}
-            Block User
+            {isBlocked ? 'Unblock User' : 'Block User'}
           </Button>
         </div>
       </div>

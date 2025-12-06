@@ -58,6 +58,7 @@ export default function Chat() {
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isUserBlocked, setIsUserBlocked] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -238,6 +239,37 @@ export default function Chat() {
     }
   }, [searchParams]);
 
+  const checkBlockedStatus = async (otherUserId: string) => {
+    if (!user) return false;
+    const { data } = await supabase
+      .from('blocked_users')
+      .select('id')
+      .eq('blocker_id', user.id)
+      .eq('blocked_id', otherUserId)
+      .maybeSingle();
+    return !!data;
+  };
+
+  const handleUnblockUser = async () => {
+    if (!selectedUser?.user_id || !user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('blocked_users')
+        .delete()
+        .eq('blocker_id', user.id)
+        .eq('blocked_id', selectedUser.user_id);
+      
+      if (error) throw error;
+      
+      setIsUserBlocked(false);
+      toast.success('User unblocked');
+    } catch (error) {
+      console.error('Error unblocking user:', error);
+      toast.error('Failed to unblock user');
+    }
+  };
+
   const handleUserClick = async (userId: string) => {
     try {
       // Ensure the current user is authenticated before proceeding
@@ -253,6 +285,10 @@ export default function Chat() {
         return;
       }
       console.log('Selected user:', userProfile);
+      
+      // Check if user is blocked
+      const blocked = await checkBlockedStatus(userId);
+      setIsUserBlocked(blocked);
       
       // Clear group selection when selecting a user
       setSelectedGroup(null);
@@ -306,6 +342,7 @@ const handleBackToUserList = () => {
     setSelectedGroup(null);
     setShowGroupSettings(false);
     setShowChatSettings(false);
+    setIsUserBlocked(false);
   };
 
   const uploadMediaFile = async (file: File) => {
@@ -816,6 +853,7 @@ const handleBackToUserList = () => {
                     refreshConversations();
                     refreshRecentChats();
                   }}
+                  onBlockStatusChange={(blocked) => setIsUserBlocked(blocked)}
                 />
               ) : (
               <>
@@ -1036,85 +1074,100 @@ const handleBackToUserList = () => {
                 </div>
                 {/* Input */}
                 <div className="border-t border-border p-4 bg-card/50 backdrop-blur-sm">
-                  {mediaUrls.length > 0 && (
-                    <div className="mb-3 flex flex-wrap gap-2">
-                      {mediaUrls.map((url, index) => (
-                        <div key={index} className="relative inline-block group">
-                          {url.match(/\.(mp4|webm|ogg)$/i) ? (
-                            <video src={url} className="h-24 rounded-xl ring-2 ring-border" controls />
-                          ) : (
-                            <img src={url} alt="Preview" className="h-24 rounded-xl ring-2 ring-border" />
-                          )}
-                          <button
-                            onClick={() => setMediaUrls(prev => prev.filter((_, i) => i !== index))}
-                            className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-sm font-bold shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                      ))}
+                  {isUserBlocked ? (
+                    <div className="flex items-center justify-center py-2">
+                      <Button 
+                        variant="outline" 
+                        onClick={handleUnblockUser}
+                        className="flex items-center gap-2"
+                      >
+                        <UserX className="w-4 h-4" />
+                        Unblock to send messages
+                      </Button>
                     </div>
-                  )}
-                  <div className="flex gap-2 items-end">
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleMediaUpload}
-                        accept="image/*,video/*"
-                        multiple
-                        className="hidden"
-                      />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingImage}
-                      className="flex-shrink-0 hover:bg-surface"
-                    >
-                      {uploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
-                    </Button>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="ghost" size="icon" className="flex-shrink-0 hover:bg-surface">
-                          <Smile className="w-4 h-4" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-2" align="start">
-                        <div className="grid grid-cols-6 gap-1">
-                          {TEXT_EMOJIS.map((e) => (
-                            <button
-                              key={e}
-                              onClick={() => addEmoji(e)}
-                              className="w-9 h-9 rounded-lg hover:bg-surface flex items-center justify-center transition-colors text-xl hover:scale-110"
-                            >
-                              {e}
-                            </button>
+                  ) : (
+                    <>
+                      {mediaUrls.length > 0 && (
+                        <div className="mb-3 flex flex-wrap gap-2">
+                          {mediaUrls.map((url, index) => (
+                            <div key={index} className="relative inline-block group">
+                              {url.match(/\.(mp4|webm|ogg)$/i) ? (
+                                <video src={url} className="h-24 rounded-xl ring-2 ring-border" controls />
+                              ) : (
+                                <img src={url} alt="Preview" className="h-24 rounded-xl ring-2 ring-border" />
+                              )}
+                              <button
+                                onClick={() => setMediaUrls(prev => prev.filter((_, i) => i !== index))}
+                                className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-sm font-bold shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
                           ))}
                         </div>
-                      </PopoverContent>
-                    </Popover>
-                    <Textarea
-                      placeholder="Type your message..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onPaste={handlePaste}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                      className="flex-1 resize-none"
-                      rows={1}
-                    />
-                    <Button 
-                      onClick={handleSendMessage} 
-                      disabled={(!newMessage.trim() && mediaUrls.length === 0) || uploadingImage}
-                      className="flex-shrink-0"
-                    >
-                      <Send className="w-4 h-4" />
-                    </Button>
-                  </div>
+                      )}
+                      <div className="flex gap-2 items-end">
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleMediaUpload}
+                            accept="image/*,video/*"
+                            multiple
+                            className="hidden"
+                          />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploadingImage}
+                          className="flex-shrink-0 hover:bg-surface"
+                        >
+                          {uploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+                        </Button>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon" className="flex-shrink-0 hover:bg-surface">
+                              <Smile className="w-4 h-4" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-2" align="start">
+                            <div className="grid grid-cols-6 gap-1">
+                              {TEXT_EMOJIS.map((e) => (
+                                <button
+                                  key={e}
+                                  onClick={() => addEmoji(e)}
+                                  className="w-9 h-9 rounded-lg hover:bg-surface flex items-center justify-center transition-colors text-xl hover:scale-110"
+                                >
+                                  {e}
+                                </button>
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                        <Textarea
+                          placeholder="Type your message..."
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          onPaste={handlePaste}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSendMessage();
+                            }
+                          }}
+                          className="flex-1 resize-none"
+                          rows={1}
+                        />
+                        <Button 
+                          onClick={handleSendMessage} 
+                          disabled={(!newMessage.trim() && mediaUrls.length === 0) || uploadingImage}
+                          className="flex-shrink-0"
+                        >
+                          <Send className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </>
               )
@@ -1339,6 +1392,7 @@ const handleBackToUserList = () => {
               refreshRecentChats();
               setShowUserList(true);
             }}
+            onBlockStatusChange={(blocked) => setIsUserBlocked(blocked)}
           />
         </div>
       ) : (
@@ -1484,85 +1538,100 @@ const handleBackToUserList = () => {
               )}
             </div>
             <div className="border-t border-border p-4 bg-card/95 backdrop-blur-sm sticky bottom-0">
-              {mediaUrls.length > 0 && (
-                <div className="mb-2 flex flex-wrap gap-2">
-                  {mediaUrls.map((url, index) => (
-                    <div key={index} className="relative inline-block">
-                      {url.match(/\.(mp4|webm|ogg)$/i) ? (
-                        <video src={url} className="h-20 rounded-lg" controls />
-                      ) : (
-                        <img src={url} alt="Preview" className="h-20 rounded-lg" />
-                      )}
-                      <button
-                        onClick={() => setMediaUrls(prev => prev.filter((_, i) => i !== index))}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
+              {isUserBlocked ? (
+                <div className="flex items-center justify-center py-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleUnblockUser}
+                    className="flex items-center gap-2"
+                  >
+                    <UserX className="w-4 h-4" />
+                    Unblock to send messages
+                  </Button>
                 </div>
-              )}
-              <div className="flex gap-2 items-end">
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleMediaUpload}
-                    accept="image/*,video/*"
-                    multiple
-                    className="hidden"
-                  />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingImage}
-                  className="flex-shrink-0"
-                >
-                  <ImagePlus className="w-4 h-4" />
-                </Button>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="icon" className="flex-shrink-0">
-                      <Smile className="w-4 h-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-2" align="start">
-                    <div className="grid grid-cols-6 gap-1">
-                      {TEXT_EMOJIS.map((e) => (
-                        <button
-                          key={e}
-                          onClick={() => addEmoji(e)}
-                          className="w-8 h-8 rounded hover:bg-muted flex items-center justify-center transition-colors text-lg"
-                        >
-                          {e}
-                        </button>
+              ) : (
+                <>
+                  {mediaUrls.length > 0 && (
+                    <div className="mb-2 flex flex-wrap gap-2">
+                      {mediaUrls.map((url, index) => (
+                        <div key={index} className="relative inline-block">
+                          {url.match(/\.(mp4|webm|ogg)$/i) ? (
+                            <video src={url} className="h-20 rounded-lg" controls />
+                          ) : (
+                            <img src={url} alt="Preview" className="h-20 rounded-lg" />
+                          )}
+                          <button
+                            onClick={() => setMediaUrls(prev => prev.filter((_, i) => i !== index))}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs"
+                          >
+                            ×
+                          </button>
+                        </div>
                       ))}
                     </div>
-                  </PopoverContent>
-                </Popover>
-                <Textarea
-                  placeholder="Type your message..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onPaste={handlePaste}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  className="flex-1 resize-none max-h-32"
-                  rows={1}
-                />
-                <Button 
-                  onClick={handleSendMessage} 
-                  disabled={(!newMessage.trim() && mediaUrls.length === 0) || uploadingImage}
-                  className="flex-shrink-0"
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
+                  )}
+                  <div className="flex gap-2 items-end">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleMediaUpload}
+                        accept="image/*,video/*"
+                        multiple
+                        className="hidden"
+                      />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingImage}
+                      className="flex-shrink-0"
+                    >
+                      <ImagePlus className="w-4 h-4" />
+                    </Button>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon" className="flex-shrink-0">
+                          <Smile className="w-4 h-4" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-2" align="start">
+                        <div className="grid grid-cols-6 gap-1">
+                          {TEXT_EMOJIS.map((e) => (
+                            <button
+                              key={e}
+                              onClick={() => addEmoji(e)}
+                              className="w-8 h-8 rounded hover:bg-muted flex items-center justify-center transition-colors text-lg"
+                            >
+                              {e}
+                            </button>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <Textarea
+                      placeholder="Type your message..."
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onPaste={handlePaste}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                      className="flex-1 resize-none max-h-32"
+                      rows={1}
+                    />
+                    <Button 
+                      onClick={handleSendMessage} 
+                      disabled={(!newMessage.trim() && mediaUrls.length === 0) || uploadingImage}
+                      className="flex-shrink-0"
+                    >
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
           {deletingChatId && (
