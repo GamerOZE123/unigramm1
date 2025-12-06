@@ -176,6 +176,50 @@ export default function Chat() {
     };
   }, [user, selectedUser, selectedGroup]);
 
+  // Realtime: listen for block/unblock events
+  useEffect(() => {
+    if (!user || !selectedUser?.user_id) return;
+
+    const blockedChannel = supabase
+      .channel('blocked-users-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'blocked_users' },
+        (payload) => {
+          const record = payload.new as { blocker_id?: string; blocked_id?: string } | null;
+          const oldRecord = payload.old as { blocker_id?: string; blocked_id?: string } | null;
+          
+          // Check if this block/unblock involves the current user and selected user
+          if (payload.eventType === 'INSERT' && record) {
+            // Someone blocked someone
+            if (record.blocker_id === selectedUser.user_id && record.blocked_id === user.id) {
+              // The selected user blocked me
+              setIsBlockedByUser(true);
+            }
+            if (record.blocker_id === user.id && record.blocked_id === selectedUser.user_id) {
+              // I blocked the selected user
+              setIsUserBlocked(true);
+            }
+          } else if (payload.eventType === 'DELETE' && oldRecord) {
+            // Someone unblocked someone
+            if (oldRecord.blocker_id === selectedUser.user_id && oldRecord.blocked_id === user.id) {
+              // The selected user unblocked me
+              setIsBlockedByUser(false);
+            }
+            if (oldRecord.blocker_id === user.id && oldRecord.blocked_id === selectedUser.user_id) {
+              // I unblocked the selected user
+              setIsUserBlocked(false);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(blockedChannel);
+    };
+  }, [user, selectedUser?.user_id]);
+
   const handleScroll = () => {
     if (!messagesContainerRef.current) return;
     const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
