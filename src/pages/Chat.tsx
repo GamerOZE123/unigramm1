@@ -178,38 +178,24 @@ export default function Chat() {
 
   // Realtime: listen for block/unblock events
   useEffect(() => {
-    if (!user || !selectedUser?.user_id) return;
+    if (!user) return;
 
     const blockedChannel = supabase
       .channel('blocked-users-realtime')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'blocked_users' },
-        (payload) => {
-          const record = payload.new as { blocker_id?: string; blocked_id?: string } | null;
-          const oldRecord = payload.old as { blocker_id?: string; blocked_id?: string } | null;
+        { event: 'INSERT', schema: 'public', table: 'blocked_users' },
+        async (payload) => {
+          const record = payload.new as { blocker_id: string; blocked_id: string };
           
-          // Check if this block/unblock involves the current user and selected user
-          if (payload.eventType === 'INSERT' && record) {
-            // Someone blocked someone
-            if (record.blocker_id === selectedUser.user_id && record.blocked_id === user.id) {
-              // The selected user blocked me
-              setIsBlockedByUser(true);
-            }
-            if (record.blocker_id === user.id && record.blocked_id === selectedUser.user_id) {
-              // I blocked the selected user
-              setIsUserBlocked(true);
-            }
-          } else if (payload.eventType === 'DELETE' && oldRecord) {
-            // Someone unblocked someone
-            if (oldRecord.blocker_id === selectedUser.user_id && oldRecord.blocked_id === user.id) {
-              // The selected user unblocked me
-              setIsBlockedByUser(false);
-            }
-            if (oldRecord.blocker_id === user.id && oldRecord.blocked_id === selectedUser.user_id) {
-              // I unblocked the selected user
-              setIsUserBlocked(false);
-            }
+          // Check if this block involves the current user
+          if (record.blocked_id === user.id && selectedUser?.user_id === record.blocker_id) {
+            // The selected user blocked me
+            setIsBlockedByUser(true);
+          }
+          if (record.blocker_id === user.id && selectedUser?.user_id === record.blocked_id) {
+            // I blocked the selected user
+            setIsUserBlocked(true);
           }
         }
       )
@@ -218,6 +204,19 @@ export default function Chat() {
     return () => {
       supabase.removeChannel(blockedChannel);
     };
+  }, [user, selectedUser?.user_id]);
+
+  // Poll for block status changes (backup for realtime)
+  useEffect(() => {
+    if (!user || !selectedUser?.user_id) return;
+
+    const checkInterval = setInterval(async () => {
+      const blockStatus = await checkBlockedStatus(selectedUser.user_id);
+      setIsUserBlocked(blockStatus.blockedByMe);
+      setIsBlockedByUser(blockStatus.blockedByThem);
+    }, 2000);
+
+    return () => clearInterval(checkInterval);
   }, [user, selectedUser?.user_id]);
 
   const handleScroll = () => {
