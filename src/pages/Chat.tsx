@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Send, MoreVertical, Trash2, MessageSquareX, UserX, Loader2, ImagePlus, Smile, Search, X, Users, Settings } from 'lucide-react';
+import { Send, MoreVertical, Trash2, MessageSquareX, UserX, Loader2, ImagePlus, Smile, Search, X, Users, Settings, Ban } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/hooks/useChat';
 import { useRecentChats } from '@/hooks/useRecentChats';
@@ -59,6 +59,7 @@ export default function Chat() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isUserBlocked, setIsUserBlocked] = useState(false);
+  const [isBlockedByUser, setIsBlockedByUser] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -240,14 +241,25 @@ export default function Chat() {
   }, [searchParams]);
 
   const checkBlockedStatus = async (otherUserId: string) => {
-    if (!user) return false;
-    const { data } = await supabase
+    if (!user) return { blockedByMe: false, blockedByThem: false };
+    
+    // Check if I blocked them
+    const { data: blockedByMe } = await supabase
       .from('blocked_users')
       .select('id')
       .eq('blocker_id', user.id)
       .eq('blocked_id', otherUserId)
       .maybeSingle();
-    return !!data;
+    
+    // Check if they blocked me
+    const { data: blockedByThem } = await supabase
+      .from('blocked_users')
+      .select('id')
+      .eq('blocker_id', otherUserId)
+      .eq('blocked_id', user.id)
+      .maybeSingle();
+    
+    return { blockedByMe: !!blockedByMe, blockedByThem: !!blockedByThem };
   };
 
   const handleUnblockUser = async () => {
@@ -286,11 +298,10 @@ export default function Chat() {
       }
       console.log('Selected user:', userProfile);
       
-      // Check if user is blocked
-      const blocked = await checkBlockedStatus(userId);
-      setIsUserBlocked(blocked);
-      
-      // Clear group selection when selecting a user
+      // Check if user is blocked (both directions)
+      const blockStatus = await checkBlockedStatus(userId);
+      setIsUserBlocked(blockStatus.blockedByMe);
+      setIsBlockedByUser(blockStatus.blockedByThem);
       setSelectedGroup(null);
       setShowGroupSettings(false);
       setShowChatSettings(false);
@@ -343,6 +354,7 @@ const handleBackToUserList = () => {
     setShowGroupSettings(false);
     setShowChatSettings(false);
     setIsUserBlocked(false);
+    setIsBlockedByUser(false);
   };
 
   const uploadMediaFile = async (file: File) => {
@@ -1074,7 +1086,12 @@ const handleBackToUserList = () => {
                 </div>
                 {/* Input */}
                 <div className="border-t border-border p-4 bg-card/50 backdrop-blur-sm">
-                  {isUserBlocked ? (
+                  {isBlockedByUser ? (
+                    <div className="flex items-center justify-center py-3 text-muted-foreground">
+                      <Ban className="w-4 h-4 mr-2" />
+                      <span className="text-sm">You can't message this user</span>
+                    </div>
+                  ) : isUserBlocked ? (
                     <div className="flex items-center justify-center py-2">
                       <Button 
                         variant="outline" 
@@ -1538,7 +1555,12 @@ const handleBackToUserList = () => {
               )}
             </div>
             <div className="border-t border-border p-4 bg-card/95 backdrop-blur-sm sticky bottom-0">
-              {isUserBlocked ? (
+              {isBlockedByUser ? (
+                <div className="flex items-center justify-center py-3 text-muted-foreground">
+                  <Ban className="w-4 h-4 mr-2" />
+                  <span className="text-sm">You can't message this user</span>
+                </div>
+              ) : isUserBlocked ? (
                 <div className="flex items-center justify-center py-2">
                   <Button 
                     variant="outline" 
