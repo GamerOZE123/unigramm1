@@ -120,14 +120,20 @@ export default function Chat() {
     previousMessagesLength.current = currentMessages.length;
   }, [currentMessages, isAtBottom]);
 
+  // Scroll to bottom when messages load for a conversation
+  const prevConversationId = useRef<string | null>(null);
   useEffect(() => {
+    // Only scroll when conversation changes and messages are loaded
     if (selectedConversationId && currentMessages.length > 0) {
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-        setIsAtBottom(true);
-      }, 50);
+      if (prevConversationId.current !== selectedConversationId) {
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+          setIsAtBottom(true);
+        }, 50);
+        prevConversationId.current = selectedConversationId;
+      }
     }
-  }, [selectedConversationId]);
+  }, [selectedConversationId, currentMessages.length]);
 
   // Realtime: unread badge for users and groups
   useEffect(() => {
