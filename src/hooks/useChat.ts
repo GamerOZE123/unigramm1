@@ -100,14 +100,15 @@ export const useChat = () => {
   };
 
   const sendMessage = async (conversationId: string, content: string, mediaUrl?: string | null) => {
-    if (!user || !content.trim()) {
+    // Allow sending if there's either content or media
+    if (!user || (!content.trim() && !mediaUrl)) {
       return { success: false, error: 'No user or empty content' };
     }
     try {
       const messageData: any = {
         conversation_id: conversationId,
         sender_id: user.id,
-        content: content.trim(),
+        content: content.trim() || (mediaUrl ? '📷' : ''),
       };
       
       if (mediaUrl) {
