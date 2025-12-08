@@ -1837,6 +1837,39 @@ export type Database = {
           },
         ]
       }
+      post_impressions: {
+        Row: {
+          post_id: string
+          seen_at: string
+          user_id: string
+        }
+        Insert: {
+          post_id: string
+          seen_at?: string
+          user_id: string
+        }
+        Update: {
+          post_id?: string
+          seen_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_impressions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_impressions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ranked_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_startup_mentions: {
         Row: {
           created_at: string | null
@@ -3046,6 +3079,7 @@ export type Database = {
         Args: { group_id: string; user_id: string }
         Returns: boolean
       }
+      log_post_impressions: { Args: { post_ids: string[] }; Returns: undefined }
       mark_messages_as_read: {
         Args: { conversation_uuid: string; reader_user_id: string }
         Returns: undefined
