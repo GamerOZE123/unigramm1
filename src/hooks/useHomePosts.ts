@@ -156,16 +156,25 @@ const transformPost = (post: any, startupsMap: Record<string, any> = {}): Transf
 });
 
 const prioritizeUnseenPosts = (posts: TransformedPost[], seenIds: Set<string>, existing: TransformedPost[]) => {
-  const newSeen = new Set(seenIds);
   const existingIds = new Set(existing.map((p) => p.id));
-
   const filtered = posts.filter((p) => !existingIds.has(p.id));
 
-  const unseen = filtered.filter((p) => !newSeen.has(p.id));
-  const seen = filtered.filter((p) => newSeen.has(p.id));
+  const unseen = filtered.filter((p) => !seenIds.has(p.id));
+  const seen = filtered.filter((p) => seenIds.has(p.id));
 
-  filtered.forEach((p) => newSeen.add(p.id));
+  // RELOOP: If ALL fetched posts are already seen, reset tracking and treat them as fresh
+  if (unseen.length === 0 && seen.length > 0) {
+    // Clear seen IDs and start fresh with just these posts
+    const freshSeenIds = new Set(filtered.map((p) => p.id));
+    // Also clear localStorage
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("seenPostIds");
+    }
+    return { prioritizedPosts: filtered, newSeenIds: freshSeenIds };
+  }
 
+  // Normal case: prioritize unseen first, then seen
+  const newSeen = new Set([...seenIds, ...filtered.map((p) => p.id)]);
   return { prioritizedPosts: [...unseen, ...seen], newSeenIds: newSeen };
 };
 
