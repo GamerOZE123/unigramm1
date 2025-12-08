@@ -88,6 +88,7 @@ interface UserProfile {
 const MAX_SEEN_POSTS = 500;
 const SEEN_POSTS_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
 const POSTS_PER_PAGE = 10;
+const INITIAL_FETCH_SIZE = 50; // Fetch more posts initially to properly prioritize unseen
 
 // ============= HELPER FUNCTIONS =============
 
@@ -391,8 +392,10 @@ export function useHomePosts(user: User | null) {
         setLoadingMore(true);
       }
 
-      const startIndex = pageNum * POSTS_PER_PAGE;
-      const endIndex = startIndex + POSTS_PER_PAGE - 1;
+      const fetchSize = isInitial ? INITIAL_FETCH_SIZE : POSTS_PER_PAGE;
+      // After initial load, offset by INITIAL_FETCH_SIZE, then paginate normally
+      const startIndex = isInitial ? 0 : INITIAL_FETCH_SIZE + (pageNum - 1) * POSTS_PER_PAGE;
+      const endIndex = startIndex + fetchSize - 1;
 
       // Fetch user profile for ad targeting on initial load
       let currentUserProfile = userProfile;
@@ -452,7 +455,7 @@ export function useHomePosts(user: User | null) {
       }
 
       setSeenPostIds(newSeenIds);
-      setHasMore(transformedPosts.length >= POSTS_PER_PAGE);
+      setHasMore(transformedPosts.length >= fetchSize);
 
       if (isInitial) {
         setMixedPosts(mixedArray);
