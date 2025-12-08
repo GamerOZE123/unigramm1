@@ -450,6 +450,9 @@ export function useHomePosts(user: User | null) {
       // Sort by DB / view score descending
       transformedPosts.sort((a, b) => (b.score || 0) - (a.score || 0));
 
+      // 🚫 Hard-remove posts already seen in this browser (7-day window)
+      transformedPosts = transformedPosts.filter((post) => !seenPostIds.has(post.id));
+
       // Get existing regular posts to avoid duplicates
       const existingRegularPosts = isInitial
         ? []
@@ -481,7 +484,7 @@ export function useHomePosts(user: User | null) {
           }));
           const { error: impressionError } = await supabase
             .from("post_impressions")
-            .upsert(impressions, { onConflict: "post_id,user_id", ignoreDuplicates: true });
+            .upsert(impressions, { onConflict: ["user_id", "post_id"] });
           if (impressionError) {
             console.error("Error logging impressions:", impressionError);
           }
@@ -563,61 +566,89 @@ export function useHomePosts(user: User | null) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Real-time subscriptions
+  // Optimized realtime handler
   useEffect(() => {
-    const channel = supabase
-      .channel("home-posts-realtime")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts" }, async (payload) => {
-        try {
-          const { data: newPost, error: postError } = await supabase
-            .from("ranked_posts")
-            .select("*")
-            .eq("id", payload.new.id)
-            .single();
+    type QueuedEvent = {
+      kind: "INSERT" | "UPDATE" | "DELETE";
+      newRow?: any;
+      oldRow?: any;
+    };
 
-          if (postError || !newPost) return;
+    const channel = supabase.channel("home-feed-realtime");
+    let updateQueue: QueuedEvent[] = [];
+    let updateTimer: ReturnType<typeof setTimeout> | null = null;
 
-          const transformedPost = transformPost(newPost);
+    const flushUpdates = () => {
+      if (updateQueue.length === 0) return;
 
-          // If already seen in this browser, skip adding as "new"
-          if (seenPostIds.has(transformedPost.id)) return;
+      setMixedPosts((prev) => {
+        let updated = [...prev];
 
-          setPendingNewPosts((prev) => [transformedPost, ...prev]);
-          setNewPostsAvailable(true);
-        } catch (error) {
-          console.error("Error handling new post:", error);
-        }
+        updateQueue.forEach((event) => {
+          const { kind, newRow, oldRow } = event;
+
+          if (kind === "INSERT" && newRow) {
+            const transformed = transformPost(newRow);
+
+            // If already seen in this browser, ignore
+            if (seenPostIds.has(transformed.id)) return;
+
+            setPendingNewPosts((prevPending) => [transformed, ...prevPending]);
+            setNewPostsAvailable(true);
+          }
+
+          if (kind === "UPDATE" && newRow) {
+            updated = updated.map((item) => {
+              if (item.type === "regular" && item.data.id === newRow.id) {
+                const p = item.data as TransformedPost;
+                return {
+                  ...item,
+                  data: {
+                    ...p,
+                    likes_count: newRow.likes_count ?? p.likes_count,
+                    comments_count: newRow.comments_count ?? p.comments_count,
+                    views_count: newRow.views_count ?? p.views_count,
+                    content: newRow.content ?? p.content,
+                  },
+                };
+              }
+              return item;
+            });
+          }
+
+          if (kind === "DELETE" && oldRow) {
+            updated = updated.filter((item) => !(item.type === "regular" && item.data.id === oldRow.id));
+          }
+        });
+
+        return updated;
+      });
+
+      updateQueue = [];
+    };
+
+    const queueUpdate = (event: QueuedEvent) => {
+      updateQueue.push(event);
+      if (updateTimer) clearTimeout(updateTimer);
+      updateTimer = setTimeout(flushUpdates, 150);
+    };
+
+    channel
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts" }, (payload) => {
+        queueUpdate({ kind: "INSERT", newRow: payload.new });
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "posts" }, (payload) => {
-        setMixedPosts((prev) =>
-          prev.map((item) => {
-            if (item.type === "regular" && item.data.id === payload.new.id) {
-              const postData = item.data as TransformedPost;
-              return {
-                ...item,
-                data: {
-                  ...postData,
-                  likes_count: (payload.new as any).likes_count ?? postData.likes_count,
-                  comments_count: (payload.new as any).comments_count ?? postData.comments_count,
-                  views_count: (payload.new as any).views_count ?? postData.views_count,
-                  content: (payload.new as any).content ?? postData.content,
-                },
-              };
-            }
-            return item;
-          }),
-        );
+        queueUpdate({ kind: "UPDATE", newRow: payload.new });
       })
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "posts" }, (payload) => {
-        setMixedPosts((prev) => prev.filter((item) => item.type !== "regular" || item.data.id !== payload.old.id));
+        queueUpdate({ kind: "DELETE", oldRow: payload.old });
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userProfile, seenPostIds]);
+  }, [seenPostIds]);
 
   // Infinite scroll handler
   useEffect(() => {
