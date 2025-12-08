@@ -362,7 +362,7 @@ export function useHomePosts(user: User | null) {
             post_id: p.id,
             seen_at: new Date().toISOString(),
           })),
-          { onConflict: ["user_id", "post_id"] },
+          { onConflict: "user_id,post_id", ignoreDuplicates: true },
         );
       }
 
