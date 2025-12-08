@@ -155,6 +155,16 @@ const transformPost = (post: any, startupsMap: Record<string, any> = {}): Transf
   survey_questions: post.survey_questions,
 });
 
+// Fisher-Yates shuffle
+const shuffleArray = <T>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
+
 const prioritizeUnseenPosts = (posts: TransformedPost[], seenIds: Set<string>, existing: TransformedPost[]) => {
   const existingIds = new Set(existing.map((p) => p.id));
   const filtered = posts.filter((p) => !existingIds.has(p.id));
@@ -162,15 +172,14 @@ const prioritizeUnseenPosts = (posts: TransformedPost[], seenIds: Set<string>, e
   const unseen = filtered.filter((p) => !seenIds.has(p.id));
   const seen = filtered.filter((p) => seenIds.has(p.id));
 
-  // RELOOP: If ALL fetched posts are already seen, reset tracking and treat them as fresh
+  // RELOOP: If ALL fetched posts are already seen, reset tracking and shuffle for fresh experience
   if (unseen.length === 0 && seen.length > 0) {
-    // Clear seen IDs and start fresh with just these posts
-    const freshSeenIds = new Set(filtered.map((p) => p.id));
-    // Also clear localStorage
+    const shuffled = shuffleArray(filtered);
+    const freshSeenIds = new Set(shuffled.map((p) => p.id));
     if (typeof window !== "undefined") {
       localStorage.removeItem("seenPostIds");
     }
-    return { prioritizedPosts: filtered, newSeenIds: freshSeenIds };
+    return { prioritizedPosts: shuffled, newSeenIds: freshSeenIds };
   }
 
   // Normal case: prioritize unseen first, then seen
