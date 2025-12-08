@@ -1,0 +1,555 @@
+import { useState, useEffect, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { User } from "@supabase/supabase-js";
+
+// ============= TYPES =============
+
+interface PollOption {
+  id: string;
+  text: string;
+  votes: number;
+}
+
+interface SurveyQuestion {
+  id: string;
+  question: string;
+  type: "rating" | "multiple_choice" | "text";
+  options?: string[];
+}
+
+export interface TransformedPost {
+  id: string;
+  content: string;
+  image_url?: string;
+  image_urls?: string[];
+  created_at: string;
+  updated_at?: string;
+  likes_count: number;
+  comments_count: number;
+  views_count: number;
+  user_id: string;
+  user_name: string;
+  user_username: string;
+  user_university?: string;
+  hashtags?: string[];
+  profiles?: {
+    full_name: string;
+    username: string;
+    avatar_url?: string;
+    university?: string;
+  };
+  poll_question?: string;
+  poll_options?: PollOption[];
+  poll_ends_at?: string;
+  survey_questions?: SurveyQuestion[];
+  score?: number;
+  startup_id?: string;
+  startup?: {
+    title: string;
+  };
+}
+
+export interface AdvertisingPost {
+  id: string;
+  title: string;
+  description?: string;
+  image_url: string;
+  redirect_url: string;
+  click_count: number;
+  likes_count: number;
+  views_count: number;
+  created_at: string;
+  company_id: string;
+  company_profiles?: {
+    company_name: string;
+    logo_url?: string;
+  };
+}
+
+export interface MixedPost {
+  type: "regular" | "advertising";
+  data: TransformedPost | AdvertisingPost;
+}
+
+interface UserProfile {
+  university?: string;
+  major?: string;
+  country?: string;
+  state?: string;
+}
+
+// ============= CONSTANTS =============
+
+const MAX_SEEN_POSTS = 500;
+const SEEN_POSTS_EXPIRY = 7 * 24 * 60 * 60 * 1000; // 7 days
+const POSTS_PER_PAGE = 10;
+
+// ============= HELPER FUNCTIONS =============
+
+/**
+ * Load seen post IDs from localStorage with expiry check
+ */
+const loadSeenPostIds = (): Set<string> => {
+  const stored = localStorage.getItem("seenPostIds");
+  if (stored) {
+    try {
+      const data = JSON.parse(stored);
+      const isExpired = Date.now() - data.timestamp > SEEN_POSTS_EXPIRY;
+
+      if (!isExpired && data.ids) {
+        const ids = data.ids.slice(-MAX_SEEN_POSTS);
+        return new Set(ids);
+      }
+    } catch (e) {
+      console.error("Failed to parse seen posts:", e);
+    }
+  }
+  return new Set();
+};
+
+/**
+ * Save seen post IDs to localStorage with timestamp
+ */
+const saveSeenPostIds = (seenPostIds: Set<string>) => {
+  const seenPostsData = {
+    ids: Array.from(seenPostIds).slice(-MAX_SEEN_POSTS),
+    timestamp: Date.now(),
+  };
+  localStorage.setItem("seenPostIds", JSON.stringify(seenPostsData));
+};
+
+/**
+ * Transform raw post data from ranked_posts view to TransformedPost
+ */
+const transformPost = (
+  post: any,
+  startupsMap: Record<string, any> = {}
+): TransformedPost => ({
+  id: post.id,
+  content: post.content || "",
+  image_url: post.image_url,
+  image_urls: post.image_urls,
+  created_at: post.created_at,
+  updated_at: post.updated_at,
+  likes_count: post.likes_count || 0,
+  comments_count: post.comments_count || 0,
+  views_count: post.views_count || 0,
+  user_id: post.user_id,
+  user_name: post.full_name || post.username || "Anonymous",
+  user_username: post.username || "user",
+  user_university: post.university,
+  hashtags: post.hashtags || [],
+  profiles: {
+    full_name: post.full_name || "Anonymous",
+    username: post.username || "user",
+    avatar_url: post.avatar_url,
+    university: post.university,
+  },
+  score: post.score,
+  startup_id: post.startup_id,
+  startup:
+    post.startup_id && startupsMap[post.startup_id]
+      ? { title: startupsMap[post.startup_id].title }
+      : undefined,
+  poll_question: post.poll_question,
+  poll_options: post.poll_options,
+  poll_ends_at: post.poll_ends_at,
+  survey_questions: post.survey_questions,
+});
+
+/**
+ * Separate posts into unseen and seen, prioritizing unseen posts
+ */
+const prioritizeUnseenPosts = (
+  posts: TransformedPost[],
+  seenPostIds: Set<string>
+): { prioritizedPosts: TransformedPost[]; newSeenIds: Set<string> } => {
+  const newSeenIds = new Set(seenPostIds);
+  const unseenPosts: TransformedPost[] = [];
+  const seenPosts: TransformedPost[] = [];
+
+  posts.forEach((post) => {
+    if (newSeenIds.has(post.id)) {
+      seenPosts.push(post);
+    } else {
+      unseenPosts.push(post);
+      newSeenIds.add(post.id);
+    }
+  });
+
+  return {
+    prioritizedPosts: [...unseenPosts, ...seenPosts],
+    newSeenIds,
+  };
+};
+
+/**
+ * Interleave ads into posts array with stable placement
+ * No ad in first 2 posts, then every 5 posts
+ */
+const interleaveAds = (
+  posts: MixedPost[],
+  ads: AdvertisingPost[]
+): MixedPost[] => {
+  if (ads.length === 0 || posts.length <= 2) return posts;
+
+  const result: MixedPost[] = [];
+  let adIndex = 0;
+
+  for (let i = 0; i < posts.length; i++) {
+    result.push(posts[i]);
+
+    // Insert ad after every 5 posts, but skip first 2 positions
+    if (i >= 1 && (i + 1) % 5 === 0 && adIndex < ads.length) {
+      result.push({
+        type: "advertising",
+        data: ads[adIndex],
+      });
+      adIndex++;
+    }
+  }
+
+  return result;
+};
+
+/**
+ * Fetch posts from ranked_posts view based on view mode
+ */
+const fetchPostsFromDB = async (
+  viewMode: "global" | "university",
+  userProfile: UserProfile | null,
+  startIndex: number,
+  endIndex: number
+) => {
+  let query = (supabase as any).from("ranked_posts").select("*");
+
+  if (viewMode === "global") {
+    query = query.eq("visibility", "global");
+  } else if (viewMode === "university" && userProfile?.university) {
+    query = query
+      .eq("visibility", "university")
+      .eq("university", userProfile.university);
+  }
+
+  const { data, error } = await query
+    .order("score", { ascending: false })
+    .range(startIndex, endIndex);
+
+  return { data, error };
+};
+
+/**
+ * Fetch startup info for posts that have startup_id
+ */
+const fetchStartupsForPosts = async (
+  posts: any[]
+): Promise<Record<string, any>> => {
+  const startupIds = posts
+    ?.filter((p) => p.startup_id)
+    .map((p) => p.startup_id) || [];
+
+  if (startupIds.length === 0) return {};
+
+  const { data: startupData } = await supabase
+    .from("student_startups")
+    .select("id, title")
+    .in("id", startupIds);
+
+  if (!startupData) return {};
+
+  return startupData.reduce((acc: Record<string, any>, startup: any) => {
+    acc[startup.id] = startup;
+    return acc;
+  }, {});
+};
+
+/**
+ * Fetch targeted ads based on user profile
+ */
+const fetchTargetedAds = async (
+  userProfile: UserProfile | null
+): Promise<AdvertisingPost[]> => {
+  if (!userProfile) return [];
+
+  let adsQuery = (supabase as any)
+    .from("advertising_posts")
+    .select(
+      `
+      *,
+      company_profiles(company_name, logo_url)
+    `
+    )
+    .eq("is_active", true);
+
+  if (userProfile.university) {
+    adsQuery = adsQuery.or(
+      `target_universities.cs.{${userProfile.university}},target_universities.is.null`
+    );
+  }
+  if (userProfile.major) {
+    adsQuery = adsQuery.or(
+      `target_majors.cs.{${userProfile.major}},target_majors.is.null`
+    );
+  }
+
+  const { data: adsData } = await adsQuery;
+  return (adsData as AdvertisingPost[]) || [];
+};
+
+// ============= MAIN HOOK =============
+
+export function useHomePosts(user: User | null) {
+  const [mixedPosts, setMixedPosts] = useState<MixedPost[]>([]);
+  const [seenPostIds, setSeenPostIds] = useState<Set<string>>(loadSeenPostIds);
+  const [newPostsAvailable, setNewPostsAvailable] = useState(false);
+  const [pendingNewPosts, setPendingNewPosts] = useState<TransformedPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+  const [viewMode, setViewMode] = useState<"global" | "university">("global");
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
+  const isFetchingRef = useRef(false);
+
+  // Persist seen post IDs to localStorage
+  useEffect(() => {
+    saveSeenPostIds(seenPostIds);
+  }, [seenPostIds]);
+
+  // Main fetch function
+  const fetchPosts = async (
+    pageNum: number = 0,
+    isInitial: boolean = false
+  ) => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
+    try {
+      if (isInitial) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+
+      const startIndex = pageNum * POSTS_PER_PAGE;
+      const endIndex = startIndex + POSTS_PER_PAGE - 1;
+
+      // Fetch user profile for ad targeting on initial load
+      let currentUserProfile = userProfile;
+      if (isInitial && user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("university, major, country, state")
+          .eq("user_id", user.id)
+          .single();
+
+        currentUserProfile = profile || null;
+        setUserProfile(currentUserProfile);
+      }
+
+      // Fetch posts
+      const { data: postsData, error: postsError } = await fetchPostsFromDB(
+        viewMode,
+        currentUserProfile,
+        startIndex,
+        endIndex
+      );
+
+      if (postsError) throw postsError;
+
+      // Fetch startups for posts
+      const startupsMap = await fetchStartupsForPosts(postsData || []);
+
+      // Transform posts
+      const transformedPosts: TransformedPost[] = (postsData || []).map(
+        (post: any) => transformPost(post, startupsMap)
+      );
+
+      // Prioritize unseen posts
+      const { prioritizedPosts, newSeenIds } = prioritizeUnseenPosts(
+        transformedPosts,
+        seenPostIds
+      );
+
+      // Convert to MixedPost format
+      let mixedArray: MixedPost[] = prioritizedPosts.map((post) => ({
+        type: "regular" as const,
+        data: post,
+      }));
+
+      // Fetch and interleave ads on first page only
+      if (pageNum === 0 && currentUserProfile) {
+        const targetedAds = await fetchTargetedAds(currentUserProfile);
+        mixedArray = interleaveAds(mixedArray, targetedAds);
+      }
+
+      setSeenPostIds(newSeenIds);
+      setHasMore(transformedPosts.length >= POSTS_PER_PAGE);
+
+      if (isInitial) {
+        setMixedPosts(mixedArray);
+      } else {
+        setMixedPosts((prev) => [...prev, ...mixedArray]);
+      }
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+      isFetchingRef.current = false;
+    }
+  };
+
+  // Load more posts for infinite scroll
+  const loadMorePosts = () => {
+    if (loadingMore || !hasMore) return;
+
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchPosts(nextPage, false);
+  };
+
+  // Load new pending posts into feed
+  const loadNewPosts = () => {
+    if (pendingNewPosts.length === 0) return;
+
+    const newMixedPosts: MixedPost[] = pendingNewPosts.map((post) => ({
+      type: "regular" as const,
+      data: post,
+    }));
+
+    setMixedPosts((prev) => [...newMixedPosts, ...prev]);
+    setPendingNewPosts([]);
+    setNewPostsAvailable(false);
+
+    // Mark new posts as seen
+    const newIds = pendingNewPosts.map((p) => p.id);
+    setSeenPostIds((prev) => new Set([...Array.from(prev), ...newIds]));
+  };
+
+  // Switch view mode and refresh
+  const switchViewMode = (mode: "global" | "university") => {
+    setViewMode(mode);
+    setPage(0);
+    setMixedPosts([]);
+    fetchPosts(0, true);
+  };
+
+  // Initial load
+  useEffect(() => {
+    fetchPosts(0, true);
+  }, []);
+
+  // Real-time subscriptions
+  useEffect(() => {
+    const channel = supabase
+      .channel("home-posts-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "posts" },
+        async (payload) => {
+          try {
+            const { data: newPost, error: postError } = await supabase
+              .from("ranked_posts")
+              .select("*")
+              .eq("id", payload.new.id)
+              .single();
+
+            if (postError || !newPost) return;
+
+            const transformedPost = transformPost(newPost);
+
+            setPendingNewPosts((prev) => [transformedPost, ...prev]);
+            setNewPostsAvailable(true);
+          } catch (error) {
+            console.error("Error handling new post:", error);
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "posts" },
+        (payload) => {
+          setMixedPosts((prev) =>
+            prev.map((item) => {
+              if (item.type === "regular" && item.data.id === payload.new.id) {
+                const postData = item.data as TransformedPost;
+                return {
+                  ...item,
+                  data: {
+                    ...postData,
+                    likes_count:
+                      (payload.new as any).likes_count ?? postData.likes_count,
+                    comments_count:
+                      (payload.new as any).comments_count ??
+                      postData.comments_count,
+                    views_count:
+                      (payload.new as any).views_count ?? postData.views_count,
+                    content: (payload.new as any).content ?? postData.content,
+                  },
+                };
+              }
+              return item;
+            })
+          );
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "posts" },
+        (payload) => {
+          setMixedPosts((prev) =>
+            prev.filter(
+              (item) => item.type !== "regular" || item.data.id !== payload.old.id
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userProfile]);
+
+  // Infinite scroll handler
+  useEffect(() => {
+    let isScrolling = false;
+
+    const handleScroll = () => {
+      if (isScrolling) return;
+
+      const scrollTop =
+        window.pageYOffset || document.documentElement.scrollTop;
+      const scrollHeight = document.documentElement.scrollHeight;
+      const clientHeight = window.innerHeight;
+
+      if (scrollTop + clientHeight >= scrollHeight - 800) {
+        isScrolling = true;
+        loadMorePosts();
+
+        setTimeout(() => {
+          isScrolling = false;
+        }, 1000);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [loadingMore, hasMore, page]);
+
+  return {
+    mixedPosts,
+    loading,
+    loadingMore,
+    hasMore,
+    viewMode,
+    newPostsAvailable,
+    pendingNewPosts,
+    switchViewMode,
+    loadNewPosts,
+    loadMorePosts,
+    refetch: () => fetchPosts(0, true),
+  };
+}
