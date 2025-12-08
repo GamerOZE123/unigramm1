@@ -164,24 +164,34 @@ const transformPost = (
 
 /**
  * Separate posts into unseen and seen, prioritizing unseen posts
+ * Unseen posts appear first (maintain their score order), then seen posts at the end
  */
 const prioritizeUnseenPosts = (
   posts: TransformedPost[],
-  seenPostIds: Set<string>
+  seenPostIds: Set<string>,
+  existingPosts: TransformedPost[] = []
 ): { prioritizedPosts: TransformedPost[]; newSeenIds: Set<string> } => {
   const newSeenIds = new Set(seenPostIds);
+  const existingPostIds = new Set(existingPosts.map(p => p.id));
+  
+  // Filter out duplicates that are already in the feed
+  const newPosts = posts.filter(post => !existingPostIds.has(post.id));
+  
   const unseenPosts: TransformedPost[] = [];
   const seenPosts: TransformedPost[] = [];
 
-  posts.forEach((post) => {
+  newPosts.forEach((post) => {
     if (newSeenIds.has(post.id)) {
       seenPosts.push(post);
     } else {
       unseenPosts.push(post);
-      newSeenIds.add(post.id);
     }
   });
 
+  // Mark all posts as seen for future reference
+  newPosts.forEach(post => newSeenIds.add(post.id));
+
+  // Return unseen first, then seen - both maintain their original score order
   return {
     prioritizedPosts: [...unseenPosts, ...seenPosts],
     newSeenIds,
@@ -415,10 +425,18 @@ export function useHomePosts(user: User | null) {
         (post: any) => transformPost(post, startupsMap)
       );
 
-      // Prioritize unseen posts
+      // Get existing regular posts to avoid duplicates
+      const existingRegularPosts = isInitial 
+        ? [] 
+        : mixedPosts
+            .filter((p): p is MixedPost & { type: 'regular'; data: TransformedPost } => p.type === 'regular')
+            .map(p => p.data);
+
+      // Prioritize unseen posts and filter duplicates
       const { prioritizedPosts, newSeenIds } = prioritizeUnseenPosts(
         transformedPosts,
-        seenPostIds
+        seenPostIds,
+        existingRegularPosts
       );
 
       // Convert to MixedPost format
