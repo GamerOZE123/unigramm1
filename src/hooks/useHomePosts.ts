@@ -478,9 +478,13 @@ export function useHomePosts(user: User | null) {
       try {
         const impressionIds = prioritizedPosts.map((p) => p.id);
         if (impressionIds.length > 0 && user) {
-          const { error: impressionError } = await supabase.rpc("log_post_impressions", {
-            post_ids: impressionIds,
-          });
+          const impressions = impressionIds.map((postId) => ({
+            post_id: postId,
+            user_id: user.id,
+          }));
+          const { error: impressionError } = await supabase
+            .from("post_impressions")
+            .upsert(impressions, { onConflict: "post_id,user_id", ignoreDuplicates: true });
           if (impressionError) {
             console.error("Error logging impressions:", impressionError);
           }
