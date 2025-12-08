@@ -96,6 +96,8 @@ const INITIAL_FETCH_SIZE = 50; // Fetch more posts initially to properly priorit
  * Load seen post IDs from localStorage with expiry check
  */
 const loadSeenPostIds = (): Set<string> => {
+  if (typeof window === "undefined") return new Set();
+
   const stored = localStorage.getItem("seenPostIds");
   if (stored) {
     try {
@@ -117,6 +119,8 @@ const loadSeenPostIds = (): Set<string> => {
  * Save seen post IDs to localStorage with timestamp
  */
 const saveSeenPostIds = (seenPostIds: Set<string>) => {
+  if (typeof window === "undefined") return;
+
   const seenPostsData = {
     ids: Array.from(seenPostIds).slice(-MAX_SEEN_POSTS),
     timestamp: Date.now(),
@@ -127,10 +131,7 @@ const saveSeenPostIds = (seenPostIds: Set<string>) => {
 /**
  * Transform raw post data from ranked_posts view to TransformedPost
  */
-const transformPost = (
-  post: any,
-  startupsMap: Record<string, any> = {}
-): TransformedPost => ({
+const transformPost = (post: any, startupsMap: Record<string, any> = {}): TransformedPost => ({
   id: post.id,
   content: post.content || "",
   image_url: post.image_url,
@@ -153,10 +154,7 @@ const transformPost = (
   },
   score: post.score,
   startup_id: post.startup_id,
-  startup:
-    post.startup_id && startupsMap[post.startup_id]
-      ? { title: startupsMap[post.startup_id].title }
-      : undefined,
+  startup: post.startup_id && startupsMap[post.startup_id] ? { title: startupsMap[post.startup_id].title } : undefined,
   poll_question: post.poll_question,
   poll_options: post.poll_options,
   poll_ends_at: post.poll_ends_at,
@@ -170,14 +168,14 @@ const transformPost = (
 const prioritizeUnseenPosts = (
   posts: TransformedPost[],
   seenPostIds: Set<string>,
-  existingPosts: TransformedPost[] = []
+  existingPosts: TransformedPost[] = [],
 ): { prioritizedPosts: TransformedPost[]; newSeenIds: Set<string> } => {
   const newSeenIds = new Set(seenPostIds);
-  const existingPostIds = new Set(existingPosts.map(p => p.id));
-  
+  const existingPostIds = new Set(existingPosts.map((p) => p.id));
+
   // Filter out duplicates that are already in the feed
-  const newPosts = posts.filter(post => !existingPostIds.has(post.id));
-  
+  const newPosts = posts.filter((post) => !existingPostIds.has(post.id));
+
   const unseenPosts: TransformedPost[] = [];
   const seenPosts: TransformedPost[] = [];
 
@@ -190,7 +188,7 @@ const prioritizeUnseenPosts = (
   });
 
   // Mark all posts as seen for future reference
-  newPosts.forEach(post => newSeenIds.add(post.id));
+  newPosts.forEach((post) => newSeenIds.add(post.id));
 
   // Return unseen first, then seen - both maintain their original score order
   return {
@@ -203,10 +201,7 @@ const prioritizeUnseenPosts = (
  * Interleave ads into posts array with stable placement
  * No ad in first 2 posts, then every 5 posts
  */
-const interleaveAds = (
-  posts: MixedPost[],
-  ads: AdvertisingPost[]
-): MixedPost[] => {
+const interleaveAds = (posts: MixedPost[], ads: AdvertisingPost[]): MixedPost[] => {
   if (ads.length === 0 || posts.length <= 2) return posts;
 
   const result: MixedPost[] = [];
@@ -229,27 +224,69 @@ const interleaveAds = (
 };
 
 /**
+ * Apply author diversity: avoid more than 2 posts in a row from same author
+ */
+const applyAuthorDiversity = (posts: MixedPost[]): MixedPost[] => {
+  const result = [...posts];
+  let streakAuthor: string | null = null;
+  let streakCount = 0;
+
+  for (let i = 0; i < result.length; i++) {
+    const item = result[i];
+    if (item.type !== "regular") {
+      streakAuthor = null;
+      streakCount = 0;
+      continue;
+    }
+
+    const postData = item.data as TransformedPost;
+    const authorId = postData.user_id;
+
+    if (authorId === streakAuthor) {
+      streakCount += 1;
+    } else {
+      streakAuthor = authorId;
+      streakCount = 1;
+    }
+
+    if (streakCount > 2) {
+      // find next post with a different author and swap
+      let swapIndex = i + 1;
+      while (swapIndex < result.length) {
+        const candidate = result[swapIndex];
+        if (candidate.type === "regular" && (candidate.data as TransformedPost).user_id !== streakAuthor) {
+          const temp = result[i];
+          result[i] = result[swapIndex];
+          result[swapIndex] = temp;
+          streakCount = 1; // reset streak for new author at position i
+          break;
+        }
+        swapIndex++;
+      }
+    }
+  }
+
+  return result;
+};
+
+/**
  * Fetch posts from ranked_posts view based on view mode
  */
 const fetchPostsFromDB = async (
   viewMode: "global" | "university",
   userProfile: UserProfile | null,
   startIndex: number,
-  endIndex: number
+  endIndex: number,
 ) => {
   let query = (supabase as any).from("ranked_posts").select("*");
 
   if (viewMode === "global") {
     query = query.eq("visibility", "global");
   } else if (viewMode === "university" && userProfile?.university) {
-    query = query
-      .eq("visibility", "university")
-      .eq("university", userProfile.university);
+    query = query.eq("visibility", "university").eq("university", userProfile.university);
   }
 
-  const { data, error } = await query
-    .order("score", { ascending: false })
-    .range(startIndex, endIndex);
+  const { data, error } = await query.order("score", { ascending: false }).range(startIndex, endIndex);
 
   return { data, error };
 };
@@ -257,19 +294,12 @@ const fetchPostsFromDB = async (
 /**
  * Fetch startup info for posts that have startup_id
  */
-const fetchStartupsForPosts = async (
-  posts: any[]
-): Promise<Record<string, any>> => {
-  const startupIds = posts
-    ?.filter((p) => p.startup_id)
-    .map((p) => p.startup_id) || [];
+const fetchStartupsForPosts = async (posts: any[]): Promise<Record<string, any>> => {
+  const startupIds = posts?.filter((p) => p.startup_id).map((p) => p.startup_id) || [];
 
   if (startupIds.length === 0) return {};
 
-  const { data: startupData } = await supabase
-    .from("student_startups")
-    .select("id, title")
-    .in("id", startupIds);
+  const { data: startupData } = await supabase.from("student_startups").select("id, title").in("id", startupIds);
 
   if (!startupData) return {};
 
@@ -282,9 +312,7 @@ const fetchStartupsForPosts = async (
 /**
  * Fetch targeted ads based on user profile
  */
-const fetchTargetedAds = async (
-  userProfile: UserProfile | null
-): Promise<AdvertisingPost[]> => {
+const fetchTargetedAds = async (userProfile: UserProfile | null): Promise<AdvertisingPost[]> => {
   try {
     // Fetch all active ads first
     const { data: adsData, error } = await supabase
@@ -309,13 +337,10 @@ const fetchTargetedAds = async (
       .select("user_id, company_name, logo_url")
       .in("user_id", companyIds);
 
-    const companiesMap = (companiesData || []).reduce(
-      (acc: Record<string, any>, company: any) => {
-        acc[company.user_id] = company;
-        return acc;
-      },
-      {}
-    );
+    const companiesMap = (companiesData || []).reduce((acc: Record<string, any>, company: any) => {
+      acc[company.user_id] = company;
+      return acc;
+    }, {});
 
     // Transform ads with company info
     const adsWithCompany: AdvertisingPost[] = adsData.map((ad) => ({
@@ -332,8 +357,7 @@ const fetchTargetedAds = async (
         const matchesUniversity =
           !ad.target_universities ||
           ad.target_universities.length === 0 ||
-          (userProfile.university &&
-            ad.target_universities.includes(userProfile.university));
+          (userProfile.university && ad.target_universities.includes(userProfile.university));
 
         const matchesMajor =
           !ad.target_majors ||
@@ -348,7 +372,7 @@ const fetchTargetedAds = async (
     return adsWithCompany.filter(
       (ad) =>
         (!ad.target_universities || ad.target_universities.length === 0) &&
-        (!ad.target_majors || ad.target_majors.length === 0)
+        (!ad.target_majors || ad.target_majors.length === 0),
     );
   } catch (error) {
     console.error("Error in fetchTargetedAds:", error);
@@ -378,10 +402,7 @@ export function useHomePosts(user: User | null) {
   }, [seenPostIds]);
 
   // Main fetch function
-  const fetchPosts = async (
-    pageNum: number = 0,
-    isInitial: boolean = false
-  ) => {
+  const fetchPosts = async (pageNum: number = 0, isInitial: boolean = false) => {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
 
@@ -415,7 +436,7 @@ export function useHomePosts(user: User | null) {
         viewMode,
         currentUserProfile,
         startIndex,
-        endIndex
+        endIndex,
       );
 
       if (postsError) throw postsError;
@@ -424,29 +445,58 @@ export function useHomePosts(user: User | null) {
       const startupsMap = await fetchStartupsForPosts(postsData || []);
 
       // Transform posts
-      const transformedPosts: TransformedPost[] = (postsData || []).map(
-        (post: any) => transformPost(post, startupsMap)
-      );
+      let transformedPosts: TransformedPost[] = (postsData || []).map((post: any) => transformPost(post, startupsMap));
+
+      // Sort by DB / view score descending
+      transformedPosts.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+      // Remove posts already seen in this browser (7-day window)
+      transformedPosts = transformedPosts.filter((post) => !seenPostIds.has(post.id));
 
       // Get existing regular posts to avoid duplicates
-      const existingRegularPosts = isInitial 
-        ? [] 
+      const existingRegularPosts = isInitial
+        ? []
         : mixedPosts
-            .filter((p): p is MixedPost & { type: 'regular'; data: TransformedPost } => p.type === 'regular')
-            .map(p => p.data);
+            .filter(
+              (
+                p,
+              ): p is MixedPost & {
+                type: "regular";
+                data: TransformedPost;
+              } => p.type === "regular",
+            )
+            .map((p) => p.data as TransformedPost);
 
       // Prioritize unseen posts and filter duplicates
       const { prioritizedPosts, newSeenIds } = prioritizeUnseenPosts(
         transformedPosts,
         seenPostIds,
-        existingRegularPosts
+        existingRegularPosts,
       );
+
+      // Log impressions to DB (cross-device)
+      try {
+        const impressionIds = prioritizedPosts.map((p) => p.id);
+        if (impressionIds.length > 0 && user) {
+          const { error: impressionError } = await supabase.rpc("log_post_impressions", {
+            post_ids: impressionIds,
+          });
+          if (impressionError) {
+            console.error("Error logging impressions:", impressionError);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to log impressions:", e);
+      }
 
       // Convert to MixedPost format
       let mixedArray: MixedPost[] = prioritizedPosts.map((post) => ({
         type: "regular" as const,
         data: post,
       }));
+
+      // Apply author diversity before ads
+      mixedArray = applyAuthorDiversity(mixedArray);
 
       // Fetch and interleave ads on first page only
       if (pageNum === 0) {
@@ -509,79 +559,64 @@ export function useHomePosts(user: User | null) {
   // Initial load
   useEffect(() => {
     fetchPosts(0, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Real-time subscriptions
   useEffect(() => {
     const channel = supabase
       .channel("home-posts-realtime")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "posts" },
-        async (payload) => {
-          try {
-            const { data: newPost, error: postError } = await supabase
-              .from("ranked_posts")
-              .select("*")
-              .eq("id", payload.new.id)
-              .single();
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts" }, async (payload) => {
+        try {
+          const { data: newPost, error: postError } = await supabase
+            .from("ranked_posts")
+            .select("*")
+            .eq("id", payload.new.id)
+            .single();
 
-            if (postError || !newPost) return;
+          if (postError || !newPost) return;
 
-            const transformedPost = transformPost(newPost);
+          const transformedPost = transformPost(newPost);
 
-            setPendingNewPosts((prev) => [transformedPost, ...prev]);
-            setNewPostsAvailable(true);
-          } catch (error) {
-            console.error("Error handling new post:", error);
-          }
+          // If already seen in this browser, skip adding as "new"
+          if (seenPostIds.has(transformedPost.id)) return;
+
+          setPendingNewPosts((prev) => [transformedPost, ...prev]);
+          setNewPostsAvailable(true);
+        } catch (error) {
+          console.error("Error handling new post:", error);
         }
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "posts" },
-        (payload) => {
-          setMixedPosts((prev) =>
-            prev.map((item) => {
-              if (item.type === "regular" && item.data.id === payload.new.id) {
-                const postData = item.data as TransformedPost;
-                return {
-                  ...item,
-                  data: {
-                    ...postData,
-                    likes_count:
-                      (payload.new as any).likes_count ?? postData.likes_count,
-                    comments_count:
-                      (payload.new as any).comments_count ??
-                      postData.comments_count,
-                    views_count:
-                      (payload.new as any).views_count ?? postData.views_count,
-                    content: (payload.new as any).content ?? postData.content,
-                  },
-                };
-              }
-              return item;
-            })
-          );
-        }
-      )
-      .on(
-        "postgres_changes",
-        { event: "DELETE", schema: "public", table: "posts" },
-        (payload) => {
-          setMixedPosts((prev) =>
-            prev.filter(
-              (item) => item.type !== "regular" || item.data.id !== payload.old.id
-            )
-          );
-        }
-      )
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "posts" }, (payload) => {
+        setMixedPosts((prev) =>
+          prev.map((item) => {
+            if (item.type === "regular" && item.data.id === payload.new.id) {
+              const postData = item.data as TransformedPost;
+              return {
+                ...item,
+                data: {
+                  ...postData,
+                  likes_count: (payload.new as any).likes_count ?? postData.likes_count,
+                  comments_count: (payload.new as any).comments_count ?? postData.comments_count,
+                  views_count: (payload.new as any).views_count ?? postData.views_count,
+                  content: (payload.new as any).content ?? postData.content,
+                },
+              };
+            }
+            return item;
+          }),
+        );
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "posts" }, (payload) => {
+        setMixedPosts((prev) => prev.filter((item) => item.type !== "regular" || item.data.id !== payload.old.id));
+      })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [userProfile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userProfile, seenPostIds]);
 
   // Infinite scroll handler
   useEffect(() => {
@@ -590,8 +625,7 @@ export function useHomePosts(user: User | null) {
     const handleScroll = () => {
       if (isScrolling) return;
 
-      const scrollTop =
-        window.pageYOffset || document.documentElement.scrollTop;
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
       const scrollHeight = document.documentElement.scrollHeight;
       const clientHeight = window.innerHeight;
 
