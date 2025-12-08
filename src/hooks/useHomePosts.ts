@@ -450,9 +450,6 @@ export function useHomePosts(user: User | null) {
       // Sort by DB / view score descending
       transformedPosts.sort((a, b) => (b.score || 0) - (a.score || 0));
 
-      // Remove posts already seen in this browser (7-day window)
-      transformedPosts = transformedPosts.filter((post) => !seenPostIds.has(post.id));
-
       // Get existing regular posts to avoid duplicates
       const existingRegularPosts = isInitial
         ? []
