@@ -261,7 +261,7 @@ const fetchTargetedAds = async (profile: UserProfile | null) => {
   if (!data) return [];
 
   const ids = [...new Set(data.map((a) => a.company_id))];
-  const { data: companies } = await supabase.from("company_profiles").select("*").in("user_id", ids);
+  const { data: companies } = await supabase.from("company_profiles").select("*").in("user_id", ids); // No overload matches error likely due to Supabase type inference on return array
 
   const map = (companies ?? []).reduce((m: any, c: any) => {
     m[c.user_id] = c;
@@ -478,7 +478,10 @@ export function useHomePosts(user: User | null) {
       })
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    // TS2345 FIX: Return a function that calls supabase.removeChannel(channel)
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [seenIds]);
 
   // -----------------------------
