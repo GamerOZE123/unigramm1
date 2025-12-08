@@ -6,11 +6,7 @@ import ImageUploadButton from "@/components/post/ImageUploadButton";
 import { useAuth } from "@/contexts/AuthContext";
 import MobileHeader from "@/components/layout/MobileHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  useHomePosts,
-  TransformedPost,
-  AdvertisingPost,
-} from "@/hooks/useHomePosts";
+import { useHomePosts, TransformedPost, AdvertisingPost } from "@/hooks/useHomePosts";
 
 // Re-export types for backwards compatibility
 export type { TransformedPost } from "@/hooks/useHomePosts";
@@ -19,15 +15,16 @@ export default function Home() {
   const { user } = useAuth();
   const isMobile = useIsMobile();
 
+  // FIX: Renamed properties to match useHomePosts return object
   const {
     mixedPosts,
     loading,
     loadingMore,
     viewMode,
-    newPostsAvailable,
+    newAvailable, // Corrected from newPostsAvailable
     pendingNewPosts,
-    switchViewMode,
-    loadNewPosts,
+    switchMode, // Corrected from switchViewMode
+    loadNew, // Corrected from loadNewPosts
   } = useHomePosts(user);
 
   if (loading) {
@@ -35,6 +32,7 @@ export default function Home() {
       <Layout>
         <div className="max-w-2xl mx-auto pt-2">
           <div className="flex items-center justify-center py-12">
+            {/* Spinning loader for initial loading */}
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
           </div>
         </div>
@@ -51,7 +49,7 @@ export default function Home() {
         {/* Global/University Toggle */}
         <div className="flex justify-center gap-4 py-4 mb-4 sticky top-0 bg-background z-10 border-b border-border">
           <button
-            onClick={() => switchViewMode("global")}
+            onClick={() => switchMode("global")} // Using corrected switchMode
             className={`px-6 py-2 rounded-full font-medium transition-all ${
               viewMode === "global"
                 ? "bg-primary text-primary-foreground"
@@ -61,7 +59,7 @@ export default function Home() {
             Global
           </button>
           <button
-            onClick={() => switchViewMode("university")}
+            onClick={() => switchMode("university")} // Using corrected switchMode
             className={`px-6 py-2 rounded-full font-medium transition-all ${
               viewMode === "university"
                 ? "bg-primary text-primary-foreground"
@@ -73,14 +71,13 @@ export default function Home() {
         </div>
 
         {/* New posts available banner */}
-        {newPostsAvailable && (
+        {newAvailable && ( // Using corrected newAvailable
           <div className="mb-4 p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between animate-in fade-in slide-in-from-top-2">
             <span className="text-sm font-medium text-primary">
-              {pendingNewPosts.length} new{" "}
-              {pendingNewPosts.length === 1 ? "post" : "posts"} available
+              {pendingNewPosts.length} new {pendingNewPosts.length === 1 ? "post" : "posts"} available
             </span>
             <button
-              onClick={loadNewPosts}
+              onClick={loadNew} // Using corrected loadNew
               className="px-3 py-1 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
             >
               Load new posts
@@ -92,34 +89,24 @@ export default function Home() {
           {mixedPosts.length > 0 ? (
             mixedPosts.map((mixedPost) =>
               mixedPost.type === "regular" ? (
-                <PostCard
-                  key={`regular-${mixedPost.data.id}`}
-                  post={mixedPost.data as TransformedPost}
-                />
+                <PostCard key={`regular-${mixedPost.data.id}`} post={mixedPost.data as TransformedPost} />
               ) : (
-                <AdvertisingPostCard
-                  key={`ad-${mixedPost.data.id}`}
-                  post={mixedPost.data as AdvertisingPost}
-                />
-              )
+                <AdvertisingPostCard key={`ad-${mixedPost.data.id}`} post={mixedPost.data as AdvertisingPost} />
+              ),
             )
           ) : (
             <div className="post-card text-center py-12">
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                Welcome to the Community!
-              </h3>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Welcome to the Community!</h3>
               <p className="text-muted-foreground mb-4">
-                No posts yet. Be the first to share something with your
-                community!
+                No posts yet. Be the first to share something with your community!
               </p>
-              <p className="text-sm text-muted-foreground">
-                Click the + button below to create your first post.
-              </p>
+              <p className="text-sm text-muted-foreground">Click the + button below to create your first post.</p>
             </div>
           )}
 
           {loadingMore && (
             <div className="flex justify-center py-8">
+              {/* Spinning loader for loading more content */}
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
             </div>
           )}
