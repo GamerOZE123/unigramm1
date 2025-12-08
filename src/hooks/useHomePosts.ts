@@ -341,18 +341,18 @@ export function useHomePosts(user: User | null) {
 
       const startups = await fetchStartupsForPosts(posts ?? []);
 
-      let transformed = (posts ?? []).map((p: any) => transformPost(p, startups));
+      const transformed = (posts ?? []).map((p: any) => transformPost(p, startups));
 
       transformed.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-
-      // REMOVE posts already seen in local storage
-      transformed = transformed.filter((p) => !seenIds.has(p.id));
 
       const existing = initial
         ? []
         : mixedPosts.filter((x) => x.type === "regular").map((x) => x.data as TransformedPost);
 
-      const { prioritizedPosts, newSeenIds } = prioritizeUnseenPosts(transformed, seenIds, existing);
+      // Filter out posts already in existing list, but keep both seen and unseen for prioritization
+      const filtered = transformed.filter((p) => !existing.some((e) => e.id === p.id));
+
+      const { prioritizedPosts, newSeenIds } = prioritizeUnseenPosts(filtered, seenIds, existing);
 
       // Log impressions
       if (user && prioritizedPosts.length > 0) {
@@ -379,7 +379,7 @@ export function useHomePosts(user: User | null) {
       }
 
       setSeenIds(newSeenIds);
-      setHasMore(transformed.length >= size);
+      setHasMore((posts ?? []).length >= size);
 
       setMixedPosts((prev) => (initial ? mixed : [...prev, ...mixed]));
     } finally {
