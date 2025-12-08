@@ -60,6 +60,11 @@ export interface AdvertisingPost {
   views_count: number;
   created_at: string;
   company_id: string;
+  target_universities?: string[];
+  target_majors?: string[];
+  target_years?: string[];
+  target_locations?: string[];
+  priority_placement?: boolean;
   company_profiles?: {
     company_name: string;
     logo_url?: string;
@@ -269,31 +274,75 @@ const fetchStartupsForPosts = async (
 const fetchTargetedAds = async (
   userProfile: UserProfile | null
 ): Promise<AdvertisingPost[]> => {
-  if (!userProfile) return [];
+  try {
+    // Fetch all active ads first
+    const { data: adsData, error } = await supabase
+      .from("advertising_posts")
+      .select("*")
+      .eq("is_active", true)
+      .order("priority_placement", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(10);
 
-  let adsQuery = (supabase as any)
-    .from("advertising_posts")
-    .select(
-      `
-      *,
-      company_profiles(company_name, logo_url)
-    `
-    )
-    .eq("is_active", true);
+    if (error) {
+      console.error("Error fetching ads:", error);
+      return [];
+    }
 
-  if (userProfile.university) {
-    adsQuery = adsQuery.or(
-      `target_universities.cs.{${userProfile.university}},target_universities.is.null`
+    if (!adsData || adsData.length === 0) return [];
+
+    // Fetch company profiles for the ads
+    const companyIds = [...new Set(adsData.map((ad) => ad.company_id))];
+    const { data: companiesData } = await supabase
+      .from("company_profiles")
+      .select("user_id, company_name, logo_url")
+      .in("user_id", companyIds);
+
+    const companiesMap = (companiesData || []).reduce(
+      (acc: Record<string, any>, company: any) => {
+        acc[company.user_id] = company;
+        return acc;
+      },
+      {}
     );
-  }
-  if (userProfile.major) {
-    adsQuery = adsQuery.or(
-      `target_majors.cs.{${userProfile.major}},target_majors.is.null`
-    );
-  }
 
-  const { data: adsData } = await adsQuery;
-  return (adsData as AdvertisingPost[]) || [];
+    // Transform ads with company info
+    const adsWithCompany: AdvertisingPost[] = adsData.map((ad) => ({
+      ...ad,
+      company_profiles: companiesMap[ad.company_id] || {
+        company_name: "Advertiser",
+        logo_url: null,
+      },
+    }));
+
+    // Filter by targeting if user profile exists
+    if (userProfile) {
+      return adsWithCompany.filter((ad) => {
+        const matchesUniversity =
+          !ad.target_universities ||
+          ad.target_universities.length === 0 ||
+          (userProfile.university &&
+            ad.target_universities.includes(userProfile.university));
+
+        const matchesMajor =
+          !ad.target_majors ||
+          ad.target_majors.length === 0 ||
+          (userProfile.major && ad.target_majors.includes(userProfile.major));
+
+        return matchesUniversity && matchesMajor;
+      });
+    }
+
+    // Return all ads if no user profile (show untargeted ads)
+    return adsWithCompany.filter(
+      (ad) =>
+        (!ad.target_universities || ad.target_universities.length === 0) &&
+        (!ad.target_majors || ad.target_majors.length === 0)
+    );
+  } catch (error) {
+    console.error("Error in fetchTargetedAds:", error);
+    return [];
+  }
 };
 
 // ============= MAIN HOOK =============
@@ -379,7 +428,7 @@ export function useHomePosts(user: User | null) {
       }));
 
       // Fetch and interleave ads on first page only
-      if (pageNum === 0 && currentUserProfile) {
+      if (pageNum === 0) {
         const targetedAds = await fetchTargetedAds(currentUserProfile);
         mixedArray = interleaveAds(mixedArray, targetedAds);
       }
