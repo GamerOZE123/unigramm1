@@ -5,35 +5,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Progress } from '@/components/ui/progress';
-import { Loader2, ArrowLeft, Globe, Mail, Heart, Users, CheckCircle2, Circle, Edit } from 'lucide-react';
+import { Loader2, ArrowLeft, Globe, Mail, Heart, Plus, Settings, Trash2, ImagePlus, Users } from 'lucide-react';
 import { toast } from 'sonner';
-import PostCard from '@/components/post/PostCard';
-import StartupRightSidebar from '@/components/startups/StartupRightSidebar';
 import StartupEditModal from '@/components/startups/StartupEditModal';
-
-interface StartupResponse {
-  id: string;
-  user_id: string;
-  title: string;
-  description: string;
-  category: string;
-  stage: string;
-  looking_for: string[];
-  website_url: string | null;
-  contact_email: string | null;
-  created_at: string;
-  logo_url: string | null;
-  profiles: {
-    full_name: string;
-    avatar_url: string;
-    username: string;
-    university: string;
-    linkedin_url: string;
-  }[];
-}
 
 interface Startup {
   id: string;
@@ -55,17 +30,6 @@ interface Startup {
     university?: string;
     linkedin_url?: string;
   };
-}
-
-interface InterestedUserResponse {
-  id: string;
-  user_id: string;
-  profiles: {
-    full_name: string;
-    avatar_url: string;
-    username: string;
-    university: string;
-  }[];
 }
 
 interface InterestedUser {
@@ -92,6 +56,14 @@ interface Post {
   is_approved_for_startup: boolean;
 }
 
+const stages = [
+  { key: 'Ideation', label: 'Ideation', description: 'Defining the problem and envisioning the solution. This is where the initial spark of your startup idea takes shape.' },
+  { key: 'Research', label: 'Research', description: 'Conducting market research, validating assumptions, and understanding your target audience and competition.' },
+  { key: 'MVP Build', label: 'MVP', description: 'Building the minimum viable product - a functional version with core features to test with real users.' },
+  { key: 'Testing', label: 'Testing', description: 'Gathering user feedback, iterating on the product, and refining the experience based on real-world usage.' },
+  { key: 'Launch', label: 'Launch', description: 'Going public! Marketing, user acquisition, and scaling the product to reach a wider audience.' },
+];
+
 export default function StartupDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -99,24 +71,37 @@ export default function StartupDetail() {
   const [startup, setStartup] = useState<Startup | null>(null);
   const [interestedUsers, setInterestedUsers] = useState<InterestedUser[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
-  const [taggedPosts, setTaggedPosts] = useState<Post[]>([]);
   const [isInterested, setIsInterested] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedStageIndex, setSelectedStageIndex] = useState<number | null>(null);
+
+  const currentStageIndex = stages.findIndex(s => s.key === startup?.stage) ?? 0;
+  const isOwner = user?.id === startup?.user_id;
+
+  // Set selected stage to current stage when startup loads
+  useEffect(() => {
+    if (startup && selectedStageIndex === null) {
+      setSelectedStageIndex(currentStageIndex >= 0 ? currentStageIndex : 0);
+    }
+  }, [startup, currentStageIndex, selectedStageIndex]);
 
   useEffect(() => {
     if (slug) {
       fetchStartupDetails();
+    }
+  }, [slug]);
+
+  useEffect(() => {
+    if (startup?.id) {
       fetchInterestedUsers();
       fetchStartupPosts();
-      fetchTaggedPosts();
       if (user) {
         checkIfInterested();
       }
     }
-  }, [slug, user]);
+  }, [startup?.id, user]);
 
-  // Real-time subscription for posts
   useEffect(() => {
     if (!startup?.user_id) return;
 
@@ -143,10 +128,7 @@ export default function StartupDetail() {
 
   const fetchStartupDetails = async () => {
     try {
-      // Try to fetch by slug first, then by id if slug doesn't exist
       let query = supabase.from('student_startups').select('*');
-      
-      // Check if slug looks like a UUID (old id-based URL)
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug || '');
       
       if (isUUID) {
@@ -165,7 +147,6 @@ export default function StartupDetail() {
         return;
       }
 
-      // Fetch the profile separately
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('full_name, avatar_url, username, university, linkedin_url')
@@ -174,7 +155,6 @@ export default function StartupDetail() {
 
       if (profileError) throw profileError;
       
-      // Combine the data
       const transformedData: Startup = {
         ...startupData,
         profiles: profileData
@@ -205,7 +185,6 @@ export default function StartupDetail() {
         return;
       }
 
-      // Fetch profiles for all interested users
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('user_id, full_name, avatar_url, username, university')
@@ -213,7 +192,6 @@ export default function StartupDetail() {
 
       if (profilesError) throw profilesError;
 
-      // Combine the data
       const transformedData: InterestedUser[] = interests.map(interest => {
         const profile = profiles?.find(p => p.user_id === interest.user_id);
         return {
@@ -244,33 +222,6 @@ export default function StartupDetail() {
       setPosts(data || []);
     } catch (error) {
       console.error('Error fetching posts:', error);
-    }
-  };
-
-  const fetchTaggedPosts = async () => {
-    if (!startup?.id) return;
-    
-    try {
-      const { data: mentions, error: mentionsError } = await supabase
-        .from('post_startup_mentions')
-        .select('post_id')
-        .eq('startup_id', startup.id);
-
-      if (mentionsError) throw mentionsError;
-      
-      if (mentions && mentions.length > 0) {
-        const postIds = mentions.map(m => m.post_id);
-        const { data, error } = await supabase
-          .from('posts')
-          .select('*')
-          .in('id', postIds)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        setTaggedPosts(data || []);
-      }
-    } catch (error) {
-      console.error('Error fetching tagged posts:', error);
     }
   };
 
@@ -331,6 +282,36 @@ export default function StartupDetail() {
     }
   };
 
+  const handleDeleteStartup = async () => {
+    if (!startup?.id || !isOwner) return;
+    
+    if (!confirm('Are you sure you want to delete this startup? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('student_startups')
+        .delete()
+        .eq('id', startup.id);
+
+      if (error) throw error;
+      toast.success('Startup deleted successfully');
+      navigate('/startups');
+    } catch (error) {
+      console.error('Error deleting startup:', error);
+      toast.error('Failed to delete startup');
+    }
+  };
+
+  // Collect all images from posts for gallery
+  const galleryImages = posts.flatMap(post => {
+    const images: string[] = [];
+    if (post.image_url) images.push(post.image_url);
+    if (post.image_urls) images.push(...post.image_urls);
+    return images;
+  }).slice(0, 10);
+
   if (loading) {
     return (
       <Layout>
@@ -352,266 +333,262 @@ export default function StartupDetail() {
     );
   }
 
-  const stages = [
-    { key: 'Ideation', label: 'Ideation', description: 'Basic problem → solution understanding, initial vision created' },
-    { key: 'Research', label: 'Research', description: 'Market research and validation' },
-    { key: 'MVP Build', label: 'MVP Build', description: 'Building minimum viable product' },
-    { key: 'Testing', label: 'Testing', description: 'Testing with early users' },
-    { key: 'Launch', label: 'Launch', description: 'Public launch and growth' },
-  ];
-
-  const currentStageIndex = stages.findIndex(s => s.key === startup?.stage) ?? 0;
-  const progressPercentage = currentStageIndex >= 0 ? ((currentStageIndex + 1) / stages.length) * 100 : 0;
-
-  const isOwner = user?.id === startup?.user_id;
-
-  const handleApprovePost = async (postId: string) => {
-    try {
-      const { error } = await supabase
-        .from('posts')
-        .update({ is_approved_for_startup: true })
-        .eq('id', postId);
-
-      if (error) throw error;
-      toast.success('Post approved!');
-      fetchTaggedPosts();
-    } catch (error) {
-      console.error('Error approving post:', error);
-      toast.error('Failed to approve post');
-    }
-  };
-
-  const handleRejectPost = async (postId: string) => {
-    try {
-      const { error } = await supabase
-        .from('post_startup_mentions')
-        .delete()
-        .eq('post_id', postId)
-        .eq('startup_id', startup?.id);
-
-      if (error) throw error;
-      toast.success('Post removed from mentions');
-      fetchTaggedPosts();
-    } catch (error) {
-      console.error('Error rejecting post:', error);
-      toast.error('Failed to remove post');
-    }
-  };
+  const displayedStageIndex = selectedStageIndex ?? currentStageIndex;
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <div className="flex items-center justify-between mb-6">
+      <div className="container mx-auto px-4 py-6 max-w-2xl">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-6">
           <Button
             variant="ghost"
+            size="icon"
             onClick={() => navigate('/startups')}
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Startups
+            <ArrowLeft className="h-5 w-5" />
           </Button>
-          {isOwner && (
-            <Button onClick={() => navigate(`/startup/${startup.slug || startup.id}/manage`)}>
-              <Edit className="mr-2 h-4 w-4" />
-              Manage Startup
-            </Button>
-          )}
-          {isOwner && (
-            <Button onClick={() => setIsEditModalOpen(true)} variant="outline">
-              <Edit className="mr-2 h-4 w-4" />
-              Quick Edit
-            </Button>
-          )}
+          <h1 className="text-lg font-semibold">Startup</h1>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="overflow-hidden">
-              {/* Logo & Header */}
-              <div className="p-6 text-center border-b">
-                <div className="flex justify-center mb-4">
-                  <div className="w-32 h-32 rounded-2xl overflow-hidden bg-muted">
-                    {startup.logo_url ? (
-                      <img 
-                        src={startup.logo_url} 
-                        alt={startup.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-muted-foreground">
-                        {startup.title.charAt(0)}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <h1 className="text-2xl font-bold mb-1">{startup.title}</h1>
-                <p className="text-sm text-muted-foreground mb-4">
-                  by {startup.profiles.full_name}
-                </p>
-
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {startup.description}
-                </p>
-
-                <div className="flex justify-center gap-2 mt-4">
-                  {startup.website_url && (
-                    <Button size="sm" variant="outline" asChild>
-                      <a href={startup.website_url} target="_blank" rel="noopener noreferrer">
-                        <Globe className="mr-2 h-4 w-4" />
-                        Website
-                      </a>
-                    </Button>
-                  )}
-                  {startup.contact_email && (
-                    <Button size="sm" variant="outline" asChild>
-                      <a href={`mailto:${startup.contact_email}`}>
-                        <Mail className="mr-2 h-4 w-4" />
-                        Contact
-                      </a>
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    onClick={toggleInterest}
-                    variant={isInterested ? 'default' : 'outline'}
-                  >
-                    <Heart className={`mr-2 h-4 w-4 ${isInterested ? 'fill-current' : ''}`} />
-                    {isInterested ? 'Interested' : 'Show Interest'}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Post Images */}
-              {posts.filter(p => p.image_url || p.image_urls).length > 0 && (
-                <div className="grid grid-cols-2 gap-2 p-6 border-b">
-                  {posts
-                    .filter(p => p.image_url || (p.image_urls && p.image_urls.length > 0))
-                    .slice(0, 4)
-                    .map((post) => (
-                      <div 
-                        key={post.id}
-                        className="aspect-square rounded-lg overflow-hidden bg-muted cursor-pointer hover:opacity-90 transition-opacity"
-                        onClick={() => navigate(`/post/${post.id}`)}
-                      >
-                        <img
-                          src={post.image_url || (post.image_urls ? post.image_urls[0] : '')}
-                          alt="Post"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ))}
-                </div>
-              )}
-
-              {/* Contributors */}
-              <div className="p-6 border-b">
-                <h2 className="text-lg font-semibold mb-4">Contributors</h2>
-                <div className="flex flex-wrap gap-6">
-                  {/* Founder */}
-                  <div className="text-center">
-                    <Avatar 
-                      className="h-16 w-16 mb-2 cursor-pointer mx-auto"
-                      onClick={() => navigate(`/${startup.profiles.username}`)}
-                    >
-                      <AvatarImage src={startup.profiles.avatar_url} />
-                      <AvatarFallback>
-                        {startup.profiles.full_name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <p className="text-xs font-medium">{startup.profiles.full_name.split(' ')[0]}</p>
-                  </div>
-
-                  {/* Interested Contributors */}
-                  {interestedUsers.slice(0, 7).map((interest) => (
-                    <div key={interest.id} className="text-center">
-                      <Avatar 
-                        className="h-16 w-16 mb-2 cursor-pointer mx-auto"
-                        onClick={() => navigate(`/${interest.profiles.username}`)}
-                      >
-                        <AvatarImage src={interest.profiles.avatar_url} />
-                        <AvatarFallback>
-                          {interest.profiles.full_name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <p className="text-xs font-medium">
-                        {interest.profiles.full_name.split(' ')[0]}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Progress */}
-              <div className="p-6">
-                <h2 className="text-lg font-semibold mb-4">Progress</h2>
-                
-                {/* Stage Timeline */}
-                <div className="relative mb-8">
-                  <Progress value={progressPercentage} className="h-2 mb-4" />
-                  
-                  <div className="flex justify-between">
-                    {stages.map((stage, index) => {
-                      const isActive = index <= currentStageIndex;
-                      const isCurrent = index === currentStageIndex;
-                      
-                      return (
-                        <div key={stage.key} className="flex flex-col items-center flex-1">
-                          <div className={`
-                            rounded-full p-1 mb-1
-                            ${isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}
-                          `}>
-                            {isActive ? (
-                              <CheckCircle2 className="h-3 w-3" />
-                            ) : (
-                              <Circle className="h-3 w-3" />
-                            )}
-                          </div>
-                          <span className={`text-xs text-center ${isCurrent ? 'font-semibold' : ''}`}>
-                            {stage.label}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Current Stage Details */}
-                {currentStageIndex >= 0 && (
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <h3 className="font-semibold mb-2">{stages[currentStageIndex].label}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {stages[currentStageIndex].description}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </Card>
-
-            {/* Posts Section */}
-            {posts.length > 0 && (
-              <div>
-                <h2 className="text-xl font-bold mb-4">Recent Updates</h2>
-                <div className="space-y-4">
-                  {posts.map((post) => (
-                    <PostCard key={post.id} post={post} />
-                  ))}
-                </div>
+        {/* Logo */}
+        <div className="flex justify-center mb-6">
+          <div className="w-28 h-28 rounded-3xl overflow-hidden bg-muted shadow-lg">
+            {startup.logo_url ? (
+              <img 
+                src={startup.logo_url} 
+                alt={startup.title}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-muted-foreground bg-gradient-to-br from-primary/20 to-primary/5">
+                {startup.title.charAt(0)}
               </div>
             )}
           </div>
+        </div>
 
-          {/* Right Sidebar */}
-          <div className="hidden lg:block">
-            <StartupRightSidebar
-              interestedUsers={interestedUsers}
-              taggedPosts={taggedPosts}
-              isOwner={isOwner}
-              onApprovePost={handleApprovePost}
-              onRejectPost={handleRejectPost}
-            />
+        {/* Startup Name + Founder */}
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold mb-1">{startup.title}</h2>
+          <p 
+            className="text-muted-foreground cursor-pointer hover:text-primary transition-colors"
+            onClick={() => navigate(`/${startup.profiles.username}`)}
+          >
+            by {startup.profiles.full_name}
+          </p>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-center gap-2 mb-8">
+          <Button
+            size="sm"
+            onClick={toggleInterest}
+            variant={isInterested ? 'default' : 'outline'}
+          >
+            <Heart className={`mr-2 h-4 w-4 ${isInterested ? 'fill-current' : ''}`} />
+            {isInterested ? 'Interested' : 'Show Interest'}
+          </Button>
+          {startup.website_url && (
+            <Button size="sm" variant="outline" asChild>
+              <a href={startup.website_url} target="_blank" rel="noopener noreferrer">
+                <Globe className="mr-2 h-4 w-4" />
+                Website
+              </a>
+            </Button>
+          )}
+          {startup.contact_email && (
+            <Button size="sm" variant="outline" asChild>
+              <a href={`mailto:${startup.contact_email}`}>
+                <Mail className="mr-2 h-4 w-4" />
+                Contact
+              </a>
+            </Button>
+          )}
+        </div>
+
+        {/* Description */}
+        <Card className="p-5 mb-6">
+          <h3 className="font-semibold mb-2">About</h3>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            {startup.description}
+          </p>
+        </Card>
+
+        {/* Image Gallery (Horizontal Scroll) */}
+        {galleryImages.length > 0 && (
+          <div className="mb-6">
+            <h3 className="font-semibold mb-3">Gallery</h3>
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+              {galleryImages.map((image, index) => (
+                <div 
+                  key={index}
+                  className="flex-shrink-0 w-40 h-40 rounded-xl overflow-hidden bg-muted"
+                >
+                  <img
+                    src={image}
+                    alt={`Gallery ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Contributors Row */}
+        <div className="mb-6">
+          <h3 className="font-semibold mb-3">Contributors</h3>
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+            {/* Founder */}
+            <div 
+              className="flex-shrink-0 flex flex-col items-center cursor-pointer"
+              onClick={() => navigate(`/${startup.profiles.username}`)}
+            >
+              <Avatar className="h-14 w-14 mb-1 ring-2 ring-primary ring-offset-2 ring-offset-background">
+                <AvatarImage src={startup.profiles.avatar_url} />
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  {startup.profiles.full_name.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-xs font-medium">{startup.profiles.full_name.split(' ')[0]}</span>
+              <span className="text-[10px] text-muted-foreground">Founder</span>
+            </div>
+
+            {/* Interested Users */}
+            {interestedUsers.map((interest) => (
+              <div 
+                key={interest.id}
+                className="flex-shrink-0 flex flex-col items-center cursor-pointer"
+                onClick={() => navigate(`/${interest.profiles.username}`)}
+              >
+                <Avatar className="h-14 w-14 mb-1">
+                  <AvatarImage src={interest.profiles.avatar_url} />
+                  <AvatarFallback>
+                    {interest.profiles.full_name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-xs font-medium">{interest.profiles.full_name.split(' ')[0]}</span>
+              </div>
+            ))}
           </div>
         </div>
+
+        {/* Progress Tracker */}
+        <div className="mb-6">
+          <h3 className="font-semibold mb-4">Progress</h3>
+          
+          {/* Dots + Lines */}
+          <div className="relative flex items-center justify-between mb-3">
+            {/* Connecting Line */}
+            <div className="absolute top-3 left-0 right-0 h-0.5 bg-muted" />
+            <div 
+              className="absolute top-3 left-0 h-0.5 bg-primary transition-all duration-300"
+              style={{ width: `${(currentStageIndex / (stages.length - 1)) * 100}%` }}
+            />
+            
+            {/* Stage Dots */}
+            {stages.map((stage, index) => {
+              const isCompleted = index <= currentStageIndex;
+              const isCurrent = index === currentStageIndex;
+              const isSelected = index === displayedStageIndex;
+              
+              return (
+                <button
+                  key={stage.key}
+                  onClick={() => setSelectedStageIndex(index)}
+                  className="relative z-10 flex flex-col items-center focus:outline-none group"
+                >
+                  <div className={`
+                    w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200
+                    ${isCompleted ? 'bg-primary' : 'bg-muted border-2 border-muted-foreground/30'}
+                    ${isSelected ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-110' : ''}
+                    ${isCurrent ? 'shadow-lg' : ''}
+                    group-hover:scale-110
+                  `}>
+                    {isCompleted && (
+                      <div className="w-2 h-2 rounded-full bg-primary-foreground" />
+                    )}
+                  </div>
+                  <span className={`
+                    text-[10px] mt-2 text-center w-12 transition-colors
+                    ${isSelected ? 'font-semibold text-foreground' : 'text-muted-foreground'}
+                    ${isCurrent ? 'font-semibold' : ''}
+                  `}>
+                    {stage.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Stage Description Box */}
+        <Card className="p-5 mb-6 bg-primary/5 border-primary/20">
+          <div className="flex items-center gap-2 mb-2">
+            <div className={`w-2 h-2 rounded-full ${displayedStageIndex <= currentStageIndex ? 'bg-primary' : 'bg-muted-foreground'}`} />
+            <h4 className="font-semibold">{stages[displayedStageIndex]?.label}</h4>
+            {displayedStageIndex === currentStageIndex && (
+              <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">Current</span>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {stages[displayedStageIndex]?.description}
+          </p>
+        </Card>
+
+        {/* Admin Controls Panel */}
+        {isOwner && (
+          <Card className="p-4 mb-6 border-dashed">
+            <h4 className="font-semibold text-sm mb-3 text-muted-foreground">Admin Controls</h4>
+            <div className="grid grid-cols-3 gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex flex-col items-center gap-1 h-auto py-3"
+                onClick={() => navigate(`/startup/${startup.slug || startup.id}/manage`)}
+              >
+                <Plus className="h-4 w-4" />
+                <span className="text-xs">Add Post</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex flex-col items-center gap-1 h-auto py-3"
+                onClick={() => toast.info('Coming soon: Add contributors')}
+              >
+                <Users className="h-4 w-4" />
+                <span className="text-xs">Contributors</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex flex-col items-center gap-1 h-auto py-3"
+                onClick={() => toast.info('Coming soon: Upload gallery images')}
+              >
+                <ImagePlus className="h-4 w-4" />
+                <span className="text-xs">Gallery</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex flex-col items-center gap-1 h-auto py-3"
+                onClick={() => setIsEditModalOpen(true)}
+              >
+                <Settings className="h-4 w-4" />
+                <span className="text-xs">Edit</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex flex-col items-center gap-1 h-auto py-3 col-span-2 text-destructive hover:text-destructive"
+                onClick={handleDeleteStartup}
+              >
+                <Trash2 className="h-4 w-4" />
+                <span className="text-xs">Delete Startup</span>
+              </Button>
+            </div>
+          </Card>
+        )}
 
         {/* Edit Modal */}
         {isOwner && startup && (
