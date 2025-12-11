@@ -6,9 +6,11 @@ import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, ArrowLeft, Globe, Mail, Heart, Plus, Settings, Trash2, ImagePlus, Users } from 'lucide-react';
+import { Loader2, ArrowLeft, Globe, Mail, Heart, Plus, Settings, Trash2, ImagePlus, Users, Milestone } from 'lucide-react';
 import { toast } from 'sonner';
 import StartupEditModal from '@/components/startups/StartupEditModal';
+import ContributorsModal from '@/components/startups/ContributorsModal';
+import ManageStagesModal from '@/components/startups/ManageStagesModal';
 
 interface Startup {
   id: string;
@@ -32,15 +34,24 @@ interface Startup {
   };
 }
 
-interface InterestedUser {
+interface Contributor {
   id: string;
   user_id: string;
+  role: string | null;
   profiles: {
     full_name: string;
-    avatar_url: string;
+    avatar_url: string | null;
     username: string;
-    university: string;
   };
+}
+
+interface Stage {
+  id: string;
+  name: string;
+  description: string | null;
+  order_index: number;
+  is_completed: boolean;
+  is_current: boolean;
 }
 
 interface Post {
@@ -56,35 +67,31 @@ interface Post {
   is_approved_for_startup: boolean;
 }
 
-const stages = [
-  { key: 'Ideation', label: 'Ideation', description: 'Defining the problem and envisioning the solution. This is where the initial spark of your startup idea takes shape.' },
-  { key: 'Research', label: 'Research', description: 'Conducting market research, validating assumptions, and understanding your target audience and competition.' },
-  { key: 'MVP Build', label: 'MVP', description: 'Building the minimum viable product - a functional version with core features to test with real users.' },
-  { key: 'Testing', label: 'Testing', description: 'Gathering user feedback, iterating on the product, and refining the experience based on real-world usage.' },
-  { key: 'Launch', label: 'Launch', description: 'Going public! Marketing, user acquisition, and scaling the product to reach a wider audience.' },
-];
-
 export default function StartupDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [startup, setStartup] = useState<Startup | null>(null);
-  const [interestedUsers, setInterestedUsers] = useState<InterestedUser[]>([]);
+  const [contributors, setContributors] = useState<Contributor[]>([]);
+  const [stages, setStages] = useState<Stage[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
   const [isInterested, setIsInterested] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isContributorsModalOpen, setIsContributorsModalOpen] = useState(false);
+  const [isStagesModalOpen, setIsStagesModalOpen] = useState(false);
   const [selectedStageIndex, setSelectedStageIndex] = useState<number | null>(null);
 
-  const currentStageIndex = stages.findIndex(s => s.key === startup?.stage) ?? 0;
+  const currentStageIndex = stages.findIndex(s => s.is_current);
   const isOwner = user?.id === startup?.user_id;
 
-  // Set selected stage to current stage when startup loads
+  // Set selected stage to current stage when stages load
   useEffect(() => {
-    if (startup && selectedStageIndex === null) {
-      setSelectedStageIndex(currentStageIndex >= 0 ? currentStageIndex : 0);
+    if (stages.length > 0 && selectedStageIndex === null) {
+      const currentIdx = stages.findIndex(s => s.is_current);
+      setSelectedStageIndex(currentIdx >= 0 ? currentIdx : 0);
     }
-  }, [startup, currentStageIndex, selectedStageIndex]);
+  }, [stages, selectedStageIndex]);
 
   useEffect(() => {
     if (slug) {
@@ -94,7 +101,8 @@ export default function StartupDetail() {
 
   useEffect(() => {
     if (startup?.id) {
-      fetchInterestedUsers();
+      fetchContributors();
+      fetchStages();
       fetchStartupPosts();
       if (user) {
         checkIfInterested();
@@ -169,40 +177,57 @@ export default function StartupDetail() {
     }
   };
 
-  const fetchInterestedUsers = async () => {
+  const fetchContributors = async () => {
     if (!startup?.id) return;
     
     try {
-      const { data: interests, error } = await supabase
-        .from('startup_interests')
-        .select('id, user_id')
+      const { data: contributorsData, error } = await supabase
+        .from('startup_contributors')
+        .select('id, user_id, role')
         .eq('startup_id', startup.id);
 
       if (error) throw error;
 
-      if (!interests || interests.length === 0) {
-        setInterestedUsers([]);
+      if (!contributorsData || contributorsData.length === 0) {
+        setContributors([]);
         return;
       }
 
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('user_id, full_name, avatar_url, username, university')
-        .in('user_id', interests.map(i => i.user_id));
+        .select('user_id, full_name, avatar_url, username')
+        .in('user_id', contributorsData.map(c => c.user_id));
 
       if (profilesError) throw profilesError;
 
-      const transformedData: InterestedUser[] = interests.map(interest => {
-        const profile = profiles?.find(p => p.user_id === interest.user_id);
+      const transformedData: Contributor[] = contributorsData.map(contributor => {
+        const profile = profiles?.find(p => p.user_id === contributor.user_id);
         return {
-          ...interest,
-          profiles: profile!
+          ...contributor,
+          profiles: profile || { full_name: 'Unknown', avatar_url: null, username: 'unknown' }
         };
-      }).filter(item => item.profiles);
+      });
       
-      setInterestedUsers(transformedData);
+      setContributors(transformedData);
     } catch (error) {
-      console.error('Error fetching interested users:', error);
+      console.error('Error fetching contributors:', error);
+    }
+  };
+
+  const fetchStages = async () => {
+    if (!startup?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('startup_stages')
+        .select('*')
+        .eq('startup_id', startup.id)
+        .order('order_index', { ascending: true });
+
+      if (error) throw error;
+      setStages(data || []);
+    } catch (error) {
+      console.error('Error fetching stages:', error);
     }
   };
 
@@ -262,7 +287,6 @@ export default function StartupDetail() {
         if (error) throw error;
         setIsInterested(false);
         toast.success('Interest removed');
-        fetchInterestedUsers();
       } else {
         const { error } = await supabase
           .from('startup_interests')
@@ -274,7 +298,6 @@ export default function StartupDetail() {
         if (error) throw error;
         setIsInterested(true);
         toast.success('Interest marked!');
-        fetchInterestedUsers();
       }
     } catch (error) {
       console.error('Error toggling interest:', error);
@@ -333,7 +356,7 @@ export default function StartupDetail() {
     );
   }
 
-  const displayedStageIndex = selectedStageIndex ?? currentStageIndex;
+  const displayedStageIndex = selectedStageIndex ?? (currentStageIndex >= 0 ? currentStageIndex : 0);
 
   return (
     <Layout>
@@ -454,87 +477,107 @@ export default function StartupDetail() {
               <span className="text-[10px] text-muted-foreground">Founder</span>
             </div>
 
-            {/* Interested Users */}
-            {interestedUsers.map((interest) => (
+            {/* Real Contributors */}
+            {contributors.map((contributor) => (
               <div 
-                key={interest.id}
+                key={contributor.id}
                 className="flex-shrink-0 flex flex-col items-center cursor-pointer"
-                onClick={() => navigate(`/${interest.profiles.username}`)}
+                onClick={() => navigate(`/${contributor.profiles.username}`)}
               >
                 <Avatar className="h-14 w-14 mb-1">
-                  <AvatarImage src={interest.profiles.avatar_url} />
+                  <AvatarImage src={contributor.profiles.avatar_url || undefined} />
                   <AvatarFallback>
-                    {interest.profiles.full_name.charAt(0)}
+                    {contributor.profiles.full_name.charAt(0)}
                   </AvatarFallback>
                 </Avatar>
-                <span className="text-xs font-medium">{interest.profiles.full_name.split(' ')[0]}</span>
+                <span className="text-xs font-medium">{contributor.profiles.full_name.split(' ')[0]}</span>
+                <span className="text-[10px] text-muted-foreground">{contributor.role || 'Team'}</span>
               </div>
             ))}
-          </div>
-        </div>
 
-        {/* Progress Tracker */}
-        <div className="mb-6">
-          <h3 className="font-semibold mb-4">Progress</h3>
-          
-          {/* Dots + Lines */}
-          <div className="relative flex items-center justify-between mb-3">
-            {/* Connecting Line */}
-            <div className="absolute top-3 left-0 right-0 h-0.5 bg-muted" />
-            <div 
-              className="absolute top-3 left-0 h-0.5 bg-primary transition-all duration-300"
-              style={{ width: `${(currentStageIndex / (stages.length - 1)) * 100}%` }}
-            />
-            
-            {/* Stage Dots */}
-            {stages.map((stage, index) => {
-              const isCompleted = index <= currentStageIndex;
-              const isCurrent = index === currentStageIndex;
-              const isSelected = index === displayedStageIndex;
-              
-              return (
-                <button
-                  key={stage.key}
-                  onClick={() => setSelectedStageIndex(index)}
-                  className="relative z-10 flex flex-col items-center focus:outline-none group"
-                >
-                  <div className={`
-                    w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200
-                    ${isCompleted ? 'bg-primary' : 'bg-muted border-2 border-muted-foreground/30'}
-                    ${isSelected ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-110' : ''}
-                    ${isCurrent ? 'shadow-lg' : ''}
-                    group-hover:scale-110
-                  `}>
-                    {isCompleted && (
-                      <div className="w-2 h-2 rounded-full bg-primary-foreground" />
-                    )}
-                  </div>
-                  <span className={`
-                    text-[10px] mt-2 text-center w-12 transition-colors
-                    ${isSelected ? 'font-semibold text-foreground' : 'text-muted-foreground'}
-                    ${isCurrent ? 'font-semibold' : ''}
-                  `}>
-                    {stage.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Stage Description Box */}
-        <Card className="p-5 mb-6 bg-primary/5 border-primary/20">
-          <div className="flex items-center gap-2 mb-2">
-            <div className={`w-2 h-2 rounded-full ${displayedStageIndex <= currentStageIndex ? 'bg-primary' : 'bg-muted-foreground'}`} />
-            <h4 className="font-semibold">{stages[displayedStageIndex]?.label}</h4>
-            {displayedStageIndex === currentStageIndex && (
-              <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">Current</span>
+            {contributors.length === 0 && (
+              <p className="text-sm text-muted-foreground self-center">No contributors yet</p>
             )}
           </div>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {stages[displayedStageIndex]?.description}
-          </p>
-        </Card>
+        </div>
+
+        {/* Progress Tracker - Only show if stages exist */}
+        {stages.length > 0 && (
+          <>
+            <div className="mb-6">
+              <h3 className="font-semibold mb-4">Progress</h3>
+              
+              {/* Dots + Lines */}
+              <div className="relative flex items-center justify-between mb-3">
+                {/* Connecting Line */}
+                <div className="absolute top-3 left-0 right-0 h-0.5 bg-muted" />
+                <div 
+                  className="absolute top-3 left-0 h-0.5 bg-primary transition-all duration-300"
+                  style={{ width: `${(currentStageIndex / Math.max(stages.length - 1, 1)) * 100}%` }}
+                />
+                
+                {/* Stage Dots */}
+                {stages.map((stage, index) => {
+                  const isCompleted = stage.is_completed || index < currentStageIndex;
+                  const isCurrent = stage.is_current;
+                  const isSelected = index === displayedStageIndex;
+                  
+                  return (
+                    <button
+                      key={stage.id}
+                      onClick={() => setSelectedStageIndex(index)}
+                      className="relative z-10 flex flex-col items-center focus:outline-none group"
+                    >
+                      <div className={`
+                        w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200
+                        ${isCompleted || isCurrent ? 'bg-primary' : 'bg-muted border-2 border-muted-foreground/30'}
+                        ${isSelected ? 'ring-2 ring-primary ring-offset-2 ring-offset-background scale-110' : ''}
+                        ${isCurrent ? 'shadow-lg' : ''}
+                        group-hover:scale-110
+                      `}>
+                        {(isCompleted || isCurrent) && (
+                          <div className="w-2 h-2 rounded-full bg-primary-foreground" />
+                        )}
+                      </div>
+                      <span className={`
+                        text-[10px] mt-2 text-center w-14 transition-colors line-clamp-1
+                        ${isSelected ? 'font-semibold text-foreground' : 'text-muted-foreground'}
+                        ${isCurrent ? 'font-semibold' : ''}
+                      `}>
+                        {stage.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Stage Description Box */}
+            {stages[displayedStageIndex] && (
+              <Card className="p-5 mb-6 bg-primary/5 border-primary/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`w-2 h-2 rounded-full ${displayedStageIndex <= currentStageIndex || stages[displayedStageIndex]?.is_completed ? 'bg-primary' : 'bg-muted-foreground'}`} />
+                  <h4 className="font-semibold">{stages[displayedStageIndex].name}</h4>
+                  {stages[displayedStageIndex].is_current && (
+                    <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">Current</span>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {stages[displayedStageIndex].description || 'No description provided for this stage.'}
+                </p>
+              </Card>
+            )}
+          </>
+        )}
+
+        {/* No stages message for non-owners */}
+        {stages.length === 0 && !isOwner && (
+          <Card className="p-5 mb-6">
+            <p className="text-sm text-muted-foreground text-center">
+              No progress stages defined yet.
+            </p>
+          </Card>
+        )}
 
         {/* Admin Controls Panel */}
         {isOwner && (
@@ -554,10 +597,19 @@ export default function StartupDetail() {
                 variant="outline" 
                 size="sm" 
                 className="flex flex-col items-center gap-1 h-auto py-3"
-                onClick={() => toast.info('Coming soon: Add contributors')}
+                onClick={() => setIsContributorsModalOpen(true)}
               >
                 <Users className="h-4 w-4" />
                 <span className="text-xs">Contributors</span>
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex flex-col items-center gap-1 h-auto py-3"
+                onClick={() => setIsStagesModalOpen(true)}
+              >
+                <Milestone className="h-4 w-4" />
+                <span className="text-xs">Stages</span>
               </Button>
               <Button 
                 variant="outline" 
@@ -580,24 +632,39 @@ export default function StartupDetail() {
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="flex flex-col items-center gap-1 h-auto py-3 col-span-2 text-destructive hover:text-destructive"
+                className="flex flex-col items-center gap-1 h-auto py-3 text-destructive hover:text-destructive"
                 onClick={handleDeleteStartup}
               >
                 <Trash2 className="h-4 w-4" />
-                <span className="text-xs">Delete Startup</span>
+                <span className="text-xs">Delete</span>
               </Button>
             </div>
           </Card>
         )}
 
-        {/* Edit Modal */}
+        {/* Modals */}
         {isOwner && startup && (
-          <StartupEditModal
-            open={isEditModalOpen}
-            onOpenChange={setIsEditModalOpen}
-            startup={startup}
-            onSuccess={fetchStartupDetails}
-          />
+          <>
+            <StartupEditModal
+              open={isEditModalOpen}
+              onOpenChange={setIsEditModalOpen}
+              startup={startup}
+              onSuccess={fetchStartupDetails}
+            />
+            <ContributorsModal
+              open={isContributorsModalOpen}
+              onOpenChange={setIsContributorsModalOpen}
+              startupId={startup.id}
+              ownerId={startup.user_id}
+              onSuccess={fetchContributors}
+            />
+            <ManageStagesModal
+              open={isStagesModalOpen}
+              onOpenChange={setIsStagesModalOpen}
+              startupId={startup.id}
+              onSuccess={() => { fetchStages(); setSelectedStageIndex(null); }}
+            />
+          </>
         )}
       </div>
     </Layout>

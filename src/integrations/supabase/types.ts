@@ -2276,6 +2276,47 @@ export type Database = {
           },
         ]
       }
+      startup_stages: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_completed: boolean | null
+          is_current: boolean | null
+          name: string
+          order_index: number
+          startup_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_completed?: boolean | null
+          is_current?: boolean | null
+          name: string
+          order_index?: number
+          startup_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_completed?: boolean | null
+          is_current?: boolean | null
+          name?: string
+          order_index?: number
+          startup_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "startup_stages_startup_id_fkey"
+            columns: ["startup_id"]
+            isOneToOne: false
+            referencedRelation: "student_startups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_profiles: {
         Row: {
           certificates: string[] | null
