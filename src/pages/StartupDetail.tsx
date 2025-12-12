@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import StartupEditModal from '@/components/startups/StartupEditModal';
 import ContributorsModal from '@/components/startups/ContributorsModal';
 import ManageStagesModal from '@/components/startups/ManageStagesModal';
+import GalleryUploadModal from '@/components/startups/GalleryUploadModal';
+import CreateStartupPostModal from '@/components/startups/CreateStartupPostModal';
 
 interface Startup {
   id: string;
@@ -67,6 +69,12 @@ interface Post {
   is_approved_for_startup: boolean;
 }
 
+interface GalleryImage {
+  id: string;
+  image_url: string;
+  caption: string | null;
+}
+
 export default function StartupDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -75,11 +83,14 @@ export default function StartupDetail() {
   const [contributors, setContributors] = useState<Contributor[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
   const [isInterested, setIsInterested] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isContributorsModalOpen, setIsContributorsModalOpen] = useState(false);
   const [isStagesModalOpen, setIsStagesModalOpen] = useState(false);
+  const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
+  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [selectedStageIndex, setSelectedStageIndex] = useState<number | null>(null);
 
   const currentStageIndex = stages.findIndex(s => s.is_current);
@@ -104,6 +115,7 @@ export default function StartupDetail() {
       fetchContributors();
       fetchStages();
       fetchStartupPosts();
+      fetchGalleryImages();
       if (user) {
         checkIfInterested();
       }
@@ -250,6 +262,23 @@ export default function StartupDetail() {
     }
   };
 
+  const fetchGalleryImages = async () => {
+    if (!startup?.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('startup_gallery_images')
+        .select('id, image_url, caption')
+        .eq('startup_id', startup.id)
+        .order('order_index', { ascending: true });
+
+      if (error) throw error;
+      setGalleryImages(data || []);
+    } catch (error) {
+      console.error('Error fetching gallery:', error);
+    }
+  };
+
   const checkIfInterested = async () => {
     if (!user || !startup?.id) return;
 
@@ -327,13 +356,16 @@ export default function StartupDetail() {
     }
   };
 
-  // Collect all images from posts for gallery
-  const galleryImages = posts.flatMap(post => {
-    const images: string[] = [];
-    if (post.image_url) images.push(post.image_url);
-    if (post.image_urls) images.push(...post.image_urls);
-    return images;
-  }).slice(0, 10);
+  // Collect all images - from gallery table first, then from posts
+  const allGalleryImages = [
+    ...galleryImages.map(g => g.image_url),
+    ...posts.flatMap(post => {
+      const images: string[] = [];
+      if (post.image_url) images.push(post.image_url);
+      if (post.image_urls) images.push(...post.image_urls);
+      return images;
+    })
+  ].slice(0, 10);
 
   if (loading) {
     return (
@@ -438,11 +470,11 @@ export default function StartupDetail() {
         </Card>
 
         {/* Image Gallery (Horizontal Scroll) */}
-        {galleryImages.length > 0 && (
+        {allGalleryImages.length > 0 && (
           <div className="mb-6">
             <h3 className="font-semibold mb-3">Gallery</h3>
             <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              {galleryImages.map((image, index) => (
+              {allGalleryImages.map((image, index) => (
                 <div 
                   key={index}
                   className="flex-shrink-0 w-40 h-40 rounded-xl overflow-hidden bg-muted"
@@ -588,7 +620,7 @@ export default function StartupDetail() {
                 variant="outline" 
                 size="sm" 
                 className="flex flex-col items-center gap-1 h-auto py-3"
-                onClick={() => navigate(`/startup/${startup.slug || startup.id}/manage`)}
+                onClick={() => setIsPostModalOpen(true)}
               >
                 <Plus className="h-4 w-4" />
                 <span className="text-xs">Add Post</span>
@@ -615,7 +647,7 @@ export default function StartupDetail() {
                 variant="outline" 
                 size="sm" 
                 className="flex flex-col items-center gap-1 h-auto py-3"
-                onClick={() => toast.info('Coming soon: Upload gallery images')}
+                onClick={() => setIsGalleryModalOpen(true)}
               >
                 <ImagePlus className="h-4 w-4" />
                 <span className="text-xs">Gallery</span>
@@ -663,6 +695,19 @@ export default function StartupDetail() {
               onOpenChange={setIsStagesModalOpen}
               startupId={startup.id}
               onSuccess={() => { fetchStages(); setSelectedStageIndex(null); }}
+            />
+            <GalleryUploadModal
+              open={isGalleryModalOpen}
+              onOpenChange={setIsGalleryModalOpen}
+              startupId={startup.id}
+              onSuccess={fetchGalleryImages}
+            />
+            <CreateStartupPostModal
+              open={isPostModalOpen}
+              onOpenChange={setIsPostModalOpen}
+              startupId={startup.id}
+              startupTitle={startup.title}
+              onSuccess={fetchStartupPosts}
             />
           </>
         )}

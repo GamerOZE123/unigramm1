@@ -29,7 +29,6 @@ export default function StartupEditModal({ open, onOpenChange, startup, onSucces
     title: startup.title,
     description: startup.description,
     category: startup.category,
-    stage: startup.stage,
     looking_for: startup.looking_for?.join(', ') || '',
     website_url: startup.website_url || '',
     contact_email: startup.contact_email || '',
@@ -53,7 +52,6 @@ export default function StartupEditModal({ open, onOpenChange, startup, onSucces
           title: formData.title,
           description: formData.description,
           category: formData.category,
-          stage: formData.stage,
           looking_for: lookingForArray,
           website_url: formData.website_url || null,
           contact_email: formData.contact_email || null,
@@ -101,32 +99,14 @@ export default function StartupEditModal({ open, onOpenChange, startup, onSucces
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Category *</label>
-              <Input
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                placeholder="e.g., EdTech"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium mb-2 block">Stage *</label>
-              <select
-                value={formData.stage}
-                onChange={(e) => setFormData({ ...formData, stage: e.target.value })}
-                className="w-full px-3 py-2 bg-background border border-input rounded-md"
-                required
-              >
-                <option value="Ideation">Ideation</option>
-                <option value="Research">Research</option>
-                <option value="MVP Build">MVP Build</option>
-                <option value="Testing">Testing</option>
-                <option value="Launch">Launch</option>
-              </select>
-            </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">Category *</label>
+            <Input
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              placeholder="e.g., EdTech"
+              required
+            />
           </div>
 
           <div>

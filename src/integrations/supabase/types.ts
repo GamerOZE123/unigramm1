@@ -2240,6 +2240,41 @@ export type Database = {
           },
         ]
       }
+      startup_gallery_images: {
+        Row: {
+          caption: string | null
+          created_at: string
+          id: string
+          image_url: string
+          order_index: number
+          startup_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          image_url: string
+          order_index?: number
+          startup_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string
+          order_index?: number
+          startup_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "startup_gallery_images_startup_id_fkey"
+            columns: ["startup_id"]
+            isOneToOne: false
+            referencedRelation: "student_startups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       startup_interests: {
         Row: {
           created_at: string | null
