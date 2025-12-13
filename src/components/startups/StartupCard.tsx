@@ -4,15 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Heart, 
-  Star, 
-  Globe, 
-  Mail, 
-  Linkedin, 
+  Bookmark, 
   Edit, 
   Trash2,
   Users,
-  ArrowUpRight
+  ArrowUpRight,
+  UserPlus,
+  UserCheck
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -45,15 +43,17 @@ interface Startup {
 
 interface StartupCardProps {
   startup: Startup;
+  isBookmarked?: boolean;
   onEdit?: (startup: Startup, e: React.MouseEvent) => void;
   onDelete?: (startupId: string, e: React.MouseEvent) => void;
+  onBookmarkChange?: () => void;
 }
 
-export default function StartupCard({ startup, onEdit, onDelete }: StartupCardProps) {
+export default function StartupCard({ startup, isBookmarked: initialBookmarked, onEdit, onDelete, onBookmarkChange }: StartupCardProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isInterested, setIsInterested] = useState(false);
-  const [isFavorited, setIsFavorited] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(initialBookmarked || false);
   const [interestCount, setInterestCount] = useState(0);
   const [loading, setLoading] = useState(false);
 
@@ -62,28 +62,22 @@ export default function StartupCard({ startup, onEdit, onDelete }: StartupCardPr
     fetchInterestCount();
   }, [startup.id, user]);
 
+  useEffect(() => {
+    setIsBookmarked(initialBookmarked || false);
+  }, [initialBookmarked]);
+
   const checkInteractionStatus = async () => {
     if (!user) return;
 
     try {
-      const [interestRes, favoriteRes] = await Promise.all([
-        supabase
-          .from('startup_interests')
-          .select('id')
-          .eq('startup_id', startup.id)
-          .eq('user_id', user.id)
-          .maybeSingle(),
-        supabase
-          .from('item_favorites')
-          .select('id')
-          .eq('item_id', startup.id)
-          .eq('item_type', 'startup')
-          .eq('user_id', user.id)
-          .maybeSingle()
-      ]);
+      const { data: interestData } = await supabase
+        .from('startup_interests')
+        .select('id')
+        .eq('startup_id', startup.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      setIsInterested(!!interestRes.data);
-      setIsFavorited(!!favoriteRes.data);
+      setIsInterested(!!interestData);
     } catch (error) {
       console.error('Error checking interaction status:', error);
     }
@@ -137,16 +131,16 @@ export default function StartupCard({ startup, onEdit, onDelete }: StartupCardPr
     }
   };
 
-  const handleToggleFavorite = async (e: React.MouseEvent) => {
+  const handleToggleBookmark = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user || loading) {
-      if (!user) toast.error('Please login to favorite');
+      if (!user) toast.error('Please login to bookmark');
       return;
     }
 
     setLoading(true);
     try {
-      if (isFavorited) {
+      if (isBookmarked) {
         await supabase
           .from('item_favorites')
           .delete()
@@ -154,18 +148,19 @@ export default function StartupCard({ startup, onEdit, onDelete }: StartupCardPr
           .eq('item_type', 'startup')
           .eq('user_id', user.id);
 
-        setIsFavorited(false);
-        toast.success('Removed from favorites');
+        setIsBookmarked(false);
+        toast.success('Removed from bookmarks');
       } else {
         await supabase
           .from('item_favorites')
           .insert({ item_id: startup.id, item_type: 'startup', user_id: user.id });
 
-        setIsFavorited(true);
-        toast.success('Added to favorites!');
+        setIsBookmarked(true);
+        toast.success('Bookmarked!');
       }
+      onBookmarkChange?.();
     } catch (error) {
-      console.error('Error toggling favorite:', error);
+      console.error('Error toggling bookmark:', error);
       toast.error('Failed to update');
     } finally {
       setLoading(false);
@@ -186,34 +181,54 @@ export default function StartupCard({ startup, onEdit, onDelete }: StartupCardPr
 
   return (
     <Card 
-      className="group relative overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer border-border/50 hover:border-primary/30"
+      className={cn(
+        "group relative overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer border-border/50 hover:border-primary/30",
+        isBookmarked && "ring-2 ring-primary/20 border-primary/30"
+      )}
       onClick={() => navigate(`/startup/${startup.slug || startup.id}`)}
     >
+      {/* Bookmarked indicator */}
+      {isBookmarked && (
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-primary/50" />
+      )}
+
       {/* Top action buttons */}
       <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
         <Button
-          variant="ghost"
-          size="icon"
+          variant={isInterested ? "default" : "outline"}
+          size="sm"
           className={cn(
-            "h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background shadow-sm",
-            isInterested && "text-pink-500 hover:text-pink-600"
+            "h-8 gap-1.5 text-xs font-medium shadow-sm",
+            isInterested 
+              ? "bg-primary text-primary-foreground" 
+              : "bg-background/80 backdrop-blur-sm hover:bg-background"
           )}
           onClick={handleToggleInterest}
           disabled={loading}
         >
-          <Heart className={cn("w-4 h-4", isInterested && "fill-current")} />
+          {isInterested ? (
+            <>
+              <UserCheck className="w-3.5 h-3.5" />
+              Following
+            </>
+          ) : (
+            <>
+              <UserPlus className="w-3.5 h-3.5" />
+              Follow
+            </>
+          )}
         </Button>
         <Button
           variant="ghost"
           size="icon"
           className={cn(
             "h-8 w-8 rounded-full bg-background/80 backdrop-blur-sm hover:bg-background shadow-sm",
-            isFavorited && "text-yellow-500 hover:text-yellow-600"
+            isBookmarked && "text-primary hover:text-primary"
           )}
-          onClick={handleToggleFavorite}
+          onClick={handleToggleBookmark}
           disabled={loading}
         >
-          <Star className={cn("w-4 h-4", isFavorited && "fill-current")} />
+          <Bookmark className={cn("w-4 h-4", isBookmarked && "fill-current")} />
         </Button>
       </div>
 
@@ -297,8 +312,8 @@ export default function StartupCard({ startup, onEdit, onDelete }: StartupCardPr
           <div className="flex items-center gap-3 text-sm text-muted-foreground">
             {interestCount > 0 && (
               <span className="flex items-center gap-1">
-                <Heart className="w-3.5 h-3.5 text-pink-500" />
-                {interestCount} interested
+                <Users className="w-3.5 h-3.5 text-primary" />
+                {interestCount} {interestCount === 1 ? 'follower' : 'followers'}
               </span>
             )}
           </div>

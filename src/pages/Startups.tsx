@@ -46,6 +46,7 @@ export default function Startups() {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const [startups, setStartups] = useState<Startup[]>([]);
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -62,7 +63,29 @@ export default function Startups() {
 
   useEffect(() => {
     fetchStartups();
-  }, []);
+    fetchBookmarks();
+  }, [user]);
+
+  const fetchBookmarks = async () => {
+    if (!user) {
+      setBookmarkedIds(new Set());
+      return;
+    }
+
+    try {
+      const { data } = await supabase
+        .from('item_favorites')
+        .select('item_id')
+        .eq('user_id', user.id)
+        .eq('item_type', 'startup');
+
+      if (data) {
+        setBookmarkedIds(new Set(data.map(d => d.item_id)));
+      }
+    } catch (error) {
+      console.error('Error fetching bookmarks:', error);
+    }
+  };
 
   const fetchStartups = async () => {
     try {
@@ -99,6 +122,15 @@ export default function Startups() {
       setLoading(false);
     }
   };
+
+  // Sort startups with bookmarked ones at the top
+  const sortedStartups = [...startups].sort((a, b) => {
+    const aBookmarked = bookmarkedIds.has(a.id);
+    const bBookmarked = bookmarkedIds.has(b.id);
+    if (aBookmarked && !bBookmarked) return -1;
+    if (!aBookmarked && bBookmarked) return 1;
+    return 0;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -502,12 +534,14 @@ export default function Startups() {
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {startups.map((startup) => (
+              {sortedStartups.map((startup) => (
                 <StartupCard
                   key={startup.id}
                   startup={startup}
+                  isBookmarked={bookmarkedIds.has(startup.id)}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  onBookmarkChange={fetchBookmarks}
                 />
               ))}
             </div>
