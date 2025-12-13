@@ -6,27 +6,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Rocket, 
   Lightbulb, 
-  ExternalLink, 
   Users, 
   TrendingUp,
-  Plus,
-  Mail,
-  Linkedin,
-  Globe,
-  Edit,
-  Trash2
+  Plus
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import StartupCard from '@/components/startups/StartupCard';
 
 interface Startup {
   id: string;
@@ -228,16 +220,6 @@ export default function Startups() {
       console.error('Error deleting startup:', error);
       toast.error(error.message || 'Failed to delete startup');
     }
-  };
-
-  const getStageColor = (stage: string) => {
-    const colors: Record<string, string> = {
-      idea: 'bg-blue-500/10 text-blue-500',
-      mvp: 'bg-purple-500/10 text-purple-500',
-      launched: 'bg-green-500/10 text-green-500',
-      growing: 'bg-orange-500/10 text-orange-500'
-    };
-    return colors[stage] || colors.idea;
   };
 
   if (loading) {
@@ -519,126 +501,14 @@ export default function Startups() {
               </Button>
             </Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {startups.map((startup) => (
-                <Card 
-                  key={startup.id} 
-                  className="p-6 hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => navigate(`/startup/${startup.slug || startup.id}`)}
-                >
-                  <div className="space-y-4">
-                    {/* Header */}
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3 flex-1">
-                        <Avatar
-                          className="h-12 w-12 cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/${startup.profiles?.username || ''}`);
-                          }}
-                        >
-                          <AvatarImage src={startup.profiles?.avatar_url} />
-                          <AvatarFallback>
-                            {startup.profiles?.full_name?.[0] || startup.profiles?.username?.[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-lg line-clamp-1">{startup.title}</h3>
-                          <p className="text-sm text-muted-foreground line-clamp-1">
-                            by {startup.profiles?.full_name || startup.profiles?.username}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className={getStageColor(startup.stage)}>
-                          {startup.stage.toUpperCase()}
-                        </Badge>
-                        {user?.id === startup.user_id && (
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => handleEdit(startup, e)}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => handleDelete(startup.id, e)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Description */}
-                    <p className="text-sm text-muted-foreground line-clamp-3">
-                      {startup.description}
-                    </p>
-
-                    {/* Category & University */}
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant="secondary">{startup.category}</Badge>
-                      {startup.profiles?.university && (
-                        <Badge variant="outline">{startup.profiles.university}</Badge>
-                      )}
-                    </div>
-
-                    {/* Looking For */}
-                    {startup.looking_for && startup.looking_for.length > 0 && (
-                      <div>
-                        <p className="text-xs font-medium text-muted-foreground mb-2">Looking for:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {startup.looking_for.map((item, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs">
-                              {item}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2 pt-2 border-t">
-                      {startup.website_url && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-1 flex-1"
-                          onClick={() => window.open(startup.website_url, '_blank')}
-                        >
-                          <Globe className="w-3 h-3" />
-                          Website
-                        </Button>
-                      )}
-                      {startup.contact_email && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-1 flex-1"
-                          onClick={() => window.location.href = `mailto:${startup.contact_email}`}
-                        >
-                          <Mail className="w-3 h-3" />
-                          Contact
-                        </Button>
-                      )}
-                      {startup.profiles?.linkedin_url && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-1 flex-1"
-                          onClick={() => window.open(startup.profiles.linkedin_url, '_blank')}
-                        >
-                          <Linkedin className="w-3 h-3" />
-                          LinkedIn
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </Card>
+                <StartupCard
+                  key={startup.id}
+                  startup={startup}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
               ))}
             </div>
           )}
