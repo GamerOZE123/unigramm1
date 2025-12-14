@@ -141,20 +141,24 @@ export default function StartupCard({ startup, isBookmarked: initialBookmarked, 
     setLoading(true);
     try {
       if (isBookmarked) {
-        await supabase
+        const { error } = await supabase
           .from('item_favorites')
           .delete()
           .eq('item_id', startup.id)
           .eq('item_type', 'startup')
           .eq('user_id', user.id);
 
+        if (error) throw error;
+
         setIsBookmarked(false);
         toast.success('Removed from bookmarks');
         onBookmarkChange?.(startup.id, false);
       } else {
-        await supabase
+        const { error } = await supabase
           .from('item_favorites')
           .insert({ item_id: startup.id, item_type: 'startup', user_id: user.id });
+
+        if (error) throw error;
 
         setIsBookmarked(true);
         toast.success('Bookmarked!');
@@ -162,7 +166,7 @@ export default function StartupCard({ startup, isBookmarked: initialBookmarked, 
       }
     } catch (error) {
       console.error('Error toggling bookmark:', error);
-      toast.error('Failed to update');
+      toast.error('Failed to bookmark');
     } finally {
       setLoading(false);
     }
