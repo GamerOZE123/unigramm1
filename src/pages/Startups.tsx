@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Layout from '@/components/layout/Layout';
 import MobileHeader from '@/components/layout/MobileHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -11,7 +11,10 @@ import {
   Lightbulb, 
   Users, 
   TrendingUp,
-  Plus
+  Plus,
+  ImagePlus,
+  X,
+  Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -19,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import StartupCard from '@/components/startups/StartupCard';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 interface Startup {
   id: string;
@@ -58,8 +62,11 @@ export default function Startups() {
     stage: 'idea',
     looking_for: '',
     website_url: '',
-    contact_email: ''
+    contact_email: '',
+    logo_url: ''
   });
+  const [logoUploading, setLogoUploading] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchStartups();
@@ -144,6 +151,46 @@ export default function Startups() {
     return 0;
   });
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    setLogoUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `startup-logos/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('lovable-uploads')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('lovable-uploads')
+        .getPublicUrl(filePath);
+
+      setFormData(prev => ({ ...prev, logo_url: publicUrl }));
+      toast.success('Logo uploaded!');
+    } catch (error: any) {
+      console.error('Error uploading logo:', error);
+      toast.error('Failed to upload logo');
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -164,7 +211,8 @@ export default function Startups() {
           stage: formData.stage,
           looking_for: lookingForArray,
           website_url: formData.website_url || null,
-          contact_email: formData.contact_email || null
+          contact_email: formData.contact_email || null,
+          logo_url: formData.logo_url || null
         });
 
       if (error) throw error;
@@ -178,7 +226,8 @@ export default function Startups() {
         stage: 'idea',
         looking_for: '',
         website_url: '',
-        contact_email: ''
+        contact_email: '',
+        logo_url: ''
       });
       fetchStartups();
     } catch (error: any) {
@@ -197,7 +246,8 @@ export default function Startups() {
       stage: startup.stage,
       looking_for: startup.looking_for?.join(', ') || '',
       website_url: startup.website_url || '',
-      contact_email: startup.contact_email || ''
+      contact_email: startup.contact_email || '',
+      logo_url: ''
     });
     setIsEditModalOpen(true);
   };
@@ -237,7 +287,8 @@ export default function Startups() {
         stage: 'idea',
         looking_for: '',
         website_url: '',
-        contact_email: ''
+        contact_email: '',
+        logo_url: ''
       });
       fetchStartups();
     } catch (error: any) {
@@ -305,6 +356,52 @@ export default function Startups() {
                 <DialogTitle>Share Your Startup or Idea</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Logo Upload */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Logo</label>
+                  <div className="flex items-center gap-4">
+                    <div 
+                      className="relative w-20 h-20 rounded-xl border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 transition-colors cursor-pointer flex items-center justify-center bg-muted/50 overflow-hidden"
+                      onClick={() => logoInputRef.current?.click()}
+                    >
+                      {formData.logo_url ? (
+                        <>
+                          <img 
+                            src={formData.logo_url} 
+                            alt="Logo preview" 
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setFormData(prev => ({ ...prev, logo_url: '' }));
+                            }}
+                            className="absolute -top-1 -right-1 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </>
+                      ) : logoUploading ? (
+                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                      ) : (
+                        <ImagePlus className="w-6 h-6 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      <p>Click to upload a logo</p>
+                      <p className="text-xs">PNG, JPG up to 5MB</p>
+                    </div>
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="text-sm font-medium mb-2 block">Startup Name *</label>
                   <Input
