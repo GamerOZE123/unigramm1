@@ -123,6 +123,18 @@ export default function Startups() {
     }
   };
 
+  const handleBookmarkChange = (startupId: string, isBookmarked: boolean) => {
+    setBookmarkedIds(prev => {
+      const newSet = new Set(prev);
+      if (isBookmarked) {
+        newSet.add(startupId);
+      } else {
+        newSet.delete(startupId);
+      }
+      return newSet;
+    });
+  };
+
   // Sort startups with bookmarked ones at the top
   const sortedStartups = [...startups].sort((a, b) => {
     const aBookmarked = bookmarkedIds.has(a.id);
@@ -541,7 +553,7 @@ export default function Startups() {
                   isBookmarked={bookmarkedIds.has(startup.id)}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
-                  onBookmarkChange={fetchBookmarks}
+                  onBookmarkChange={handleBookmarkChange}
                 />
               ))}
             </div>
