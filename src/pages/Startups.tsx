@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import imageCompression from 'browser-image-compression';
 import Layout from '@/components/layout/Layout';
 import MobileHeader from '@/components/layout/MobileHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -160,20 +161,27 @@ export default function Startups() {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB');
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('Image must be less than 10MB');
       return;
     }
 
     setLogoUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      // Compress the image before uploading
+      const compressedFile = await imageCompression(file, {
+        maxSizeMB: 0.5,
+        maxWidthOrHeight: 512,
+        useWebWorker: true,
+        fileType: 'image/webp'
+      });
+
+      const fileName = `${user.id}-${Date.now()}.webp`;
       const filePath = `startup-logos/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('lovable-uploads')
-        .upload(filePath, file);
+        .upload(filePath, compressedFile);
 
       if (uploadError) throw uploadError;
 
