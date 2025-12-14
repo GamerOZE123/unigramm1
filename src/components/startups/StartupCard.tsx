@@ -46,7 +46,7 @@ interface StartupCardProps {
   isBookmarked?: boolean;
   onEdit?: (startup: Startup, e: React.MouseEvent) => void;
   onDelete?: (startupId: string, e: React.MouseEvent) => void;
-  onBookmarkChange?: () => void;
+  onBookmarkChange?: (startupId: string, isBookmarked: boolean) => void;
 }
 
 export default function StartupCard({ startup, isBookmarked: initialBookmarked, onEdit, onDelete, onBookmarkChange }: StartupCardProps) {
@@ -150,6 +150,7 @@ export default function StartupCard({ startup, isBookmarked: initialBookmarked, 
 
         setIsBookmarked(false);
         toast.success('Removed from bookmarks');
+        onBookmarkChange?.(startup.id, false);
       } else {
         await supabase
           .from('item_favorites')
@@ -157,8 +158,8 @@ export default function StartupCard({ startup, isBookmarked: initialBookmarked, 
 
         setIsBookmarked(true);
         toast.success('Bookmarked!');
+        onBookmarkChange?.(startup.id, true);
       }
-      onBookmarkChange?.();
     } catch (error) {
       console.error('Error toggling bookmark:', error);
       toast.error('Failed to update');
