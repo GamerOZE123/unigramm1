@@ -348,15 +348,37 @@ export default function Auth() {
 
   // Handle password recovery from email link
   useEffect(() => {
-    // Check URL hash for recovery token on mount and on hash change
-    const checkForRecovery = () => {
+    // Use a ref-like variable to track recovery state across the effect
+    let isRecoveryFlow = false;
+
+    // Check URL hash for recovery token on mount
+    const checkForRecovery = async () => {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const isRecovery = hashParams.get('type') === 'recovery';
+      const type = hashParams.get('type');
       const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
       
-      if (isRecovery && accessToken) {
+      // Check for recovery flow
+      if (type === 'recovery' && accessToken) {
+        isRecoveryFlow = true;
         setMode('reset');
         setMessage('Please enter your new password below.');
+        
+        // Set the session from the URL tokens
+        if (refreshToken) {
+          await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+        }
+        return;
+      }
+      
+      // Also check for error in URL (e.g., expired link)
+      const errorDescription = hashParams.get('error_description');
+      if (errorDescription) {
+        setError(decodeURIComponent(errorDescription.replace(/\+/g, ' ')));
+        setMode('forgot');
       }
     };
 
@@ -364,46 +386,58 @@ export default function Auth() {
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Handle PASSWORD_RECOVERY event
       if (event === 'PASSWORD_RECOVERY') {
+        isRecoveryFlow = true;
         setMode('reset');
         setMessage('Please enter your new password below.');
-        return; // Don't redirect, stay on reset page
+        return;
+      }
+      
+      // Skip redirect logic if we're in recovery flow
+      if (isRecoveryFlow) {
+        return;
+      }
+      
+      // Check URL hash again for recovery (in case of race condition)
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const isRecoveryInUrl = hashParams.get('type') === 'recovery';
+      
+      if (isRecoveryInUrl) {
+        setMode('reset');
+        setMessage('Please enter your new password below.');
+        return;
       }
       
       // Only handle SIGNED_IN if not in password recovery mode
-      if (event === 'SIGNED_IN' && mode !== 'reset' && session) {
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const isRecovery = hashParams.get('type') === 'recovery';
-        
-        if (isRecovery) {
-          // Still in recovery mode, don't redirect
-          return;
-        }
-        
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('profile_completed, user_type')
-          .eq('user_id', session.user.id)
-          .single();
+      if (event === 'SIGNED_IN' && session) {
+        // Use setTimeout to defer database calls
+        setTimeout(async () => {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('profile_completed, user_type')
+            .eq('user_id', session.user.id)
+            .single();
 
-        if (profileData && !profileData.profile_completed) {
-          if (profileData.user_type === 'company') {
-            setShowCompanyOnboarding(true);
-          } else if (profileData.user_type === 'clubs') {
-            setShowClubOnboarding(true);
+          if (profileData && !profileData.profile_completed) {
+            if (profileData.user_type === 'company') {
+              setShowCompanyOnboarding(true);
+            } else if (profileData.user_type === 'clubs') {
+              setShowClubOnboarding(true);
+            } else {
+              setShowOnboarding(true);
+            }
           } else {
-            setShowOnboarding(true);
+            navigate('/home');
           }
-        } else {
-          navigate('/home');
-        }
+        }, 0);
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [mode, navigate]);
+  }, [navigate]);
 
   return (
     <>
