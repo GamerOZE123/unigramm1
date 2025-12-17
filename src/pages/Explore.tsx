@@ -48,12 +48,11 @@ export default function Explore() {
       const searchTerm = query.slice(1).toLowerCase();
       setSearchType("hashtag");
       setSearchClubs([]);
-      fetchSearchPosts(searchTerm, "hashtag");
+      fetchHashtagPosts(searchTerm);
     } else if (query.trim()) {
-      // Search for users, universities, and clubs
       searchUsers(query);
-      setSearchType("university");
-      fetchUniversityResults(query);
+      setSearchType("user");
+      fetchSearchResults(query);
     } else {
       setSearchPosts([]);
       setSearchClubs([]);
@@ -67,112 +66,134 @@ export default function Explore() {
     setSearchQuery(`#${hashtag}`);
     setSearchType("hashtag");
     setSearchClubs([]);
-    fetchSearchPosts(hashtag, "hashtag");
+    fetchHashtagPosts(hashtag);
   };
   const handleUniversityClick = (university: string) => {
     setSearchQuery(university);
-    setSearchType("university");
-    fetchUniversityResults(university);
+    setSearchType("user");
+    fetchSearchResults(university);
   };
 
   // ---------------------------------------------
-  // FETCH UNIVERSITY RESULTS — CLUBS + POSTS
+  // FETCH SEARCH RESULTS — POSTS BY CONTENT + CLUBS BY UNIVERSITY
   // ---------------------------------------------
-  const fetchUniversityResults = async (searchTerm: string) => {
+  const fetchSearchResults = async (searchTerm: string) => {
     setSearchPostsLoading(true);
     try {
-      // Fetch clubs from the university (sorted by member_count for trending)
-      const { data: clubs, error: clubsError } = await supabase
-        .from("clubs_profiles")
-        .select("id, club_name, club_description, logo_url, university, member_count, category")
-        .ilike("university", `%${searchTerm}%`)
-        .order("member_count", { ascending: false, nullsFirst: false });
-
-      if (clubsError) throw clubsError;
-      setSearchClubs(clubs || []);
-
-      // Fetch posts from users at the university
-      const { data: profiles } = await supabase
+      // Check if search term matches any university - if so, fetch clubs
+      const { data: matchingUniversities } = await supabase
         .from("profiles")
-        .select("user_id")
-        .ilike("university", `%${searchTerm}%`);
+        .select("university")
+        .ilike("university", `%${searchTerm}%`)
+        .limit(1);
 
-      const userIds = profiles?.map((p) => p.user_id) || [];
+      const isUniversitySearch = matchingUniversities && matchingUniversities.length > 0;
 
+      // Fetch clubs only if searching for a university
+      if (isUniversitySearch) {
+        const { data: clubs } = await supabase
+          .from("clubs_profiles")
+          .select("id, club_name, club_description, logo_url, university, member_count, category")
+          .ilike("university", `%${searchTerm}%`)
+          .order("member_count", { ascending: false, nullsFirst: false });
+        setSearchClubs(clubs || []);
+      } else {
+        setSearchClubs([]);
+      }
+
+      // Fetch posts matching content/caption OR from users at matching university
+      let allPosts: any[] = [];
+      const seenPostIds = new Set<string>();
+
+      // 1. Fetch posts by content match
+      const { data: contentPosts } = await supabase
+        .from("posts")
+        .select(`
+          id, content, image_url, image_urls, hashtags, user_id, created_at,
+          likes_count, comments_count, views_count, poll_question, poll_options, poll_ends_at, survey_questions
+        `)
+        .ilike("content", `%${searchTerm}%`)
+        .order("created_at", { ascending: false })
+        .limit(30);
+
+      contentPosts?.forEach((p) => {
+        if (!seenPostIds.has(p.id)) {
+          seenPostIds.add(p.id);
+          allPosts.push(p);
+        }
+      });
+
+      // 2. If university search, also fetch posts from users at that university
+      if (isUniversitySearch) {
+        const { data: uniProfiles } = await supabase
+          .from("profiles")
+          .select("user_id")
+          .ilike("university", `%${searchTerm}%`);
+
+        const userIds = uniProfiles?.map((p) => p.user_id) || [];
+
+        if (userIds.length > 0) {
+          const { data: uniPosts } = await supabase
+            .from("posts")
+            .select(`
+              id, content, image_url, image_urls, hashtags, user_id, created_at,
+              likes_count, comments_count, views_count, poll_question, poll_options, poll_ends_at, survey_questions
+            `)
+            .in("user_id", userIds)
+            .order("created_at", { ascending: false })
+            .limit(30);
+
+          uniPosts?.forEach((p) => {
+            if (!seenPostIds.has(p.id)) {
+              seenPostIds.add(p.id);
+              allPosts.push(p);
+            }
+          });
+        }
+      }
+
+      // Sort by created_at and limit
+      allPosts.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      allPosts = allPosts.slice(0, 30);
+
+      // Fetch profile details for all posts
+      const userIds = [...new Set(allPosts.map((p) => p.user_id))];
       if (userIds.length > 0) {
-        const { data: posts, error } = await supabase
-          .from("posts")
-          .select(`
-            id,
-            content,
-            image_url,
-            image_urls,
-            hashtags,
-            user_id,
-            created_at,
-            likes_count,
-            comments_count,
-            views_count,
-            poll_question,
-            poll_options,
-            poll_ends_at,
-            survey_questions
-          `)
-          .in("user_id", userIds)
-          .order("created_at", { ascending: false })
-          .limit(20);
-
-        if (error) throw error;
-
-        const { data: profileDetails } = await supabase
+        const { data: profiles } = await supabase
           .from("profiles")
           .select("user_id, username, full_name, avatar_url, university")
           .in("user_id", userIds);
 
-        const map = new Map();
-        profileDetails?.forEach((p) => map.set(p.user_id, p));
+        const profileMap = new Map();
+        profiles?.forEach((p) => profileMap.set(p.user_id, p));
 
-        const transformed = posts?.map((p) => ({
+        const transformed = allPosts.map((p) => ({
           ...p,
-          profiles: map.get(p.user_id),
-        })) || [];
+          profiles: profileMap.get(p.user_id),
+        }));
 
         setSearchPosts(transformed);
       } else {
         setSearchPosts([]);
       }
     } catch (err) {
-      console.error("Error fetching university results:", err);
+      console.error("Error fetching search results:", err);
     } finally {
       setSearchPostsLoading(false);
     }
   };
 
   // ---------------------------------------------
-  // FETCH SEARCH POSTS — HASHTAGS ONLY
+  // FETCH HASHTAG POSTS
   // ---------------------------------------------
-  const fetchSearchPosts = async (searchTerm: string, type: string) => {
-    if (type !== "hashtag") return;
-    
+  const fetchHashtagPosts = async (searchTerm: string) => {
     setSearchPostsLoading(true);
     try {
       const { data: posts, error } = await supabase
         .from("posts")
         .select(`
-          id,
-          content,
-          image_url,
-          image_urls,
-          hashtags,
-          user_id,
-          created_at,
-          likes_count,
-          comments_count,
-          views_count,
-          poll_question,
-          poll_options,
-          poll_ends_at,
-          survey_questions
+          id, content, image_url, image_urls, hashtags, user_id, created_at,
+          likes_count, comments_count, views_count, poll_question, poll_options, poll_ends_at, survey_questions
         `)
         .contains("hashtags", [searchTerm.toLowerCase()])
         .order("created_at", { ascending: false });
@@ -196,7 +217,7 @@ export default function Explore() {
 
       setSearchPosts(transformed);
     } catch (err) {
-      console.error("Error fetching posts:", err);
+      console.error("Error fetching hashtag posts:", err);
     } finally {
       setSearchPostsLoading(false);
     }
@@ -287,7 +308,7 @@ export default function Explore() {
           {!searchPostsLoading && searchPosts.length > 0 && (
             <div className="space-y-4">
               <h2 className="text-lg font-semibold">
-                {searchType === "university" ? "Posts from this University" : "Posts"}
+                {searchType === "hashtag" ? `Posts with #${searchQuery.slice(1)}` : "Posts"}
               </h2>
               {searchPosts.map((post) => (
                 <PostCard key={post.id} post={post} onHashtagClick={handleHashtagClick} />
