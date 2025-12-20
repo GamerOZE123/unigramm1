@@ -306,12 +306,12 @@ export default function ClubDetail() {
                       </Button>
                     )}
                     
-                    {!permissions.isOwner && userType === 'student' && (
+                    {!permissions.isOwner && userType === 'student' && isMember && (
                       <Button
-                        onClick={isMember ? handleLeaveClub : handleRequestToJoin}
-                        variant={isMember ? "outline" : hasPendingRequest ? "secondary" : "default"}
+                        onClick={handleLeaveClub}
+                        variant="outline"
                       >
-                        {isMember ? 'Leave Club' : hasPendingRequest ? 'Pending... (Click to Cancel)' : 'Request to Join'}
+                        Leave Club
                       </Button>
                     )}
                   </div>
@@ -397,7 +397,7 @@ export default function ClubDetail() {
             <CardTitle>Club Posts</CardTitle>
           </CardHeader>
           <CardContent>
-            <ClubPostsSection clubUserId={club.user_id} />
+            <ClubPostsSection clubUserId={club.user_id} clubId={clubId} />
           </CardContent>
         </Card>
 

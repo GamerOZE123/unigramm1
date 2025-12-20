@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Rocket, User } from 'lucide-react';
+import { Rocket, User, Users } from 'lucide-react';
 
 interface Startup {
   id: string;
@@ -10,6 +10,14 @@ interface Startup {
   logo_url: string | null;
   category: string;
   type: 'startup';
+}
+
+interface Club {
+  id: string;
+  club_name: string;
+  logo_url: string | null;
+  category: string | null;
+  type: 'club';
 }
 
 interface UserProfile {
@@ -20,7 +28,7 @@ interface UserProfile {
   type: 'user';
 }
 
-type MentionItem = Startup | UserProfile;
+type MentionItem = Startup | UserProfile | Club;
 
 interface MentionInputProps {
   value: string;
@@ -48,8 +56,8 @@ export default function MentionInput({
       if (match) {
         const query = match[1].toLowerCase();
         try {
-          // Search both users and startups
-          const [usersResult, startupsResult] = await Promise.all([
+          // Search users, startups, and clubs
+          const [usersResult, startupsResult, clubsResult] = await Promise.all([
             supabase
               .from('profiles')
               .select('user_id, username, full_name, avatar_url')
@@ -59,6 +67,11 @@ export default function MentionInput({
               .from('student_startups')
               .select('id, title, logo_url, category')
               .ilike('title', `%${query}%`)
+              .limit(3),
+            supabase
+              .from('clubs_profiles')
+              .select('id, club_name, logo_url, category')
+              .ilike('club_name', `%${query}%`)
               .limit(3)
           ]);
 
@@ -72,8 +85,13 @@ export default function MentionInput({
             type: 'startup' as const
           }));
 
-          // Combine and sort - users first, then startups
-          setSuggestions([...users, ...startups]);
+          const clubs: Club[] = (clubsResult.data || []).map(c => ({
+            ...c,
+            type: 'club' as const
+          }));
+
+          // Combine - users first, then clubs, then startups
+          setSuggestions([...users, ...clubs, ...startups]);
           setShowSuggestions(true);
         } catch (error) {
           console.error('Error fetching mentions:', error);
@@ -93,7 +111,11 @@ export default function MentionInput({
     
     if (match) {
       const startIndex = textBeforeCursor.lastIndexOf('@');
-      const mentionText = item.type === 'user' ? item.username : item.title;
+      const mentionText = item.type === 'user' 
+        ? item.username 
+        : item.type === 'club' 
+          ? item.club_name 
+          : item.title;
       const newValue = 
         value.substring(0, startIndex) + 
         `@${mentionText} ` + 
@@ -148,6 +170,14 @@ export default function MentionInput({
                         <User className="w-5 h-5 text-muted-foreground" />
                       </div>
                     )
+                  ) : item.type === 'club' ? (
+                    item.logo_url ? (
+                      <img src={item.logo_url} alt={item.club_name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Users className="w-5 h-5 text-muted-foreground" />
+                      </div>
+                    )
                   ) : (
                     item.logo_url ? (
                       <img src={item.logo_url} alt={item.title} className="w-full h-full object-cover" />
@@ -160,13 +190,13 @@ export default function MentionInput({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">
-                    @{item.type === 'user' ? item.username : item.title}
+                    @{item.type === 'user' ? item.username : item.type === 'club' ? item.club_name : item.title}
                   </p>
                   {item.type === 'user' ? (
                     <p className="text-xs text-muted-foreground truncate">{item.full_name}</p>
                   ) : (
                     <Badge variant="secondary" className="text-xs">
-                      {item.category}
+                      {item.type === 'club' ? 'Club' : item.category}
                     </Badge>
                   )}
                 </div>
