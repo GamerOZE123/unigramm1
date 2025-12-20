@@ -23,6 +23,7 @@ export default function CreatePostModal({ open, onOpenChange, onSuccess }: Creat
   const [content, setContent] = useState('');
   const [hashtags, setHashtags] = useState<string[]>([]);
   const [mentionedStartups, setMentionedStartups] = useState<any[]>([]);
+  const [mentionedClubs, setMentionedClubs] = useState<any[]>([]);
   const [mentionedUsers, setMentionedUsers] = useState<any[]>([]);
   const [postType, setPostType] = useState<'text' | 'poll' | 'survey'>('text');
   const [pollData, setPollData] = useState<any>(null);
@@ -82,6 +83,20 @@ export default function CreatePostModal({ open, onOpenChange, onSuccess }: Creat
         if (mentionError) throw mentionError;
       }
 
+      // Add club mentions
+      if (mentionedClubs.length > 0 && post) {
+        const clubMentions = mentionedClubs.map(c => ({
+          post_id: post.id,
+          club_id: c.id,
+        }));
+
+        const { error: clubMentionError } = await supabase
+          .from('post_club_mentions')
+          .insert(clubMentions);
+
+        if (clubMentionError) throw clubMentionError;
+      }
+
       toast.success('Post created successfully!');
       handleReset();
       onOpenChange(false);
@@ -98,6 +113,7 @@ export default function CreatePostModal({ open, onOpenChange, onSuccess }: Creat
     setContent('');
     setHashtags([]);
     setMentionedStartups([]);
+    setMentionedClubs([]);
     setMentionedUsers([]);
     setPostType('text');
     setPollData(null);
@@ -140,13 +156,17 @@ export default function CreatePostModal({ open, onOpenChange, onSuccess }: Creat
                   if (!mentionedStartups.find(s => s.id === item.id)) {
                     setMentionedStartups([...mentionedStartups, item]);
                   }
-                } else {
+                } else if (item.type === 'club') {
+                  if (!mentionedClubs.find(c => c.id === item.id)) {
+                    setMentionedClubs([...mentionedClubs, item]);
+                  }
+                } else if (item.type === 'user') {
                   if (!mentionedUsers.find(u => u.user_id === item.user_id)) {
                     setMentionedUsers([...mentionedUsers, item]);
                   }
                 }
               }}
-              placeholder="What's happening? Use @ to mention users or startups..."
+              placeholder="What's happening? Use @ to mention users, clubs, or startups..."
             />
 
             <div>
@@ -163,7 +183,7 @@ export default function CreatePostModal({ open, onOpenChange, onSuccess }: Creat
               <HashtagSelector hashtags={hashtags} onHashtagsChange={setHashtags} />
             </div>
 
-            {(mentionedStartups.length > 0 || mentionedUsers.length > 0) && (
+            {(mentionedStartups.length > 0 || mentionedClubs.length > 0 || mentionedUsers.length > 0) && (
               <div className="flex flex-wrap gap-2">
                 {mentionedUsers.map((user, index) => (
                   <div
@@ -174,6 +194,20 @@ export default function CreatePostModal({ open, onOpenChange, onSuccess }: Creat
                     <button
                       onClick={() => setMentionedUsers(mentionedUsers.filter((_, i) => i !== index))}
                       className="hover:bg-primary/20 rounded-full p-0.5"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                {mentionedClubs.map((club, index) => (
+                  <div
+                    key={`club-${index}`}
+                    className="flex items-center gap-2 bg-accent/10 text-accent-foreground px-3 py-1 rounded-full text-sm"
+                  >
+                    <span>@{club.club_name}</span>
+                    <button
+                      onClick={() => setMentionedClubs(mentionedClubs.filter((_, i) => i !== index))}
+                      className="hover:bg-accent/20 rounded-full p-0.5"
                     >
                       <X className="w-3 h-3" />
                     </button>

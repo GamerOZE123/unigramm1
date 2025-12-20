@@ -1840,6 +1840,49 @@ export type Database = {
           },
         ]
       }
+      post_club_mentions: {
+        Row: {
+          club_id: string | null
+          created_at: string | null
+          id: string
+          post_id: string | null
+        }
+        Insert: {
+          club_id?: string | null
+          created_at?: string | null
+          id?: string
+          post_id?: string | null
+        }
+        Update: {
+          club_id?: string | null
+          created_at?: string | null
+          id?: string
+          post_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_club_mentions_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_club_mentions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_club_mentions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ranked_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_impressions: {
         Row: {
           post_id: string
