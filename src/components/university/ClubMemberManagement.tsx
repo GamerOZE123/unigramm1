@@ -110,13 +110,19 @@ export default function ClubMemberManagement({ clubId }: ClubMemberManagementPro
     try {
       const memberUserIds = members.map(m => m.user_id);
       
-      const { data, error } = await supabase
+      let queryBuilder = supabase
         .from('profiles')
         .select('user_id, full_name, avatar_url, university, major')
         .eq('user_type', 'student')
         .ilike('full_name', `%${query}%`)
-        .not('user_id', 'in', `(${memberUserIds.length > 0 ? memberUserIds.join(',') : 'null'})`)
         .limit(10);
+
+      // Only add the exclusion filter if there are existing members
+      if (memberUserIds.length > 0) {
+        queryBuilder = queryBuilder.not('user_id', 'in', `(${memberUserIds.join(',')})`);
+      }
+
+      const { data, error } = await queryBuilder;
 
       if (error) throw error;
       setSearchResults(data || []);
@@ -129,10 +135,12 @@ export default function ClubMemberManagement({ clubId }: ClubMemberManagementPro
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      searchStudents(studentSearchQuery);
+      if (isAddMemberOpen) {
+        searchStudents(studentSearchQuery);
+      }
     }, 300);
     return () => clearTimeout(timer);
-  }, [studentSearchQuery]);
+  }, [studentSearchQuery, isAddMemberOpen]);
 
   // Add member to club
   const handleAddMember = async () => {
