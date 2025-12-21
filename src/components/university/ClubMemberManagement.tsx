@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,96 +11,222 @@ import {
   DialogFooter 
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Edit2, Trash2, Plus, Search, UserPlus, Check, X } from 'lucide-react';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Edit2, Trash2, Plus, Search, UserPlus, Check, X, Users, Crown, Shield, User } from 'lucide-react';
 import { useClubMembers } from '@/hooks/useClubMembers';
 import { useClubJoinRequests } from '@/hooks/useClubJoinRequests';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface ClubMemberManagementProps {
   clubId: string;
 }
 
+interface StudentUser {
+  user_id: string;
+  full_name: string;
+  avatar_url: string;
+  university: string;
+  major: string;
+}
+
+const PREDEFINED_ROLES = [
+  { value: 'Admin', label: 'Admin', icon: Crown, description: 'Full access to manage club' },
+  { value: 'Moderator', label: 'Moderator', icon: Shield, description: 'Can manage posts and events' },
+  { value: 'Member', label: 'Member', icon: User, description: 'Regular club member' },
+];
+
 export default function ClubMemberManagement({ clubId }: ClubMemberManagementProps) {
-  const { members, loading, removeMember, updateMemberRole } = useClubMembers(clubId);
+  const { members, loading, removeMember, updateMemberRole, refetch } = useClubMembers(clubId);
   const { requests, loading: requestsLoading, acceptRequest, rejectRequest } = useClubJoinRequests(clubId, false);
-  const [editingMember, setEditingMember] = useState<string | null>(null);
-  const [newRole, setNewRole] = useState('');
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isAddRoleDialogOpen, setIsAddRoleDialogOpen] = useState(false);
-  const [newRoleTitle, setNewRoleTitle] = useState('');
+  const { toast } = useToast();
+  
+  // State for member management
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedMemberForNewRole, setSelectedMemberForNewRole] = useState<string | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState<string>('');
+  const [customRole, setCustomRole] = useState('');
+  const [isCustomRole, setIsCustomRole] = useState(false);
+  
+  // State for adding new members
+  const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<StudentUser[]>([]);
+  const [selectedStudent, setSelectedStudent] = useState<StudentUser | null>(null);
+  const [newMemberRole, setNewMemberRole] = useState('Member');
+  const [newMemberCustomRole, setNewMemberCustomRole] = useState('');
+  const [isNewMemberCustomRole, setIsNewMemberCustomRole] = useState(false);
+  const [searchingStudents, setSearchingStudents] = useState(false);
 
-  // Filter and group members by role
-  const groupedMembers = useMemo(() => {
-    // First filter by search query
-    const filteredMembers = members.filter(member => {
-      if (!searchQuery) return true;
-      const query = searchQuery.toLowerCase();
-      return (
-        member.profiles?.full_name?.toLowerCase().includes(query) ||
-        member.role?.toLowerCase().includes(query) ||
-        member.profiles?.university?.toLowerCase().includes(query)
-      );
-    });
-
-    const groups: { [key: string]: typeof members } = {};
-    
-    filteredMembers.forEach(member => {
-      const role = member.role || 'Member';
-      if (!groups[role]) {
-        groups[role] = [];
+  // Get unique custom roles from existing members
+  const existingCustomRoles = useMemo(() => {
+    const roles = new Set<string>();
+    members.forEach(member => {
+      if (member.role && !PREDEFINED_ROLES.find(r => r.value === member.role)) {
+        roles.add(member.role);
       }
-      groups[role].push(member);
     });
+    return Array.from(roles);
+  }, [members]);
 
-    // Sort groups: put "member" at the end
-    const sortedGroups = Object.entries(groups).sort(([roleA], [roleB]) => {
-      if (roleA.toLowerCase() === 'member') return 1;
-      if (roleB.toLowerCase() === 'member') return -1;
-      return roleA.localeCompare(roleB);
-    });
+  // All available roles (predefined + custom)
+  const allRoles = useMemo(() => [
+    ...PREDEFINED_ROLES,
+    ...existingCustomRoles.map(role => ({
+      value: role,
+      label: role,
+      icon: User,
+      description: 'Custom role'
+    }))
+  ], [existingCustomRoles]);
 
-    return sortedGroups;
+  // Filter members by search
+  const filteredMembers = useMemo(() => {
+    if (!searchQuery) return members;
+    const query = searchQuery.toLowerCase();
+    return members.filter(member => 
+      member.profiles?.full_name?.toLowerCase().includes(query) ||
+      member.role?.toLowerCase().includes(query) ||
+      member.profiles?.university?.toLowerCase().includes(query)
+    );
   }, [members, searchQuery]);
 
-  const handleAddRole = () => {
-    setNewRoleTitle('');
-    setSelectedMemberForNewRole(null);
-    setIsAddRoleDialogOpen(true);
-  };
-
-  const handleCreateAndAssignRole = async () => {
-    if (!newRoleTitle.trim() || !selectedMemberForNewRole) {
+  // Search for students to add
+  const searchStudents = async (query: string) => {
+    if (query.length < 2) {
+      setSearchResults([]);
       return;
     }
-    
-    await updateMemberRole(selectedMemberForNewRole, newRoleTitle.trim());
-    setIsAddRoleDialogOpen(false);
-    setNewRoleTitle('');
-    setSelectedMemberForNewRole(null);
-  };
 
-  const handleEditRole = (memberId: string, currentRole: string) => {
-    setEditingMember(memberId);
-    setNewRole(currentRole);
-    setIsEditDialogOpen(true);
-  };
+    setSearchingStudents(true);
+    try {
+      const memberUserIds = members.map(m => m.user_id);
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, avatar_url, university, major')
+        .eq('user_type', 'student')
+        .ilike('full_name', `%${query}%`)
+        .not('user_id', 'in', `(${memberUserIds.length > 0 ? memberUserIds.join(',') : 'null'})`)
+        .limit(10);
 
-  const handleSaveRole = async () => {
-    if (editingMember && newRole.trim()) {
-      await updateMemberRole(editingMember, newRole.trim());
-      setIsEditDialogOpen(false);
-      setEditingMember(null);
-      setNewRole('');
+      if (error) throw error;
+      setSearchResults(data || []);
+    } catch (error) {
+      console.error('Error searching students:', error);
+    } finally {
+      setSearchingStudents(false);
     }
   };
 
-  const handleRemoveMember = async (memberId: string) => {
-    if (window.confirm('Are you sure you want to remove this member?')) {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      searchStudents(studentSearchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [studentSearchQuery]);
+
+  // Add member to club
+  const handleAddMember = async () => {
+    if (!selectedStudent) return;
+
+    const roleToAssign = isNewMemberCustomRole ? newMemberCustomRole : newMemberRole;
+    if (!roleToAssign.trim()) {
+      toast({
+        title: "Error",
+        description: "Please select or enter a role",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('club_memberships')
+        .insert({
+          club_id: clubId,
+          user_id: selectedStudent.user_id,
+          role: roleToAssign.trim()
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `${selectedStudent.full_name} has been added as ${roleToAssign}`
+      });
+
+      refetch();
+      setIsAddMemberOpen(false);
+      setSelectedStudent(null);
+      setStudentSearchQuery('');
+      setNewMemberRole('Member');
+      setNewMemberCustomRole('');
+      setIsNewMemberCustomRole(false);
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add member",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Update member role
+  const handleUpdateRole = async () => {
+    if (!selectedMemberId) return;
+
+    const roleToAssign = isCustomRole ? customRole : selectedRole;
+    if (!roleToAssign.trim()) {
+      toast({
+        title: "Error",
+        description: "Please select or enter a role",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    await updateMemberRole(selectedMemberId, roleToAssign.trim());
+    setSelectedMemberId(null);
+    setSelectedRole('');
+    setCustomRole('');
+    setIsCustomRole(false);
+  };
+
+  const handleRemoveMember = async (memberId: string, memberName: string) => {
+    if (window.confirm(`Are you sure you want to remove ${memberName} from the club?`)) {
       await removeMember(memberId);
+    }
+  };
+
+  const pendingRequests = requests.filter(req => req.status === 'pending' && req.request_type === 'request');
+
+  const handleAcceptRequest = async (requestId: string, studentId: string) => {
+    await acceptRequest(requestId, studentId, clubId);
+  };
+
+  const getRoleIcon = (role: string) => {
+    const predefinedRole = PREDEFINED_ROLES.find(r => r.value === role);
+    if (predefinedRole) {
+      const Icon = predefinedRole.icon;
+      return <Icon className="h-4 w-4" />;
+    }
+    return <User className="h-4 w-4" />;
+  };
+
+  const getRoleBadgeVariant = (role: string): "default" | "secondary" | "outline" => {
+    switch (role) {
+      case 'Admin': return 'default';
+      case 'Moderator': return 'secondary';
+      default: return 'outline';
     }
   };
 
@@ -112,305 +238,328 @@ export default function ClubMemberManagement({ clubId }: ClubMemberManagementPro
     );
   }
 
-  const pendingRequests = requests.filter(req => req.status === 'pending' && req.request_type === 'request');
-
-  const handleAcceptRequest = async (requestId: string, studentId: string) => {
-    await acceptRequest(requestId, studentId, clubId);
-  };
-
-  const handleRejectRequest = async (requestId: string) => {
-    await rejectRequest(requestId);
-  };
-
   return (
     <div className="space-y-6">
-      {/* Pending Join Requests Section */}
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Users className="h-6 w-6" />
+            Member Management
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            {members.length} members in club
+          </p>
+        </div>
+        <Button onClick={() => setIsAddMemberOpen(true)} className="gap-2">
+          <UserPlus className="h-4 w-4" />
+          Add Member
+        </Button>
+      </div>
+
+      {/* Pending Join Requests */}
       {pendingRequests.length > 0 && (
         <Card className="border-primary/20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
               <UserPlus className="w-5 h-5 text-primary" />
-              Pending Join Requests ({pendingRequests.length})
+              Pending Requests ({pendingRequests.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="max-h-[400px]">
-              <div className="space-y-3">
-                {pendingRequests.map((request) => (
-                  <div 
-                    key={request.id}
-                    className="flex items-center justify-between p-4 rounded-lg bg-muted/30 hover:bg-muted transition-colors border border-border"
-                  >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <Avatar className="h-12 w-12 ring-2 ring-primary/20">
-                        <AvatarImage src={request.profiles?.avatar_url || ''} />
-                        <AvatarFallback>
-                          {request.profiles?.full_name?.charAt(0) || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">
-                          {request.profiles?.full_name || 'Unknown Student'}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {request.profiles?.university || 'No university'}
-                        </p>
-                        {request.profiles?.major && (
-                          <p className="text-xs text-muted-foreground">
-                            {request.profiles.major}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 ml-4">
-                      <Button
-                        size="sm"
-                        onClick={() => handleAcceptRequest(request.id, request.student_id)}
-                        className="gap-1"
-                      >
-                        <Check className="h-4 w-4" />
-                        Accept
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleRejectRequest(request.id)}
-                        className="gap-1"
-                      >
-                        <X className="h-4 w-4" />
-                        Decline
-                      </Button>
+            <div className="space-y-2">
+              {pendingRequests.map((request) => (
+                <div 
+                  key={request.id}
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border"
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={request.profiles?.avatar_url || ''} />
+                      <AvatarFallback>{request.profiles?.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium text-sm">{request.profiles?.full_name || 'Unknown'}</p>
+                      <p className="text-xs text-muted-foreground">{request.profiles?.university}</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => handleAcceptRequest(request.id, request.student_id)}>
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => rejectRequest(request.id)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Header with Search */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold">Member Management</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Assign roles and manage your club members
-            </p>
-          </div>
-        </div>
-        
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search members by name, role, or university..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Input
+          placeholder="Search members..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9"
+        />
       </div>
 
-      {/* Quick Add Role Section */}
-      <div className="bg-muted/30 border-2 border-dashed border-border rounded-lg p-6">
-        <div className="flex items-start gap-4">
-          <div className="flex-1 space-y-3">
-            <div className="flex items-center gap-2">
-              <Plus className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold">Add New Role</h3>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Create custom roles like "Videography Lead", "Marketing Lead", or "Organizing Committee" to organize your team
-            </p>
-            <Button onClick={handleAddRole} variant="default" size="sm">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Role
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Members grouped by role */}
-      <div className="space-y-6">
-        {groupedMembers.length === 0 ? (
-          <div className="text-center py-12 border-2 border-dashed border-border rounded-lg">
-            <p className="text-muted-foreground">No members yet</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Invite students to join your club from the sidebar
-            </p>
-          </div>
-        ) : (
-          groupedMembers.map(([role, roleMembers]) => (
-            <div key={role} className="space-y-3 p-4 rounded-lg border border-border bg-card">
-              {/* Role Header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Badge variant="secondary" className="text-base font-semibold px-3 py-1">
-                    {role}
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    {roleMembers.length} {roleMembers.length === 1 ? 'member' : 'members'}
-                  </span>
-                </div>
+      {/* Members List */}
+      <Card>
+        <CardContent className="p-0">
+          <ScrollArea className="max-h-[500px]">
+            {filteredMembers.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No members found</p>
               </div>
-
-              {/* Members in this role */}
-              <div className="space-y-2 mt-4">
-                {roleMembers.map((member) => (
+            ) : (
+              <div className="divide-y divide-border">
+                {filteredMembers.map((member) => (
                   <div 
                     key={member.id} 
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted transition-colors"
+                    className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors"
                   >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <Avatar className="h-10 w-10 ring-2 ring-border">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12">
                         <AvatarImage src={member.profiles?.avatar_url || ''} />
-                        <AvatarFallback>
-                          {member.profiles?.full_name?.charAt(0) || 'U'}
-                        </AvatarFallback>
+                        <AvatarFallback>{member.profiles?.full_name?.charAt(0) || 'U'}</AvatarFallback>
                       </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {member.profiles?.full_name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {member.profiles?.university}
-                        </p>
+                      <div>
+                        <p className="font-medium">{member.profiles?.full_name}</p>
+                        <p className="text-sm text-muted-foreground">{member.profiles?.university}</p>
                       </div>
                     </div>
-
-                    {/* Actions */}
-                    <div className="flex gap-1 ml-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 p-0"
-                        onClick={() => handleEditRole(member.id, member.role)}
-                        title="Change role"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                        onClick={() => handleRemoveMember(member.id)}
-                        title="Remove member"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                    
+                    <div className="flex items-center gap-3">
+                      <Badge variant={getRoleBadgeVariant(member.role || 'Member')} className="gap-1">
+                        {getRoleIcon(member.role || 'Member')}
+                        {member.role || 'Member'}
+                      </Badge>
+                      
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setSelectedMemberId(member.id);
+                            setSelectedRole(member.role || 'Member');
+                            setIsCustomRole(!PREDEFINED_ROLES.find(r => r.value === member.role));
+                            setCustomRole(PREDEFINED_ROLES.find(r => r.value === member.role) ? '' : (member.role || ''));
+                          }}
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleRemoveMember(member.id, member.profiles?.full_name || 'this member')}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
-            </div>
-          ))
-        )}
-      </div>
+            )}
+          </ScrollArea>
+        </CardContent>
+      </Card>
 
-      {/* Add Role Dialog */}
-      <Dialog open={isAddRoleDialogOpen} onOpenChange={setIsAddRoleDialogOpen}>
-        <DialogContent className="max-w-2xl">
+      {/* Add Member Dialog */}
+      <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Create and Assign New Role</DialogTitle>
+            <DialogTitle>Add New Member</DialogTitle>
           </DialogHeader>
+          
           <div className="space-y-4 py-4">
+            {/* Student Search */}
             <div className="space-y-2">
-              <Label htmlFor="new-role-title">Role Title</Label>
-              <Input
-                id="new-role-title"
-                placeholder="e.g., Videography Lead, Marketing Lead, Organizing Committee"
-                value={newRoleTitle}
-                onChange={(e) => setNewRoleTitle(e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Enter a custom role name for organizing your team members.
-              </p>
+              <Label>Search Student</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name..."
+                  value={studentSearchQuery}
+                  onChange={(e) => setStudentSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Select Member to Assign This Role</Label>
-              <ScrollArea className="h-[300px] border rounded-lg p-2">
-                <div className="space-y-2">
-                  {members.map((member) => (
-                    <div
-                      key={member.id}
-                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                        selectedMemberForNewRole === member.id
-                          ? 'bg-primary/10 border-2 border-primary'
-                          : 'bg-muted/30 hover:bg-muted'
-                      }`}
-                      onClick={() => setSelectedMemberForNewRole(member.id)}
-                    >
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={member.profiles?.avatar_url || ''} />
-                        <AvatarFallback>
-                          {member.profiles?.full_name?.charAt(0) || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {member.profiles?.full_name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Current role: {member.role}
-                        </p>
-                      </div>
-                      {selectedMemberForNewRole === member.id && (
-                        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                          <span className="text-white text-xs">✓</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+            {/* Search Results or Selected Student */}
+            {selectedStudent ? (
+              <div className="p-3 rounded-lg bg-primary/10 border-2 border-primary flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={selectedStudent.avatar_url || ''} />
+                    <AvatarFallback>{selectedStudent.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium text-sm">{selectedStudent.full_name}</p>
+                    <p className="text-xs text-muted-foreground">{selectedStudent.university}</p>
+                  </div>
                 </div>
+                <Button size="sm" variant="ghost" onClick={() => setSelectedStudent(null)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ) : (
+              <ScrollArea className="h-[200px] border rounded-lg">
+                {searchingStudents ? (
+                  <div className="p-4 text-center text-muted-foreground">Searching...</div>
+                ) : searchResults.length === 0 ? (
+                  <div className="p-4 text-center text-muted-foreground">
+                    {studentSearchQuery.length < 2 ? 'Type to search students' : 'No students found'}
+                  </div>
+                ) : (
+                  <div className="p-2 space-y-1">
+                    {searchResults.map((student) => (
+                      <div
+                        key={student.user_id}
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer"
+                        onClick={() => setSelectedStudent(student)}
+                      >
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={student.avatar_url || ''} />
+                          <AvatarFallback>{student.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium">{student.full_name}</p>
+                          <p className="text-xs text-muted-foreground">{student.university}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </ScrollArea>
-              <p className="text-xs text-muted-foreground">
-                Select a member to assign the new role to. You can change roles later.
-              </p>
+            )}
+
+            {/* Role Selection */}
+            <div className="space-y-2">
+              <Label>Assign Role</Label>
+              <Select
+                value={isNewMemberCustomRole ? 'custom' : newMemberRole}
+                onValueChange={(value) => {
+                  if (value === 'custom') {
+                    setIsNewMemberCustomRole(true);
+                  } else {
+                    setIsNewMemberCustomRole(false);
+                    setNewMemberRole(value);
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allRoles.map((role) => (
+                    <SelectItem key={role.value} value={role.value}>
+                      <div className="flex items-center gap-2">
+                        <role.icon className="h-4 w-4" />
+                        {role.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="custom">
+                    <div className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Custom Role
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+
+              {isNewMemberCustomRole && (
+                <Input
+                  placeholder="Enter custom role name..."
+                  value={newMemberCustomRole}
+                  onChange={(e) => setNewMemberCustomRole(e.target.value)}
+                />
+              )}
             </div>
           </div>
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddRoleDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsAddMemberOpen(false)}>
               Cancel
             </Button>
             <Button 
-              onClick={handleCreateAndAssignRole} 
-              disabled={!newRoleTitle.trim() || !selectedMemberForNewRole}
+              onClick={handleAddMember} 
+              disabled={!selectedStudent || (!newMemberRole && !newMemberCustomRole)}
             >
-              Create and Assign Role
+              Add Member
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Edit Role Dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Edit Member Role</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="role">Role / Position</Label>
+      <Dialog open={!!selectedMemberId} onOpenChange={(open) => !open && setSelectedMemberId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Member Role</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Select Role</Label>
+              <Select
+                value={isCustomRole ? 'custom' : selectedRole}
+                onValueChange={(value) => {
+                  if (value === 'custom') {
+                    setIsCustomRole(true);
+                  } else {
+                    setIsCustomRole(false);
+                    setSelectedRole(value);
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allRoles.map((role) => (
+                    <SelectItem key={role.value} value={role.value}>
+                      <div className="flex items-center gap-2">
+                        <role.icon className="h-4 w-4" />
+                        {role.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="custom">
+                    <div className="flex items-center gap-2">
+                      <Plus className="h-4 w-4" />
+                      Custom Role
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+
+              {isCustomRole && (
                 <Input
-                  id="role"
-                  placeholder="e.g., Videography Lead, Marketing Lead, Organizing Committee"
-                  value={newRole}
-                  onChange={(e) => setNewRole(e.target.value)}
+                  placeholder="Enter custom role name..."
+                  value={customRole}
+                  onChange={(e) => setCustomRole(e.target.value)}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Enter a custom role name for this member. Members will be grouped by their roles.
-                </p>
-              </div>
+              )}
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSaveRole} disabled={!newRole.trim()}>
-                Save Role
-              </Button>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedMemberId(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateRole}>
+              Save Changes
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
