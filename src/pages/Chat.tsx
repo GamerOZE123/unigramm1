@@ -1133,17 +1133,17 @@ const handleBackToUserList = () => {
                     </div>
                   )}
                 </div>
-                {/* Input */}
-                <div className="border-t border-border p-4 bg-card/50 backdrop-blur-sm">
+                {/* Input - Floating Style */}
+                <div className="p-4">
                   {isBlockedByUser ? (
-                    <div className="flex items-center justify-center py-3 text-muted-foreground">
+                    <div className="flex items-center justify-center py-3 text-muted-foreground bg-card/80 backdrop-blur-lg rounded-full shadow-lg border border-border/50">
                       <Ban className="w-4 h-4 mr-2" />
                       <span className="text-sm">You can't message this user</span>
                     </div>
                   ) : isUserBlocked ? (
-                    <div className="flex items-center justify-center py-2">
+                    <div className="flex items-center justify-center py-2 bg-card/80 backdrop-blur-lg rounded-full shadow-lg border border-border/50">
                       <Button 
-                        variant="outline" 
+                        variant="ghost" 
                         onClick={handleUnblockUser}
                         className="flex items-center gap-2"
                       >
@@ -1172,28 +1172,28 @@ const handleBackToUserList = () => {
                           ))}
                         </div>
                       )}
-                      <div className="flex gap-2 items-end">
-                          <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleMediaUpload}
-                            accept="image/*,video/*"
-                            multiple
-                            className="hidden"
-                          />
+                      <div className="flex gap-2 items-center bg-card/80 backdrop-blur-lg rounded-full px-3 py-2 shadow-lg border border-border/50">
+                        <input
+                          type="file"
+                          ref={fileInputRef}
+                          onChange={handleMediaUpload}
+                          accept="image/*,video/*"
+                          multiple
+                          className="hidden"
+                        />
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => fileInputRef.current?.click()}
                           disabled={uploadingImage}
-                          className="flex-shrink-0 hover:bg-surface"
+                          className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 hover:bg-primary/20"
                         >
-                          {uploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+                          {uploadingImage ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : <Plus className="w-5 h-5 text-primary" />}
                         </Button>
                         <Popover>
                           <PopoverTrigger asChild>
-                            <Button variant="ghost" size="icon" className="flex-shrink-0 hover:bg-surface">
-                              <Smile className="w-4 h-4" />
+                            <Button variant="ghost" size="icon" className="flex-shrink-0 w-10 h-10 rounded-full hover:bg-muted">
+                              <Smile className="w-5 h-5 text-muted-foreground" />
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-2" align="start">
@@ -1202,7 +1202,7 @@ const handleBackToUserList = () => {
                                 <button
                                   key={e}
                                   onClick={() => addEmoji(e)}
-                                  className="w-9 h-9 rounded-lg hover:bg-surface flex items-center justify-center transition-colors text-xl hover:scale-110"
+                                  className="w-9 h-9 rounded-lg hover:bg-muted flex items-center justify-center transition-colors text-xl hover:scale-110"
                                 >
                                   {e}
                                 </button>
@@ -1210,24 +1210,28 @@ const handleBackToUserList = () => {
                             </div>
                           </PopoverContent>
                         </Popover>
-                        <Textarea
-                          placeholder="Type your message..."
+                        <Input
+                          placeholder="Type a message..."
                           value={newMessage}
                           onChange={(e) => setNewMessage(e.target.value)}
-                          onPaste={handlePaste}
+                          onPaste={handlePaste as any}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                               e.preventDefault();
                               handleSendMessage();
                             }
                           }}
-                          className="flex-1 resize-none"
-                          rows={1}
+                          className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
                         />
                         <Button 
                           onClick={handleSendMessage} 
                           disabled={(!newMessage.trim() && mediaUrls.length === 0) || uploadingImage}
-                          className="flex-shrink-0"
+                          size="icon"
+                          className={`flex-shrink-0 w-10 h-10 rounded-full transition-all ${
+                            (newMessage.trim() || mediaUrls.length > 0) && !uploadingImage
+                              ? 'bg-primary hover:bg-primary/90'
+                              : 'bg-muted text-muted-foreground'
+                          }`}
                         >
                           <Send className="w-4 h-4" />
                         </Button>
