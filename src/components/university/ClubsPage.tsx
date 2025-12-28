@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Mail, Phone, Globe } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent } from '@/components/ui/card';
+import { Users, Mail, Phone, Globe, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import ClubUpcomingEvents from './ClubUpcomingEvents';
-import ClubMembersRightSidebar from './ClubMembersRightSidebar';
+import { Input } from '@/components/ui/input';
 
 interface ClubProfile {
   id: string;
@@ -38,6 +36,7 @@ export default function ClubsPage() {
   const [loading, setLoading] = useState(true);
   const [isClubOwner, setIsClubOwner] = useState(false);
   const [isStudent, setIsStudent] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchClubs();
@@ -119,219 +118,168 @@ export default function ClubsPage() {
     }
   };
 
+  // Filter clubs based on search
+  const filterClubs = (clubs: ClubProfile[]) => {
+    if (!searchQuery.trim()) return clubs;
+    const query = searchQuery.toLowerCase();
+    return clubs.filter(club => 
+      club.club_name.toLowerCase().includes(query) ||
+      club.category?.toLowerCase().includes(query) ||
+      club.club_description?.toLowerCase().includes(query)
+    );
+  };
+
+  const filteredMyClubs = filterClubs(myClubs);
+  const filteredOtherClubs = filterClubs(otherClubs);
+
+  const ClubCard = ({ club, isOwn = false }: { club: ClubProfile; isOwn?: boolean }) => (
+    <Card 
+      className={`hover:shadow-lg transition-all duration-200 cursor-pointer group overflow-hidden ${isOwn ? 'ring-2 ring-primary' : ''}`}
+      onClick={() => navigate(`/clubs/${club.id}`)}
+    >
+      {/* Club Image */}
+      <div className="relative h-32 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 overflow-hidden">
+        {club.logo_url ? (
+          <img 
+            src={club.logo_url} 
+            alt={club.club_name} 
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Users className="w-12 h-12 text-muted-foreground/50" />
+          </div>
+        )}
+        {isOwn && (
+          <Badge className="absolute top-2 right-2 bg-primary">Your Club</Badge>
+        )}
+        {club.category && (
+          <Badge variant="secondary" className="absolute bottom-2 left-2">
+            {club.category}
+          </Badge>
+        )}
+      </div>
+      
+      <CardContent className="p-4 space-y-3">
+        <div>
+          <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
+            {club.club_name}
+          </h3>
+          <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+            {club.club_description || 'No description available'}
+          </p>
+        </div>
+
+        <div className="flex items-center justify-between pt-2 border-t border-border">
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Users className="w-4 h-4" />
+            <span>{club.member_count || 0} members</span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {club.contact_email && (
+              <Mail className="w-4 h-4 text-muted-foreground" />
+            )}
+            {club.website_url && (
+              <Globe className="w-4 h-4 text-muted-foreground" />
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">University Clubs & Organizations</h1>
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search clubs by name, category..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
         </div>
 
         {loading ? (
-          <div className="text-center py-8">Loading clubs...</div>
+          <div className="flex items-center justify-center py-12">
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
         ) : !ownClub && myClubs.length === 0 && otherClubs.length === 0 ? (
-          <div className="text-center py-12 space-y-4">
-            <Users className="w-16 h-16 text-muted-foreground mx-auto" />
-            <p className="text-muted-foreground">No clubs found yet</p>
-            <p className="text-sm text-muted-foreground">Club organizations can sign up to showcase their activities</p>
+          <div className="text-center py-12 space-y-4 bg-card rounded-xl border border-border">
+            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+              <Users className="w-8 h-8 text-muted-foreground" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">No clubs found</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Club organizations can sign up to showcase their activities
+              </p>
+            </div>
           </div>
         ) : (
           <div className="space-y-8">
             {/* Own Club Section (for club users) */}
             {ownClub && (
-              <>
-                <div>
-                  <h2 className="text-xl font-semibold mb-4">Your Club</h2>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <Card 
-                      className="hover:shadow-lg transition-shadow border-primary cursor-pointer"
-                      onClick={() => navigate(`/clubs/${ownClub.id}`)}
-                    >
-                      <CardHeader>
-                      {ownClub.logo_url && (
-                        <div className="w-full h-40 mb-4 rounded-lg overflow-hidden bg-muted">
-                          <img src={ownClub.logo_url} alt={ownClub.club_name} className="w-full h-full object-cover" />
-                        </div>
-                      )}
-                      <CardTitle>{ownClub.club_name}</CardTitle>
-                      {ownClub.category && <CardDescription>{ownClub.category}</CardDescription>}
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <p className="text-sm text-muted-foreground line-clamp-3">{ownClub.club_description}</p>
-                      
-                      <div className="space-y-2 pt-2">
-                        {ownClub.contact_email && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <Mail className="w-4 h-4 text-muted-foreground" />
-                            <a href={`mailto:${ownClub.contact_email}`} className="text-primary hover:underline">
-                              {ownClub.contact_email}
-                            </a>
-                          </div>
-                        )}
-                        {ownClub.contact_phone && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <Phone className="w-4 h-4 text-muted-foreground" />
-                            <span>{ownClub.contact_phone}</span>
-                          </div>
-                        )}
-                        {ownClub.website_url && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <Globe className="w-4 h-4 text-muted-foreground" />
-                            <a href={ownClub.website_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                              Visit Website
-                            </a>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
-                        <Users className="w-4 h-4" />
-                        <span>{ownClub.member_count} members</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
+              <section>
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <div className="w-1 h-5 bg-primary rounded-full" />
+                  Your Club
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <ClubCard club={ownClub} isOwn />
                 </div>
-
-                {/* Divider */}
-                {otherClubs.length > 0 && (
-                  <div className="border-t border-border pt-6">
-                    <h2 className="text-xl font-semibold mb-4">Other Clubs</h2>
-                  </div>
-                )}
-              </>
+              </section>
             )}
 
             {/* Student's Joined Clubs Section */}
-            {isStudent && myClubs.length > 0 && (
-              <>
-                <div>
-                  <h2 className="text-xl font-semibold mb-4">My Clubs</h2>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {myClubs.map((club) => (
-                      <Card 
-                        key={club.id} 
-                        className="hover:shadow-lg transition-shadow border-primary cursor-pointer"
-                        onClick={() => navigate(`/clubs/${club.id}`)}
-                      >
-                        <CardHeader>
-                          {club.logo_url && (
-                            <div className="w-full h-40 mb-4 rounded-lg overflow-hidden bg-muted">
-                              <img src={club.logo_url} alt={club.club_name} className="w-full h-full object-cover" />
-                            </div>
-                          )}
-                          <CardTitle>{club.club_name}</CardTitle>
-                          {club.category && <CardDescription>{club.category}</CardDescription>}
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                          <p className="text-sm text-muted-foreground line-clamp-3">{club.club_description}</p>
-                          
-                          <div className="space-y-2 pt-2">
-                            {club.contact_email && (
-                              <div className="flex items-center gap-2 text-sm">
-                                <Mail className="w-4 h-4 text-muted-foreground" />
-                                <a href={`mailto:${club.contact_email}`} className="text-primary hover:underline">
-                                  {club.contact_email}
-                                </a>
-                              </div>
-                            )}
-                            {club.contact_phone && (
-                              <div className="flex items-center gap-2 text-sm">
-                                <Phone className="w-4 h-4 text-muted-foreground" />
-                                <span>{club.contact_phone}</span>
-                              </div>
-                            )}
-                            {club.website_url && (
-                              <div className="flex items-center gap-2 text-sm">
-                                <Globe className="w-4 h-4 text-muted-foreground" />
-                                <a href={club.website_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                                  Visit Website
-                                </a>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
-                            <Users className="w-4 h-4" />
-                            <span>{club.member_count} members</span>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+            {isStudent && filteredMyClubs.length > 0 && (
+              <section>
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <div className="w-1 h-5 bg-primary rounded-full" />
+                  My Clubs
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {filteredMyClubs.map((club) => (
+                    <ClubCard key={club.id} club={club} isOwn />
+                  ))}
                 </div>
-
-                {/* Divider */}
-                {otherClubs.length > 0 && (
-                  <div className="border-t border-border pt-6">
-                    <h2 className="text-xl font-semibold mb-4">Other Clubs</h2>
-                  </div>
-                )}
-              </>
+              </section>
             )}
 
             {/* Other Clubs Section */}
-            {otherClubs.length > 0 && (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {otherClubs.map((club) => (
-                  <Card 
-                    key={club.id} 
-                    className="hover:shadow-lg transition-shadow cursor-pointer"
-                    onClick={() => navigate(`/clubs/${club.id}`)}
-                  >
-                  <CardHeader>
-                    {club.logo_url && (
-                      <div className="w-full h-40 mb-4 rounded-lg overflow-hidden bg-muted">
-                        <img src={club.logo_url} alt={club.club_name} className="w-full h-full object-cover" />
-                      </div>
-                    )}
-                    <CardTitle>{club.club_name}</CardTitle>
-                    {club.category && <CardDescription>{club.category}</CardDescription>}
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-sm text-muted-foreground line-clamp-3">{club.club_description}</p>
-                    
-                    <div className="space-y-2 pt-2">
-                      {club.contact_email && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Mail className="w-4 h-4 text-muted-foreground" />
-                          <a href={`mailto:${club.contact_email}`} className="text-primary hover:underline">
-                            {club.contact_email}
-                          </a>
-                        </div>
-                      )}
-                      {club.contact_phone && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Phone className="w-4 h-4 text-muted-foreground" />
-                          <span>{club.contact_phone}</span>
-                        </div>
-                      )}
-                      {club.website_url && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <Globe className="w-4 h-4 text-muted-foreground" />
-                          <a href={club.website_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                            Visit Website
-                          </a>
-                        </div>
-                      )}
-                    </div>
+            {filteredOtherClubs.length > 0 && (
+              <section>
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <div className="w-1 h-5 bg-muted-foreground rounded-full" />
+                  {(ownClub || (isStudent && myClubs.length > 0)) ? 'Discover More Clubs' : 'All Clubs'}
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {filteredOtherClubs.map((club) => (
+                    <ClubCard key={club.id} club={club} />
+                  ))}
+                </div>
+              </section>
+            )}
 
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground pt-2">
-                      <Users className="w-4 h-4" />
-                      <span>{club.member_count} members</span>
-                    </div>
-                    </CardContent>
-                  </Card>
-                ))}
+            {/* No results from search */}
+            {searchQuery && filteredMyClubs.length === 0 && filteredOtherClubs.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                No clubs found matching "{searchQuery}"
               </div>
             )}
           </div>
         )}
       </div>
 
-      {/* Right Sidebar - Show upcoming events with limit */}
-      <div className="lg:sticky lg:top-4 lg:h-fit space-y-4">
-        <ClubUpcomingEvents limit={3} showClubInfo={true} />
-      </div>
+      {/* Right Sidebar - Show upcoming events */}
+      <aside className="hidden lg:block">
+        <div className="sticky top-4 space-y-4">
+          <ClubUpcomingEvents limit={3} showClubInfo={true} />
+        </div>
+      </aside>
     </div>
   );
 }
