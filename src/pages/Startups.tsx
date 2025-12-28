@@ -8,14 +8,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
-  Rocket, 
-  Lightbulb, 
-  Users, 
-  TrendingUp,
   Plus,
   ImagePlus,
   X,
-  Loader2
+  Loader2,
+  ArrowLeft,
+  Search,
+  Rocket,
+  Users,
+  TrendingUp,
+  Lightbulb
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -340,23 +342,29 @@ export default function Startups() {
     <Layout>
       {isMobile && <MobileHeader />}
       
-      <div className="space-y-6 pt-6 px-2 pb-8">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Rocket className="w-8 h-8 text-primary" />
-              Student Startups & Ideas
-            </h1>
-            <p className="text-muted-foreground mt-2">
-              Discover innovative projects by students, find co-founders, and share your ideas
-            </p>
+      <div className="space-y-6 px-4 pt-4 pb-20 md:pb-8">
+        {/* Search Bar with Back Button */}
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate('/university')}
+            className="text-muted-foreground hover:text-foreground shrink-0"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search startups..."
+              className="pl-10"
+            />
           </div>
           <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2 shrink-0">
                 <Plus className="w-4 h-4" />
-                Share Your Startup
+                <span className="hidden sm:inline">Share Your Startup</span>
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -611,8 +619,8 @@ export default function Startups() {
 
           <Card className="p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center">
-                <Users className="w-5 h-5 text-purple-500" />
+              <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <Users className="w-5 h-5 text-emerald-500" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{new Set(startups.map(s => s.user_id)).size}</p>
