@@ -193,7 +193,7 @@ export default function Post() {
                     <img 
                       src={imageUrl} 
                       alt="Post" 
-                      className="w-24 h-24 object-cover"
+                      className="w-32 h-32 object-cover"
                     />
                   </div>
                 );

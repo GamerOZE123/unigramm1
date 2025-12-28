@@ -111,9 +111,9 @@ export default function PostHeader({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
                 >
-                  <MoreHorizontal className="w-4 h-4" />
+                  <MoreHorizontal className="w-5 h-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
