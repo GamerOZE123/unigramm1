@@ -18,21 +18,21 @@
     --surface-hover: 215 16% 16%;
     
     /* Interactive Elements */
-    --primary: 259 94% 51%;
-    --primary-foreground: 213 31% 91%;
+    --primary: 209 99% 65%;
+    --primary-foreground: 210 11% 4%;
     --secondary: 215 16% 16%;
     --secondary-foreground: 213 31% 91%;
     
     /* Accent & Status */
-    --accent: 268 83% 58%;
-    --accent-foreground: 213 31% 91%;
+    --accent: 209 85% 55%;
+    --accent-foreground: 210 11% 4%;
     --muted: 215 16% 16%;
     --muted-foreground: 217 10% 64%;
     
     /* Borders & Inputs */
     --border: 215 16% 16%;
     --input: 215 16% 16%;
-    --ring: 259 94% 51%;
+    --ring: 209 99% 65%;
     
     /* Destructive */
     --destructive: 0 62.8% 30.6%;
@@ -45,7 +45,7 @@
     --warning: 38 92% 50%;
     
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(259 94% 51%) 0%, hsl(268 83% 58%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(209 99% 65%) 0%, hsl(209 85% 55%) 100%);
     --gradient-surface: linear-gradient(145deg, hsl(217 19% 8%) 0%, hsl(215 16% 12%) 100%);
     
     --radius: 0.75rem;
@@ -67,21 +67,21 @@
     --surface-hover: 210 40% 92%;
     
     /* Interactive Elements */
-    --primary: 259 94% 51%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 209 99% 65%;
+    --primary-foreground: 222 47% 11%;
     --secondary: 210 40% 96%;
     --secondary-foreground: 222 47% 11%;
     
     /* Accent & Status */
-    --accent: 268 83% 58%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 209 85% 55%;
+    --accent-foreground: 222 47% 11%;
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
     
     /* Borders & Inputs */
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 259 94% 51%;
+    --ring: 209 99% 65%;
     
     /* Destructive */
     --destructive: 0 84% 60%;
@@ -94,7 +94,7 @@
     --warning: 38 92% 50%;
     
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(259 94% 51%) 0%, hsl(268 83% 58%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(209 99% 65%) 0%, hsl(209 85% 55%) 100%);
     --gradient-surface: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 40% 98%) 100%);
     
     /* Popover & Toast */
