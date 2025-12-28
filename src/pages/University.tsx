@@ -4,16 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { 
-  Briefcase, 
-  Store, 
-  Calendar, 
-  Users, 
-  ShoppingBag, 
-  Gavel,
   PlusCircle,
   Target,
-  Dumbbell,
-  CarTaxiFront,
   UserCircle,
   Rocket
 } from 'lucide-react';
@@ -22,15 +14,6 @@ import MobileHeader from '@/components/layout/MobileHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const universityOptions = [
-  {
-    id: 'jobs',
-    title: 'Jobs & Internships',
-    description: 'Find your next opportunity or post job openings',
-    icon: Briefcase,
-    path: '/jobs-internships',
-    color: 'bg-blue-500',
-    allowedFor: ['student', 'company', 'clubs']
-  },
   {
     id: 'advertising',
     title: 'Advertising',
@@ -48,33 +31,6 @@ const universityOptions = [
     path: '/clubs',
     color: 'bg-indigo-500',
     allowedFor: ['student', 'clubs']
-  },
-  {
-    id: 'carpooling',
-    title: 'Carpooling',
-    description: 'Share rides with fellow students and save money',
-    icon: CarTaxiFront,
-    path: '/carpooling',
-    color: 'bg-purple-500',
-    allowedFor: ['student']
-  },
-  {
-    id: 'marketplace',
-    title: 'Marketplace',
-    description: 'Buy, sell, and bid on items with fellow students',
-    icon: Store,
-    path: '/marketplace',
-    color: 'bg-green-500',
-    allowedFor: ['student']
-  },
-  {
-    id: 'holidays',
-    title: 'Holiday Events',
-    description: 'Discover and organize holiday celebrations',
-    icon: Calendar,
-    path: '/holidays',
-    color: 'bg-pink-500',
-    allowedFor: ['student']
   },
   {
     id: 'startups',
