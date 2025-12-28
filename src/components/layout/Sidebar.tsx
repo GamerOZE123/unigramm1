@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Home, MessageCircle, User, GraduationCap, LogOut, Search, Bell, Settings, Ghost } from 'lucide-react';
+import { Home, MessageCircle, User, GraduationCap, LogOut, Search, Bell, Settings } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -60,13 +60,8 @@ export default function Sidebar() {
     }
   };
 
-  const isGhostRoute = location.pathname === '/ghost-chat';
-
   return (
-    <aside className={cn(
-      "fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border hidden md:block",
-      isGhostRoute && "ghost-mode"
-    )}>
+    <aside className="fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border hidden md:block">
       <div className="flex flex-col h-full">
         {/* Logo */}
         <div className="p-6">
@@ -131,17 +126,6 @@ export default function Sidebar() {
 
         {/* User Profile at Bottom */}
         <div className="p-4 border-t border-border space-y-2">
-          <Button
-            variant="ghost" 
-            onClick={() => navigate('/ghost-chat')}
-            className={cn(
-              "w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted/50",
-              isGhostRoute && "bg-muted text-primary"
-            )}
-          >
-            <Ghost className="w-4 h-4 mr-2" />
-            <span className="text-sm">Ghost Chat</span>
-          </Button>
           <Button
             variant="ghost" 
             onClick={() => {
