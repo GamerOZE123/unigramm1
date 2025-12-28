@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Send, MoreVertical, Trash2, MessageSquareX, UserX, Loader2, ImagePlus, Smile, Search, X, Users, Settings, Ban } from 'lucide-react';
+import { Send, MoreVertical, Trash2, MessageSquareX, UserX, Loader2, ImagePlus, Smile, Search, X, Users, Settings, Ban, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/hooks/useChat';
 import { useRecentChats } from '@/hooks/useRecentChats';
@@ -1603,16 +1603,16 @@ const handleBackToUserList = () => {
                 </div>
               )}
             </div>
-            <div className="border-t border-border p-4 bg-card/95 backdrop-blur-sm sticky bottom-0">
+            <div className="fixed bottom-6 left-4 right-4 z-20">
               {isBlockedByUser ? (
-                <div className="flex items-center justify-center py-3 text-muted-foreground">
+                <div className="flex items-center justify-center py-3 px-4 bg-card/95 backdrop-blur-sm rounded-full shadow-lg border border-border text-muted-foreground">
                   <Ban className="w-4 h-4 mr-2" />
                   <span className="text-sm">You can't message this user</span>
                 </div>
               ) : isUserBlocked ? (
-                <div className="flex items-center justify-center py-2">
+                <div className="flex items-center justify-center py-2 px-4 bg-card/95 backdrop-blur-sm rounded-full shadow-lg border border-border">
                   <Button 
-                    variant="outline" 
+                    variant="ghost" 
                     onClick={handleUnblockUser}
                     className="flex items-center gap-2"
                   >
@@ -1621,19 +1621,19 @@ const handleBackToUserList = () => {
                   </Button>
                 </div>
               ) : (
-                <>
+                <div className="bg-card/95 backdrop-blur-sm rounded-full shadow-lg border border-border p-2">
                   {mediaUrls.length > 0 && (
-                    <div className="mb-2 flex flex-wrap gap-2">
+                    <div className="mb-2 px-2 flex flex-wrap gap-2">
                       {mediaUrls.map((url, index) => (
                         <div key={index} className="relative inline-block">
                           {url.match(/\.(mp4|webm|ogg)$/i) ? (
-                            <video src={url} className="h-20 rounded-lg" controls />
+                            <video src={url} className="h-16 rounded-lg" controls />
                           ) : (
-                            <img src={url} alt="Preview" className="h-20 rounded-lg" />
+                            <img src={url} alt="Preview" className="h-16 rounded-lg" />
                           )}
                           <button
                             onClick={() => setMediaUrls(prev => prev.filter((_, i) => i !== index))}
-                            className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs"
+                            className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs"
                           >
                             ×
                           </button>
@@ -1641,28 +1641,28 @@ const handleBackToUserList = () => {
                       ))}
                     </div>
                   )}
-                  <div className="flex gap-2 items-end">
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleMediaUpload}
-                        accept="image/*,video/*"
-                        multiple
-                        className="hidden"
-                      />
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleMediaUpload}
+                      accept="image/*,video/*"
+                      multiple
+                      className="hidden"
+                    />
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploadingImage}
-                      className="flex-shrink-0"
+                      className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 hover:bg-primary/20"
                     >
-                      <ImagePlus className="w-4 h-4" />
+                      <Plus className="w-5 h-5 text-primary" />
                     </Button>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="ghost" size="icon" className="flex-shrink-0">
-                          <Smile className="w-4 h-4" />
+                        <Button variant="ghost" size="icon" className="flex-shrink-0 w-10 h-10 rounded-full hover:bg-muted">
+                          <Smile className="w-5 h-5 text-muted-foreground" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-2" align="start">
@@ -1679,31 +1679,36 @@ const handleBackToUserList = () => {
                         </div>
                       </PopoverContent>
                     </Popover>
-                    <Textarea
-                      placeholder="Type your message..."
+                    <Input
+                      placeholder="Type a message..."
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      onPaste={handlePaste}
+                      onPaste={handlePaste as any}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
                           handleSendMessage();
                         }
                       }}
-                      className="flex-1 resize-none max-h-32"
-                      rows={1}
+                      className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 h-10"
                     />
                     <Button 
                       onClick={handleSendMessage} 
                       disabled={(!newMessage.trim() && mediaUrls.length === 0) || uploadingImage}
-                      className="flex-shrink-0"
+                      size="icon"
+                      className={`flex-shrink-0 w-10 h-10 rounded-full transition-all ${
+                        (newMessage.trim() || mediaUrls.length > 0) && !uploadingImage
+                          ? 'bg-primary hover:bg-primary/90'
+                          : 'bg-muted text-muted-foreground'
+                      }`}
                     >
                       <Send className="w-4 h-4" />
                     </Button>
                   </div>
-                </>
+                </div>
               )}
             </div>
+            <div className="h-24" /> {/* Spacer for fixed input bar */}
           </div>
           {deletingChatId && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
