@@ -37,7 +37,7 @@ export default function Post() {
   const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
   const [post, setPost] = useState<TransformedPost | null>(null);
-  const [topPosts, setTopPosts] = useState<TransformedPost[]>([]);
+  const [topPosts, setTopPosts] = useState<{ id: string; image_url?: string; image_urls?: string[] }[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isMobile = useIsMobile();
@@ -50,45 +50,22 @@ export default function Post() {
     try {
       const { data: postsData, error: postsError } = await supabase
         .from("posts")
-        .select(`
-          id, user_id, content, image_url, image_urls, created_at,
-          likes_count, comments_count, views_count, hashtags,
-          poll_question, poll_options, poll_ends_at, survey_questions
-        `)
+        .select(`id, user_id, image_url, image_urls, likes_count, comments_count`)
         .eq("user_id", userId)
         .neq("id", currentPostId)
+        .is("poll_question", null)
+        .is("survey_questions", null)
         .order("likes_count", { ascending: false })
-        .limit(5);
+        .limit(10);
 
       if (postsError) throw postsError;
 
-      const { data: profileData } = await supabase
-        .from("profiles")
-        .select("full_name, username, university")
-        .eq("user_id", userId)
-        .single();
+      // Filter to only posts with images
+      const postsWithImages = (postsData || []).filter(
+        (p) => p.image_url || (p.image_urls && p.image_urls.length > 0)
+      ).slice(0, 5);
 
-      const transformed = (postsData || []).map((p) => ({
-        id: p.id,
-        content: p.content || "",
-        image_url: p.image_url,
-        image_urls: p.image_urls,
-        created_at: p.created_at,
-        likes_count: p.likes_count || 0,
-        comments_count: p.comments_count || 0,
-        views_count: p.views_count || 0,
-        user_id: p.user_id,
-        user_name: profileData?.full_name || profileData?.username || "User",
-        user_username: profileData?.username || "user",
-        user_university: profileData?.university || undefined,
-        poll_question: p.poll_question,
-        poll_options: p.poll_options,
-        poll_ends_at: p.poll_ends_at,
-        survey_questions: p.survey_questions,
-        hashtags: p.hashtags,
-      }));
-
-      setTopPosts(transformed);
+      setTopPosts(postsWithImages);
     } catch (err) {
       console.error("Error fetching top posts:", err);
     }
@@ -204,16 +181,23 @@ export default function Post() {
               <TrendingUp className="w-5 h-5 text-primary" />
               <h3 className="text-lg font-semibold text-foreground">More from {post.user_name}</h3>
             </div>
-            <div className="space-y-4">
-              {topPosts.map((topPost) => (
-                <div 
-                  key={topPost.id} 
-                  onClick={() => navigate(`/post/${topPost.id}`)}
-                  className="cursor-pointer"
-                >
-                  <PostCard post={topPost} />
-                </div>
-              ))}
+            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+              {topPosts.map((topPost) => {
+                const imageUrl = topPost.image_url || (topPost.image_urls && topPost.image_urls[0]);
+                return (
+                  <div 
+                    key={topPost.id} 
+                    onClick={() => navigate(`/post/${topPost.id}`)}
+                    className="flex-shrink-0 cursor-pointer rounded-lg overflow-hidden hover:opacity-90 transition-opacity"
+                  >
+                    <img 
+                      src={imageUrl} 
+                      alt="Post" 
+                      className="w-24 h-24 object-cover"
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
