@@ -1,9 +1,8 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Bell, Ghost } from 'lucide-react';
+import { ArrowLeft, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNotifications } from '@/hooks/useNotifications';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
 export default function MobileHeader() {
@@ -56,20 +55,6 @@ export default function MobileHeader() {
       </div>
       {!isNotificationsPage && (
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/ghost-chat')}
-            className={cn(
-              "p-2",
-              isGhostChatPage && "text-primary"
-            )}
-          >
-            <Ghost className="h-5 w-5" />
-          </Button>
-          
-          <Separator orientation="vertical" className="h-6" />
-          
           <Button
             variant="ghost"
             size="sm"
