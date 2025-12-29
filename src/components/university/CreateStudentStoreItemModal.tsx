@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { X, Upload, Package, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { studentStoreItemSchema } from '@/lib/validation';
+import { z } from 'zod';
 
 interface CreateStudentStoreItemModalProps {
   storeId: string;
@@ -117,6 +119,32 @@ export default function CreateStudentStoreItemModal({ storeId, onClose, onSucces
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Parse and validate form data
+    const tags = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
+    const priceValue = parseFloat(formData.price);
+    const stockValue = formData.product_type === 'physical' ? parseInt(formData.stock_quantity) : 0;
+
+    // Validate using zod schema
+    try {
+      studentStoreItemSchema.parse({
+        title: formData.title,
+        description: formData.description,
+        price: priceValue,
+        category: formData.category,
+        product_type: formData.product_type,
+        tags: tags.length > 0 ? tags : undefined,
+        stock_quantity: stockValue,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        error.errors.forEach(err => {
+          toast.error(err.message);
+        });
+        return;
+      }
+    }
+
     setUploading(true);
 
     try {
@@ -126,17 +154,15 @@ export default function CreateStudentStoreItemModal({ storeId, onClose, onSucces
       const imageUrls = await uploadImages();
       const digitalFileUrl = formData.product_type === 'digital' ? await uploadDigitalFile() : null;
 
-      const tags = formData.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
-
       const itemData = {
         user_id: user.id,
         store_id: storeId,
-        title: formData.title,
-        description: formData.description,
-        price: parseFloat(formData.price),
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        price: priceValue,
         product_type: formData.product_type,
         category: formData.category,
-        stock_quantity: formData.product_type === 'physical' ? parseInt(formData.stock_quantity) : 0,
+        stock_quantity: stockValue,
         image_urls: imageUrls,
         digital_file_url: digitalFileUrl,
         tags: tags,

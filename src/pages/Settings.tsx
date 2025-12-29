@@ -108,16 +108,22 @@ export default function Settings() {
     if (!user) return;
     
     try {
-      // Delete user account
-      const { error } = await supabase.auth.admin.deleteUser(user.id);
+      // Call edge function to delete account securely
+      const { data, error } = await supabase.functions.invoke('delete-account', {
+        method: 'POST'
+      });
       
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast({
         title: "Account deleted",
         description: "Your account has been deleted successfully.",
       });
-      navigate("/login");
+      
+      // Sign out and redirect
+      await supabase.auth.signOut();
+      navigate("/auth");
     } catch (error: any) {
       toast({
         title: "Error",

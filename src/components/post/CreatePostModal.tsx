@@ -6,7 +6,7 @@ import { Image, BarChart3, FileText, Hash, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import HashtagSelector from './HashtagSelector';
+
 import MentionInput from './MentionInput';
 import PollCreator from './PollCreator';
 import SurveyCreator from './SurveyCreator';
@@ -21,7 +21,7 @@ interface CreatePostModalProps {
 export default function CreatePostModal({ open, onOpenChange, onSuccess }: CreatePostModalProps) {
   const { user } = useAuth();
   const [content, setContent] = useState('');
-  const [hashtags, setHashtags] = useState<string[]>([]);
+  
   const [mentionedStartups, setMentionedStartups] = useState<any[]>([]);
   const [mentionedClubs, setMentionedClubs] = useState<any[]>([]);
   const [mentionedUsers, setMentionedUsers] = useState<any[]>([]);
@@ -42,7 +42,6 @@ export default function CreatePostModal({ open, onOpenChange, onSuccess }: Creat
       const postData: any = {
         user_id: user.id,
         content: content.trim() || (pollData ? pollData.question : 'Survey'),
-        hashtags: hashtags.length > 0 ? hashtags : null,
         post_type: dbPostType,
       };
 
@@ -111,7 +110,6 @@ export default function CreatePostModal({ open, onOpenChange, onSuccess }: Creat
 
   const handleReset = () => {
     setContent('');
-    setHashtags([]);
     setMentionedStartups([]);
     setMentionedClubs([]);
     setMentionedUsers([]);
@@ -178,10 +176,6 @@ export default function CreatePostModal({ open, onOpenChange, onSuccess }: Creat
               />
             </div>
 
-            <div>
-              <label className="text-sm font-medium mb-2 block">Add Hashtags</label>
-              <HashtagSelector hashtags={hashtags} onHashtagsChange={setHashtags} />
-            </div>
 
             {(mentionedStartups.length > 0 || mentionedClubs.length > 0 || mentionedUsers.length > 0) && (
               <div className="flex flex-wrap gap-2">
