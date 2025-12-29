@@ -785,6 +785,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ranked_posts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fk_comments_user_profile"
             columns: ["user_id"]
             isOneToOne: false
@@ -1455,7 +1469,22 @@ export type Database = {
           post_id?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ranked_posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       marketplace_categories: {
         Row: {
@@ -1981,7 +2010,22 @@ export type Database = {
           user_id?: string | null
           viewed_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "post_views_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_views_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ranked_posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       posts: {
         Row: {
