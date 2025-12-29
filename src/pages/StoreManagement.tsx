@@ -11,6 +11,8 @@ import { toast } from 'sonner';
 import { Store, CreditCard, Save, Upload, Plus, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
+import { storeSchema, paymentMethodSchema, bankDetailsSchema } from '@/lib/validation';
+import { z } from 'zod';
 
 interface PaymentMethod {
   type: string;
@@ -119,11 +121,18 @@ export default function StoreManagement() {
   };
 
   const addPaymentMethod = () => {
-    if (!newPaymentMethod.type || !newPaymentMethod.details) {
-      toast.error('Please fill in payment method details');
-      return;
+    // Validate payment method before adding
+    try {
+      paymentMethodSchema.parse(newPaymentMethod);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        error.errors.forEach(err => {
+          toast.error(err.message);
+        });
+        return;
+      }
     }
-    setPaymentMethods([...paymentMethods, newPaymentMethod]);
+    setPaymentMethods([...paymentMethods, { type: newPaymentMethod.type.trim(), details: newPaymentMethod.details.trim() }]);
     setNewPaymentMethod({ type: '', details: '' });
   };
 
@@ -134,9 +143,31 @@ export default function StoreManagement() {
   const handleSave = async () => {
     if (!user || !store) return;
 
-    if (!formData.store_name.trim()) {
-      toast.error('Store name is required');
-      return;
+    // Validate store data
+    try {
+      storeSchema.parse(formData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        error.errors.forEach(err => {
+          toast.error(err.message);
+        });
+        return;
+      }
+    }
+
+    // Validate bank details if any are provided
+    const hasBankDetails = bankDetails.account_name || bankDetails.account_number || bankDetails.routing_number || bankDetails.bank_name;
+    if (hasBankDetails) {
+      try {
+        bankDetailsSchema.parse(bankDetails);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          error.errors.forEach(err => {
+            toast.error(err.message);
+          });
+          return;
+        }
+      }
     }
 
     setSaving(true);

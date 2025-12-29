@@ -123,3 +123,81 @@ export const phoneSchema = z.string()
   .max(20, 'Phone number must be less than 20 characters')
   .optional()
   .or(z.literal(''));
+
+// Store validation
+export const storeSchema = z.object({
+  store_name: z.string()
+    .min(3, 'Store name must be at least 3 characters')
+    .max(100, 'Store name must be less than 100 characters')
+    .regex(/^[a-zA-Z0-9\s\-_'&.]+$/, 'Store name contains invalid characters')
+    .trim(),
+  store_description: z.string()
+    .max(2000, 'Description must be less than 2000 characters')
+    .trim()
+    .optional()
+    .or(z.literal('')),
+});
+
+// Student store item validation
+export const studentStoreItemSchema = z.object({
+  title: z.string()
+    .min(3, 'Title must be at least 3 characters')
+    .max(200, 'Title must be less than 200 characters')
+    .trim(),
+  description: z.string()
+    .max(5000, 'Description must be less than 5000 characters')
+    .trim()
+    .optional()
+    .or(z.literal('')),
+  price: z.number()
+    .positive('Price must be greater than 0')
+    .max(1000000, 'Price must be less than 1,000,000'),
+  category: z.string()
+    .min(1, 'Category is required')
+    .max(50, 'Category must be less than 50 characters'),
+  product_type: z.enum(['physical', 'digital']),
+  tags: z.array(z.string()
+    .max(30, 'Each tag must be less than 30 characters')
+    .regex(/^[a-zA-Z0-9\-_\s]+$/, 'Tags can only contain letters, numbers, hyphens, underscores, and spaces')
+  ).max(10, 'Maximum 10 tags allowed').optional(),
+  stock_quantity: z.number()
+    .int('Stock must be a whole number')
+    .min(0, 'Stock cannot be negative')
+    .max(10000, 'Stock must be less than 10000'),
+});
+
+// Payment method validation
+export const paymentMethodSchema = z.object({
+  type: z.string()
+    .min(1, 'Payment type is required')
+    .max(50, 'Payment type must be less than 50 characters')
+    .trim(),
+  details: z.string()
+    .min(3, 'Payment details required')
+    .max(200, 'Details must be less than 200 characters')
+    .trim(),
+});
+
+// Bank details validation
+export const bankDetailsSchema = z.object({
+  account_name: z.string()
+    .max(100, 'Account name must be less than 100 characters')
+    .regex(/^[a-zA-Z\s'\-]*$/, 'Account name can only contain letters, spaces, hyphens, and apostrophes')
+    .trim()
+    .optional()
+    .or(z.literal('')),
+  account_number: z.string()
+    .max(17, 'Account number must be less than 17 digits')
+    .regex(/^[0-9]*$/, 'Account number can only contain digits')
+    .optional()
+    .or(z.literal('')),
+  routing_number: z.string()
+    .refine((val) => val === '' || /^[0-9]{9}$/.test(val), 'Routing number must be exactly 9 digits')
+    .optional()
+    .or(z.literal('')),
+  bank_name: z.string()
+    .max(100, 'Bank name must be less than 100 characters')
+    .trim()
+    .optional()
+    .or(z.literal('')),
+});

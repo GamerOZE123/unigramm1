@@ -8,6 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Store, Upload } from 'lucide-react';
+import { storeSchema } from '@/lib/validation';
+import { z } from 'zod';
 
 interface StoreSetupModalProps {
   open: boolean;
@@ -67,9 +69,16 @@ export default function StoreSetupModal({ open, onOpenChange, onSuccess }: Store
     e.preventDefault();
     if (!user) return;
 
-    if (!formData.store_name.trim()) {
-      toast.error('Please enter a store name');
-      return;
+    // Validate form data
+    try {
+      storeSchema.parse(formData);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        error.errors.forEach(err => {
+          toast.error(err.message);
+        });
+        return;
+      }
     }
 
     setLoading(true);
