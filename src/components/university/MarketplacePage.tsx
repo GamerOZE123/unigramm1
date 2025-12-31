@@ -124,9 +124,10 @@ export default function MarketplacePage() {
     try {
       let query = supabase
         .from('student_store_items')
-        .select('*')
+        .select('id, title, description, price, product_type, category, image_urls, stock_quantity, tags, digital_file_url, created_at, user_id')
         .eq('is_active', true)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (categoryFilter !== 'all') {
         query = query.eq('category', categoryFilter);
@@ -138,21 +139,23 @@ export default function MarketplacePage() {
       const { data: productsData, error } = await query;
       if (error) throw error;
 
-      if (productsData) {
-        const productsWithProfiles = await Promise.all(
-          productsData.map(async (product) => {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('university')
-              .eq('user_id', product.user_id)
-              .single();
-            return { ...product, userUniversity: profile?.university };
-          })
-        );
-        const filtered = productsWithProfiles.filter(
-          (product: any) => product.userUniversity === userUniversity
-        );
+      if (productsData && productsData.length > 0) {
+        // Batch fetch profiles instead of N+1
+        const userIds = [...new Set(productsData.map(p => p.user_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, university')
+          .in('user_id', userIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.user_id, p.university]) || []);
+        
+        const filtered = productsData
+          .map(product => ({ ...product, userUniversity: profileMap.get(product.user_id) }))
+          .filter(product => product.userUniversity === userUniversity);
+        
         setStoreProducts(filtered);
+      } else {
+        setStoreProducts([]);
       }
     } catch (error) {
       console.error('Error fetching student store products:', error);
@@ -163,27 +166,30 @@ export default function MarketplacePage() {
     try {
       const { data: itemsData, error } = await supabase
         .from('marketplace_items')
-        .select('*')
+        .select('id, title, description, price, image_urls, condition, location, is_sold, user_id')
         .eq('is_sold', false)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (error) throw error;
 
-      if (itemsData) {
-        const itemsWithProfiles = await Promise.all(
-          itemsData.map(async (item) => {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('university')
-              .eq('user_id', item.user_id)
-              .single();
-            return { ...item, userUniversity: profile?.university };
-          })
-        );
-        const filtered = itemsWithProfiles.filter(
-          (item: any) => item.userUniversity === userUniversity
-        );
+      if (itemsData && itemsData.length > 0) {
+        // Batch fetch profiles instead of N+1
+        const userIds = [...new Set(itemsData.map(i => i.user_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, university')
+          .in('user_id', userIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.user_id, p.university]) || []);
+        
+        const filtered = itemsData
+          .map(item => ({ ...item, userUniversity: profileMap.get(item.user_id) }))
+          .filter(item => item.userUniversity === userUniversity);
+        
         setItems(filtered);
+      } else {
+        setItems([]);
       }
     } catch (error) {
       console.error('Error fetching marketplace items:', error);
@@ -194,27 +200,30 @@ export default function MarketplacePage() {
     try {
       const { data: auctionsData, error } = await supabase
         .from('auctions')
-        .select('*')
+        .select('id, title, description, starting_price, current_price, image_urls, end_time, is_active, user_id')
         .eq('is_active', true)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50);
 
       if (error) throw error;
 
-      if (auctionsData) {
-        const auctionsWithProfiles = await Promise.all(
-          auctionsData.map(async (auction) => {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('university')
-              .eq('user_id', auction.user_id)
-              .single();
-            return { ...auction, userUniversity: profile?.university };
-          })
-        );
-        const filtered = auctionsWithProfiles.filter(
-          (auction: any) => auction.userUniversity === userUniversity
-        );
+      if (auctionsData && auctionsData.length > 0) {
+        // Batch fetch profiles instead of N+1
+        const userIds = [...new Set(auctionsData.map(a => a.user_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, university')
+          .in('user_id', userIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.user_id, p.university]) || []);
+        
+        const filtered = auctionsData
+          .map(auction => ({ ...auction, userUniversity: profileMap.get(auction.user_id) }))
+          .filter(auction => auction.userUniversity === userUniversity);
+        
         setAuctions(filtered);
+      } else {
+        setAuctions([]);
       }
     } catch (error) {
       console.error('Error fetching auctions:', error);

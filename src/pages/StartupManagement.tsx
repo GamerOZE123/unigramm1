@@ -100,7 +100,7 @@ export default function StartupManagement() {
     try {
       const { data, error } = await supabase
         .from('student_startups')
-        .select('*')
+        .select('id, user_id, title, description, category, stage, slug, logo_url, looking_for, website_url, contact_email')
         .eq('slug', slug)
         .single();
 

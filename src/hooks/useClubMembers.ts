@@ -33,9 +33,10 @@ export const useClubMembers = (clubId: string | null) => {
       // First get the memberships
       const { data: memberships, error: membershipsError } = await supabase
         .from('club_memberships')
-        .select('*')
+        .select('id, user_id, role, joined_at, club_id')
         .eq('club_id', clubId)
-        .order('joined_at', { ascending: false });
+        .order('joined_at', { ascending: false })
+        .limit(100);
 
       if (membershipsError) throw membershipsError;
 

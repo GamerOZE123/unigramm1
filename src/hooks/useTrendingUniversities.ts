@@ -1,26 +1,53 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { memoryCache } from '@/lib/cache';
 
 interface TrendingUniversity {
   university: string;
   post_count: number;
 }
 
+// Cache key and TTL for trending universities (1 hour)
+const TRENDING_UNIVERSITIES_CACHE_KEY = 'trending_universities_global';
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
 export const useTrendingUniversities = () => {
   const [universities, setUniversities] = useState<TrendingUniversity[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasFetched = useRef(false);
 
   const fetchTrendingUniversities = async () => {
     try {
-      // Get all posts - no time limit, universities remain trending based on overall activity
+      // Check cache first
+      const cached = memoryCache.get<TrendingUniversity[]>(TRENDING_UNIVERSITIES_CACHE_KEY);
+      if (cached) {
+        setUniversities(cached);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch recent posts only (last 30 days) with LIMIT
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
-        .select('user_id, created_at');
+        .select('user_id')
+        .gte('created_at', thirtyDaysAgo.toISOString())
+        .limit(1000); // CRITICAL: Limit to prevent fetching all posts
       
       if (postsError) throw postsError;
 
-      // Get user profiles with universities
+      // Get unique user IDs
       const userIds = [...new Set(postsData?.map(post => post.user_id) || [])];
+      
+      if (userIds.length === 0) {
+        setUniversities([]);
+        setLoading(false);
+        return;
+      }
+
+      // Batch fetch profiles (only needed fields)
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('user_id, university')
@@ -58,6 +85,9 @@ export const useTrendingUniversities = () => {
         .sort((a, b) => b.post_count - a.post_count)
         .slice(0, 5);
 
+      // Cache for 1 hour
+      memoryCache.set(TRENDING_UNIVERSITIES_CACHE_KEY, trendingUniversities, CACHE_TTL_MS);
+      
       setUniversities(trendingUniversities);
     } catch (error) {
       console.error('Error fetching trending universities:', error);
@@ -68,7 +98,11 @@ export const useTrendingUniversities = () => {
   };
 
   useEffect(() => {
-    fetchTrendingUniversities();
+    // Only fetch once on mount
+    if (!hasFetched.current) {
+      hasFetched.current = true;
+      fetchTrendingUniversities();
+    }
   }, []);
 
   return { universities, loading, refetch: fetchTrendingUniversities };

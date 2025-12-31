@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Flame } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { useNavigate } from 'react-router-dom';
+import { memoryCache } from '@/lib/cache';
 
 interface TrendingPost {
   id: string;
@@ -27,37 +28,36 @@ interface TrendingPostsRowProps {
   excludePolls?: boolean;
 }
 
+// Cache key and TTL (5 minutes)
+const CACHE_KEY = 'trending_posts_row';
+const CACHE_TTL_MS = 5 * 60 * 1000;
+
 export default function TrendingPostsRow({ excludePolls = false }: TrendingPostsRowProps) {
   const [posts, setPosts] = useState<TrendingPost[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const hasFetched = useRef(false);
 
   useEffect(() => {
-    fetchTrendingPosts();
-
-    // Real-time subscription for new posts
-    const channel = supabase
-      .channel('trending_posts')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'posts'
-        },
-        () => {
-          fetchTrendingPosts();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    // Only fetch once on mount - REMOVED realtime subscription
+    if (!hasFetched.current) {
+      hasFetched.current = true;
+      fetchTrendingPosts();
+    }
   }, [excludePolls]);
 
   const fetchTrendingPosts = async () => {
     try {
+      const cacheKey = `${CACHE_KEY}_${excludePolls}`;
+      
+      // Check cache first
+      const cached = memoryCache.get<TrendingPost[]>(cacheKey);
+      if (cached) {
+        setPosts(cached);
+        setLoading(false);
+        return;
+      }
+
       const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
       
       const { data: postsData, error: postsError } = await supabase
@@ -69,8 +69,14 @@ export default function TrendingPostsRow({ excludePolls = false }: TrendingPosts
 
       if (postsError) throw postsError;
 
-      // Fetch profiles separately
-      const uniqueUserIds = [...new Set(postsData?.map(p => p.user_id) || [])];
+      if (!postsData || postsData.length === 0) {
+        setPosts([]);
+        setLoading(false);
+        return;
+      }
+
+      // Batch fetch profiles
+      const uniqueUserIds = [...new Set(postsData.map(p => p.user_id))];
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('user_id, username, avatar_url, university')
@@ -80,10 +86,10 @@ export default function TrendingPostsRow({ excludePolls = false }: TrendingPosts
 
       // Combine data
       const profileMap = new Map(profilesData?.map(p => [p.user_id, p]));
-      let combinedData = postsData?.map(post => ({
+      let combinedData = postsData.map(post => ({
         ...post,
-        profiles: profileMap.get(post.user_id)!
-      })) || [];
+        profiles: profileMap.get(post.user_id) || { username: 'Unknown', avatar_url: '', university: '' }
+      }));
 
       // Filter out polls/surveys if excludePolls is true
       if (excludePolls) {
@@ -91,6 +97,9 @@ export default function TrendingPostsRow({ excludePolls = false }: TrendingPosts
         combinedData = combinedData.slice(0, 10);
       }
 
+      // Cache for 5 minutes
+      memoryCache.set(cacheKey, combinedData, CACHE_TTL_MS);
+      
       setPosts(combinedData);
     } catch (error) {
       console.error('Error fetching trending posts:', error);

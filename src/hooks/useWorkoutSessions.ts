@@ -35,8 +35,10 @@ export const useWorkoutSessions = () => {
     try {
       const { data, error } = await supabase
         .from('workout_sessions')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('id, workout_name, duration_minutes, calories_burned, workout_type, notes, created_at, user_id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
       
       if (error) throw error;
       setWorkoutSessions(data || []);
