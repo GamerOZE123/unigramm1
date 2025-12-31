@@ -399,7 +399,7 @@ export default function Explore() {
       </div>
       {/* RIGHT SIDEBAR - Fixed to right edge */}
       {!isMobile && (
-        <div className="hidden xl:block fixed right-0 top-0 h-screen w-80 border-l bg-card overflow-y-auto p-4">
+        <div className="hidden xl:block fixed right-0 top-0 h-screen w-80 border-l overflow-y-auto p-4">
           <ExploreSidebar onHashtagClick={handleHashtagClick} />
         </div>
       )}
