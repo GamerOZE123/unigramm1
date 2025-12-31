@@ -398,7 +398,7 @@ export default function Explore() {
         </div>
         {/* RIGHT SIDEBAR */}
         {!isMobile && (
-          <div className="w-80">
+          <div className="w-80 ml-auto sticky top-6 self-start">
             <ExploreSidebar onHashtagClick={handleHashtagClick} />
           </div>
         )}
