@@ -396,13 +396,13 @@ export default function Explore() {
 
           <TaggedPostsRow />
         </div>
-        {/* RIGHT SIDEBAR */}
-        {!isMobile && (
-          <div className="w-80 ml-auto sticky top-6 self-start">
-            <ExploreSidebar onHashtagClick={handleHashtagClick} />
-          </div>
-        )}
       </div>
+      {/* RIGHT SIDEBAR - Fixed to right edge */}
+      {!isMobile && (
+        <div className="hidden xl:block fixed right-0 top-0 h-screen w-80 border-l bg-card overflow-y-auto p-4">
+          <ExploreSidebar onHashtagClick={handleHashtagClick} />
+        </div>
+      )}
     </Layout>
   );
 }
