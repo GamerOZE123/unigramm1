@@ -148,7 +148,7 @@ export default function StartupDetail() {
 
   const fetchStartupDetails = async () => {
     try {
-      let query = supabase.from('student_startups').select('*');
+      let query = supabase.from('student_startups').select('id, user_id, title, description, category, stage, slug, looking_for, website_url, contact_email, created_at, logo_url');
       const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug || '');
       
       if (isUUID) {
@@ -232,9 +232,10 @@ export default function StartupDetail() {
     try {
       const { data, error } = await supabase
         .from('startup_stages')
-        .select('*')
+        .select('id, name, description, order_index, is_completed, is_current')
         .eq('startup_id', startup.id)
-        .order('order_index', { ascending: true });
+        .order('order_index', { ascending: true })
+        .limit(20);
 
       if (error) throw error;
       setStages(data || []);
@@ -249,7 +250,7 @@ export default function StartupDetail() {
     try {
       const { data, error } = await supabase
         .from('posts')
-        .select('*')
+        .select('id, content, created_at, image_url, image_urls, likes_count, comments_count, views_count, user_id, is_approved_for_startup')
         .eq('startup_id', startup.id)
         .eq('is_approved_for_startup', true)
         .order('created_at', { ascending: false })

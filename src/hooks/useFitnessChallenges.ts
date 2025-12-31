@@ -39,9 +39,10 @@ export const useFitnessChallenges = () => {
     try {
       const { data, error } = await supabase
         .from('fitness_challenges')
-        .select('*')
+        .select('id, title, description, challenge_type, target_value, target_unit, start_date, end_date, is_active, max_participants, prize_description, creator_id, created_at')
         .eq('is_active', true)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(20);
       
       if (error) throw error;
       
@@ -72,8 +73,9 @@ export const useFitnessChallenges = () => {
     try {
       const { data, error } = await supabase
         .from('challenge_participants')
-        .select('*')
-        .eq('user_id', user.id);
+        .select('id, challenge_id, user_id, current_progress, joined_at')
+        .eq('user_id', user.id)
+        .limit(50);
       
       if (error) throw error;
       setUserChallenges(data || []);

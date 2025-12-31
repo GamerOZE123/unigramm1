@@ -1,6 +1,6 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { memoryCache } from '@/lib/cache';
 
 interface TrendingHashtag {
   hashtag: string;
@@ -10,12 +10,17 @@ interface TrendingHashtag {
   trend_score: number;
 }
 
-const TIME_WEIGHT_HOURS = 3; // Posts within last 3 hours are heavily weighted
-const SCORE_DECAY_RATE = 0.5; // How much older posts decay
+// Cache key and TTL for trending hashtags (10 minutes)
+const TRENDING_HASHTAGS_CACHE_KEY = 'trending_hashtags_global';
+const CACHE_TTL_MS = 10 * 60 * 1000;
+
+const TIME_WEIGHT_HOURS = 3;
+const SCORE_DECAY_RATE = 0.5;
 
 export const useTrendingHashtags = () => {
   const [hashtags, setHashtags] = useState<TrendingHashtag[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasFetched = useRef(false);
 
   const calculateTrendScore = (posts: Array<{ created_at: string; user_id: string; hashtags: string[] }>) => {
     const now = Date.now();
@@ -30,9 +35,6 @@ export const useTrendingHashtags = () => {
       const postTime = new Date(post.created_at).getTime();
       const hoursAgo = (now - postTime) / (1000 * 60 * 60);
       
-      // Calculate time-based weight
-      // Recent posts (< TIME_WEIGHT_HOURS) get full weight
-      // Older posts decay exponentially
       let timeWeight = 1;
       if (hoursAgo > TIME_WEIGHT_HOURS) {
         const decayHours = hoursAgo - TIME_WEIGHT_HOURS;
@@ -61,7 +63,6 @@ export const useTrendingHashtags = () => {
       }
     });
 
-    // Convert to array and sort by trend score
     return Array.from(hashtagData.entries())
       .map(([hashtag, data]) => ({
         hashtag,
@@ -70,23 +71,40 @@ export const useTrendingHashtags = () => {
         last_used: data.lastUsed,
         trend_score: data.totalScore
       }))
-      .filter(tag => tag.post_count >= 1) // Show any hashtag that has been used
+      .filter(tag => tag.post_count >= 1)
       .sort((a, b) => b.trend_score - a.trend_score)
       .slice(0, 5);
   };
 
   const fetchTrendingHashtags = async () => {
     try {
-      // Fetch all posts - no time limit, old trends remain until new ones surpass them
+      // Check cache first
+      const cached = memoryCache.get<TrendingHashtag[]>(TRENDING_HASHTAGS_CACHE_KEY);
+      if (cached) {
+        setHashtags(cached);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch only recent posts (last 7 days) with LIMIT
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select('hashtags, user_id, created_at')
         .not('hashtags', 'is', null)
-        .order('created_at', { ascending: false });
+        .gte('created_at', sevenDaysAgo.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(500); // CRITICAL: Prevent fetching all posts
       
       if (postsError) throw postsError;
       
       const trendingHashtags = calculateTrendScore(postsData || []);
+      
+      // Cache for 10 minutes
+      memoryCache.set(TRENDING_HASHTAGS_CACHE_KEY, trendingHashtags, CACHE_TTL_MS);
+      
       setHashtags(trendingHashtags);
     } catch (error) {
       console.error('Error in fetchTrendingHashtags:', error);
@@ -97,14 +115,12 @@ export const useTrendingHashtags = () => {
   };
 
   useEffect(() => {
-    fetchTrendingHashtags();
-    
-    // Refresh trending hashtags every 5 minutes to reflect new activity
-    const interval = setInterval(fetchTrendingHashtags, 5 * 60 * 1000);
-    
-    return () => clearInterval(interval);
+    // Only fetch once on mount - no more interval refetching
+    if (!hasFetched.current) {
+      hasFetched.current = true;
+      fetchTrendingHashtags();
+    }
   }, []);
 
   return { hashtags, loading, refetch: fetchTrendingHashtags };
 };
-

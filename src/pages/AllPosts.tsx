@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import Layout from '@/components/layout/Layout';
 import MobileLayout from '@/components/layout/MobileLayout';
@@ -14,6 +14,7 @@ export default function AllPosts() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const hasFetched = useRef(false);
   const POSTS_PER_PAGE = 20;
 
   const fetchPosts = async (pageNum: number) => {
@@ -22,37 +23,50 @@ export default function AllPosts() {
       const from = (pageNum - 1) * POSTS_PER_PAGE;
       const to = from + POSTS_PER_PAGE - 1;
 
+      // Select only needed columns (no poll_end_date)
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
-        .select('*')
+        .select('id, user_id, content, image_url, image_urls, likes_count, comments_count, views_count, created_at, hashtags, poll_options, poll_question, survey_questions, startup_id')
         .order('created_at', { ascending: false })
         .range(from, to);
 
       if (postsError) throw postsError;
 
-      const postsWithProfiles = await Promise.all(
-        (postsData || []).map(async (post) => {
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('username, avatar_url, full_name, university')
-            .eq('user_id', post.user_id)
-            .single();
+      if (!postsData || postsData.length === 0) {
+        if (pageNum === 1) setPosts([]);
+        setLoading(false);
+        return;
+      }
 
-          if (profileError) {
-            console.error('Error fetching profile for post:', post.id, profileError);
-          }
+      // Batch fetch profiles instead of N+1
+      const userIds = [...new Set(postsData.map(p => p.user_id))];
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, username, avatar_url, full_name, university')
+        .in('user_id', userIds);
 
-          return { 
-            ...post, 
-            profile: profile || {
-              username: 'Unknown User',
-              avatar_url: null,
-              full_name: 'Unknown User',
-              university: null
-            }
-          };
-        })
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
+
+      const profileMap = new Map(
+        (profiles || []).map(p => [p.user_id, {
+          username: p.username || 'Unknown User',
+          avatar_url: p.avatar_url,
+          full_name: p.full_name || 'Unknown User',
+          university: p.university
+        }])
       );
+
+      const postsWithProfiles = postsData.map(post => ({
+        ...post,
+        profile: profileMap.get(post.user_id) || {
+          username: 'Unknown User',
+          avatar_url: null,
+          full_name: 'Unknown User',
+          university: null
+        }
+      }));
 
       if (pageNum === 1) {
         setPosts(postsWithProfiles);
@@ -67,7 +81,11 @@ export default function AllPosts() {
   };
 
   useEffect(() => {
-    fetchPosts(1);
+    // Only fetch once on mount
+    if (!hasFetched.current) {
+      hasFetched.current = true;
+      fetchPosts(1);
+    }
   }, []);
 
   const handleLoadMore = () => {
@@ -101,7 +119,10 @@ export default function AllPosts() {
               <PostCard 
                 key={post.id} 
                 post={post}
-                onPostUpdated={() => fetchPosts(1)}
+                onPostUpdated={() => {
+                  hasFetched.current = false;
+                  fetchPosts(1);
+                }}
               />
             ))}
           </div>
