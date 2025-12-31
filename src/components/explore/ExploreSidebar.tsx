@@ -18,12 +18,12 @@ export default function ExploreSidebar({ onHashtagClick }: ExploreSidebarProps) 
   return (
     <div className="space-y-6 sticky top-6">
       {/* Trending Hashtags */}
-      <Card className="p-4 bg-transparent border-border">
+      <Card className="p-4 bg-card">
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-5 h-5 text-primary" />
           <h3 className="font-semibold">Trending Hashtags</h3>
         </div>
-        <div className="space-y-1">
+        <div className="space-y-3">
           {hashtagsLoading ? (
             <div className="text-center py-4">
               <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -49,12 +49,12 @@ export default function ExploreSidebar({ onHashtagClick }: ExploreSidebarProps) 
       </Card>
 
       {/* Suggested Users */}
-      <Card className="p-4 bg-transparent border-border">
+      <Card className="p-4 bg-card">
         <div className="flex items-center gap-2 mb-4">
           <User className="w-5 h-5 text-primary" />
           <h3 className="font-semibold">Suggested Users</h3>
         </div>
-        <div className="space-y-1">
+        <div className="space-y-3">
           {usersLoading ? (
             <div className="text-center py-4">
               <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>

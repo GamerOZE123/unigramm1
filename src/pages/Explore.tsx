@@ -363,36 +363,45 @@ export default function Explore() {
   // MAIN EXPLORE PAGE (WITHOUT SEARCH)
   // -----------------------------------------------------------------
   return (
-    <Layout rightSidebar={<ExploreSidebar onHashtagClick={handleHashtagClick} />}>
+    <Layout>
       {isMobile && <MobileHeader />}
 
-      <div className={`${isMobile ? 'px-4 pt-4 pb-20' : 'max-w-2xl mx-auto space-y-10 mt-6 pb-12'}`}>
-        {/* SEARCH BAR */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <input
-            type="text"
-            placeholder="Search users, hashtags, or universities..."
-            value={searchQuery}
-            onChange={handleSearch}
-            className="w-full pl-10 pr-4 py-2 bg-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-          />
+      <div className={`${isMobile ? 'px-4 pt-4 pb-20' : 'flex gap-6 px-4 max-w-7xl mx-auto'}`}>
+        {/* CENTER COLUMN */}
+        <div className={`${isMobile ? 'space-y-6' : 'flex-1 max-w-2xl space-y-10 mt-6 pb-12'}`}>
+          {/* SEARCH BAR */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Search users, hashtags, or universities..."
+              value={searchQuery}
+              onChange={handleSearch}
+              className="w-full pl-10 pr-4 py-2 bg-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+            />
+          </div>
+
+          <TrendingHashtagsRow onHashtagClick={handleHashtagClick} />
+
+          <HeroBanner />
+
+          {/* ⭐ TRENDING POSTS MUST NOT SHOW POLL/SURVEY */}
+          <TrendingPostsRow excludePolls />
+
+          <TrendingUniversitiesRow onUniversityClick={handleUniversityClick} />
+
+          <UpcomingEventsRow />
+
+          <StudentStartupsRow />
+
+          <TaggedPostsRow />
         </div>
-
-        <TrendingHashtagsRow onHashtagClick={handleHashtagClick} />
-
-        <HeroBanner />
-
-        {/* ⭐ TRENDING POSTS MUST NOT SHOW POLL/SURVEY */}
-        <TrendingPostsRow excludePolls />
-
-        <TrendingUniversitiesRow onUniversityClick={handleUniversityClick} />
-
-        <UpcomingEventsRow />
-
-        <StudentStartupsRow />
-
-        <TaggedPostsRow />
+        {/* RIGHT SIDEBAR */}
+        {!isMobile && (
+          <div className="w-80">
+            <ExploreSidebar onHashtagClick={handleHashtagClick} />
+          </div>
+        )}
       </div>
     </Layout>
   );
