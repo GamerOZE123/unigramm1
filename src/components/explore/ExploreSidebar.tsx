@@ -2,6 +2,7 @@ import { useTrendingHashtags } from '@/hooks/useTrendingHashtags';
 import { useUsers } from '@/hooks/useUsers';
 import { Hash, TrendingUp, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Card } from '@/components/ui/card';
 
 interface ExploreSidebarProps {
   onHashtagClick?: (hashtag: string) => void;
@@ -17,7 +18,7 @@ export default function ExploreSidebar({ onHashtagClick }: ExploreSidebarProps) 
   return (
     <div className="space-y-6 sticky top-6">
       {/* Trending Hashtags */}
-      <div>
+      <Card className="p-4 bg-transparent border-border">
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-5 h-5 text-primary" />
           <h3 className="font-semibold">Trending Hashtags</h3>
@@ -45,10 +46,10 @@ export default function ExploreSidebar({ onHashtagClick }: ExploreSidebarProps) 
             <p className="text-sm text-muted-foreground text-center py-4">No trending hashtags</p>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Suggested Users */}
-      <div>
+      <Card className="p-4 bg-transparent border-border">
         <div className="flex items-center gap-2 mb-4">
           <User className="w-5 h-5 text-primary" />
           <h3 className="font-semibold">Suggested Users</h3>
@@ -82,7 +83,7 @@ export default function ExploreSidebar({ onHashtagClick }: ExploreSidebarProps) 
             <p className="text-sm text-muted-foreground text-center py-4">No suggestions</p>
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
