@@ -2,7 +2,6 @@ import { useTrendingHashtags } from '@/hooks/useTrendingHashtags';
 import { useUsers } from '@/hooks/useUsers';
 import { Hash, TrendingUp, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Card } from '@/components/ui/card';
 
 interface ExploreSidebarProps {
   onHashtagClick?: (hashtag: string) => void;
@@ -18,12 +17,12 @@ export default function ExploreSidebar({ onHashtagClick }: ExploreSidebarProps) 
   return (
     <div className="space-y-6 sticky top-6">
       {/* Trending Hashtags */}
-      <Card className="p-4 bg-card">
+      <div>
         <div className="flex items-center gap-2 mb-4">
           <TrendingUp className="w-5 h-5 text-primary" />
           <h3 className="font-semibold">Trending Hashtags</h3>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-1">
           {hashtagsLoading ? (
             <div className="text-center py-4">
               <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -46,15 +45,15 @@ export default function ExploreSidebar({ onHashtagClick }: ExploreSidebarProps) 
             <p className="text-sm text-muted-foreground text-center py-4">No trending hashtags</p>
           )}
         </div>
-      </Card>
+      </div>
 
       {/* Suggested Users */}
-      <Card className="p-4 bg-card">
+      <div>
         <div className="flex items-center gap-2 mb-4">
           <User className="w-5 h-5 text-primary" />
           <h3 className="font-semibold">Suggested Users</h3>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-1">
           {usersLoading ? (
             <div className="text-center py-4">
               <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -83,7 +82,7 @@ export default function ExploreSidebar({ onHashtagClick }: ExploreSidebarProps) 
             <p className="text-sm text-muted-foreground text-center py-4">No suggestions</p>
           )}
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
