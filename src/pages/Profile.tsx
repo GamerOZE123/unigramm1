@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import PostCard from "@/components/post/PostCard";
 import EditProfileModal from "@/components/profile/EditProfileModal";
+import ProfileSettingsModal from "@/components/profile/ProfileSettingsModal";
 import MessageButton from "@/components/profile/MessageButton";
 import FollowButton from "@/components/profile/FollowButton";
 import ProfileSocialLinks from "@/components/profile/ProfileSocialLinks";
@@ -101,6 +102,8 @@ export default function Profile() {
 
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [bannerHeight, setBannerHeight] = useState<number>(180);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState("basic");
 
   // Extended profile data
   const { studentProfile, extendedProfile, clubs, startups } = useProfileData(profileUserId);
@@ -498,6 +501,10 @@ export default function Profile() {
               profileData={profileData}
               extendedProfile={extendedProfile}
               studentProfile={studentProfile}
+              onItemClick={(tab) => {
+                setSettingsInitialTab(tab);
+                setIsSettingsModalOpen(true);
+              }}
             />
           </div>
         )}
@@ -639,6 +646,13 @@ export default function Profile() {
         }}
         bannerUrl={bannerUrl}
         bannerHeight={bannerHeight}
+      />
+
+      <ProfileSettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        onProfileUpdate={handleProfileUpdate}
+        initialTab={settingsInitialTab}
       />
     </Layout>
   );
