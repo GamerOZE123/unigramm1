@@ -487,41 +487,6 @@ export default function Profile() {
                 </div>
               </div>
 
-              {/* Clubs Section */}
-              {clubs.length > 0 && (
-                <div className="px-6 py-4 border-t border-border/30">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Users className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-medium text-foreground">Clubs & Organizations</span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {clubs.map((club) => (
-                      <Badge
-                        key={club.id}
-                        variant="secondary"
-                        className="bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer py-1.5 px-3 gap-2"
-                      >
-                        {club.logo_url ? (
-                          <img src={club.logo_url} alt={club.name} className="w-4 h-4 rounded-full object-cover" />
-                        ) : (
-                          <div className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center">
-                            <Users className="w-2.5 h-2.5 text-primary" />
-                          </div>
-                        )}
-                        <span className="text-foreground/90">{club.name}</span>
-                        {club.role && (
-                          <span className="text-xs text-muted-foreground capitalize flex items-center gap-0.5">
-                            {club.role === 'admin' || club.role === 'owner' ? (
-                              <Shield className="w-3 h-3 text-amber-500" />
-                            ) : null}
-                            {club.role}
-                          </span>
-                        )}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -545,6 +510,41 @@ export default function Profile() {
             {(extendedProfile?.interests?.length || studentProfile?.skills?.length) && (
               <div className="bg-card/50 border border-border/50 rounded-xl p-4">
                 <ProfileInterests interests={extendedProfile?.interests} skills={studentProfile?.skills} />
+              </div>
+            )}
+
+            {/* Clubs Card */}
+            {clubs.length > 0 && (
+              <div className="bg-card/50 border border-border/50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium text-foreground">Clubs & Organizations</span>
+                </div>
+                <div className="space-y-2">
+                  {clubs.map((club) => (
+                    <div
+                      key={club.id}
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                    >
+                      {club.logo_url ? (
+                        <img src={club.logo_url} alt={club.name} className="w-8 h-8 rounded-lg object-cover" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Users className="w-4 h-4 text-primary" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{club.name}</p>
+                        <p className="text-xs text-muted-foreground capitalize flex items-center gap-1">
+                          {(club.role === 'admin' || club.role === 'owner') && (
+                            <Shield className="w-3 h-3 text-amber-500" />
+                          )}
+                          {club.role || 'Member'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
