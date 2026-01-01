@@ -270,6 +270,34 @@ export default function Explore() {
                 </div>
               )}
 
+              {/* USERS SECTION - Horizontal scroll at top */}
+              {!loading && users.length > 0 && searchType !== "hashtag" && (
+                <div className="space-y-3">
+                  <h2 className="text-lg font-semibold">Users</h2>
+                  <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                    {users.slice(0, 10).map((u) => (
+                      <div
+                        key={u.id}
+                        onClick={() => handleUserClick(u.username || "")}
+                        className="flex flex-col items-center gap-2 p-3 bg-card border border-border rounded-lg hover:bg-muted cursor-pointer transition-colors flex-shrink-0 min-w-[100px]"
+                      >
+                        <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                          {u.avatar_url ? (
+                            <img src={u.avatar_url} className="w-full h-full rounded-full object-cover" alt="" />
+                          ) : (
+                            <User className="w-6 h-6 text-primary" />
+                          )}
+                        </div>
+                        <div className="text-center">
+                          <p className="font-medium text-sm truncate max-w-[80px]">{u.full_name || u.username}</p>
+                          <p className="text-xs text-muted-foreground truncate max-w-[80px]">@{u.username}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* CLUBS SECTION (for university search) */}
               {!searchPostsLoading && searchClubs.length > 0 && (
                 <div className="space-y-4">
@@ -320,34 +348,6 @@ export default function Explore() {
                   {searchPosts.map((post) => (
                     <PostCard key={post.id} post={post} onHashtagClick={handleHashtagClick} />
                   ))}
-                </div>
-              )}
-
-              {/* USERS SECTION */}
-              {!loading && users.length > 0 && searchType !== "hashtag" && (
-                <div className="space-y-4">
-                  <h2 className="text-lg font-semibold">Users</h2>
-                  <div className="space-y-2">
-                    {users.map((u) => (
-                      <div
-                        key={u.id}
-                        onClick={() => handleUserClick(u.username || "")}
-                        className="flex items-center gap-3 p-3 hover:bg-muted rounded-lg cursor-pointer"
-                      >
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                          {u.avatar_url ? (
-                            <img src={u.avatar_url} className="w-full h-full rounded-full object-cover" alt="" />
-                          ) : (
-                            <User className="w-5 h-5 text-primary" />
-                          )}
-                        </div>
-                        <div>
-                          <p className="font-medium">{u.full_name || u.username}</p>
-                          <p className="text-sm text-muted-foreground">@{u.username}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               )}
 
