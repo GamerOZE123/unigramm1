@@ -7,13 +7,12 @@ import FollowButton from "@/components/profile/FollowButton";
 import ProfileSocialLinks from "@/components/profile/ProfileSocialLinks";
 import ProfileInterests from "@/components/profile/ProfileInterests";
 import ProfileAffiliations from "@/components/profile/ProfileAffiliations";
-import ProfileAbout from "@/components/profile/ProfileAbout";
 import ProfileCompletionBar from "@/components/profile/ProfileCompletionBar";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Edit, GraduationCap, MapPin, Image as ImageIcon, FileText, User, Calendar, Sparkles } from "lucide-react";
+import { Edit, GraduationCap, MapPin, Image as ImageIcon, FileText, Calendar, Sparkles, Users, Rocket, Crown, Shield } from "lucide-react";
 import MobileHeader from "@/components/layout/MobileHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
@@ -343,137 +342,135 @@ export default function Profile() {
 
           {/* Profile Card - Overlapping Banner */}
           <div className="relative mx-4 -mt-20 md:-mt-16">
-            <div className="bg-card/95 backdrop-blur-lg border border-border/50 rounded-2xl p-6 shadow-xl">
-              <div className="flex flex-col md:flex-row gap-6">
-                {/* Avatar */}
-                <div className="flex flex-col items-center md:items-start">
-                  <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-primary to-accent p-0.5 shadow-lg -mt-16 md:-mt-20">
-                    <div className="w-full h-full rounded-2xl bg-card flex items-center justify-center overflow-hidden">
-                      {profileData.avatar_url ? (
-                        <img
-                          src={profileData.avatar_url}
-                          alt={profileData.full_name || profileData.username}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-4xl font-bold text-primary">
-                          {profileData.full_name?.charAt(0) || profileData.username?.charAt(0)}
-                        </span>
-                      )}
+            <div className="bg-card/95 backdrop-blur-lg border border-border/50 rounded-2xl shadow-xl overflow-hidden">
+              {/* Top Section - Avatar & Main Info */}
+              <div className="p-6 pb-4">
+                <div className="flex flex-col md:flex-row gap-5">
+                  {/* Avatar */}
+                  <div className="flex flex-col items-center md:items-start shrink-0">
+                    <div className="w-24 h-24 md:w-28 md:h-28 rounded-2xl bg-gradient-to-br from-primary to-accent p-0.5 shadow-lg -mt-16 md:-mt-20">
+                      <div className="w-full h-full rounded-2xl bg-card flex items-center justify-center overflow-hidden">
+                        {profileData.avatar_url ? (
+                          <img
+                            src={profileData.avatar_url}
+                            alt={profileData.full_name || profileData.username}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-3xl md:text-4xl font-bold text-primary">
+                            {profileData.full_name?.charAt(0) || profileData.username?.charAt(0)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                  
-                  {/* Quick Stats - Below Avatar on Mobile, Hidden on Desktop */}
-                  <div className="flex gap-4 mt-4 md:hidden">
-                    <div className="text-center">
-                      <div className="font-bold text-lg text-foreground">{posts.length}</div>
-                      <div className="text-xs text-muted-foreground">Posts</div>
+
+                  {/* Profile Info */}
+                  <div className="flex-1 text-center md:text-left min-w-0">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
+                          <h1 className="text-xl md:text-2xl font-bold text-foreground truncate">{profileData.full_name || profileData.username}</h1>
+                          {startups.some(s => s.role === 'founder') && (
+                            <Badge variant="secondary" className="bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs shrink-0">
+                              <Crown className="w-3 h-3 mr-1" />
+                              Founder
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-muted-foreground text-sm">@{profileData.username}</p>
+                        
+                        {/* Status Message */}
+                        {profileData.status_message && (
+                          <p className="mt-2 text-sm italic text-muted-foreground/80">
+                            "{profileData.status_message}"
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Action Buttons - Desktop */}
+                      <div className="hidden md:flex gap-2 shrink-0">
+                        {isOwnProfile ? (
+                          <Button onClick={() => setIsEditModalOpen(true)} variant="outline" size="sm">
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit Profile
+                          </Button>
+                        ) : (
+                          <>
+                            <FollowButton userId={profileData.user_id} />
+                            <MessageButton userId={profileData.user_id} />
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <div className="font-bold text-lg text-foreground">{profileData.followers_count || 0}</div>
-                      <div className="text-xs text-muted-foreground">Followers</div>
+
+                    {/* Info Tags */}
+                    <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mt-3">
+                      {(profileData.university || profileData.major) && (
+                        <Badge variant="secondary" className="bg-primary/5 text-foreground/80 font-normal">
+                          <GraduationCap className="w-3 h-3 mr-1.5 text-primary" />
+                          {[profileData.university, profileData.major].filter(Boolean).join(" • ")}
+                          {profileData.campus_year && <span className="ml-1 text-muted-foreground">'{profileData.campus_year.slice(-2)}</span>}
+                        </Badge>
+                      )}
+                      {locationString && (
+                        <Badge variant="secondary" className="bg-accent/5 text-foreground/80 font-normal">
+                          <MapPin className="w-3 h-3 mr-1.5 text-accent" />
+                          {locationString}
+                        </Badge>
+                      )}
+                      {joinedDate && (
+                        <Badge variant="secondary" className="bg-muted/50 text-foreground/80 font-normal">
+                          <Calendar className="w-3 h-3 mr-1.5 text-muted-foreground" />
+                          Joined {joinedDate}
+                        </Badge>
+                      )}
                     </div>
-                    <div className="text-center">
-                      <div className="font-bold text-lg text-foreground">{profileData.following_count || 0}</div>
-                      <div className="text-xs text-muted-foreground">Following</div>
-                    </div>
+
+                    {/* Bio */}
+                    {profileData.bio && (
+                      <p className="mt-3 text-foreground/80 text-sm leading-relaxed line-clamp-2">{profileData.bio}</p>
+                    )}
                   </div>
                 </div>
 
-                {/* Profile Info */}
-                <div className="flex-1 text-center md:text-left">
-                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                    <div>
-                      <div className="flex items-center justify-center md:justify-start gap-2">
-                        <h1 className="text-2xl font-bold text-foreground">{profileData.full_name || profileData.username}</h1>
-                        {clubs.length > 0 && (
-                          <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
-                            <Sparkles className="w-3 h-3 mr-1" />
-                            Active
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-muted-foreground">@{profileData.username}</p>
-                      
-                      {/* Status Message */}
-                      {profileData.status_message && (
-                        <p className="mt-2 text-sm italic text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-lg inline-block">
-                          "{profileData.status_message}"
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Action Buttons - Desktop */}
-                    <div className="hidden md:flex gap-2">
-                      {isOwnProfile ? (
-                        <Button onClick={() => setIsEditModalOpen(true)} variant="outline" size="sm">
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit Profile
-                        </Button>
-                      ) : (
-                        <>
-                          <FollowButton userId={profileData.user_id} />
-                          <MessageButton userId={profileData.user_id} />
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Info Row */}
-                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-2 mt-4 text-sm text-muted-foreground">
-                    {(profileData.university || profileData.major || profileData.campus_year) && (
-                      <div className="flex items-center gap-1.5">
-                        <GraduationCap className="w-4 h-4 text-primary" />
-                        <span>
-                          {[profileData.university, profileData.major, profileData.campus_year && `'${profileData.campus_year.slice(-2)}`]
-                            .filter(Boolean)
-                            .join(" • ")}
-                        </span>
-                      </div>
-                    )}
-                    {locationString && (
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="w-4 h-4 text-accent" />
-                        <span>{locationString}</span>
-                      </div>
-                    )}
-                    {joinedDate && (
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span>Joined {joinedDate}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Bio */}
-                  {profileData.bio && (
-                    <p className="mt-3 text-foreground/80 text-sm leading-relaxed">{profileData.bio}</p>
+                {/* Mobile Action Buttons */}
+                <div className="flex justify-center gap-3 mt-4 md:hidden">
+                  {isOwnProfile ? (
+                    <Button onClick={() => setIsEditModalOpen(true)} variant="outline" size="sm" className="w-full">
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit Profile
+                    </Button>
+                  ) : (
+                    <>
+                      <FollowButton userId={profileData.user_id} />
+                      <MessageButton userId={profileData.user_id} />
+                    </>
                   )}
+                </div>
+              </div>
 
-                  {/* Desktop Stats Row */}
-                  <div className="hidden md:flex items-center gap-6 mt-4 pt-4 border-t border-border/50">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-foreground">{posts.length}</span>
-                      <span className="text-muted-foreground text-sm">Posts</span>
+              {/* Stats & Social Row */}
+              <div className="px-6 py-4 bg-muted/20 border-t border-border/30">
+                <div className="flex items-center justify-between">
+                  {/* Stats */}
+                  <div className="flex items-center gap-4 md:gap-6">
+                    <div className="text-center">
+                      <div className="font-bold text-foreground">{posts.length}</div>
+                      <div className="text-xs text-muted-foreground">Posts</div>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-foreground">{profileData.followers_count || 0}</span>
-                      <span className="text-muted-foreground text-sm">Followers</span>
+                    <div className="text-center">
+                      <div className="font-bold text-foreground">{profileData.followers_count || 0}</div>
+                      <div className="text-xs text-muted-foreground">Followers</div>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-bold text-foreground">{profileData.following_count || 0}</span>
-                      <span className="text-muted-foreground text-sm">Following</span>
+                    <div className="text-center">
+                      <div className="font-bold text-foreground">{profileData.following_count || 0}</div>
+                      <div className="text-xs text-muted-foreground">Following</div>
                     </div>
-                    {clubs.length > 0 && (
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-foreground">{clubs.length}</span>
-                        <span className="text-muted-foreground text-sm">Clubs</span>
-                      </div>
-                    )}
                     {startups.length > 0 && (
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-foreground">{startups.length}</span>
-                        <span className="text-muted-foreground text-sm">Startups</span>
+                      <div className="text-center hidden sm:block">
+                        <div className="font-bold text-foreground">{startups.length}</div>
+                        <div className="text-xs text-muted-foreground">Startups</div>
                       </div>
                     )}
                   </div>
@@ -490,20 +487,41 @@ export default function Profile() {
                 </div>
               </div>
 
-              {/* Mobile Action Buttons */}
-              <div className="flex justify-center gap-3 mt-4 md:hidden">
-                {isOwnProfile ? (
-                  <Button onClick={() => setIsEditModalOpen(true)} variant="outline" size="sm" className="w-full">
-                    <Edit className="w-4 h-4 mr-2" />
-                    Edit Profile
-                  </Button>
-                ) : (
-                  <>
-                    <FollowButton userId={profileData.user_id} />
-                    <MessageButton userId={profileData.user_id} />
-                  </>
-                )}
-              </div>
+              {/* Clubs Section */}
+              {clubs.length > 0 && (
+                <div className="px-6 py-4 border-t border-border/30">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Users className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium text-foreground">Clubs & Organizations</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {clubs.map((club) => (
+                      <Badge
+                        key={club.id}
+                        variant="secondary"
+                        className="bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer py-1.5 px-3 gap-2"
+                      >
+                        {club.logo_url ? (
+                          <img src={club.logo_url} alt={club.name} className="w-4 h-4 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center">
+                            <Users className="w-2.5 h-2.5 text-primary" />
+                          </div>
+                        )}
+                        <span className="text-foreground/90">{club.name}</span>
+                        {club.role && (
+                          <span className="text-xs text-muted-foreground capitalize flex items-center gap-0.5">
+                            {club.role === 'admin' || club.role === 'owner' ? (
+                              <Shield className="w-3 h-3 text-amber-500" />
+                            ) : null}
+                            {club.role}
+                          </span>
+                        )}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -521,7 +539,7 @@ export default function Profile() {
 
         {/* Two Column Layout for Interests/Affiliations and Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 mt-6">
-          {/* Sidebar - Interests & Affiliations */}
+          {/* Sidebar - Interests & Startups */}
           <div className="lg:col-span-1 space-y-4">
             {/* Interests Card */}
             {(extendedProfile?.interests?.length || studentProfile?.skills?.length) && (
@@ -530,25 +548,44 @@ export default function Profile() {
               </div>
             )}
 
-            {/* Affiliations Card */}
-            {(clubs.length > 0 || startups.length > 0) && (
+            {/* Startups Card */}
+            {startups.length > 0 && (
               <div className="bg-card/50 border border-border/50 rounded-xl p-4">
-                <ProfileAffiliations clubs={clubs} startups={startups} />
+                <div className="flex items-center gap-2 mb-3">
+                  <Rocket className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium text-foreground">Startups</span>
+                </div>
+                <div className="space-y-2">
+                  {startups.map((startup) => (
+                    <div
+                      key={startup.id}
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                    >
+                      {startup.logo_url ? (
+                        <img src={startup.logo_url} alt={startup.name} className="w-8 h-8 rounded-lg object-cover" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Rocket className="w-4 h-4 text-primary" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{startup.name}</p>
+                        <p className="text-xs text-muted-foreground capitalize">{startup.role}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
 
-          {/* Main Content - Posts/About/Media */}
+          {/* Main Content - Posts/Media */}
           <div className="lg:col-span-2">
             <Tabs defaultValue="posts">
-              <TabsList className="w-full grid grid-cols-3 bg-card/50 border border-border/50 rounded-xl p-1">
+              <TabsList className="w-full grid grid-cols-2 bg-card/50 border border-border/50 rounded-xl p-1">
                 <TabsTrigger value="posts" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   <FileText className="w-4 h-4" />
                   <span>Posts</span>
-                </TabsTrigger>
-                <TabsTrigger value="about" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-                  <User className="w-4 h-4" />
-                  <span>About</span>
                 </TabsTrigger>
                 <TabsTrigger value="media" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   <ImageIcon className="w-4 h-4" />
@@ -565,17 +602,6 @@ export default function Profile() {
                     <p className="text-muted-foreground">No posts yet</p>
                   </div>
                 )}
-              </TabsContent>
-
-              <TabsContent value="about">
-                <ProfileAbout
-                  education={studentProfile?.education}
-                  workExperience={studentProfile?.work_experience}
-                  campusGroups={extendedProfile?.campus_groups}
-                  joinedAt={extendedProfile?.created_at}
-                  location={locationString}
-                  certificates={studentProfile?.certificates}
-                />
               </TabsContent>
 
               <TabsContent value="media" className="mt-4">
