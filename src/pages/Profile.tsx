@@ -341,14 +341,14 @@ export default function Profile() {
           </div>
 
           {/* Profile Card - Overlapping Banner */}
-          <div className="relative mx-4 -mt-20 md:-mt-16">
-            <div className="bg-card/95 backdrop-blur-lg border border-border/50 rounded-2xl shadow-xl overflow-hidden">
+          <div className="relative mx-4 -mt-12 md:-mt-8">
+            <div className="bg-card/95 backdrop-blur-lg border border-border/50 rounded-2xl shadow-xl overflow-hidden pt-14 md:pt-16">
               {/* Top Section - Avatar & Main Info */}
               <div className="p-6 pb-4">
                 <div className="flex flex-col md:flex-row gap-5">
                   {/* Avatar */}
-                  <div className="flex flex-col items-center md:items-start shrink-0">
-                    <div className="w-24 h-24 md:w-28 md:h-28 rounded-2xl bg-gradient-to-br from-primary to-accent p-0.5 shadow-lg -mt-16 md:-mt-20">
+                  <div className="flex flex-col items-center md:items-start shrink-0 -mt-20 md:-mt-24">
+                    <div className="w-24 h-24 md:w-28 md:h-28 rounded-2xl bg-gradient-to-br from-primary to-accent p-0.5 shadow-lg">
                       <div className="w-full h-full rounded-2xl bg-card flex items-center justify-center overflow-hidden">
                         {profileData.avatar_url ? (
                           <img
