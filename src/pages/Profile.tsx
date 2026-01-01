@@ -4,16 +4,21 @@ import PostCard from "@/components/post/PostCard";
 import EditProfileModal from "@/components/profile/EditProfileModal";
 import MessageButton from "@/components/profile/MessageButton";
 import FollowButton from "@/components/profile/FollowButton";
+import ProfileSocialLinks from "@/components/profile/ProfileSocialLinks";
+import ProfileInterests from "@/components/profile/ProfileInterests";
+import ProfileAffiliations from "@/components/profile/ProfileAffiliations";
+import ProfileAbout from "@/components/profile/ProfileAbout";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserPlus, UserMinus, Edit, Camera } from "lucide-react";
+import { Edit, GraduationCap, MapPin, Image as ImageIcon, FileText, User } from "lucide-react";
 import MobileHeader from "@/components/layout/MobileHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { useProfileData } from "@/hooks/useProfileData";
 
 interface ProfileData {
   user_id: string;
@@ -31,6 +36,8 @@ interface ProfileData {
   banner_url?: string;
   banner_height?: number;
   banner_position?: number;
+  status_message?: string;
+  campus_year?: string;
 }
 
 interface PostWithProfile {
@@ -44,13 +51,10 @@ interface PostWithProfile {
   views_count: number;
   user_id: string;
   hashtags?: string[];
-
-  // ⭐ ADD poll + survey fields
   poll_question?: string | null;
   poll_options?: any | null;
   poll_ends_at?: string | null;
   survey_questions?: any | null;
-
   profiles: {
     username: string;
     full_name: string;
@@ -73,8 +77,6 @@ interface TransformedPost {
   user_username: string;
   user_university?: string;
   hashtags?: string[];
-
-  // ⭐ ADD poll + survey fields
   poll_question?: string | null;
   poll_options?: any | null;
   poll_ends_at?: string | null;
@@ -97,6 +99,9 @@ export default function Profile() {
 
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [bannerHeight, setBannerHeight] = useState<number>(180);
+
+  // Extended profile data
+  const { studentProfile, extendedProfile, clubs, startups } = useProfileData(profileUserId);
 
   useEffect(() => {
     if (profileData?.banner_url) setBannerUrl(profileData.banner_url);
@@ -150,7 +155,6 @@ export default function Profile() {
 
   const fetchUserPosts = async (userId: string) => {
     try {
-      // ⭐ FIX: Fetch posts WITH poll & survey fields
       const { data: postsData, error: postsError } = await supabase
         .from("posts")
         .select(
@@ -165,12 +169,11 @@ export default function Profile() {
           comments_count,
           views_count,
           hashtags,
-
           poll_question,
           poll_options,
           poll_ends_at,
           survey_questions
-        `,
+        `
         )
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
@@ -201,7 +204,7 @@ export default function Profile() {
       const { data, error } = await supabase
         .from("profiles")
         .select(
-          "user_id, username, full_name, avatar_url, university, major, bio, followers_count, following_count, country, state, area, banner_url, banner_height, banner_position",
+          "user_id, username, full_name, avatar_url, university, major, bio, followers_count, following_count, country, state, area, banner_url, banner_height, banner_position, status_message, campus_year"
         )
         .eq("user_id", userId)
         .single();
@@ -271,14 +274,19 @@ export default function Profile() {
       user_username: post.profiles.username,
       user_university: post.profiles.university,
       hashtags: post.hashtags || [],
-
-      // ⭐ PASS poll & survey fields to PostCard
       poll_question: post.poll_question,
       poll_options: post.poll_options,
       poll_ends_at: post.poll_ends_at,
       survey_questions: post.survey_questions,
     }));
   };
+
+  // Filter posts with media
+  const mediaPosts = posts.filter((post) => post.image_url || (post.image_urls && post.image_urls.length > 0));
+
+  // Build location string
+  const locationParts = [profileData?.area, profileData?.state, profileData?.country].filter(Boolean);
+  const locationString = locationParts.join(", ");
 
   if (loading)
     return (
@@ -294,6 +302,7 @@ export default function Profile() {
     );
 
   const transformedPosts = transformPostsForPostCard(posts);
+  const transformedMediaPosts = transformPostsForPostCard(mediaPosts);
 
   return (
     <Layout>
@@ -316,7 +325,7 @@ export default function Profile() {
           >
             {isOwnProfile && (
               <button
-                className="absolute top-3 right-3 bg-black/60 text-white rounded-full p-2 hover:bg-black/80 transition"
+                className="absolute top-3 right-3 bg-background/60 text-foreground rounded-full p-2 hover:bg-background/80 transition"
                 onClick={() => setIsEditModalOpen(true)}
                 aria-label="Edit banner"
               >
@@ -334,7 +343,7 @@ export default function Profile() {
                   className="w-full h-full object-cover rounded-full"
                 />
               ) : (
-                <span className="text-3xl font-bold text-white">
+                <span className="text-3xl font-bold text-primary-foreground">
                   {profileData.full_name?.charAt(0) || profileData.username?.charAt(0)}
                 </span>
               )}
@@ -343,11 +352,49 @@ export default function Profile() {
         </div>
 
         {/* Profile Info */}
-        <div className="pt-10 pb-4 px-4 text-center">
+        <div className="pt-12 pb-4 px-4 text-center">
           <h1 className="text-2xl font-bold text-foreground">{profileData.full_name || profileData.username}</h1>
           <p className="text-muted-foreground">@{profileData.username}</p>
-          {profileData.bio && <p className="mt-2 text-foreground/80">{profileData.bio}</p>}
 
+          {/* Status Message */}
+          {profileData.status_message && (
+            <p className="mt-2 text-sm italic text-muted-foreground">"{profileData.status_message}"</p>
+          )}
+
+          {/* University, Major, Year */}
+          {(profileData.university || profileData.major || profileData.campus_year) && (
+            <div className="flex items-center justify-center gap-2 mt-2 text-sm text-muted-foreground">
+              <GraduationCap className="w-4 h-4" />
+              <span>
+                {[profileData.university, profileData.major, profileData.campus_year && `Class of ${profileData.campus_year}`]
+                  .filter(Boolean)
+                  .join(" • ")}
+              </span>
+            </div>
+          )}
+
+          {/* Location */}
+          {locationString && (
+            <div className="flex items-center justify-center gap-1.5 mt-1 text-sm text-muted-foreground">
+              <MapPin className="w-4 h-4" />
+              <span>{locationString}</span>
+            </div>
+          )}
+
+          {/* Bio */}
+          {profileData.bio && <p className="mt-3 text-foreground/80">{profileData.bio}</p>}
+
+          {/* Social Links */}
+          <ProfileSocialLinks
+            linkedinUrl={extendedProfile?.linkedin_url}
+            instagramUrl={extendedProfile?.instagram_url}
+            twitterUrl={extendedProfile?.twitter_url}
+            websiteUrl={extendedProfile?.website_url}
+            githubUrl={studentProfile?.github_url}
+            portfolioUrl={studentProfile?.portfolio_url}
+          />
+
+          {/* Stats */}
           <div className="flex justify-center gap-6 mt-4">
             <div className="text-center">
               <div className="font-bold text-lg">{posts.length}</div>
@@ -361,8 +408,21 @@ export default function Profile() {
               <div className="font-bold text-lg">{profileData.following_count || 0}</div>
               <div className="text-muted-foreground text-sm">Following</div>
             </div>
+            {clubs.length > 0 && (
+              <div className="text-center">
+                <div className="font-bold text-lg">{clubs.length}</div>
+                <div className="text-muted-foreground text-sm">Clubs</div>
+              </div>
+            )}
+            {startups.length > 0 && (
+              <div className="text-center">
+                <div className="font-bold text-lg">{startups.length}</div>
+                <div className="text-muted-foreground text-sm">Startups</div>
+              </div>
+            )}
           </div>
 
+          {/* Action Buttons */}
           <div className="flex justify-center gap-3 mt-4">
             {isOwnProfile ? (
               <Button onClick={() => setIsEditModalOpen(true)} variant="outline" size="sm">
@@ -376,16 +436,58 @@ export default function Profile() {
               </>
             )}
           </div>
+
+          {/* Interests & Skills */}
+          <ProfileInterests interests={extendedProfile?.interests} skills={studentProfile?.skills} />
+
+          {/* Affiliations */}
+          <ProfileAffiliations clubs={clubs} startups={startups} />
         </div>
 
-        {/* POSTS */}
-        <div className="space-y-4 px-4">
-          {transformedPosts.length > 0 ? (
-            transformedPosts.map((post) => <PostCard key={post.id} post={post} />)
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">No posts yet</div>
-          )}
-        </div>
+        {/* Tabs Section */}
+        <Tabs defaultValue="posts" className="px-4 mt-2">
+          <TabsList className="w-full grid grid-cols-3 bg-muted/50">
+            <TabsTrigger value="posts" className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">Posts</span>
+            </TabsTrigger>
+            <TabsTrigger value="about" className="flex items-center gap-2">
+              <User className="w-4 h-4" />
+              <span className="hidden sm:inline">About</span>
+            </TabsTrigger>
+            <TabsTrigger value="media" className="flex items-center gap-2">
+              <ImageIcon className="w-4 h-4" />
+              <span className="hidden sm:inline">Media</span>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="posts" className="mt-4 space-y-4">
+            {transformedPosts.length > 0 ? (
+              transformedPosts.map((post) => <PostCard key={post.id} post={post} />)
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">No posts yet</div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="about">
+            <ProfileAbout
+              education={studentProfile?.education}
+              workExperience={studentProfile?.work_experience}
+              campusGroups={extendedProfile?.campus_groups}
+              joinedAt={extendedProfile?.created_at}
+              location={locationString}
+              certificates={studentProfile?.certificates}
+            />
+          </TabsContent>
+
+          <TabsContent value="media" className="mt-4 space-y-4">
+            {transformedMediaPosts.length > 0 ? (
+              transformedMediaPosts.map((post) => <PostCard key={post.id} post={post} />)
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">No media posts yet</div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
 
       <EditProfileModal
