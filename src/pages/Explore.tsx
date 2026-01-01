@@ -224,143 +224,7 @@ export default function Explore() {
   };
 
   // -----------------------------------------------------------------
-  // SEARCH RESULTS SCREEN
-  // -----------------------------------------------------------------
-  if (searchQuery) {
-    return (
-      <Layout>
-        {isMobile && <MobileHeader />}
-        <div className={`space-y-6 ${isMobile ? 'px-4 pt-4 pb-20' : 'px-4 mt-6 max-w-2xl mx-auto'}`}>
-          {/* SEARCH BAR */}
-          <div className="flex items-center gap-3 mb-4">
-            <button 
-              onClick={() => {
-                setSearchQuery("");
-                setSearchClubs([]);
-                setSearchPosts([]);
-                setSearchType(null);
-              }} 
-              className="p-2 hover:bg-muted rounded-full transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Search users, hashtags, or universities..."
-                value={searchQuery}
-                onChange={handleSearch}
-                className="w-full pl-10 pr-4 py-2 bg-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </div>
-          </div>
-
-          {/* LOADING STATE */}
-          {(searchPostsLoading || loading) && (
-            <div className="text-center py-8">
-              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-            </div>
-          )}
-
-          {/* CLUBS SECTION (for university search) */}
-          {!searchPostsLoading && searchClubs.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Clubs & Organizations
-              </h2>
-              <div className="space-y-3">
-                {searchClubs.map((club) => (
-                  <div
-                    key={club.id}
-                    onClick={() => handleClubClick(club.id)}
-                    className="flex items-center gap-4 p-4 bg-card border border-border rounded-lg hover:bg-muted cursor-pointer transition-colors"
-                  >
-                    <Avatar className="w-12 h-12">
-                      <AvatarImage src={club.logo_url || undefined} alt={club.club_name} />
-                      <AvatarFallback className="bg-primary/10 text-primary">
-                        {club.club_name.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold truncate">{club.club_name}</p>
-                      {club.category && (
-                        <p className="text-xs text-primary">{club.category}</p>
-                      )}
-                      {club.club_description && (
-                        <p className="text-sm text-muted-foreground line-clamp-1">
-                          {club.club_description}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">{club.member_count || 0}</p>
-                      <p className="text-xs text-muted-foreground">members</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* POSTS SECTION */}
-          {!searchPostsLoading && searchPosts.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold">
-                {searchType === "hashtag" ? `Posts with #${searchQuery.slice(1)}` : "Posts"}
-              </h2>
-              {searchPosts.map((post) => (
-                <PostCard key={post.id} post={post} onHashtagClick={handleHashtagClick} />
-              ))}
-            </div>
-          )}
-
-          {/* USERS SECTION */}
-          {!loading && users.length > 0 && searchType !== "hashtag" && (
-            <div className="space-y-4">
-              <h2 className="text-lg font-semibold">Users</h2>
-              <div className="space-y-2">
-                {users.map((u) => (
-                  <div
-                    key={u.id}
-                    onClick={() => handleUserClick(u.username || "")}
-                    className="flex items-center gap-3 p-3 hover:bg-muted rounded-lg cursor-pointer"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      {u.avatar_url ? (
-                        <img src={u.avatar_url} className="w-full h-full rounded-full object-cover" alt="" />
-                      ) : (
-                        <User className="w-5 h-5 text-primary" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium">{u.full_name || u.username}</p>
-                      <p className="text-sm text-muted-foreground">@{u.username}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* NO RESULTS */}
-          {!searchPostsLoading && !loading && 
-            searchPosts.length === 0 && 
-            searchClubs.length === 0 && 
-            users.length === 0 && 
-            searchQuery && (
-              <div className="post-card p-8 text-center">
-                <p className="text-muted-foreground">No results found for "{searchQuery}"</p>
-              </div>
-            )}
-        </div>
-      </Layout>
-    );
-  }
-
-  // -----------------------------------------------------------------
-  // MAIN EXPLORE PAGE (WITHOUT SEARCH)
+  // RENDER
   // -----------------------------------------------------------------
   return (
     <Layout>
@@ -368,35 +232,157 @@ export default function Explore() {
 
       <div className={`${isMobile ? 'px-4 pt-4 pb-20' : 'flex gap-6 px-4 max-w-7xl mx-auto'}`}>
         {/* CENTER COLUMN */}
-        <div className={`${isMobile ? 'space-y-6' : 'flex-1 max-w-2xl space-y-10 mt-6 pb-12'}`}>
+        <div className={`${isMobile ? 'space-y-6' : 'flex-1 max-w-2xl space-y-6 mt-6 pb-12'}`}>
           {/* SEARCH BAR */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search users, hashtags, or universities..."
-              value={searchQuery}
-              onChange={handleSearch}
-              className="w-full pl-10 pr-4 py-2 bg-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-            />
+          <div className={`flex items-center gap-3 ${searchQuery ? '' : ''}`}>
+            {searchQuery && (
+              <button 
+                onClick={() => {
+                  setSearchQuery("");
+                  setSearchClubs([]);
+                  setSearchPosts([]);
+                  setSearchType(null);
+                }} 
+                className="p-2 hover:bg-muted rounded-full transition-colors flex-shrink-0"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+            )}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search users, hashtags, or universities..."
+                value={searchQuery}
+                onChange={handleSearch}
+                className="w-full pl-10 pr-4 py-2 bg-muted rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+              />
+            </div>
           </div>
 
-          <TrendingHashtagsRow onHashtagClick={handleHashtagClick} />
+          {/* SEARCH RESULTS */}
+          {searchQuery ? (
+            <div className="space-y-6">
+              {/* LOADING STATE */}
+              {(searchPostsLoading || loading) && (
+                <div className="text-center py-8">
+                  <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+                </div>
+              )}
 
-          <HeroBanner />
+              {/* CLUBS SECTION (for university search) */}
+              {!searchPostsLoading && searchClubs.length > 0 && (
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    Clubs & Organizations
+                  </h2>
+                  <div className="space-y-3">
+                    {searchClubs.map((club) => (
+                      <div
+                        key={club.id}
+                        onClick={() => handleClubClick(club.id)}
+                        className="flex items-center gap-4 p-4 bg-card border border-border rounded-lg hover:bg-muted cursor-pointer transition-colors"
+                      >
+                        <Avatar className="w-12 h-12">
+                          <AvatarImage src={club.logo_url || undefined} alt={club.club_name} />
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            {club.club_name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold truncate">{club.club_name}</p>
+                          {club.category && (
+                            <p className="text-xs text-primary">{club.category}</p>
+                          )}
+                          {club.club_description && (
+                            <p className="text-sm text-muted-foreground line-clamp-1">
+                              {club.club_description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium">{club.member_count || 0}</p>
+                          <p className="text-xs text-muted-foreground">members</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-          {/* ⭐ TRENDING POSTS MUST NOT SHOW POLL/SURVEY */}
-          <TrendingPostsRow excludePolls />
+              {/* POSTS SECTION */}
+              {!searchPostsLoading && searchPosts.length > 0 && (
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold">
+                    {searchType === "hashtag" ? `Posts with #${searchQuery.slice(1)}` : "Posts"}
+                  </h2>
+                  {searchPosts.map((post) => (
+                    <PostCard key={post.id} post={post} onHashtagClick={handleHashtagClick} />
+                  ))}
+                </div>
+              )}
 
-          <TrendingUniversitiesRow onUniversityClick={handleUniversityClick} />
+              {/* USERS SECTION */}
+              {!loading && users.length > 0 && searchType !== "hashtag" && (
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold">Users</h2>
+                  <div className="space-y-2">
+                    {users.map((u) => (
+                      <div
+                        key={u.id}
+                        onClick={() => handleUserClick(u.username || "")}
+                        className="flex items-center gap-3 p-3 hover:bg-muted rounded-lg cursor-pointer"
+                      >
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          {u.avatar_url ? (
+                            <img src={u.avatar_url} className="w-full h-full rounded-full object-cover" alt="" />
+                          ) : (
+                            <User className="w-5 h-5 text-primary" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium">{u.full_name || u.username}</p>
+                          <p className="text-sm text-muted-foreground">@{u.username}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-          <UpcomingEventsRow />
+              {/* NO RESULTS */}
+              {!searchPostsLoading && !loading && 
+                searchPosts.length === 0 && 
+                searchClubs.length === 0 && 
+                users.length === 0 && (
+                  <div className="post-card p-8 text-center">
+                    <p className="text-muted-foreground">No results found for "{searchQuery}"</p>
+                  </div>
+                )}
+            </div>
+          ) : (
+            /* MAIN EXPLORE CONTENT */
+            <div className="space-y-10">
+              <TrendingHashtagsRow onHashtagClick={handleHashtagClick} />
 
-          <StudentStartupsRow />
+              <HeroBanner />
 
-          <TaggedPostsRow />
+              {/* ⭐ TRENDING POSTS MUST NOT SHOW POLL/SURVEY */}
+              <TrendingPostsRow excludePolls />
+
+              <TrendingUniversitiesRow onUniversityClick={handleUniversityClick} />
+
+              <UpcomingEventsRow />
+
+              <StudentStartupsRow />
+
+              <TaggedPostsRow />
+            </div>
+          )}
         </div>
       </div>
+
       {/* RIGHT SIDEBAR - Fixed to right edge */}
       {!isMobile && (
         <div className="hidden xl:block fixed right-0 top-0 h-screen w-80 border-l overflow-y-auto p-4">
