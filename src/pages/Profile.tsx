@@ -8,10 +8,12 @@ import ProfileSocialLinks from "@/components/profile/ProfileSocialLinks";
 import ProfileInterests from "@/components/profile/ProfileInterests";
 import ProfileAffiliations from "@/components/profile/ProfileAffiliations";
 import ProfileAbout from "@/components/profile/ProfileAbout";
+import ProfileCompletionBar from "@/components/profile/ProfileCompletionBar";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Edit, GraduationCap, MapPin, Image as ImageIcon, FileText, User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Edit, GraduationCap, MapPin, Image as ImageIcon, FileText, User, Calendar, Sparkles } from "lucide-react";
 import MobileHeader from "@/components/layout/MobileHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,6 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useProfileData } from "@/hooks/useProfileData";
+import { format } from "date-fns";
 
 interface ProfileData {
   user_id: string;
@@ -304,190 +307,300 @@ export default function Profile() {
   const transformedPosts = transformPostsForPostCard(posts);
   const transformedMediaPosts = transformPostsForPostCard(mediaPosts);
 
+  // Format joined date
+  const joinedDate = extendedProfile?.created_at
+    ? format(new Date(extendedProfile.created_at), "MMMM yyyy")
+    : null;
+
   return (
     <Layout>
       {isMobile && <MobileHeader />}
 
-      <div className="max-w-2xl mx-auto">
-        {/* Banner Section */}
+      <div className="max-w-4xl mx-auto">
+        {/* Banner Section with overlapping content */}
         <div className="relative">
           <div
-            className="w-full bg-muted/30 rounded-b-xl overflow-hidden"
+            className="w-full h-48 md:h-56 bg-gradient-to-br from-primary/20 via-accent/10 to-primary/5 overflow-hidden"
             style={{
-              aspectRatio: "3/1",
               backgroundImage: bannerUrl ? `url(${bannerUrl})` : undefined,
               backgroundSize: "cover",
               backgroundPosition: `center ${profileData.banner_position || 50}%`,
-              position: "relative",
-              borderBottomRightRadius: 0,
-              borderBottomLeftRadius: 0,
             }}
           >
+            {/* Gradient overlay for better text contrast */}
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
+            
             {isOwnProfile && (
               <button
-                className="absolute top-3 right-3 bg-background/60 text-foreground rounded-full p-2 hover:bg-background/80 transition"
+                className="absolute top-4 right-4 bg-background/60 backdrop-blur-sm text-foreground rounded-full p-2.5 hover:bg-background/80 transition-all border border-border/50"
                 onClick={() => setIsEditModalOpen(true)}
                 aria-label="Edit banner"
               >
-                <Edit className="w-5 h-5" />
+                <Edit className="w-4 h-4" />
               </button>
             )}
           </div>
 
-          <div className="absolute left-1/2 -bottom-10 transform -translate-x-1/2">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-accent border-4 border-background flex items-center justify-center shadow-lg">
-              {profileData.avatar_url ? (
-                <img
-                  src={profileData.avatar_url}
-                  alt={profileData.full_name || profileData.username}
-                  className="w-full h-full object-cover rounded-full"
-                />
-              ) : (
-                <span className="text-3xl font-bold text-primary-foreground">
-                  {profileData.full_name?.charAt(0) || profileData.username?.charAt(0)}
-                </span>
-              )}
+          {/* Profile Card - Overlapping Banner */}
+          <div className="relative mx-4 -mt-20 md:-mt-16">
+            <div className="bg-card/95 backdrop-blur-lg border border-border/50 rounded-2xl p-6 shadow-xl">
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* Avatar */}
+                <div className="flex flex-col items-center md:items-start">
+                  <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-primary to-accent p-0.5 shadow-lg -mt-16 md:-mt-20">
+                    <div className="w-full h-full rounded-2xl bg-card flex items-center justify-center overflow-hidden">
+                      {profileData.avatar_url ? (
+                        <img
+                          src={profileData.avatar_url}
+                          alt={profileData.full_name || profileData.username}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-4xl font-bold text-primary">
+                          {profileData.full_name?.charAt(0) || profileData.username?.charAt(0)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Quick Stats - Below Avatar on Mobile, Hidden on Desktop */}
+                  <div className="flex gap-4 mt-4 md:hidden">
+                    <div className="text-center">
+                      <div className="font-bold text-lg text-foreground">{posts.length}</div>
+                      <div className="text-xs text-muted-foreground">Posts</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-bold text-lg text-foreground">{profileData.followers_count || 0}</div>
+                      <div className="text-xs text-muted-foreground">Followers</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-bold text-lg text-foreground">{profileData.following_count || 0}</div>
+                      <div className="text-xs text-muted-foreground">Following</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Profile Info */}
+                <div className="flex-1 text-center md:text-left">
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div>
+                      <div className="flex items-center justify-center md:justify-start gap-2">
+                        <h1 className="text-2xl font-bold text-foreground">{profileData.full_name || profileData.username}</h1>
+                        {clubs.length > 0 && (
+                          <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
+                            <Sparkles className="w-3 h-3 mr-1" />
+                            Active
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-muted-foreground">@{profileData.username}</p>
+                      
+                      {/* Status Message */}
+                      {profileData.status_message && (
+                        <p className="mt-2 text-sm italic text-muted-foreground bg-muted/30 px-3 py-1.5 rounded-lg inline-block">
+                          "{profileData.status_message}"
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Action Buttons - Desktop */}
+                    <div className="hidden md:flex gap-2">
+                      {isOwnProfile ? (
+                        <Button onClick={() => setIsEditModalOpen(true)} variant="outline" size="sm">
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit Profile
+                        </Button>
+                      ) : (
+                        <>
+                          <FollowButton userId={profileData.user_id} />
+                          <MessageButton userId={profileData.user_id} />
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Info Row */}
+                  <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-4 gap-y-2 mt-4 text-sm text-muted-foreground">
+                    {(profileData.university || profileData.major || profileData.campus_year) && (
+                      <div className="flex items-center gap-1.5">
+                        <GraduationCap className="w-4 h-4 text-primary" />
+                        <span>
+                          {[profileData.university, profileData.major, profileData.campus_year && `'${profileData.campus_year.slice(-2)}`]
+                            .filter(Boolean)
+                            .join(" • ")}
+                        </span>
+                      </div>
+                    )}
+                    {locationString && (
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="w-4 h-4 text-accent" />
+                        <span>{locationString}</span>
+                      </div>
+                    )}
+                    {joinedDate && (
+                      <div className="flex items-center gap-1.5">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <span>Joined {joinedDate}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Bio */}
+                  {profileData.bio && (
+                    <p className="mt-3 text-foreground/80 text-sm leading-relaxed">{profileData.bio}</p>
+                  )}
+
+                  {/* Desktop Stats Row */}
+                  <div className="hidden md:flex items-center gap-6 mt-4 pt-4 border-t border-border/50">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-foreground">{posts.length}</span>
+                      <span className="text-muted-foreground text-sm">Posts</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-foreground">{profileData.followers_count || 0}</span>
+                      <span className="text-muted-foreground text-sm">Followers</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-bold text-foreground">{profileData.following_count || 0}</span>
+                      <span className="text-muted-foreground text-sm">Following</span>
+                    </div>
+                    {clubs.length > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-foreground">{clubs.length}</span>
+                        <span className="text-muted-foreground text-sm">Clubs</span>
+                      </div>
+                    )}
+                    {startups.length > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-foreground">{startups.length}</span>
+                        <span className="text-muted-foreground text-sm">Startups</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Social Links */}
+                  <ProfileSocialLinks
+                    linkedinUrl={extendedProfile?.linkedin_url}
+                    instagramUrl={extendedProfile?.instagram_url}
+                    twitterUrl={extendedProfile?.twitter_url}
+                    websiteUrl={extendedProfile?.website_url}
+                    githubUrl={studentProfile?.github_url}
+                    portfolioUrl={studentProfile?.portfolio_url}
+                  />
+                </div>
+              </div>
+
+              {/* Mobile Action Buttons */}
+              <div className="flex justify-center gap-3 mt-4 md:hidden">
+                {isOwnProfile ? (
+                  <Button onClick={() => setIsEditModalOpen(true)} variant="outline" size="sm" className="w-full">
+                    <Edit className="w-4 h-4 mr-2" />
+                    Edit Profile
+                  </Button>
+                ) : (
+                  <>
+                    <FollowButton userId={profileData.user_id} />
+                    <MessageButton userId={profileData.user_id} />
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Profile Info */}
-        <div className="pt-12 pb-4 px-4 text-center">
-          <h1 className="text-2xl font-bold text-foreground">{profileData.full_name || profileData.username}</h1>
-          <p className="text-muted-foreground">@{profileData.username}</p>
-
-          {/* Status Message */}
-          {profileData.status_message && (
-            <p className="mt-2 text-sm italic text-muted-foreground">"{profileData.status_message}"</p>
-          )}
-
-          {/* University, Major, Year */}
-          {(profileData.university || profileData.major || profileData.campus_year) && (
-            <div className="flex items-center justify-center gap-2 mt-2 text-sm text-muted-foreground">
-              <GraduationCap className="w-4 h-4" />
-              <span>
-                {[profileData.university, profileData.major, profileData.campus_year && `Class of ${profileData.campus_year}`]
-                  .filter(Boolean)
-                  .join(" • ")}
-              </span>
-            </div>
-          )}
-
-          {/* Location */}
-          {locationString && (
-            <div className="flex items-center justify-center gap-1.5 mt-1 text-sm text-muted-foreground">
-              <MapPin className="w-4 h-4" />
-              <span>{locationString}</span>
-            </div>
-          )}
-
-          {/* Bio */}
-          {profileData.bio && <p className="mt-3 text-foreground/80">{profileData.bio}</p>}
-
-          {/* Social Links */}
-          <ProfileSocialLinks
-            linkedinUrl={extendedProfile?.linkedin_url}
-            instagramUrl={extendedProfile?.instagram_url}
-            twitterUrl={extendedProfile?.twitter_url}
-            websiteUrl={extendedProfile?.website_url}
-            githubUrl={studentProfile?.github_url}
-            portfolioUrl={studentProfile?.portfolio_url}
-          />
-
-          {/* Stats */}
-          <div className="flex justify-center gap-6 mt-4">
-            <div className="text-center">
-              <div className="font-bold text-lg">{posts.length}</div>
-              <div className="text-muted-foreground text-sm">Posts</div>
-            </div>
-            <div className="text-center">
-              <div className="font-bold text-lg">{profileData.followers_count || 0}</div>
-              <div className="text-muted-foreground text-sm">Followers</div>
-            </div>
-            <div className="text-center">
-              <div className="font-bold text-lg">{profileData.following_count || 0}</div>
-              <div className="text-muted-foreground text-sm">Following</div>
-            </div>
-            {clubs.length > 0 && (
-              <div className="text-center">
-                <div className="font-bold text-lg">{clubs.length}</div>
-                <div className="text-muted-foreground text-sm">Clubs</div>
-              </div>
-            )}
-            {startups.length > 0 && (
-              <div className="text-center">
-                <div className="font-bold text-lg">{startups.length}</div>
-                <div className="text-muted-foreground text-sm">Startups</div>
-              </div>
-            )}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-center gap-3 mt-4">
-            {isOwnProfile ? (
-              <Button onClick={() => setIsEditModalOpen(true)} variant="outline" size="sm">
-                <Edit className="w-4 h-4 mr-2" />
-                Edit Profile
-              </Button>
-            ) : (
-              <>
-                <FollowButton userId={profileData.user_id} />
-                <MessageButton userId={profileData.user_id} />
-              </>
-            )}
-          </div>
-
-          {/* Interests & Skills */}
-          <ProfileInterests interests={extendedProfile?.interests} skills={studentProfile?.skills} />
-
-          {/* Affiliations */}
-          <ProfileAffiliations clubs={clubs} startups={startups} />
-        </div>
-
-        {/* Tabs Section */}
-        <Tabs defaultValue="posts" className="px-4 mt-2">
-          <TabsList className="w-full grid grid-cols-3 bg-muted/50">
-            <TabsTrigger value="posts" className="flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              <span className="hidden sm:inline">Posts</span>
-            </TabsTrigger>
-            <TabsTrigger value="about" className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              <span className="hidden sm:inline">About</span>
-            </TabsTrigger>
-            <TabsTrigger value="media" className="flex items-center gap-2">
-              <ImageIcon className="w-4 h-4" />
-              <span className="hidden sm:inline">Media</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="posts" className="mt-4 space-y-4">
-            {transformedPosts.length > 0 ? (
-              transformedPosts.map((post) => <PostCard key={post.id} post={post} />)
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">No posts yet</div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="about">
-            <ProfileAbout
-              education={studentProfile?.education}
-              workExperience={studentProfile?.work_experience}
-              campusGroups={extendedProfile?.campus_groups}
-              joinedAt={extendedProfile?.created_at}
-              location={locationString}
-              certificates={studentProfile?.certificates}
+        {/* Profile Completion Bar - Only for own profile */}
+        {isOwnProfile && (
+          <div className="mx-4 mt-4">
+            <ProfileCompletionBar
+              profileData={profileData}
+              extendedProfile={extendedProfile}
+              studentProfile={studentProfile}
             />
-          </TabsContent>
+          </div>
+        )}
 
-          <TabsContent value="media" className="mt-4 space-y-4">
-            {transformedMediaPosts.length > 0 ? (
-              transformedMediaPosts.map((post) => <PostCard key={post.id} post={post} />)
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">No media posts yet</div>
+        {/* Two Column Layout for Interests/Affiliations and Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 mt-6">
+          {/* Sidebar - Interests & Affiliations */}
+          <div className="lg:col-span-1 space-y-4">
+            {/* Interests Card */}
+            {(extendedProfile?.interests?.length || studentProfile?.skills?.length) && (
+              <div className="bg-card/50 border border-border/50 rounded-xl p-4">
+                <ProfileInterests interests={extendedProfile?.interests} skills={studentProfile?.skills} />
+              </div>
             )}
-          </TabsContent>
-        </Tabs>
+
+            {/* Affiliations Card */}
+            {(clubs.length > 0 || startups.length > 0) && (
+              <div className="bg-card/50 border border-border/50 rounded-xl p-4">
+                <ProfileAffiliations clubs={clubs} startups={startups} />
+              </div>
+            )}
+          </div>
+
+          {/* Main Content - Posts/About/Media */}
+          <div className="lg:col-span-2">
+            <Tabs defaultValue="posts">
+              <TabsList className="w-full grid grid-cols-3 bg-card/50 border border-border/50 rounded-xl p-1">
+                <TabsTrigger value="posts" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <FileText className="w-4 h-4" />
+                  <span>Posts</span>
+                </TabsTrigger>
+                <TabsTrigger value="about" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <User className="w-4 h-4" />
+                  <span>About</span>
+                </TabsTrigger>
+                <TabsTrigger value="media" className="flex items-center gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                  <ImageIcon className="w-4 h-4" />
+                  <span>Media</span>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="posts" className="mt-4 space-y-4">
+                {transformedPosts.length > 0 ? (
+                  transformedPosts.map((post) => <PostCard key={post.id} post={post} />)
+                ) : (
+                  <div className="text-center py-12 bg-card/30 rounded-xl border border-border/30">
+                    <FileText className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+                    <p className="text-muted-foreground">No posts yet</p>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="about">
+                <ProfileAbout
+                  education={studentProfile?.education}
+                  workExperience={studentProfile?.work_experience}
+                  campusGroups={extendedProfile?.campus_groups}
+                  joinedAt={extendedProfile?.created_at}
+                  location={locationString}
+                  certificates={studentProfile?.certificates}
+                />
+              </TabsContent>
+
+              <TabsContent value="media" className="mt-4">
+                {transformedMediaPosts.length > 0 ? (
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {transformedMediaPosts.map((post) => (
+                      <div key={post.id} className="aspect-square rounded-xl overflow-hidden bg-muted/30 border border-border/30 hover:border-primary/50 transition-all cursor-pointer">
+                        <img
+                          src={post.image_url || post.image_urls?.[0]}
+                          alt=""
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 bg-card/30 rounded-xl border border-border/30">
+                    <ImageIcon className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
+                    <p className="text-muted-foreground">No media posts yet</p>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
       </div>
 
       <EditProfileModal
