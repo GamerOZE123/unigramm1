@@ -87,19 +87,28 @@ export function useProfileData(userId: string | null) {
         // Fetch club memberships
         const { data: clubMemberships } = await supabase
           .from("club_memberships")
-          .select("role, clubs:club_id(id, name, logo_url)")
+          .select("role, club_id")
           .eq("user_id", userId);
 
-        if (clubMemberships) {
-          const clubAffiliations: ClubAffiliation[] = clubMemberships
-            .filter((m) => m.clubs)
-            .map((m) => ({
-              id: (m.clubs as any).id,
-              name: (m.clubs as any).name,
-              logo_url: (m.clubs as any).logo_url,
-              role: m.role,
-            }));
-          setClubs(clubAffiliations);
+        if (clubMemberships && clubMemberships.length > 0) {
+          const clubIds = clubMemberships.map((m) => m.club_id);
+          const { data: clubsData } = await supabase
+            .from("clubs_profiles")
+            .select("id, club_name, logo_url")
+            .in("id", clubIds);
+
+          if (clubsData) {
+            const clubAffiliations: ClubAffiliation[] = clubsData.map((club) => {
+              const membership = clubMemberships.find((m) => m.club_id === club.id);
+              return {
+                id: club.id,
+                name: club.club_name,
+                logo_url: club.logo_url,
+                role: membership?.role || "member",
+              };
+            });
+            setClubs(clubAffiliations);
+          }
         }
 
         // Fetch startup contributions
