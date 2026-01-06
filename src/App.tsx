@@ -21,6 +21,7 @@ import NotFound from '@/pages/NotFound';
 import Post from '@/pages/Post';
 import Fitness from '@/pages/Fitness';
 import Advertising from '@/pages/Advertising';
+import AdvertisingPost from '@/pages/AdvertisingPost';
 import AllPosts from '@/pages/AllPosts';
 import Startups from '@/pages/Startups';
 import StartupDetail from '@/pages/StartupDetail';
@@ -53,6 +54,7 @@ function App() {
               <Route path="/clubs" element={<ProtectedRoute><Clubs /></ProtectedRoute>} />
               <Route path="/clubs/:clubId" element={<ProtectedRoute><ClubDetail /></ProtectedRoute>} />
               <Route path="/advertising" element={<ProtectedRoute><Advertising /></ProtectedRoute>} />
+              <Route path="/ad/:postId" element={<ProtectedRoute><AdvertisingPost /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
               <Route path="/fitness" element={<ProtectedRoute><Fitness /></ProtectedRoute>} />
               <Route path="/post/:postId" element={<ProtectedRoute><Post /></ProtectedRoute>} />

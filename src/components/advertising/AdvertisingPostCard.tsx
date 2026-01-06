@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Heart, ExternalLink, TrendingUp, MoreHorizontal, Eye, Info } from 'lucide-react';
+import { Heart, ExternalLink, TrendingUp, MoreHorizontal, Eye } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import ImageDisplayComponent from '@/components/post/ImageDisplayComponent';
 import { useAdvertisingPostViews } from '@/hooks/useAdvertisingPostViews';
 import { useViewportTracker } from '@/hooks/useViewportTracker';
-import AdvertisingPostDetailModal from './AdvertisingPostDetailModal';
+import { useNavigate } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,13 +47,12 @@ export default function AdvertisingPostCard({
   post, 
   onLikeUpdate,
   isLiked = false,
-  showDetailModal = false
 }: AdvertisingPostCardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [liked, setLiked] = useState(isLiked);
   const [likesCount, setLikesCount] = useState(post.likes_count);
-  const [showDetail, setShowDetail] = useState(false);
   const { recordAdvertisingPostView } = useAdvertisingPostViews();
   
   // Track when ad enters viewport to record view
@@ -74,34 +72,12 @@ export default function AdvertisingPostCard({
   };
 
   const handleCardClick = () => {
-    setShowDetail(true);
+    // Navigate to the ad post detail page (like regular posts)
+    navigate(`/ad/${post.id}`);
   };
 
-  const handleImageClick = async (e: React.MouseEvent) => {
+  const handleVisitSite = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    try {
-      // Track the click
-      await supabase
-        .from('advertising_clicks')
-        .insert({
-          advertising_post_id: post.id,
-          user_id: user?.id || null,
-          ip_address: null,
-          user_agent: navigator.userAgent
-        });
-
-      // Open the URL in a new tab
-      window.open(post.redirect_url, '_blank', 'noopener,noreferrer');
-    } catch (error) {
-      console.error('Error tracking click:', error);
-      // Still redirect even if tracking fails
-      window.open(post.redirect_url, '_blank', 'noopener,noreferrer');
-    }
-  };
-
-  const handleVisitSite = async () => {
-    setShowDetail(false);
     
     try {
       // Track the click
@@ -166,31 +142,6 @@ export default function AdvertisingPostCard({
         title: "Error",
         description: "Failed to update like. Please try again.",
         variant: "destructive"
-      });
-    }
-  };
-
-  const handleComment = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    // For ads, show the detail modal
-    setShowDetail(true);
-  };
-
-  const handleShare = () => {
-    // For ads, we could share the ad URL
-    if (navigator.share) {
-      navigator.share({
-        title: post.title,
-        text: post.description || '',
-        url: post.redirect_url
-      });
-    } else {
-      // Fallback to copying URL
-      navigator.clipboard.writeText(post.redirect_url);
-      toast({
-        title: "Link copied",
-        description: "Ad link copied to clipboard",
       });
     }
   };
@@ -278,8 +229,8 @@ export default function AdvertisingPostCard({
         </div>
       </div>
 
-      {/* Image - Progressive Loading - Clicking redirects to website */}
-      <div className="flex justify-center cursor-pointer" onClick={handleImageClick}>
+      {/* Image - Uses ImageDisplayComponent with built-in modal (like regular posts) */}
+      <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
         <ImageDisplayComponent 
           imageUrl={post.image_medium_url || post.image_url}
           alt={post.title}
@@ -304,40 +255,25 @@ export default function AdvertisingPostCard({
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleComment}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/ad/${post.id}`);
+            }}
             className="flex items-center gap-2 hover:bg-muted/50"
           >
             <TrendingUp className="w-5 h-5" />
             <span className="font-medium">{post.click_count}</span>
           </Button>
           
-          {showDetailModal ? (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowDetail(true);
-              }}
-              className="flex items-center gap-2 hover:bg-muted/50"
-            >
-              <Info className="w-5 h-5" />
-              <span className="font-medium">Details</span>
-            </Button>
-          ) : (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={(e) => {
-                e.stopPropagation();
-                handleShare();
-              }}
-              className="flex items-center gap-2 hover:bg-muted/50"
-            >
-              <ExternalLink className="w-5 h-5" />
-              <span className="font-medium">Visit</span>
-            </Button>
-          )}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleVisitSite}
+            className="flex items-center gap-2 hover:bg-muted/50"
+          >
+            <ExternalLink className="w-5 h-5" />
+            <span className="font-medium">Visit</span>
+          </Button>
 
           {/* Views Count */}
           {post.views_count > 0 && (
@@ -348,14 +284,6 @@ export default function AdvertisingPostCard({
           )}
         </div>
       </div>
-
-      {/* Detail Modal */}
-      <AdvertisingPostDetailModal
-        post={post}
-        open={showDetail}
-        onOpenChange={setShowDetail}
-        onVisitSite={handleVisitSite}
-      />
     </div>
   );
 }
