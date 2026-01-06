@@ -91,7 +91,7 @@ export default function Home() {
               mixedPost.type === "regular" ? (
                 <PostCard key={`regular-${mixedPost.data.id}`} post={mixedPost.data as TransformedPost} />
               ) : (
-                <AdvertisingPostCard key={`ad-${mixedPost.data.id}`} post={mixedPost.data as AdvertisingPost} />
+                <AdvertisingPostCard key={`ad-${mixedPost.data.id}`} post={mixedPost.data as AdvertisingPost} showDetailModal={true} />
               ),
             )
           ) : (
