@@ -73,12 +73,13 @@ export default function AdvertisingPostCard({
     return `${Math.floor(diffInSeconds / 86400)}d`;
   };
 
-  const handleClick = async () => {
-    if (showDetailModal) {
-      setShowDetail(true);
-      return;
-    }
+  const handleCardClick = () => {
+    setShowDetail(true);
+  };
 
+  const handleImageClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
     try {
       // Track the click
       await supabase
@@ -86,7 +87,7 @@ export default function AdvertisingPostCard({
         .insert({
           advertising_post_id: post.id,
           user_id: user?.id || null,
-          ip_address: null, // Could be populated from IP detection service
+          ip_address: null,
           user_agent: navigator.userAgent
         });
 
@@ -172,8 +173,8 @@ export default function AdvertisingPostCard({
   const handleComment = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // For ads, we could show a modal or redirect to the ad's page
-    handleClick();
+    // For ads, show the detail modal
+    setShowDetail(true);
   };
 
   const handleShare = () => {
@@ -203,7 +204,7 @@ export default function AdvertisingPostCard({
     <div 
       ref={adRef}
       className="cursor-pointer hover:bg-muted/20 transition-colors overflow-hidden group w-full p-4 space-y-3 border-b border-border"
-      onClick={handleClick}
+      onClick={handleCardClick}
     >
       {/* Header - Similar to PostHeader */}
       <div className="flex gap-3">
@@ -277,8 +278,8 @@ export default function AdvertisingPostCard({
         </div>
       </div>
 
-      {/* Image - Progressive Loading */}
-      <div className="flex justify-center">
+      {/* Image - Progressive Loading - Clicking redirects to website */}
+      <div className="flex justify-center cursor-pointer" onClick={handleImageClick}>
         <ImageDisplayComponent 
           imageUrl={post.image_medium_url || post.image_url}
           alt={post.title}

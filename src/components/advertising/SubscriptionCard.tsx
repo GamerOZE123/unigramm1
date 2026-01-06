@@ -68,13 +68,13 @@ export default function SubscriptionCard({ onUpgradeClick }: SubscriptionCardPro
         .from('company_profiles')
         .select('monthly_posts_used, monthly_posts_limit')
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) throw profileError;
       setCompanyProfile(profileData);
     } catch (error: any) {
       console.error('Error fetching subscription data:', error);
-      toast.error('Failed to load subscription data');
+      // Don't show error toast for missing data - it's expected for new users
     } finally {
       setLoading(false);
     }
