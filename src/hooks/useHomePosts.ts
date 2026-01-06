@@ -279,17 +279,35 @@ const fetchTargetedAds = async (profile: UserProfile | null) => {
   if (!data) return [];
 
   const ids = [...new Set(data.map((a) => a.company_id))];
-  const { data: companies } = await supabase.from("company_profiles").select("*").in("user_id", ids); // No overload matches error likely due to Supabase type inference on return array
+  
+  // Fetch company profiles and user profiles in parallel
+  const [{ data: companies }, { data: profiles }] = await Promise.all([
+    supabase.from("company_profiles").select("user_id, company_name, logo_url").in("user_id", ids),
+    supabase.from("profiles").select("user_id, full_name, avatar_url").in("user_id", ids),
+  ]);
 
-  const map = (companies ?? []).reduce((m: any, c: any) => {
+  const companyMap = (companies ?? []).reduce((m: any, c: any) => {
     m[c.user_id] = c;
     return m;
   }, {});
 
-  const ads = data.map((a) => ({
-    ...a,
-    company_profiles: map[a.company_id] ?? { company_name: "Advertiser" },
-  }));
+  const profileMap = (profiles ?? []).reduce((m: any, p: any) => {
+    m[p.user_id] = p;
+    return m;
+  }, {});
+
+  const ads = data.map((a) => {
+    const company = companyMap[a.company_id];
+    const userProfile = profileMap[a.company_id];
+    
+    return {
+      ...a,
+      company_profiles: {
+        company_name: company?.company_name || userProfile?.full_name || "Advertiser",
+        logo_url: company?.logo_url || userProfile?.avatar_url,
+      },
+    };
+  });
 
   if (!profile) return ads;
 
