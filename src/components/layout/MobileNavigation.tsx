@@ -1,17 +1,17 @@
 
 import React, { useState, useEffect } from 'react';
-import { Home, MessageCircle, User, Search, GraduationCap } from 'lucide-react';
+import { Home, MessageCircle, User, Search, Bell } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import { useNotifications } from '@/hooks/useNotifications';
 
 const baseNavigation = [
   { name: 'Home', href: '/home', icon: Home },
-  { name: 'Explore', href: '/explore', icon: Search },
-  { name: 'University', href: '/university', icon: GraduationCap },
   { name: 'Chat', href: '/chat', icon: MessageCircle },
+  { name: 'Notifications', href: '/notifications', icon: Bell },
 ];
 
 export default function MobileNavigation() {
@@ -20,6 +20,7 @@ export default function MobileNavigation() {
   const { user } = useAuth();
   const [username, setUsername] = useState<string | null>(null);
   const { unreadCount } = useUnreadMessages();
+  const { unreadCount: notificationCount } = useNotifications();
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -46,7 +47,10 @@ export default function MobileNavigation() {
       <div className="grid grid-cols-5 h-16">
         {baseNavigation.map((item) => {
           const isActive = location.pathname === item.href;
-          const showBadge = item.name === 'Chat' && unreadCount > 0;
+          const showChatBadge = item.name === 'Chat' && unreadCount > 0;
+          const showNotificationBadge = item.name === 'Notifications' && notificationCount > 0;
+          const badgeCount = item.name === 'Chat' ? unreadCount : notificationCount;
+          const showBadge = showChatBadge || showNotificationBadge;
           return (
             <NavLink
               key={item.name}
@@ -67,9 +71,9 @@ export default function MobileNavigation() {
               <div className="relative">
                 <item.icon className={cn('w-5 h-5', isActive && 'text-primary')} />
                 {showBadge && (
-                  <div className="absolute -top-1 -right-2 min-w-[16px] h-4 bg-red-500 rounded-full flex items-center justify-center px-1">
-                    <span className="text-[10px] text-white font-bold">
-                      {unreadCount > 99 ? '99+' : unreadCount}
+                  <div className="absolute -top-1 -right-2 min-w-[16px] h-4 bg-destructive rounded-full flex items-center justify-center px-1">
+                    <span className="text-[10px] text-destructive-foreground font-bold">
+                      {badgeCount > 99 ? '99+' : badgeCount}
                     </span>
                   </div>
                 )}

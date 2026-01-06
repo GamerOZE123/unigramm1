@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useUnreadMessages } from '@/hooks/useUnreadMessages';
+import { useNotifications } from '@/hooks/useNotifications';
 
 const baseNavigation = [
   { name: 'Home', href: '/home', icon: Home },
@@ -23,6 +24,7 @@ export default function Sidebar() {
   const [userType, setUserType] = useState<string>('Student');
   const [profile, setProfile] = useState<any>(null);
   const { unreadCount } = useUnreadMessages();
+  const { unreadCount: notificationCount } = useNotifications();
 
   useEffect(() => {
     fetchUserData();
@@ -147,10 +149,19 @@ export default function Sidebar() {
                 navigate('/notifications');
               }
             }}
-            className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted/50 relative"
           >
-            <Bell className="w-4 h-4 mr-2" />
-            <span className="text-sm">Notifications</span>
+            <div className="relative">
+              <Bell className="w-4 h-4" />
+              {notificationCount > 0 && (
+                <div className="absolute -top-1 -right-1 min-w-[14px] h-3.5 bg-destructive rounded-full flex items-center justify-center px-0.5">
+                  <span className="text-[9px] text-destructive-foreground font-bold">
+                    {notificationCount > 99 ? '99+' : notificationCount}
+                  </span>
+                </div>
+              )}
+            </div>
+            <span className="text-sm ml-2">Notifications</span>
           </Button>
           <Button 
             variant="ghost"
