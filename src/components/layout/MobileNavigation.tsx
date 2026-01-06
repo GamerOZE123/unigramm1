@@ -5,6 +5,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 
 const baseNavigation = [
   { name: 'Home', href: '/home', icon: Home },
@@ -18,6 +19,7 @@ export default function MobileNavigation() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [username, setUsername] = useState<string | null>(null);
+  const { unreadCount } = useUnreadMessages();
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -44,6 +46,7 @@ export default function MobileNavigation() {
       <div className="grid grid-cols-5 h-16">
         {baseNavigation.map((item) => {
           const isActive = location.pathname === item.href;
+          const showBadge = item.name === 'Chat' && unreadCount > 0;
           return (
             <NavLink
               key={item.name}
@@ -55,13 +58,22 @@ export default function MobileNavigation() {
                 }
               }}
               className={cn(
-                'flex flex-col items-center justify-center gap-1 transition-colors',
+                'flex flex-col items-center justify-center gap-1 transition-colors relative',
                 isActive 
                   ? 'text-primary' 
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              <item.icon className={cn('w-5 h-5', isActive && 'text-primary')} />
+              <div className="relative">
+                <item.icon className={cn('w-5 h-5', isActive && 'text-primary')} />
+                {showBadge && (
+                  <div className="absolute -top-1 -right-2 min-w-[16px] h-4 bg-red-500 rounded-full flex items-center justify-center px-1">
+                    <span className="text-[10px] text-white font-bold">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  </div>
+                )}
+              </div>
               <span className="text-xs font-medium">{item.name}</span>
               {isActive && (
                 <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-primary rounded-full" />
