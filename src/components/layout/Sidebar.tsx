@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
+import { useUnreadMessages } from '@/hooks/useUnreadMessages';
 
 const baseNavigation = [
   { name: 'Home', href: '/home', icon: Home },
@@ -21,6 +22,7 @@ export default function Sidebar() {
   const { signOut, user } = useAuth();
   const [userType, setUserType] = useState<string>('Student');
   const [profile, setProfile] = useState<any>(null);
+  const { unreadCount } = useUnreadMessages();
 
   useEffect(() => {
     fetchUserData();
@@ -80,6 +82,7 @@ export default function Sidebar() {
           <ul className="space-y-2">
             {baseNavigation.map((item) => {
               const isActive = location.pathname === item.href;
+              const showBadge = item.name === 'Chat' && unreadCount > 0;
               return (
                 <li key={item.name}>
                   <NavLink
@@ -95,7 +98,16 @@ export default function Sidebar() {
                       isActive && 'active'
                     )}
                   >
-                    <item.icon className="w-5 h-5" />
+                    <div className="relative">
+                      <item.icon className="w-5 h-5" />
+                      {showBadge && (
+                        <div className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 rounded-full flex items-center justify-center px-1">
+                          <span className="text-[10px] text-white font-bold">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                     <span className="font-medium">{item.name}</span>
                   </NavLink>
                 </li>
