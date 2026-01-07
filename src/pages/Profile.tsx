@@ -209,7 +209,16 @@ export default function Profile() {
     }
   };
 
+  const MAX_PINNED_POSTS = 3;
+  const pinnedPostsCount = posts.filter(p => p.is_pinned).length;
+
   const handlePinPost = async (postId: string, currentlyPinned: boolean) => {
+    // Check limit when trying to pin
+    if (!currentlyPinned && pinnedPostsCount >= MAX_PINNED_POSTS) {
+      toast.error(`You can only pin up to ${MAX_PINNED_POSTS} posts`);
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from("posts")
