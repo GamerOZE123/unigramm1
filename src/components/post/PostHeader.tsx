@@ -1,5 +1,5 @@
 import React from 'react';
-import { MoreHorizontal, Edit, Trash, CheckCircle2, Rocket } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash, CheckCircle2, Rocket, Pin, PinOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -19,6 +19,8 @@ interface PostHeaderProps {
   isOwnPost?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
+  onPin?: () => void;
+  isPinned?: boolean;
   userId?: string; // Add userId for profile navigation
   hashtags?: string[];
   onHashtagClick?: (hashtag: string, e: React.MouseEvent) => void;
@@ -36,6 +38,8 @@ export default function PostHeader({
   isOwnPost = false, 
   onEdit, 
   onDelete,
+  onPin,
+  isPinned = false,
   userId,
   hashtags,
   onHashtagClick,
@@ -117,6 +121,24 @@ export default function PostHeader({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPin?.();
+                  }}
+                >
+                  {isPinned ? (
+                    <>
+                      <PinOff className="w-4 h-4 mr-2" />
+                      Unpin from Profile
+                    </>
+                  ) : (
+                    <>
+                      <Pin className="w-4 h-4 mr-2" />
+                      Pin to Profile
+                    </>
+                  )}
+                </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={(e) => {
                     e.stopPropagation();

@@ -13,7 +13,7 @@ import ProfileCompletionBar from "@/components/profile/ProfileCompletionBar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Edit, GraduationCap, MapPin, Image as ImageIcon, FileText, Calendar, Sparkles, Users, Rocket, Crown, Shield } from "lucide-react";
+import { Edit, GraduationCap, MapPin, Image as ImageIcon, FileText, Calendar, Sparkles, Users, Rocket, Crown, Shield, Pin } from "lucide-react";
 import MobileHeader from "@/components/layout/MobileHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
@@ -58,6 +58,7 @@ interface PostWithProfile {
   poll_options?: any | null;
   poll_ends_at?: string | null;
   survey_questions?: any | null;
+  is_pinned?: boolean;
   profiles: {
     username: string;
     full_name: string;
@@ -78,12 +79,14 @@ interface TransformedPost {
   user_id: string;
   user_name: string;
   user_username: string;
+  user_avatar?: string;
   user_university?: string;
   hashtags?: string[];
   poll_question?: string | null;
   poll_options?: any | null;
   poll_ends_at?: string | null;
   survey_questions?: any | null;
+  is_pinned?: boolean;
 }
 
 export default function Profile() {
@@ -177,10 +180,12 @@ export default function Profile() {
           poll_question,
           poll_options,
           poll_ends_at,
-          survey_questions
+          survey_questions,
+          is_pinned
         `
         )
         .eq("user_id", userId)
+        .order("is_pinned", { ascending: false })
         .order("created_at", { ascending: false });
 
       if (postsError) throw postsError;
@@ -201,6 +206,23 @@ export default function Profile() {
       setPosts(postsWithProfile);
     } catch (error) {
       console.error("Error fetching user posts:", error);
+    }
+  };
+
+  const handlePinPost = async (postId: string, currentlyPinned: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("posts")
+        .update({ is_pinned: !currentlyPinned })
+        .eq("id", postId);
+
+      if (error) throw error;
+      
+      toast.success(currentlyPinned ? "Post unpinned from profile" : "Post pinned to profile");
+      if (profileUserId) fetchUserPosts(profileUserId);
+    } catch (error) {
+      console.error("Error pinning/unpinning post:", error);
+      toast.error("Failed to update pin status");
     }
   };
 
@@ -277,12 +299,14 @@ export default function Profile() {
       user_id: post.user_id,
       user_name: post.profiles.full_name || post.profiles.username,
       user_username: post.profiles.username,
+      user_avatar: post.profiles.avatar_url,
       user_university: post.profiles.university,
       hashtags: post.hashtags || [],
       poll_question: post.poll_question,
       poll_options: post.poll_options,
       poll_ends_at: post.poll_ends_at,
       survey_questions: post.survey_questions,
+      is_pinned: post.is_pinned,
     }));
   };
 
@@ -602,7 +626,20 @@ export default function Profile() {
 
               <TabsContent value="posts" className="mt-4 space-y-4">
                 {transformedPosts.length > 0 ? (
-                  transformedPosts.map((post) => <PostCard key={post.id} post={post} />)
+                  transformedPosts.map((post) => (
+                    <div key={post.id} className="relative">
+                      {post.is_pinned && (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground bg-muted/50 border-b border-border/50">
+                          <Pin className="w-3 h-3" />
+                          <span>Pinned post</span>
+                        </div>
+                      )}
+                      <PostCard 
+                        post={post} 
+                        onPin={isOwnProfile ? handlePinPost : undefined}
+                      />
+                    </div>
+                  ))
                 ) : (
                   <div className="text-center py-12 bg-card/30 rounded-xl border border-border/30">
                     <FileText className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />

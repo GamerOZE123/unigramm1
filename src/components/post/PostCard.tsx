@@ -30,6 +30,8 @@ interface Post {
   user_id?: string;
   user_name?: string;
   user_username?: string;
+  user_avatar?: string;
+  is_pinned?: boolean;
   profiles?: {
     username: string;
     full_name: string;
@@ -52,9 +54,10 @@ interface PostCardProps {
   onShare?: () => void;
   onPostUpdated?: () => void;
   onHashtagClick?: (hashtag: string) => void;
+  onPin?: (postId: string, currentlyPinned: boolean) => void;
 }
 
-export default function PostCard({ post, onLike, onComment, onShare, onPostUpdated, onHashtagClick }: PostCardProps) {
+export default function PostCard({ post, onLike, onComment, onShare, onPostUpdated, onHashtagClick, onPin }: PostCardProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [showEditModal, setShowEditModal] = useState(false);
@@ -116,8 +119,12 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
   // Extract user info
   const username = post.profiles?.username || post.user_username || "user";
   const fullName = post.profiles?.full_name || post.user_name || "Anonymous User";
-  const avatarUrl = post.profiles?.avatar_url;
+  const avatarUrl = post.profiles?.avatar_url || post.user_avatar;
   const isOwnPost = user?.id === post.user_id;
+
+  const handlePinClick = () => {
+    onPin?.(post.id, post.is_pinned ?? false);
+  };
 
   return (
     <>
@@ -133,6 +140,8 @@ export default function PostCard({ post, onLike, onComment, onShare, onPostUpdat
             isOwnPost={isOwnPost}
             onEdit={() => setShowEditModal(true)}
             onDelete={handleDeletePost}
+            onPin={handlePinClick}
+            isPinned={post.is_pinned}
             userId={post.user_id}
             hashtags={post.hashtags}
             onHashtagClick={handleHashtagClickInternal}
