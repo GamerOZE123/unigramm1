@@ -306,6 +306,17 @@ export default function ClubDetail() {
                       </Button>
                     )}
                     
+                    {/* For students who are NOT members - show Request/Cancel button */}
+                    {!permissions.isOwner && userType === 'student' && !isMember && (
+                      <Button
+                        onClick={handleRequestToJoin}
+                        variant={hasPendingRequest ? "outline" : "default"}
+                      >
+                        {hasPendingRequest ? "Cancel Request" : "Request to Join"}
+                      </Button>
+                    )}
+
+                    {/* For students who ARE members - show Leave button */}
                     {!permissions.isOwner && userType === 'student' && isMember && (
                       <Button
                         onClick={handleLeaveClub}
