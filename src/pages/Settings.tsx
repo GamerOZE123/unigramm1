@@ -17,6 +17,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { User, Bell, Lock, Shield, LogOut, Moon, Sun, Eye, Trash2, Camera } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { AcademicStatusSection } from "@/components/settings/AcademicStatusSection";
 
 export default function Settings() {
   const isMobile = useIsMobile();
@@ -499,6 +500,9 @@ export default function Settings() {
         </TabsContent>
 
         <TabsContent value="account" className="space-y-4 mt-6">
+          {/* Academic Status Section */}
+          <AcademicStatusSection />
+
           <Card>
             <CardHeader>
               <CardTitle>Account Management</CardTitle>

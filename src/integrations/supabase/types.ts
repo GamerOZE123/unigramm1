@@ -155,6 +155,56 @@ export type Database = {
         }
         Relationships: []
       }
+      alumni_verifications: {
+        Row: {
+          created_at: string | null
+          document_url: string | null
+          id: string
+          linkedin_profile_url: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          reviewer_notes: string | null
+          status: string | null
+          submitted_at: string | null
+          user_id: string
+          verification_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          document_url?: string | null
+          id?: string
+          linkedin_profile_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          user_id: string
+          verification_type: string
+        }
+        Update: {
+          created_at?: string | null
+          document_url?: string | null
+          id?: string
+          linkedin_profile_url?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          reviewer_notes?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          user_id?: string
+          verification_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alumni_verifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       anonymous_message_reactions: {
         Row: {
           created_at: string
@@ -2115,6 +2165,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          academic_year: string | null
+          account_status: string | null
           area: string | null
           avatar_url: string | null
           banner_height: number | null
@@ -2126,17 +2178,21 @@ export type Database = {
           country: string | null
           created_at: string
           email: string | null
+          expected_graduation_year: number | null
           followers_count: number | null
           following_count: number | null
           full_name: string | null
+          graduated_at: string | null
           id: string
           instagram_url: string | null
           interests: string[] | null
           linkedin_url: string | null
           major: string | null
+          personal_email: string | null
           preferred_event_types: string[] | null
           profile_completed: boolean | null
           profile_completion_date: string | null
+          start_year: number | null
           state: string | null
           status_message: string | null
           twitter_url: string | null
@@ -2148,6 +2204,8 @@ export type Database = {
           website_url: string | null
         }
         Insert: {
+          academic_year?: string | null
+          account_status?: string | null
           area?: string | null
           avatar_url?: string | null
           banner_height?: number | null
@@ -2159,17 +2217,21 @@ export type Database = {
           country?: string | null
           created_at?: string
           email?: string | null
+          expected_graduation_year?: number | null
           followers_count?: number | null
           following_count?: number | null
           full_name?: string | null
+          graduated_at?: string | null
           id?: string
           instagram_url?: string | null
           interests?: string[] | null
           linkedin_url?: string | null
           major?: string | null
+          personal_email?: string | null
           preferred_event_types?: string[] | null
           profile_completed?: boolean | null
           profile_completion_date?: string | null
+          start_year?: number | null
           state?: string | null
           status_message?: string | null
           twitter_url?: string | null
@@ -2181,6 +2243,8 @@ export type Database = {
           website_url?: string | null
         }
         Update: {
+          academic_year?: string | null
+          account_status?: string | null
           area?: string | null
           avatar_url?: string | null
           banner_height?: number | null
@@ -2192,17 +2256,21 @@ export type Database = {
           country?: string | null
           created_at?: string
           email?: string | null
+          expected_graduation_year?: number | null
           followers_count?: number | null
           following_count?: number | null
           full_name?: string | null
+          graduated_at?: string | null
           id?: string
           instagram_url?: string | null
           interests?: string[] | null
           linkedin_url?: string | null
           major?: string | null
+          personal_email?: string | null
           preferred_event_types?: string[] | null
           profile_completed?: boolean | null
           profile_completion_date?: string | null
+          start_year?: number | null
           state?: string | null
           status_message?: string | null
           twitter_url?: string | null
@@ -2829,23 +2897,73 @@ export type Database = {
       universities: {
         Row: {
           abbreviation: string
+          allow_graduation_button: boolean | null
           created_at: string | null
           id: string
           name: string
+          program_duration_years: number | null
         }
         Insert: {
           abbreviation: string
+          allow_graduation_button?: boolean | null
           created_at?: string | null
           id?: string
           name: string
+          program_duration_years?: number | null
         }
         Update: {
           abbreviation?: string
+          allow_graduation_button?: boolean | null
           created_at?: string | null
           id?: string
           name?: string
+          program_duration_years?: number | null
         }
         Relationships: []
+      }
+      university_reviews: {
+        Row: {
+          created_at: string | null
+          graduation_year: number | null
+          helpful_count: number | null
+          id: string
+          major: string | null
+          rating: number | null
+          review_text: string
+          university: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          graduation_year?: number | null
+          helpful_count?: number | null
+          id?: string
+          major?: string | null
+          rating?: number | null
+          review_text: string
+          university: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          graduation_year?: number | null
+          helpful_count?: number | null
+          id?: string
+          major?: string | null
+          rating?: number | null
+          review_text?: string
+          university?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "university_reviews_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       user_presence: {
         Row: {
@@ -3011,6 +3129,71 @@ export type Database = {
         }
         Relationships: []
       }
+      year_reviews: {
+        Row: {
+          academic_year_number: number
+          academics_rating: number | null
+          advice_for_juniors: string | null
+          campus_rating: number | null
+          career_rating: number | null
+          clubs_rating: number | null
+          created_at: string | null
+          id: string
+          is_public: boolean | null
+          overall_rating: number | null
+          social_rating: number | null
+          user_id: string
+          what_was_bad: string | null
+          what_went_well: string | null
+          wrapped_data: Json | null
+          year_completed: number
+        }
+        Insert: {
+          academic_year_number: number
+          academics_rating?: number | null
+          advice_for_juniors?: string | null
+          campus_rating?: number | null
+          career_rating?: number | null
+          clubs_rating?: number | null
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          overall_rating?: number | null
+          social_rating?: number | null
+          user_id: string
+          what_was_bad?: string | null
+          what_went_well?: string | null
+          wrapped_data?: Json | null
+          year_completed: number
+        }
+        Update: {
+          academic_year_number?: number
+          academics_rating?: number | null
+          advice_for_juniors?: string | null
+          campus_rating?: number | null
+          career_rating?: number | null
+          clubs_rating?: number | null
+          created_at?: string | null
+          id?: string
+          is_public?: boolean | null
+          overall_rating?: number | null
+          social_rating?: number | null
+          user_id?: string
+          what_was_bad?: string | null
+          what_went_well?: string | null
+          wrapped_data?: Json | null
+          year_completed?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "year_reviews_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
     }
     Views: {
       ranked_posts: {
@@ -3142,6 +3325,8 @@ export type Database = {
       get_public_profiles: {
         Args: never
         Returns: {
+          academic_year: string | null
+          account_status: string | null
           area: string | null
           avatar_url: string | null
           banner_height: number | null
@@ -3153,17 +3338,21 @@ export type Database = {
           country: string | null
           created_at: string
           email: string | null
+          expected_graduation_year: number | null
           followers_count: number | null
           following_count: number | null
           full_name: string | null
+          graduated_at: string | null
           id: string
           instagram_url: string | null
           interests: string[] | null
           linkedin_url: string | null
           major: string | null
+          personal_email: string | null
           preferred_event_types: string[] | null
           profile_completed: boolean | null
           profile_completion_date: string | null
+          start_year: number | null
           state: string | null
           status_message: string | null
           twitter_url: string | null

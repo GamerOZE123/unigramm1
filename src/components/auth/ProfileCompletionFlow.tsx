@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { ChevronLeft } from 'lucide-react';
 import { useProfileCompletion } from '@/hooks/useProfileCompletion';
 import { MajorStep } from './onboarding/MajorStep';
+import { AcademicTimelineStep } from './onboarding/AcademicTimelineStep';
 import { ProfilePictureStep } from './onboarding/ProfilePictureStep';
 import { BannerStep } from './onboarding/BannerStep';
 import { InterestsStep } from './onboarding/InterestsStep';
