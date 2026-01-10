@@ -48,11 +48,12 @@ export const useGraduationEligibility = () => {
         // Check if university allows graduation button
         let graduationButtonEnabled = false;
         if (profile?.university) {
+          // Try matching by abbreviation first, then by name
           const { data: university } = await supabase
             .from('universities')
             .select('allow_graduation_button')
-            .eq('name', profile.university)
-            .single();
+            .or(`abbreviation.eq.${profile.university},name.eq.${profile.university}`)
+            .maybeSingle();
 
           graduationButtonEnabled = university?.allow_graduation_button || false;
         }
