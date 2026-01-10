@@ -41,8 +41,8 @@ export const useGraduationEligibility = () => {
 
         if (profileError) throw profileError;
 
-        // Determine if final year
-        const finalYears = ['4th Year', '5th Year', 'Graduate', 'PhD'];
+        // Determine if final year (includes common typos)
+        const finalYears = ['4th Year', '4nd Year', '5th Year', 'Graduate', 'PhD', 'Final Year'];
         const isFinalYear = finalYears.includes(profile?.academic_year || '');
 
         // Check if university allows graduation button
