@@ -1,13 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { GraduationCap, Calendar, Award, AlertCircle, Sparkles } from 'lucide-react';
+import { GraduationCap, Calendar, Award, AlertCircle, Sparkles, MessageSquare, CheckCircle, Clock, FileCheck } from 'lucide-react';
 import { useGraduationEligibility } from '@/hooks/useGraduationEligibility';
 import { useYearEligibility } from '@/hooks/useYearEligibility';
 import { AccountBadge } from '@/components/alumni/AccountBadge';
 import GraduationWrappedModal from '@/components/alumni/GraduationWrappedModal';
 import YearWrappedModal from '@/components/alumni/YearWrappedModal';
+import AlumniVerificationModal from '@/components/alumni/AlumniVerificationModal';
+import UniversityReviewModal from '@/components/alumni/UniversityReviewModal';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const yearButtonLabels: Record<string, string> = {
   '1st Year': '1st Year Complete ✨',
@@ -21,9 +25,20 @@ const yearButtonLabels: Record<string, string> = {
   'Final Year': 'I Graduated 🎓',
 };
 
+interface VerificationStatus {
+  status: 'none' | 'pending' | 'approved' | 'rejected';
+  verificationType?: string;
+  submittedAt?: string;
+}
+
 export const AcademicStatusSection = () => {
+  const { user } = useAuth();
   const [showWrappedModal, setShowWrappedModal] = useState(false);
   const [showYearWrappedModal, setShowYearWrappedModal] = useState(false);
+  const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>({ status: 'none' });
+  const [hasReviewed, setHasReviewed] = useState(false);
   
   const { 
     canGraduate, 
@@ -44,6 +59,56 @@ export const AcademicStatusSection = () => {
   } = useYearEligibility();
 
   const loading = graduationLoading || yearLoading;
+
+  // Fetch verification status
+  useEffect(() => {
+    const fetchVerificationStatus = async () => {
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('alumni_verifications')
+        .select('status, verification_type, submitted_at')
+        .eq('user_id', user.id)
+        .order('submitted_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!error && data) {
+        setVerificationStatus({
+          status: data.status as 'pending' | 'approved' | 'rejected',
+          verificationType: data.verification_type,
+          submittedAt: data.submitted_at,
+        });
+      }
+    };
+
+    // Check if user has left a review
+    const checkReview = async () => {
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('university')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profile?.university) {
+        const { data, error } = await supabase
+          .from('university_reviews')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('university', profile.university)
+          .maybeSingle();
+
+        if (!error && data) {
+          setHasReviewed(true);
+        }
+      }
+    };
+
+    fetchVerificationStatus();
+    checkReview();
+  }, [user]);
 
   if (loading) {
     return (
@@ -66,6 +131,49 @@ export const AcademicStatusSection = () => {
       setShowWrappedModal(true);
     } else {
       setShowYearWrappedModal(true);
+    }
+  };
+
+  const renderVerificationStatus = () => {
+    switch (verificationStatus.status) {
+      case 'pending':
+        return (
+          <div className="flex items-center justify-between p-4 border rounded-lg border-amber-500/30 bg-amber-500/5">
+            <div className="flex items-center gap-3">
+              <Clock className="h-5 w-5 text-amber-500" />
+              <div>
+                <p className="font-medium text-amber-600 dark:text-amber-400">Verification Pending</p>
+                <p className="text-sm text-muted-foreground">
+                  We're reviewing your {verificationStatus.verificationType} submission
+                </p>
+              </div>
+            </div>
+            <Badge variant="outline" className="border-amber-500/50 text-amber-600">
+              In Review
+            </Badge>
+          </div>
+        );
+      case 'approved':
+        return null; // Will show verified alumni status instead
+      case 'rejected':
+        return (
+          <div className="flex items-center justify-between p-4 border rounded-lg border-destructive/30 bg-destructive/5">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              <div>
+                <p className="font-medium text-destructive">Verification Not Approved</p>
+                <p className="text-sm text-muted-foreground">
+                  Please try again with different documents
+                </p>
+              </div>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setShowVerificationModal(true)}>
+              Retry
+            </Button>
+          </div>
+        );
+      default:
+        return null;
     }
   };
 
@@ -186,30 +294,68 @@ export const AcademicStatusSection = () => {
           {/* Alumni Verification (for alumni) */}
           {isAlumni && accountStatus === 'alumni' && (
             <div className="pt-4 border-t space-y-4">
-              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+              {/* Show verification status if exists */}
+              {renderVerificationStatus()}
+
+              {/* Show verification CTA if not pending */}
+              {verificationStatus.status !== 'pending' && (
+                <>
+                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <Award className="h-5 w-5 text-amber-500 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-amber-600 dark:text-amber-400">Become a Verified Alumni</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Upload your degree certificate or connect LinkedIn to get verified and unlock exclusive benefits.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => setShowVerificationModal(true)}
+                  >
+                    <FileCheck className="h-5 w-5 mr-2" />
+                    Start Verification
+                  </Button>
+                </>
+              )}
+
+              {/* University Review CTA */}
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
                 <div className="flex items-start gap-3">
-                  <Award className="h-5 w-5 text-amber-500 mt-0.5" />
+                  <MessageSquare className="h-5 w-5 text-primary mt-0.5" />
                   <div>
-                    <p className="font-medium text-amber-600 dark:text-amber-400">Become a Verified Alumni</p>
+                    <p className="font-medium text-primary">
+                      {hasReviewed ? 'Update Your Review' : 'Share Your Experience'}
+                    </p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Upload your degree certificate or connect LinkedIn to get verified and unlock exclusive benefits.
+                      {hasReviewed 
+                        ? 'Edit your university review to help future students.'
+                        : 'Help prospective students by sharing your university experience.'
+                      }
                     </p>
                   </div>
                 </div>
               </div>
-              <Button variant="outline" className="w-full">
-                <Award className="h-5 w-5 mr-2" />
-                Start Verification
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => setShowReviewModal(true)}
+              >
+                <MessageSquare className="h-5 w-5 mr-2" />
+                {hasReviewed ? 'Edit My Review' : 'Write a Review'}
               </Button>
             </div>
           )}
 
           {/* Verified Alumni status */}
           {accountStatus === 'verified_alumni' && (
-            <div className="pt-4 border-t">
+            <div className="pt-4 border-t space-y-4">
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4">
                 <div className="flex items-start gap-3">
-                  <Award className="h-5 w-5 text-amber-500 mt-0.5" />
+                  <CheckCircle className="h-5 w-5 text-amber-500 mt-0.5" />
                   <div>
                     <p className="font-medium text-amber-600 dark:text-amber-400">Verified Alumni ✓</p>
                     <p className="text-sm text-muted-foreground mt-1">
@@ -218,6 +364,32 @@ export const AcademicStatusSection = () => {
                   </div>
                 </div>
               </div>
+
+              {/* University Review CTA for verified alumni */}
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <MessageSquare className="h-5 w-5 text-primary mt-0.5" />
+                  <div>
+                    <p className="font-medium text-primary">
+                      {hasReviewed ? 'Update Your Review' : 'Share Your Experience'}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {hasReviewed 
+                        ? 'Edit your university review to help future students.'
+                        : 'Help prospective students by sharing your university experience.'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => setShowReviewModal(true)}
+              >
+                <MessageSquare className="h-5 w-5 mr-2" />
+                {hasReviewed ? 'Edit My Review' : 'Write a Review'}
+              </Button>
             </div>
           )}
         </CardContent>
@@ -239,6 +411,22 @@ export const AcademicStatusSection = () => {
           isGraduationYear={isGraduationYear}
         />
       )}
+
+      {/* Alumni Verification Modal */}
+      <AlumniVerificationModal
+        open={showVerificationModal}
+        onClose={() => setShowVerificationModal(false)}
+        onSuccess={() => {
+          setVerificationStatus({ status: 'pending' });
+        }}
+      />
+
+      {/* University Review Modal */}
+      <UniversityReviewModal
+        open={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        onSuccess={() => setHasReviewed(true)}
+      />
     </>
   );
 };
