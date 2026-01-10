@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, Share2, Download, ArrowRight, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Share2, Download, ArrowRight, Sparkles, ArrowUpCircle } from 'lucide-react';
 import { useWrappedStats } from '@/hooks/useWrappedStats';
 import WrappedSlide from './WrappedSlide';
 import confetti from 'canvas-confetti';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 interface YearWrappedModalProps {
   open: boolean;
@@ -34,6 +37,12 @@ const yearGradients: Record<number, string> = {
   7: 'from-indigo-500 to-purple-600',
 };
 
+const nextYearMap: Record<string, string> = {
+  '1st Year': '2nd Year',
+  '2nd Year': '3rd Year',
+  '3rd Year': '4th Year',
+};
+
 export const YearWrappedModal = ({ 
   open, 
   onClose, 
@@ -41,7 +50,10 @@ export const YearWrappedModal = ({
   yearLabel, 
   isGraduationYear 
 }: YearWrappedModalProps) => {
+  const { user } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [showProgressChoice, setShowProgressChoice] = useState(false);
+  const [progressing, setProgressing] = useState(false);
   const { stats, loading } = useWrappedStats();
 
   const emoji = yearEmojis[yearNumber] || '✨';
@@ -121,6 +133,7 @@ export const YearWrappedModal = ({
 
   useEffect(() => {
     setCurrentSlide(0);
+    setShowProgressChoice(false);
   }, [open]);
 
   useEffect(() => {
@@ -148,11 +161,51 @@ export const YearWrappedModal = ({
   const handleShare = () => {
     // TODO: Implement share to feed
     console.log('Share to feed');
+    toast.info('Share feature coming soon!');
   };
 
   const handleDownload = () => {
     // TODO: Implement download as image
     console.log('Download as image');
+    toast.info('Download feature coming soon!');
+  };
+
+  const handleDone = () => {
+    if (!isGraduationYear && yearLabel && nextYearMap[yearLabel]) {
+      setShowProgressChoice(true);
+    } else {
+      onClose();
+    }
+  };
+
+  const handleProgressYear = async () => {
+    if (!user || !yearLabel) return;
+    
+    const nextYear = nextYearMap[yearLabel];
+    if (!nextYear) {
+      onClose();
+      return;
+    }
+
+    setProgressing(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ academic_year: nextYear })
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast.success(`Welcome to ${nextYear}! 🎉`);
+      onClose();
+      // Refresh the page to update the UI
+      window.location.reload();
+    } catch (error: any) {
+      console.error('Error progressing year:', error);
+      toast.error('Failed to update your academic year');
+    } finally {
+      setProgressing(false);
+    }
   };
 
   if (loading || !stats) {
@@ -161,6 +214,54 @@ export const YearWrappedModal = ({
         <DialogContent className="max-w-md p-0 overflow-hidden">
           <div className={`flex items-center justify-center h-[600px] bg-gradient-to-br ${baseGradient}`}>
             <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent" />
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Show year progression choice
+  if (showProgressChoice) {
+    const nextYear = nextYearMap[yearLabel];
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="max-w-md">
+          <div className="py-8 flex flex-col items-center justify-center space-y-6">
+            <div className="h-16 w-16 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
+              <ArrowUpCircle className="h-10 w-10 text-white" />
+            </div>
+            <div className="text-center">
+              <h3 className="text-xl font-bold">Ready for {nextYear}? 🚀</h3>
+              <p className="text-muted-foreground mt-2">
+                Would you like to update your academic year to {nextYear}?
+              </p>
+            </div>
+            <div className="w-full space-y-3">
+              <Button 
+                onClick={handleProgressYear} 
+                disabled={progressing}
+                className="w-full bg-gradient-to-r from-violet-500 to-indigo-600 hover:from-violet-600 hover:to-indigo-700"
+              >
+                {progressing ? (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <ArrowUpCircle className="h-4 w-4 mr-2" />
+                    Yes, move to {nextYear}!
+                  </>
+                )}
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={onClose}
+                className="w-full"
+              >
+                Stay in {yearLabel} for now
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -226,11 +327,15 @@ export const YearWrappedModal = ({
                     Save
                   </Button>
                   <Button
-                    onClick={onClose}
+                    onClick={handleDone}
                     className="bg-white text-black hover:bg-white/90"
                   >
-                    Done
-                    <Sparkles className="h-4 w-4 ml-2" />
+                    {!isGraduationYear && nextYearMap[yearLabel] ? 'Continue' : 'Done'}
+                    {!isGraduationYear && nextYearMap[yearLabel] ? (
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    ) : (
+                      <Sparkles className="h-4 w-4 ml-2" />
+                    )}
                   </Button>
                 </div>
               ) : (
