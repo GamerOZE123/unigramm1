@@ -16,6 +16,9 @@ export interface ProfileCompletionData {
   banner_url: string;
   bio: string;
   skills: string[];
+  academic_year: string;
+  start_year: number | null;
+  expected_graduation_year: number | null;
 }
 
 export const useProfileCompletion = () => {
@@ -34,7 +37,10 @@ export const useProfileCompletion = () => {
     avatar_url: '',
     banner_url: '',
     bio: '',
-    skills: []
+    skills: [],
+    academic_year: '',
+    start_year: null,
+    expected_graduation_year: null
   });
 
   const saveStep = async (stepData: Partial<ProfileCompletionData>) => {
