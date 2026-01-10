@@ -24,7 +24,7 @@ export const WrappedSlide = ({ slide }: WrappedSlideProps) => {
     >
       {slide.type === 'intro' && (
         <div className="text-center space-y-4 animate-fade-in">
-          <div className="text-6xl mb-4">🎓</div>
+          <div className="text-6xl mb-4">{slide.emoji || '🎓'}</div>
           <h1 className="text-3xl font-bold">{slide.title}</h1>
           <p className="text-lg text-white/80">{slide.subtitle}</p>
         </div>
