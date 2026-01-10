@@ -91,7 +91,7 @@ export const useProfileCompletion = () => {
     }
   };
 
-  const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 10));
+  const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 11));
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
   const skipStep = () => nextStep();
 
