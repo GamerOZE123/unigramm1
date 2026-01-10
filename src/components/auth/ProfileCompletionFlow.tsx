@@ -38,14 +38,16 @@ export const ProfileCompletionFlow = ({ open, onComplete }: ProfileCompletionFlo
     loading
   } = useProfileCompletion();
 
-  const totalSteps = 10;
+  const totalSteps = 11;
   const progress = (currentStep / totalSteps) * 100;
 
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
         return formData.major !== '';
-      case 4:
+      case 2:
+        return formData.academic_year !== '' && formData.expected_graduation_year !== null;
+      case 5:
         return formData.interests.length >= 3;
       default:
         return true;
@@ -60,22 +62,29 @@ export const ProfileCompletionFlow = ({ open, onComplete }: ProfileCompletionFlo
         stepData = { major: formData.major };
         break;
       case 2:
-        stepData = { bio: formData.bio };
+        stepData = { 
+          academic_year: formData.academic_year,
+          start_year: formData.start_year,
+          expected_graduation_year: formData.expected_graduation_year
+        };
         break;
       case 3:
-        stepData = { avatar_url: formData.avatar_url };
+        stepData = { bio: formData.bio };
         break;
       case 4:
-        stepData = { interests: formData.interests };
+        stepData = { avatar_url: formData.avatar_url };
         break;
       case 5:
+        stepData = { interests: formData.interests };
+        break;
+      case 6:
         await saveSkillsStep(formData.skills);
         nextStep();
         return;
-      case 6:
+      case 7:
         stepData = { preferred_event_types: formData.preferred_event_types };
         break;
-      case 7:
+      case 8:
         stepData = {
           linkedin_url: formData.linkedin_url,
           instagram_url: formData.instagram_url,
@@ -83,13 +92,13 @@ export const ProfileCompletionFlow = ({ open, onComplete }: ProfileCompletionFlo
           website_url: formData.website_url
         };
         break;
-      case 8:
+      case 9:
         stepData = { campus_groups: formData.campus_groups };
         break;
-      case 9:
+      case 10:
         stepData = { banner_url: formData.banner_url };
         break;
-      case 10:
+      case 11:
         stepData = { status_message: formData.status_message };
         break;
     }
@@ -130,40 +139,51 @@ export const ProfileCompletionFlow = ({ open, onComplete }: ProfileCompletionFlo
         );
       case 2:
         return (
+          <AcademicTimelineStep
+            startYear={formData.start_year}
+            expectedGraduationYear={formData.expected_graduation_year}
+            academicYear={formData.academic_year}
+            onStartYearChange={(year) => setFormData({ ...formData, start_year: year })}
+            onExpectedGraduationYearChange={(year) => setFormData({ ...formData, expected_graduation_year: year })}
+            onAcademicYearChange={(year) => setFormData({ ...formData, academic_year: year })}
+          />
+        );
+      case 3:
+        return (
           <BioStep
             value={formData.bio}
             onChange={(value) => setFormData({ ...formData, bio: value })}
           />
         );
-      case 3:
+      case 4:
         return (
           <ProfilePictureStep
             value={formData.avatar_url}
             onChange={(value) => setFormData({ ...formData, avatar_url: value })}
           />
         );
-      case 4:
+      case 5:
         return (
           <InterestsStep
             value={formData.interests}
             onChange={(value) => setFormData({ ...formData, interests: value })}
           />
         );
-      case 5:
+      case 6:
         return (
           <SkillsStep
             value={formData.skills}
             onChange={(value) => setFormData({ ...formData, skills: value })}
           />
         );
-      case 6:
+      case 7:
         return (
           <EventPreferencesStep
             value={formData.preferred_event_types}
             onChange={(value) => setFormData({ ...formData, preferred_event_types: value })}
           />
         );
-      case 7:
+      case 8:
         return (
           <SocialLinksStep
             linkedin={formData.linkedin_url}
@@ -173,21 +193,21 @@ export const ProfileCompletionFlow = ({ open, onComplete }: ProfileCompletionFlo
             onChange={(field, value) => setFormData({ ...formData, [field]: value })}
           />
         );
-      case 8:
+      case 9:
         return (
           <CampusGroupsStep
             value={formData.campus_groups}
             onChange={(value) => setFormData({ ...formData, campus_groups: value })}
           />
         );
-      case 9:
+      case 10:
         return (
           <BannerStep
             value={formData.banner_url}
             onChange={(value) => setFormData({ ...formData, banner_url: value })}
           />
         );
-      case 10:
+      case 11:
         return (
           <StatusMessageStep
             value={formData.status_message}
@@ -238,7 +258,7 @@ export const ProfileCompletionFlow = ({ open, onComplete }: ProfileCompletionFlo
               )}
             </div>
 
-            {currentStep !== 1 && currentStep !== 4 && (
+            {currentStep !== 1 && currentStep !== 2 && currentStep !== 5 && (
               <Button
                 variant="ghost"
                 size="sm"
