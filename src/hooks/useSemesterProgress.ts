@@ -17,6 +17,7 @@ interface SemesterProgress {
   cooldownActive: boolean;
   cooldownEndsAt: Date | null;
   lastCompletedSemester: CompletedSemester | null;
+  firstSemesterNumber: number; // The semester number when user joined
 }
 
 const yearToNumber: Record<string, number> = {
@@ -44,6 +45,7 @@ export const useSemesterProgress = () => {
     cooldownActive: false,
     cooldownEndsAt: null,
     lastCompletedSemester: null,
+    firstSemesterNumber: 1,
   });
 
   const fetchProgress = useCallback(async () => {
@@ -53,19 +55,18 @@ export const useSemesterProgress = () => {
     }
 
     try {
-      // Get user profile to determine current year
+      // Get user profile to determine current year and account creation date
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('academic_year, start_year, expected_graduation_year')
+        .select('academic_year, start_year, expected_graduation_year, created_at')
         .eq('user_id', user.id)
         .single();
 
       if (profileError) throw profileError;
 
-      const academicYear = profile?.academic_year;
       const startYear = profile?.start_year;
       const expectedGradYear = profile?.expected_graduation_year;
-      const yearNumber = academicYear ? yearToNumber[academicYear] : 1;
+      const accountCreatedAt = profile?.created_at ? new Date(profile.created_at) : new Date();
 
       // Calculate total semesters based on expected program length
       const programYears = expectedGradYear && startYear 
@@ -78,22 +79,59 @@ export const useSemesterProgress = () => {
       const stored = localStorage.getItem(storageKey);
       const completedSemesters: CompletedSemester[] = stored ? JSON.parse(stored) : [];
 
-      // Calculate current semester based on year and completed semesters
-      const fallSemester = (yearNumber - 1) * 2 + 1;
-      const springSemester = fallSemester + 1;
+      // Determine the first semester the user should track based on account creation
+      const accountCreationMonth = accountCreatedAt.getMonth() + 1; // 1-12
+      const accountCreationYear = accountCreatedAt.getFullYear();
+      
+      // Determine which academic year the account was created in
+      // Fall (July-Dec): academic year starts that year
+      // Spring (Jan-May): academic year started previous year
+      const accountAcademicStartYear = accountCreationMonth >= 7 ? accountCreationYear : accountCreationYear - 1;
+      
+      // Determine which semester the user started with
+      const accountStartSemesterType: 'fall' | 'spring' = accountCreationMonth >= 7 || accountCreationMonth <= 5 
+        ? (accountCreationMonth >= 7 ? 'fall' : 'spring') 
+        : 'fall'; // June defaults to fall (upcoming)
+      
+      // Calculate the user's starting semester number based on their start_year
+      let firstSemesterNumber = 1;
+      if (startYear) {
+        const yearsFromStart = accountAcademicStartYear - startYear;
+        const yearNumber = Math.max(1, yearsFromStart + 1);
+        firstSemesterNumber = (yearNumber - 1) * 2 + (accountStartSemesterType === 'fall' ? 1 : 2);
+      }
 
-      const fallCompleted = completedSemesters.find(s => s.semesterNumber === fallSemester);
-      const springCompleted = completedSemesters.find(s => s.semesterNumber === springSemester);
-
+      // Calculate current semester based on current date
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth() + 1;
+      const currentYear = currentDate.getFullYear();
+      
+      // Determine current academic year
+      const currentAcademicStartYear = currentMonth >= 7 ? currentYear : currentYear - 1;
+      
       let currentSemester: 'fall' | 'spring' = 'fall';
-      let semesterNumber = fallSemester;
-
-      if (fallCompleted && !springCompleted) {
-        currentSemester = 'spring';
-        semesterNumber = springSemester;
-      } else if (!fallCompleted) {
-        currentSemester = 'fall';
-        semesterNumber = fallSemester;
+      let semesterNumber = 1;
+      
+      if (startYear) {
+        const yearsFromStart = currentAcademicStartYear - startYear;
+        const calculatedYearNumber = Math.max(1, yearsFromStart + 1);
+        
+        if (currentMonth >= 7 && currentMonth <= 12) {
+          currentSemester = 'fall';
+          semesterNumber = (calculatedYearNumber - 1) * 2 + 1;
+        } else if (currentMonth >= 1 && currentMonth <= 5) {
+          currentSemester = 'spring';
+          semesterNumber = (calculatedYearNumber - 1) * 2 + 2;
+        } else {
+          // June - prepare for next fall
+          currentSemester = 'fall';
+          semesterNumber = calculatedYearNumber * 2 + 1;
+        }
+      }
+      
+      // Ensure we don't track semesters before the user joined
+      if (semesterNumber < firstSemesterNumber) {
+        semesterNumber = firstSemesterNumber;
       }
 
       // Check cooldown - last completed semester
@@ -125,6 +163,7 @@ export const useSemesterProgress = () => {
         cooldownActive,
         cooldownEndsAt,
         lastCompletedSemester: lastCompleted,
+        firstSemesterNumber, // Add this to track where user started
       });
     } catch (error) {
       console.error('Error fetching semester progress:', error);
