@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { User, Bell, Lock, Shield, LogOut, Moon, Sun, Eye, Trash2, Camera, BookOpen, Clock, GraduationCap, ExternalLink } from "lucide-react";
+import { User, Bell, Lock, Shield, LogOut, Moon, Sun, Eye, Trash2, Camera, BookOpen, Clock, GraduationCap, ExternalLink, Calendar, School } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { AcademicStatusSection } from "@/components/settings/AcademicStatusSection";
 
@@ -28,6 +28,13 @@ interface CourseInfo {
   universities?: { name: string };
 }
 
+interface StudentAcademicInfo {
+  academic_year: string | null;
+  start_year: number | null;
+  expected_graduation_year: number | null;
+  university: string | null;
+}
+
 export default function Settings() {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -36,6 +43,7 @@ export default function Settings() {
   const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [courseInfo, setCourseInfo] = useState<CourseInfo | null>(null);
+  const [academicInfo, setAcademicInfo] = useState<StudentAcademicInfo | null>(null);
 
   // Profile state
   const [profile, setProfile] = useState({
@@ -66,17 +74,27 @@ export default function Settings() {
   });
 
   useEffect(() => {
-    const fetchCourseInfo = async () => {
+    const fetchCourseAndAcademicInfo = async () => {
       if (!user) return;
       
       try {
         const { data: profileData, error: profileError } = await supabase
           .from("profiles")
-          .select("course_id")
+          .select("course_id, academic_year, start_year, expected_graduation_year, university")
           .eq("user_id", user.id)
           .single();
 
-        if (profileError || !profileData?.course_id) return;
+        if (profileError) throw profileError;
+
+        // Set academic info
+        setAcademicInfo({
+          academic_year: profileData?.academic_year || null,
+          start_year: profileData?.start_year || null,
+          expected_graduation_year: profileData?.expected_graduation_year || null,
+          university: profileData?.university || null,
+        });
+
+        if (!profileData?.course_id) return;
 
         const { data: course, error: courseError } = await supabase
           .from("university_courses")
@@ -97,7 +115,7 @@ export default function Settings() {
       }
     };
 
-    fetchCourseInfo();
+    fetchCourseAndAcademicInfo();
   }, [user]);
 
   const handleProfileUpdate = async () => {
@@ -312,57 +330,120 @@ export default function Settings() {
             </CardContent>
           </Card>
 
-          {/* Course Information Card */}
+          {/* Academic & Course Information Card */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5" />
-                Course Information
+                Academic Information
               </CardTitle>
-              <CardDescription>Your enrolled course and program details</CardDescription>
+              <CardDescription>Your academic journey and enrolled course details</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
+              {/* Student Academic Details */}
+              {academicInfo && (
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Student Details</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {academicInfo.university && (
+                      <div className="p-4 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                          <School className="h-4 w-4" />
+                          <span className="text-sm">University</span>
+                        </div>
+                        <p className="font-medium text-sm">{academicInfo.university}</p>
+                      </div>
+                    )}
+                    {academicInfo.academic_year && (
+                      <div className="p-4 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                          <Calendar className="h-4 w-4" />
+                          <span className="text-sm">Current Year</span>
+                        </div>
+                        <p className="font-medium text-sm">{academicInfo.academic_year}</p>
+                      </div>
+                    )}
+                    {academicInfo.start_year && (
+                      <div className="p-4 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                          <Calendar className="h-4 w-4" />
+                          <span className="text-sm">Started</span>
+                        </div>
+                        <p className="font-medium text-sm">{academicInfo.start_year}</p>
+                      </div>
+                    )}
+                    {academicInfo.expected_graduation_year && (
+                      <div className="p-4 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                          <GraduationCap className="h-4 w-4" />
+                          <span className="text-sm">Expected Graduation</span>
+                        </div>
+                        <p className="font-medium text-sm">Class of {academicInfo.expected_graduation_year}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Course Details */}
               {courseInfo ? (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Course Details</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="p-4 bg-muted/50 rounded-lg">
                       <div className="flex items-center gap-2 text-muted-foreground mb-1">
                         <BookOpen className="h-4 w-4" />
                         <span className="text-sm">Program</span>
                       </div>
-                      <p className="font-medium">{courseInfo.course_name}</p>
+                      <p className="font-medium text-sm">{courseInfo.course_name}</p>
                     </div>
+                    {courseInfo.universities?.name && (
+                      <div className="p-4 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                          <School className="h-4 w-4" />
+                          <span className="text-sm">Institution</span>
+                        </div>
+                        <p className="font-medium text-sm">{courseInfo.universities.name}</p>
+                      </div>
+                    )}
                     <div className="p-4 bg-muted/50 rounded-lg">
                       <div className="flex items-center gap-2 text-muted-foreground mb-1">
                         <Clock className="h-4 w-4" />
                         <span className="text-sm">Duration</span>
                       </div>
-                      <p className="font-medium">{courseInfo.duration_years} years</p>
+                      <p className="font-medium text-sm">{courseInfo.duration_years} years</p>
                     </div>
                     <div className="p-4 bg-muted/50 rounded-lg">
                       <div className="flex items-center gap-2 text-muted-foreground mb-1">
                         <GraduationCap className="h-4 w-4" />
                         <span className="text-sm">Semesters</span>
                       </div>
-                      <p className="font-medium">{courseInfo.total_semesters} total</p>
-                    </div>
-                    <div className="p-4 bg-muted/50 rounded-lg">
-                      <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                        <Shield className="h-4 w-4" />
-                        <span className="text-sm">Graduation Status</span>
-                      </div>
-                      {courseInfo.force_enable_graduation ? (
-                        <Badge className="bg-green-500/10 text-green-600">Enabled</Badge>
-                      ) : (
-                        <Badge variant="secondary">Standard</Badge>
-                      )}
+                      <p className="font-medium text-sm">{courseInfo.total_semesters} total</p>
                     </div>
                   </div>
+                  
+                  {/* Graduation Status Banner */}
+                  {courseInfo.force_enable_graduation && (
+                    <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <GraduationCap className="h-5 w-5 text-green-600" />
+                        <div>
+                          <p className="font-medium text-green-600">Direct Graduation Enabled</p>
+                          <p className="text-sm text-muted-foreground">
+                            Your course allows direct graduation without semester tracking. Use the "I Graduated" button in Academic Status when ready.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
-                <p className="text-muted-foreground text-sm">
-                  No course information available. Complete your profile to set up your course.
-                </p>
+                <div className="text-center py-6 bg-muted/30 rounded-lg">
+                  <BookOpen className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-muted-foreground text-sm">
+                    No course information available. Complete your profile to set up your course.
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
