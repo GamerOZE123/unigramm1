@@ -9,11 +9,12 @@ import ProfileSocialLinks from "@/components/profile/ProfileSocialLinks";
 import ProfileInterests from "@/components/profile/ProfileInterests";
 import ProfileAffiliations from "@/components/profile/ProfileAffiliations";
 import ProfileCompletionBar from "@/components/profile/ProfileCompletionBar";
+import { CourseInfoCard } from "@/components/profile/CourseInfoCard";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Edit, GraduationCap, MapPin, Image as ImageIcon, FileText, Calendar, Sparkles, Users, Rocket, Crown, Shield, Pin } from "lucide-react";
+import { Edit, GraduationCap, MapPin, Image as ImageIcon, FileText, Calendar, Sparkles, Users, Rocket, Crown, Shield, Pin, Clock } from "lucide-react";
 import MobileHeader from "@/components/layout/MobileHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
@@ -546,6 +547,11 @@ export default function Profile() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 px-4 mt-6">
           {/* Sidebar - Interests & Startups */}
           <div className="lg:col-span-1 space-y-4">
+            {/* Course Info Card */}
+            {profileUserId && (
+              <CourseInfoCard userId={profileUserId} />
+            )}
+
             {/* Interests Card */}
             {(extendedProfile?.interests?.length || studentProfile?.skills?.length) && (
               <div className="bg-card/50 border border-border/50 rounded-xl p-4">

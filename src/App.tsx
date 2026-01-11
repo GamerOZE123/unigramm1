@@ -27,6 +27,7 @@ import Startups from '@/pages/Startups';
 import StartupDetail from '@/pages/StartupDetail';
 import StartupManagement from '@/pages/StartupManagement';
 import Settings from '@/pages/Settings';
+import AdminCourses from '@/pages/AdminCourses';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -63,6 +64,7 @@ function App() {
               <Route path="/startup/:slug" element={<ProtectedRoute><StartupDetail /></ProtectedRoute>} />
               <Route path="/startup/:slug/manage" element={<ProtectedRoute><StartupManagement /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/admin/courses" element={<ProtectedRoute><AdminCourses /></ProtectedRoute>} />
               <Route path="/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
