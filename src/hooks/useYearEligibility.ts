@@ -9,6 +9,7 @@ interface YearEligibility {
   yearLabel: string | null;
   isGraduationYear: boolean;
   universityAllowsYearWrapped: boolean;
+  forceEnableGraduation: boolean; // If true, skip year tracking and show graduation only
   loading: boolean;
 }
 
@@ -33,6 +34,7 @@ export const useYearEligibility = () => {
     yearLabel: null,
     isGraduationYear: false,
     universityAllowsYearWrapped: false,
+    forceEnableGraduation: false,
     loading: true,
   });
 
@@ -44,10 +46,10 @@ export const useYearEligibility = () => {
       }
 
       try {
-        // Get user profile
+        // Get user profile with course_id
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('academic_year, account_status, university')
+          .select('academic_year, account_status, university, course_id')
           .eq('user_id', user.id)
           .single();
 
@@ -64,6 +66,8 @@ export const useYearEligibility = () => {
 
         // Check if university allows year wrapped (use graduation button setting for now)
         let universityAllowsYearWrapped = false;
+        let forceEnableGraduation = false;
+
         if (profile?.university) {
           const { data: university } = await supabase
             .from('universities')
@@ -74,13 +78,25 @@ export const useYearEligibility = () => {
           universityAllowsYearWrapped = university?.allow_graduation_button || false;
         }
 
+        // Check course-specific force_enable_graduation flag
+        if (profile?.course_id) {
+          const { data: course } = await supabase
+            .from('university_courses')
+            .select('force_enable_graduation')
+            .eq('id', profile.course_id)
+            .maybeSingle();
+
+          forceEnableGraduation = course?.force_enable_graduation || false;
+        }
+
         setEligibility({
-          canCompleteYear: !!yearInfo && universityAllowsYearWrapped,
+          canCompleteYear: !!yearInfo && universityAllowsYearWrapped && !forceEnableGraduation,
           currentYear,
           yearNumber: yearInfo?.number || null,
           yearLabel: yearInfo?.label || currentYear,
           isGraduationYear: yearInfo?.isGraduation || false,
           universityAllowsYearWrapped,
+          forceEnableGraduation,
           loading: false,
         });
       } catch (error) {

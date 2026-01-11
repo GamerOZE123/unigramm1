@@ -23,6 +23,7 @@ interface SemesterProgress {
   calendarSemesterNumber: number; // The current calendar semester number
   canCompleteSemester: boolean; // True if current date is within the semester period
   semesterStartDate: Date | null; // When the next semester starts
+  forceEnableGraduation: boolean; // If true, skip semester tracking and show graduation only
 }
 
 const yearToNumber: Record<string, number> = {
@@ -55,6 +56,7 @@ export const useSemesterProgress = () => {
     calendarSemesterNumber: 1,
     canCompleteSemester: false,
     semesterStartDate: null,
+    forceEnableGraduation: false,
   });
 
   const fetchProgress = useCallback(async () => {
@@ -77,18 +79,22 @@ export const useSemesterProgress = () => {
       const expectedGradYear = profile?.expected_graduation_year;
       const accountCreatedAt = profile?.created_at ? new Date(profile.created_at) : new Date();
 
-      // Get total semesters from course if available, otherwise calculate from years
+      // Get total semesters and force_enable_graduation from course if available
       let totalSemesters = 8; // default
+      let forceEnableGraduation = false;
 
       if (profile?.course_id) {
         const { data: course } = await supabase
           .from('university_courses')
-          .select('total_semesters')
+          .select('total_semesters, force_enable_graduation')
           .eq('id', profile.course_id)
           .maybeSingle();
 
         if (course?.total_semesters) {
           totalSemesters = course.total_semesters;
+        }
+        if (course?.force_enable_graduation) {
+          forceEnableGraduation = true;
         }
       } else if (expectedGradYear && startYear) {
         // Fallback to calculating from years
@@ -247,6 +253,7 @@ export const useSemesterProgress = () => {
         calendarSemesterNumber: semesterNumber,
         canCompleteSemester,
         semesterStartDate,
+        forceEnableGraduation,
       });
     } catch (error) {
       console.error('Error fetching semester progress:', error);

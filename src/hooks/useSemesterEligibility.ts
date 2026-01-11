@@ -10,6 +10,7 @@ interface SemesterEligibility {
   academicYear: string | null;
   yearNumber: number | null;
   universityAllowsSemesterWrapped: boolean;
+  forceEnableGraduation: boolean; // If true, skip semester tracking and show graduation only
   loading: boolean;
 }
 
@@ -35,6 +36,7 @@ export const useSemesterEligibility = () => {
     academicYear: null,
     yearNumber: null,
     universityAllowsSemesterWrapped: false,
+    forceEnableGraduation: false,
     loading: true,
   });
 
@@ -46,10 +48,10 @@ export const useSemesterEligibility = () => {
       }
 
       try {
-        // Get user profile
+        // Get user profile with course_id
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('academic_year, account_status, university, start_year, expected_graduation_year')
+          .select('academic_year, account_status, university, start_year, expected_graduation_year, course_id')
           .eq('user_id', user.id)
           .single();
 
@@ -130,6 +132,8 @@ export const useSemesterEligibility = () => {
 
         // Check if university allows semester wrapped (use graduation button setting)
         let universityAllowsSemesterWrapped = false;
+        let forceEnableGraduation = false;
+
         if (profile?.university) {
           const { data: university } = await supabase
             .from('universities')
@@ -140,14 +144,26 @@ export const useSemesterEligibility = () => {
           universityAllowsSemesterWrapped = university?.allow_graduation_button || false;
         }
 
+        // Check course-specific force_enable_graduation flag
+        if (profile?.course_id) {
+          const { data: course } = await supabase
+            .from('university_courses')
+            .select('force_enable_graduation')
+            .eq('id', profile.course_id)
+            .maybeSingle();
+
+          forceEnableGraduation = course?.force_enable_graduation || false;
+        }
+
         setEligibility({
-          canCompleteSemester: !!semesterNumber && universityAllowsSemesterWrapped,
+          canCompleteSemester: !!semesterNumber && universityAllowsSemesterWrapped && !forceEnableGraduation,
           currentSemester,
           semesterNumber,
           semesterLabel,
           academicYear,
           yearNumber: calculatedYearNumber,
           universityAllowsSemesterWrapped,
+          forceEnableGraduation,
           loading: false,
         });
       } catch (error) {
