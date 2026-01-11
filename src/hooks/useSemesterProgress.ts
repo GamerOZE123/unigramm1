@@ -168,16 +168,32 @@ export const useSemesterProgress = () => {
         }
       }
 
+      // Determine the next semester to complete
+      // Find all semesters from firstSemesterNumber up to current semesterNumber
+      // and find the first one that hasn't been completed
+      let nextSemesterToComplete = semesterNumber;
+      let nextSemesterType = currentSemester;
+      
+      for (let sem = firstSemesterNumber; sem <= semesterNumber; sem++) {
+        const isCompleted = completedSemesters.some(c => c.semesterNumber === sem);
+        if (!isCompleted) {
+          nextSemesterToComplete = sem;
+          // Odd semesters are fall, even are spring
+          nextSemesterType = sem % 2 === 1 ? 'fall' : 'spring';
+          break;
+        }
+      }
+
       setProgress({
-        currentSemester,
+        currentSemester: nextSemesterType,
         completedSemesters,
         totalSemesters,
-        semesterNumber,
+        semesterNumber: nextSemesterToComplete,
         loading: false,
         cooldownActive,
         cooldownEndsAt,
         lastCompletedSemester: lastCompleted,
-        firstSemesterNumber, // Add this to track where user started
+        firstSemesterNumber,
       });
     } catch (error) {
       console.error('Error fetching semester progress:', error);
