@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -11,13 +11,22 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import { User, Bell, Lock, Shield, LogOut, Moon, Sun, Eye, Trash2, Camera } from "lucide-react";
+import { User, Bell, Lock, Shield, LogOut, Moon, Sun, Eye, Trash2, Camera, BookOpen, Clock, GraduationCap, ExternalLink } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { AcademicStatusSection } from "@/components/settings/AcademicStatusSection";
+
+interface CourseInfo {
+  course_name: string;
+  duration_years: number;
+  total_semesters: number;
+  force_enable_graduation: boolean;
+  universities?: { name: string };
+}
 
 export default function Settings() {
   const isMobile = useIsMobile();
@@ -26,6 +35,7 @@ export default function Settings() {
   const { user, signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(false);
+  const [courseInfo, setCourseInfo] = useState<CourseInfo | null>(null);
 
   // Profile state
   const [profile, setProfile] = useState({
@@ -54,6 +64,41 @@ export default function Settings() {
     showUniversity: true,
     allowMessages: true,
   });
+
+  useEffect(() => {
+    const fetchCourseInfo = async () => {
+      if (!user) return;
+      
+      try {
+        const { data: profileData, error: profileError } = await supabase
+          .from("profiles")
+          .select("course_id")
+          .eq("user_id", user.id)
+          .single();
+
+        if (profileError || !profileData?.course_id) return;
+
+        const { data: course, error: courseError } = await supabase
+          .from("university_courses")
+          .select(`
+            course_name,
+            duration_years,
+            total_semesters,
+            force_enable_graduation,
+            universities (name)
+          `)
+          .eq("id", profileData.course_id)
+          .single();
+
+        if (courseError) throw courseError;
+        setCourseInfo(course);
+      } catch (error) {
+        console.error("Error fetching course info:", error);
+      }
+    };
+
+    fetchCourseInfo();
+  }, [user]);
 
   const handleProfileUpdate = async () => {
     if (!user) return;
@@ -264,6 +309,61 @@ export default function Settings() {
               <Button onClick={handleProfileUpdate} disabled={loading}>
                 {loading ? "Saving..." : "Save Changes"}
               </Button>
+            </CardContent>
+          </Card>
+
+          {/* Course Information Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5" />
+                Course Information
+              </CardTitle>
+              <CardDescription>Your enrolled course and program details</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {courseInfo ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-4 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                        <BookOpen className="h-4 w-4" />
+                        <span className="text-sm">Program</span>
+                      </div>
+                      <p className="font-medium">{courseInfo.course_name}</p>
+                    </div>
+                    <div className="p-4 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                        <Clock className="h-4 w-4" />
+                        <span className="text-sm">Duration</span>
+                      </div>
+                      <p className="font-medium">{courseInfo.duration_years} years</p>
+                    </div>
+                    <div className="p-4 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                        <GraduationCap className="h-4 w-4" />
+                        <span className="text-sm">Semesters</span>
+                      </div>
+                      <p className="font-medium">{courseInfo.total_semesters} total</p>
+                    </div>
+                    <div className="p-4 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                        <Shield className="h-4 w-4" />
+                        <span className="text-sm">Graduation Status</span>
+                      </div>
+                      {courseInfo.force_enable_graduation ? (
+                        <Badge className="bg-green-500/10 text-green-600">Enabled</Badge>
+                      ) : (
+                        <Badge variant="secondary">Standard</Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  No course information available. Complete your profile to set up your course.
+                </p>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
