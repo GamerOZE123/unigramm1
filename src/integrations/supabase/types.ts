@@ -2369,6 +2369,33 @@ export type Database = {
           },
         ]
       }
+      semester_completions: {
+        Row: {
+          completed_at: string
+          created_at: string
+          id: string
+          semester_number: number
+          semester_type: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          created_at?: string
+          id?: string
+          semester_number: number
+          semester_type: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          created_at?: string
+          id?: string
+          semester_number?: number
+          semester_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       startup_contributors: {
         Row: {
           id: string

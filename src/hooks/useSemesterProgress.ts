@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface CompletedSemester {
+export interface CompletedSemester {
+  id?: string;
   semesterNumber: number;
   completedAt: string; // ISO date string
   semesterType: 'fall' | 'spring';
@@ -74,10 +75,23 @@ export const useSemesterProgress = () => {
         : 4;
       const totalSemesters = programYears * 2;
 
-      // Get completed semesters from local storage
-      const storageKey = `semester_progress_${user.id}`;
-      const stored = localStorage.getItem(storageKey);
-      const completedSemesters: CompletedSemester[] = stored ? JSON.parse(stored) : [];
+      // Get completed semesters from Supabase
+      const { data: completionsData, error: completionsError } = await supabase
+        .from('semester_completions')
+        .select('id, semester_number, semester_type, completed_at')
+        .eq('user_id', user.id)
+        .order('completed_at', { ascending: false });
+
+      if (completionsError) {
+        console.error('Error fetching semester completions:', completionsError);
+      }
+
+      const completedSemesters: CompletedSemester[] = (completionsData || []).map(c => ({
+        id: c.id,
+        semesterNumber: c.semester_number,
+        completedAt: c.completed_at,
+        semesterType: c.semester_type as 'fall' | 'spring',
+      }));
 
       // Determine the first semester the user should track based on account creation
       const accountCreationMonth = accountCreatedAt.getMonth() + 1; // 1-12
@@ -178,23 +192,36 @@ export const useSemesterProgress = () => {
   const completeSemester = useCallback(async (semesterNumber: number, semesterType: 'fall' | 'spring') => {
     if (!user) return;
 
-    const storageKey = `semester_progress_${user.id}`;
-    const stored = localStorage.getItem(storageKey);
-    const completedSemesters: CompletedSemester[] = stored ? JSON.parse(stored) : [];
+    try {
+      // Check if already completed
+      const { data: existing } = await supabase
+        .from('semester_completions')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('semester_number', semesterNumber)
+        .maybeSingle();
 
-    // Check if already completed
-    if (!completedSemesters.find(s => s.semesterNumber === semesterNumber)) {
-      const newCompletion: CompletedSemester = {
-        semesterNumber,
-        completedAt: new Date().toISOString(),
-        semesterType,
-      };
-      completedSemesters.push(newCompletion);
-      localStorage.setItem(storageKey, JSON.stringify(completedSemesters));
+      if (!existing) {
+        // Insert new completion
+        const { error } = await supabase
+          .from('semester_completions')
+          .insert({
+            user_id: user.id,
+            semester_number: semesterNumber,
+            semester_type: semesterType,
+          });
+
+        if (error) {
+          console.error('Error completing semester:', error);
+          return;
+        }
+      }
+
+      // Refresh progress
+      await fetchProgress();
+    } catch (error) {
+      console.error('Error completing semester:', error);
     }
-
-    // Refresh progress
-    await fetchProgress();
   }, [user, fetchProgress]);
 
   const getCompletedSemesterByNumber = useCallback((semNum: number): CompletedSemester | undefined => {
