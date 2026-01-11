@@ -21,6 +21,8 @@ interface SemesterProgress {
   firstSemesterNumber: number; // The semester number when user joined
   hasMissedSemester: boolean; // True if user needs to complete an earlier semester first
   calendarSemesterNumber: number; // The current calendar semester number
+  canCompleteSemester: boolean; // True if current date is within the semester period
+  semesterStartDate: Date | null; // When the next semester starts
 }
 
 const yearToNumber: Record<string, number> = {
@@ -51,6 +53,8 @@ export const useSemesterProgress = () => {
     firstSemesterNumber: 1,
     hasMissedSemester: false,
     calendarSemesterNumber: 1,
+    canCompleteSemester: false,
+    semesterStartDate: null,
   });
 
   const fetchProgress = useCallback(async () => {
@@ -188,6 +192,31 @@ export const useSemesterProgress = () => {
         }
       }
 
+      // Calculate if the user can complete the semester (are we in that semester's time period?)
+      // Fall: July-December, Spring: January-May
+      // Calculate what year the next semester to complete falls in
+      const nextSemYearOffset = Math.floor((nextSemesterToComplete - 1) / 2);
+      const nextSemIsFall = nextSemesterToComplete % 2 === 1;
+      
+      let semesterStartDate: Date | null = null;
+      let canCompleteSemester = false;
+      
+      if (startYear) {
+        if (nextSemIsFall) {
+          // Fall semester starts in July of (startYear + yearOffset)
+          semesterStartDate = new Date(startYear + nextSemYearOffset, 6, 1); // July 1
+        } else {
+          // Spring semester starts in January of (startYear + yearOffset + 1)
+          semesterStartDate = new Date(startYear + nextSemYearOffset + 1, 0, 1); // January 1
+        }
+        
+        // User can complete if current date is on or after the semester start date
+        canCompleteSemester = currentDate >= semesterStartDate;
+      } else {
+        // If no start year, allow completion
+        canCompleteSemester = true;
+      }
+
       setProgress({
         currentSemester: nextSemesterType,
         completedSemesters,
@@ -200,6 +229,8 @@ export const useSemesterProgress = () => {
         firstSemesterNumber,
         hasMissedSemester: nextSemesterToComplete < semesterNumber,
         calendarSemesterNumber: semesterNumber,
+        canCompleteSemester,
+        semesterStartDate,
       });
     } catch (error) {
       console.error('Error fetching semester progress:', error);

@@ -77,6 +77,8 @@ export const AcademicStatusSection = () => {
     cooldownEndsAt,
     lastCompletedSemester,
     hasMissedSemester,
+    canCompleteSemester,
+    semesterStartDate,
     loading: semesterLoading
   } = useSemesterProgress();
 
@@ -317,6 +319,30 @@ export const AcademicStatusSection = () => {
                       </div>
                     </div>
                   </div>
+                ) : !canCompleteSemester ? (
+                  <>
+                    <div className="bg-muted/50 border rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <Clock className="h-5 w-5 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="font-medium">Semester Not Started Yet</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Your {currentSemester === 'fall' ? 'Fall' : 'Spring'} semester starts{' '}
+                            {semesterStartDate ? semesterStartDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'soon'}.
+                            Check back then!
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <Button 
+                      disabled
+                      className={`w-full bg-gradient-to-r ${semesterInfo.gradient} opacity-50 cursor-not-allowed`}
+                      size="lg"
+                    >
+                      <semesterInfo.icon className="h-5 w-5 mr-2" />
+                      {semesterInfo.label}
+                    </Button>
+                  </>
                 ) : hasMissedSemester ? (
                   <>
                     <div className="bg-muted/50 border rounded-lg p-4">
@@ -369,8 +395,8 @@ export const AcademicStatusSection = () => {
             </div>
           )}
 
-          {/* Year Completion / Graduation Button - Only for eligible students */}
-          {!isAlumni && (
+          {/* Year Completion / Graduation Button - Only for eligible students who can complete semesters */}
+          {!isAlumni && canCompleteSemester && (
             <div className="pt-4 border-t">
               {canCompleteYear || canGraduate ? (
                 <div className="space-y-4">
