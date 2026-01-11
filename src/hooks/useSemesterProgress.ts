@@ -2,12 +2,21 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
+interface CompletedSemester {
+  semesterNumber: number;
+  completedAt: string; // ISO date string
+  semesterType: 'fall' | 'spring';
+}
+
 interface SemesterProgress {
   currentSemester: 'fall' | 'spring';
-  completedSemesters: number[]; // Array of completed semester numbers
-  totalSemesters: number; // Total semesters based on program duration
-  semesterNumber: number; // Current semester number (1-8 for 4-year)
+  completedSemesters: CompletedSemester[];
+  totalSemesters: number;
+  semesterNumber: number;
   loading: boolean;
+  cooldownActive: boolean;
+  cooldownEndsAt: Date | null;
+  lastCompletedSemester: CompletedSemester | null;
 }
 
 const yearToNumber: Record<string, number> = {
@@ -22,6 +31,8 @@ const yearToNumber: Record<string, number> = {
   'Final Year': 4,
 };
 
+const COOLDOWN_MONTHS = 4; // 4-5 months cooldown
+
 export const useSemesterProgress = () => {
   const { user } = useAuth();
   const [progress, setProgress] = useState<SemesterProgress>({
@@ -30,6 +41,9 @@ export const useSemesterProgress = () => {
     totalSemesters: 8,
     semesterNumber: 1,
     loading: true,
+    cooldownActive: false,
+    cooldownEndsAt: null,
+    lastCompletedSemester: null,
   });
 
   const fetchProgress = useCallback(async () => {
@@ -59,19 +73,17 @@ export const useSemesterProgress = () => {
         : 4;
       const totalSemesters = programYears * 2;
 
-      // Get completed semesters from local storage for now
-      // In production, this should be stored in the database
+      // Get completed semesters from local storage
       const storageKey = `semester_progress_${user.id}`;
       const stored = localStorage.getItem(storageKey);
-      const completedSemesters: number[] = stored ? JSON.parse(stored) : [];
+      const completedSemesters: CompletedSemester[] = stored ? JSON.parse(stored) : [];
 
       // Calculate current semester based on year and completed semesters
-      // Each year has 2 semesters: odd = fall, even = spring
       const fallSemester = (yearNumber - 1) * 2 + 1;
       const springSemester = fallSemester + 1;
 
-      const fallCompleted = completedSemesters.includes(fallSemester);
-      const springCompleted = completedSemesters.includes(springSemester);
+      const fallCompleted = completedSemesters.find(s => s.semesterNumber === fallSemester);
+      const springCompleted = completedSemesters.find(s => s.semesterNumber === springSemester);
 
       let currentSemester: 'fall' | 'spring' = 'fall';
       let semesterNumber = fallSemester;
@@ -84,12 +96,35 @@ export const useSemesterProgress = () => {
         semesterNumber = fallSemester;
       }
 
+      // Check cooldown - last completed semester
+      const sortedCompleted = [...completedSemesters].sort(
+        (a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+      );
+      const lastCompleted = sortedCompleted[0] || null;
+
+      let cooldownActive = false;
+      let cooldownEndsAt: Date | null = null;
+
+      if (lastCompleted) {
+        const completedDate = new Date(lastCompleted.completedAt);
+        const cooldownEnd = new Date(completedDate);
+        cooldownEnd.setMonth(cooldownEnd.getMonth() + COOLDOWN_MONTHS);
+        
+        if (new Date() < cooldownEnd) {
+          cooldownActive = true;
+          cooldownEndsAt = cooldownEnd;
+        }
+      }
+
       setProgress({
         currentSemester,
         completedSemesters,
         totalSemesters,
         semesterNumber,
         loading: false,
+        cooldownActive,
+        cooldownEndsAt,
+        lastCompletedSemester: lastCompleted,
       });
     } catch (error) {
       console.error('Error fetching semester progress:', error);
@@ -101,15 +136,21 @@ export const useSemesterProgress = () => {
     fetchProgress();
   }, [fetchProgress]);
 
-  const completeSemester = useCallback(async (semesterNumber: number) => {
+  const completeSemester = useCallback(async (semesterNumber: number, semesterType: 'fall' | 'spring') => {
     if (!user) return;
 
     const storageKey = `semester_progress_${user.id}`;
     const stored = localStorage.getItem(storageKey);
-    const completedSemesters: number[] = stored ? JSON.parse(stored) : [];
+    const completedSemesters: CompletedSemester[] = stored ? JSON.parse(stored) : [];
 
-    if (!completedSemesters.includes(semesterNumber)) {
-      completedSemesters.push(semesterNumber);
+    // Check if already completed
+    if (!completedSemesters.find(s => s.semesterNumber === semesterNumber)) {
+      const newCompletion: CompletedSemester = {
+        semesterNumber,
+        completedAt: new Date().toISOString(),
+        semesterType,
+      };
+      completedSemesters.push(newCompletion);
       localStorage.setItem(storageKey, JSON.stringify(completedSemesters));
     }
 
@@ -117,7 +158,16 @@ export const useSemesterProgress = () => {
     await fetchProgress();
   }, [user, fetchProgress]);
 
-  return { ...progress, completeSemester, refetch: fetchProgress };
+  const getCompletedSemesterByNumber = useCallback((semNum: number): CompletedSemester | undefined => {
+    return progress.completedSemesters.find(s => s.semesterNumber === semNum);
+  }, [progress.completedSemesters]);
+
+  return { 
+    ...progress, 
+    completeSemester, 
+    refetch: fetchProgress,
+    getCompletedSemesterByNumber,
+  };
 };
 
 export default useSemesterProgress;

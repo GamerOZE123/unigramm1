@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { GraduationCap, Calendar, Award, AlertCircle, Sparkles, MessageSquare, CheckCircle, Clock, FileCheck, Leaf, Flower2 } from 'lucide-react';
+import { GraduationCap, Calendar, Award, AlertCircle, Sparkles, MessageSquare, CheckCircle, Clock, FileCheck, Leaf, Flower2, History, Lock } from 'lucide-react';
 import { useGraduationEligibility } from '@/hooks/useGraduationEligibility';
 import { useYearEligibility } from '@/hooks/useYearEligibility';
 import { useSemesterProgress } from '@/hooks/useSemesterProgress';
@@ -43,6 +43,8 @@ export const AcademicStatusSection = () => {
   const [showWrappedModal, setShowWrappedModal] = useState(false);
   const [showYearWrappedModal, setShowYearWrappedModal] = useState(false);
   const [showSemesterWrappedModal, setShowSemesterWrappedModal] = useState(false);
+  const [showPastSemesterModal, setShowPastSemesterModal] = useState(false);
+  const [pastSemesterToView, setPastSemesterToView] = useState<{ semesterNumber: number; semesterType: 'fall' | 'spring' } | null>(null);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>({ status: 'none' });
@@ -70,6 +72,10 @@ export const AcademicStatusSection = () => {
     currentSemester,
     semesterNumber,
     completeSemester,
+    completedSemesters,
+    cooldownActive,
+    cooldownEndsAt,
+    lastCompletedSemester,
     loading: semesterLoading
   } = useSemesterProgress();
 
@@ -155,9 +161,26 @@ export const AcademicStatusSection = () => {
   };
 
   const handleSemesterCompleted = () => {
-    if (semesterNumber) {
-      completeSemester(semesterNumber);
+    if (semesterNumber && currentSemester) {
+      completeSemester(semesterNumber, currentSemester);
     }
+  };
+
+  const handleViewPastSemester = (semNum: number, semType: 'fall' | 'spring') => {
+    setPastSemesterToView({ semesterNumber: semNum, semesterType: semType });
+    setShowPastSemesterModal(true);
+  };
+
+  const formatCooldownDate = (date: Date | null): string => {
+    if (!date) return '';
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const getDaysUntilCooldownEnds = (): number => {
+    if (!cooldownEndsAt) return 0;
+    const now = new Date();
+    const diff = cooldownEndsAt.getTime() - now.getTime();
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
   };
 
   const renderVerificationStatus = () => {
@@ -259,27 +282,65 @@ export const AcademicStatusSection = () => {
           {!isAlumni && currentSemester && semesterInfo && (
             <div className="pt-4 border-t">
               <div className="space-y-4">
-                <div className={`bg-gradient-to-r ${semesterInfo.gradient}/10 border border-${currentSemester === 'fall' ? 'orange' : 'pink'}-500/20 rounded-lg p-4`}>
-                  <div className="flex items-start gap-3">
-                    <semesterInfo.icon className={`h-5 w-5 ${currentSemester === 'fall' ? 'text-orange-500' : 'text-pink-500'} mt-0.5`} />
-                    <div>
-                      <p className={`font-medium ${currentSemester === 'fall' ? 'text-orange-600 dark:text-orange-400' : 'text-pink-600 dark:text-pink-400'}`}>
-                        {currentSemester === 'fall' ? 'Fall' : 'Spring'} Semester
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Complete your {currentSemester === 'fall' ? 'fall' : 'spring'} semester and view your Semester Wrapped!
-                      </p>
+                {/* Past Semesters Button */}
+                {completedSemesters.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {completedSemesters.map((completed) => (
+                      <Button
+                        key={completed.semesterNumber}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewPastSemester(completed.semesterNumber, completed.semesterType)}
+                        className="text-xs"
+                      >
+                        <History className="h-3 w-3 mr-1" />
+                        View {completed.semesterType === 'fall' ? 'Fall' : 'Spring'} #{Math.ceil(completed.semesterNumber / 2)} Wrap
+                      </Button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Cooldown State */}
+                {cooldownActive ? (
+                  <div className="bg-muted/50 border rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <Lock className="h-5 w-5 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="font-medium">Semester Wrapped Locked</p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Available in {getDaysUntilCooldownEnds()} days ({formatCooldownDate(cooldownEndsAt)})
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Complete your next semester to unlock your wrapped experience!
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <Button 
-                  onClick={handleSemesterComplete}
-                  className={`w-full bg-gradient-to-r ${semesterInfo.gradient} hover:opacity-90`}
-                  size="lg"
-                >
-                  <semesterInfo.icon className="h-5 w-5 mr-2" />
-                  {semesterInfo.label}
-                </Button>
+                ) : (
+                  <>
+                    <div className={`bg-gradient-to-r ${semesterInfo.gradient}/10 border border-${currentSemester === 'fall' ? 'orange' : 'pink'}-500/20 rounded-lg p-4`}>
+                      <div className="flex items-start gap-3">
+                        <semesterInfo.icon className={`h-5 w-5 ${currentSemester === 'fall' ? 'text-orange-500' : 'text-pink-500'} mt-0.5`} />
+                        <div>
+                          <p className={`font-medium ${currentSemester === 'fall' ? 'text-orange-600 dark:text-orange-400' : 'text-pink-600 dark:text-pink-400'}`}>
+                            {currentSemester === 'fall' ? 'Fall' : 'Spring'} Semester
+                          </p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Complete your {currentSemester === 'fall' ? 'fall' : 'spring'} semester and view your Semester Wrapped!
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={handleSemesterComplete}
+                      className={`w-full bg-gradient-to-r ${semesterInfo.gradient} hover:opacity-90`}
+                      size="lg"
+                    >
+                      <semesterInfo.icon className="h-5 w-5 mr-2" />
+                      {semesterInfo.label}
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -477,6 +538,22 @@ export const AcademicStatusSection = () => {
           yearLabel={yearLabel}
           yearNumber={yearNumber}
           onSemesterComplete={handleSemesterCompleted}
+        />
+      )}
+
+      {/* Past Semester Wrapped Modal */}
+      {pastSemesterToView && yearNumber && yearLabel && (
+        <SemesterWrappedModal
+          open={showPastSemesterModal}
+          onClose={() => {
+            setShowPastSemesterModal(false);
+            setPastSemesterToView(null);
+          }}
+          semesterType={pastSemesterToView.semesterType}
+          semesterNumber={pastSemesterToView.semesterNumber}
+          yearLabel={yearLabel}
+          yearNumber={yearNumber}
+          viewOnly={true}
         />
       )}
 

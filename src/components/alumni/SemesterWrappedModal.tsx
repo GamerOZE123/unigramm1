@@ -17,6 +17,7 @@ interface SemesterWrappedModalProps {
   yearLabel: string;
   yearNumber: number;
   onSemesterComplete?: () => void;
+  viewOnly?: boolean; // For viewing past wraps
 }
 
 const semesterEmojis = {
@@ -42,6 +43,7 @@ export const SemesterWrappedModal = ({
   yearLabel,
   yearNumber,
   onSemesterComplete,
+  viewOnly = false,
 }: SemesterWrappedModalProps) => {
   const { user } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -160,7 +162,11 @@ export const SemesterWrappedModal = ({
   };
 
   const handleDone = () => {
-    setShowNextChoice(true);
+    if (viewOnly) {
+      onClose();
+    } else {
+      setShowNextChoice(true);
+    }
   };
 
   const handleConfirmComplete = async () => {
