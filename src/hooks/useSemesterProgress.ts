@@ -199,19 +199,22 @@ export const useSemesterProgress = () => {
       const nextSemIsFall = nextSemesterToComplete % 2 === 1;
       
       let semesterStartDate: Date | null = null;
+      let semesterEndDate: Date | null = null;
       let canCompleteSemester = false;
       
       if (startYear) {
         if (nextSemIsFall) {
-          // Fall semester starts in July of (startYear + yearOffset)
+          // Fall semester: July - December of (startYear + yearOffset)
           semesterStartDate = new Date(startYear + nextSemYearOffset, 6, 1); // July 1
+          semesterEndDate = new Date(startYear + nextSemYearOffset, 11, 31); // December 31
         } else {
-          // Spring semester starts in January of (startYear + yearOffset + 1)
+          // Spring semester: January - May of (startYear + yearOffset + 1)
           semesterStartDate = new Date(startYear + nextSemYearOffset + 1, 0, 1); // January 1
+          semesterEndDate = new Date(startYear + nextSemYearOffset + 1, 4, 31); // May 31
         }
         
-        // User can complete if current date is on or after the semester start date
-        canCompleteSemester = currentDate >= semesterStartDate;
+        // User can complete if current date is within the semester period (start <= current <= end)
+        canCompleteSemester = currentDate >= semesterStartDate && currentDate <= semesterEndDate;
       } else {
         // If no start year, allow completion
         canCompleteSemester = true;
