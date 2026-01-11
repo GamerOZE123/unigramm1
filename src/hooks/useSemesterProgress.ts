@@ -19,6 +19,8 @@ interface SemesterProgress {
   cooldownEndsAt: Date | null;
   lastCompletedSemester: CompletedSemester | null;
   firstSemesterNumber: number; // The semester number when user joined
+  hasMissedSemester: boolean; // True if user needs to complete an earlier semester first
+  calendarSemesterNumber: number; // The current calendar semester number
 }
 
 const yearToNumber: Record<string, number> = {
@@ -47,6 +49,8 @@ export const useSemesterProgress = () => {
     cooldownEndsAt: null,
     lastCompletedSemester: null,
     firstSemesterNumber: 1,
+    hasMissedSemester: false,
+    calendarSemesterNumber: 1,
   });
 
   const fetchProgress = useCallback(async () => {
@@ -194,6 +198,8 @@ export const useSemesterProgress = () => {
         cooldownEndsAt,
         lastCompletedSemester: lastCompleted,
         firstSemesterNumber,
+        hasMissedSemester: nextSemesterToComplete < semesterNumber,
+        calendarSemesterNumber: semesterNumber,
       });
     } catch (error) {
       console.error('Error fetching semester progress:', error);

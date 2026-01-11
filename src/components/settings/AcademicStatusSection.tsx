@@ -76,6 +76,7 @@ export const AcademicStatusSection = () => {
     cooldownActive,
     cooldownEndsAt,
     lastCompletedSemester,
+    hasMissedSemester,
     loading: semesterLoading
   } = useSemesterProgress();
 
@@ -316,6 +317,29 @@ export const AcademicStatusSection = () => {
                       </div>
                     </div>
                   </div>
+                ) : hasMissedSemester ? (
+                  <>
+                    <div className="bg-muted/50 border rounded-lg p-4">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="h-5 w-5 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="font-medium">Complete Your Previous Semester First</p>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            You need to complete your {currentSemester === 'fall' ? 'Fall' : 'Spring'} semester before moving on. 
+                            Click below when you're ready!
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={handleSemesterComplete}
+                      className={`w-full bg-gradient-to-r ${semesterInfo.gradient} hover:opacity-90`}
+                      size="lg"
+                    >
+                      <semesterInfo.icon className="h-5 w-5 mr-2" />
+                      {semesterInfo.label}
+                    </Button>
+                  </>
                 ) : (
                   <>
                     <div className={`bg-gradient-to-r ${semesterInfo.gradient}/10 border border-${currentSemester === 'fall' ? 'orange' : 'pink'}-500/20 rounded-lg p-4`}>
