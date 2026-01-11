@@ -19,6 +19,9 @@ export interface ProfileCompletionData {
   academic_year: string;
   start_year: number | null;
   expected_graduation_year: number | null;
+  course_id: string | null;
+  course_duration_years: number | null;
+  course_total_semesters: number | null;
 }
 
 export const useProfileCompletion = () => {
@@ -40,7 +43,10 @@ export const useProfileCompletion = () => {
     skills: [],
     academic_year: '',
     start_year: null,
-    expected_graduation_year: null
+    expected_graduation_year: null,
+    course_id: null,
+    course_duration_years: null,
+    course_total_semesters: null
   });
 
   const saveStep = async (stepData: Partial<ProfileCompletionData>) => {

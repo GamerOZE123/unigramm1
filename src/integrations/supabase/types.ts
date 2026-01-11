@@ -2176,6 +2176,7 @@ export type Database = {
           campus_groups: string[] | null
           campus_year: string | null
           country: string | null
+          course_id: string | null
           created_at: string
           email: string | null
           expected_graduation_year: number | null
@@ -2215,6 +2216,7 @@ export type Database = {
           campus_groups?: string[] | null
           campus_year?: string | null
           country?: string | null
+          course_id?: string | null
           created_at?: string
           email?: string | null
           expected_graduation_year?: number | null
@@ -2254,6 +2256,7 @@ export type Database = {
           campus_groups?: string[] | null
           campus_year?: string | null
           country?: string | null
+          course_id?: string | null
           created_at?: string
           email?: string | null
           expected_graduation_year?: number | null
@@ -2281,7 +2284,15 @@ export type Database = {
           username?: string
           website_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "university_courses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recent_chats: {
         Row: {
@@ -2948,6 +2959,47 @@ export type Database = {
         }
         Relationships: []
       }
+      university_courses: {
+        Row: {
+          course_name: string
+          created_at: string
+          duration_years: number
+          force_enable_graduation: boolean
+          id: string
+          total_semesters: number
+          university_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          course_name: string
+          created_at?: string
+          duration_years?: number
+          force_enable_graduation?: boolean
+          id?: string
+          total_semesters?: number
+          university_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          course_name?: string
+          created_at?: string
+          duration_years?: number
+          force_enable_graduation?: boolean
+          id?: string
+          total_semesters?: number
+          university_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "university_courses_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       university_reviews: {
         Row: {
           created_at: string | null
@@ -3363,6 +3415,7 @@ export type Database = {
           campus_groups: string[] | null
           campus_year: string | null
           country: string | null
+          course_id: string | null
           created_at: string
           email: string | null
           expected_graduation_year: number | null

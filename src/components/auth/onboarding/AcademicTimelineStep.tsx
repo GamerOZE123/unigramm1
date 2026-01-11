@@ -10,6 +10,7 @@ interface AcademicTimelineStepProps {
   onStartYearChange: (year: number) => void;
   onExpectedGraduationYearChange: (year: number) => void;
   onAcademicYearChange: (year: string) => void;
+  courseDurationYears?: number | null;
 }
 
 const currentYear = new Date().getFullYear();
@@ -33,6 +34,7 @@ export const AcademicTimelineStep = ({
   onStartYearChange,
   onExpectedGraduationYearChange,
   onAcademicYearChange,
+  courseDurationYears,
 }: AcademicTimelineStepProps) => {
   return (
     <div className="space-y-6">
@@ -98,21 +100,30 @@ export const AcademicTimelineStep = ({
         {/* Expected Graduation Year */}
         <div className="space-y-2">
           <Label htmlFor="graduation-year">Expected graduation year</Label>
-          <Select
-            value={expectedGraduationYear?.toString() || ''}
-            onValueChange={(value) => onExpectedGraduationYearChange(parseInt(value))}
-          >
-            <SelectTrigger id="graduation-year">
-              <SelectValue placeholder="Select expected graduation year" />
-            </SelectTrigger>
-            <SelectContent>
-              {graduationYears.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {courseDurationYears && startYear ? (
+            <div className="bg-muted/50 rounded-md p-3">
+              <p className="font-medium">{startYear + courseDurationYears}</p>
+              <p className="text-xs text-muted-foreground">
+                Auto-calculated based on your course duration ({courseDurationYears} years)
+              </p>
+            </div>
+          ) : (
+            <Select
+              value={expectedGraduationYear?.toString() || ''}
+              onValueChange={(value) => onExpectedGraduationYearChange(parseInt(value))}
+            >
+              <SelectTrigger id="graduation-year">
+                <SelectValue placeholder="Select expected graduation year" />
+              </SelectTrigger>
+              <SelectContent>
+                {graduationYears.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
         </div>
       </div>
 
