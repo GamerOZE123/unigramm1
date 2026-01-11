@@ -65,26 +65,38 @@ export const useSemesterEligibility = () => {
         const yearNumber = academicYear ? yearMapping[academicYear] : null;
         const startYear = profile?.start_year;
 
-        // Calculate current semester based on year and which semester they're in
-        // Each year has 2 semesters: Fall (1st) and Spring (2nd)
+        // Calculate current semester based on year and current month
+        // Academic calendar:
+        // - Fall/Monsoon semester: July (7) to December (12)
+        // - Spring semester: January (1) to May (5)
+        // - June is typically a break month
         let currentSemester: 'fall' | 'spring' | null = null;
         let semesterNumber: number | null = null;
         let semesterLabel: string | null = null;
 
         if (yearNumber && startYear) {
-          // Calculate total semesters: (yearNumber - 1) * 2 + current semester
-          // Semester 1 = Year 1 Fall, Semester 2 = Year 1 Spring, etc.
+          const currentMonth = new Date().getMonth() + 1; // 1-12
           
-          // For simplicity, we assume:
-          // - Fall semester: Semesters 1, 3, 5, 7... (odd)
-          // - Spring semester: Semesters 2, 4, 6, 8... (even)
-          // Users manually complete each semester
-          
-          // Default to fall semester for each year if not tracked
-          // We'll need to track completed semesters separately
-          currentSemester = 'fall';
-          semesterNumber = (yearNumber - 1) * 2 + 1; // Start with fall semester
-          semesterLabel = `${academicYear} - Fall Semester`;
+          // Determine current semester based on month
+          // Fall: July (7) - December (12)
+          // Spring: January (1) - May (5)
+          // June (6) is break - show as preparing for next fall
+          if (currentMonth >= 7 && currentMonth <= 12) {
+            currentSemester = 'fall';
+            // Fall is the first semester of the academic year
+            semesterNumber = (yearNumber - 1) * 2 + 1;
+            semesterLabel = `${academicYear} - Fall Semester`;
+          } else if (currentMonth >= 1 && currentMonth <= 5) {
+            currentSemester = 'spring';
+            // Spring is the second semester of the academic year
+            semesterNumber = (yearNumber - 1) * 2 + 2;
+            semesterLabel = `${academicYear} - Spring Semester`;
+          } else {
+            // June - break month, prepare for next fall
+            currentSemester = 'fall';
+            semesterNumber = (yearNumber - 1) * 2 + 1;
+            semesterLabel = `${academicYear} - Fall Semester (Upcoming)`;
+          }
         }
 
         // Check if university allows semester wrapped (use graduation button setting)
