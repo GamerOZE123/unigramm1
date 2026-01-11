@@ -32,10 +32,10 @@ export const useGraduationEligibility = () => {
       }
 
       try {
-        // Get user profile
+        // Get user profile with course_id
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('academic_year, expected_graduation_year, account_status, university')
+          .select('academic_year, expected_graduation_year, account_status, university, course_id')
           .eq('user_id', user.id)
           .single();
 
@@ -47,6 +47,8 @@ export const useGraduationEligibility = () => {
 
         // Check if university allows graduation button
         let graduationButtonEnabled = false;
+        let forceEnableGraduation = false;
+
         if (profile?.university) {
           // Try matching by abbreviation first, then by name
           const { data: university } = await supabase
@@ -58,16 +60,29 @@ export const useGraduationEligibility = () => {
           graduationButtonEnabled = university?.allow_graduation_button || false;
         }
 
-        // Can graduate if final year AND button is enabled AND still a student
+        // Check if course has force_enable_graduation flag
+        if (profile?.course_id) {
+          const { data: course } = await supabase
+            .from('university_courses')
+            .select('force_enable_graduation')
+            .eq('id', profile.course_id)
+            .maybeSingle();
+
+          forceEnableGraduation = course?.force_enable_graduation || false;
+        }
+
+        // Can graduate if:
+        // 1. Force enabled for this course, OR
+        // 2. Final year AND university button enabled
+        // AND still a student
         const canGraduate = 
-          isFinalYear && 
-          graduationButtonEnabled && 
+          (forceEnableGraduation || (isFinalYear && graduationButtonEnabled)) && 
           (profile?.account_status === 'student' || !profile?.account_status);
 
         setEligibility({
           canGraduate,
           isFinalYear,
-          graduationButtonEnabled,
+          graduationButtonEnabled: graduationButtonEnabled || forceEnableGraduation,
           accountStatus: (profile?.account_status as 'student' | 'alumni' | 'verified_alumni') || 'student',
           academicYear: profile?.academic_year || null,
           expectedGraduationYear: profile?.expected_graduation_year || null,

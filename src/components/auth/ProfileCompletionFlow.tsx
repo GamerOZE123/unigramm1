@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ import { BioStep } from './onboarding/BioStep';
 import { SkillsStep } from './onboarding/SkillsStep';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProfileCompletionFlowProps {
   open: boolean;
@@ -25,6 +27,7 @@ interface ProfileCompletionFlowProps {
 
 export const ProfileCompletionFlow = ({ open, onComplete }: ProfileCompletionFlowProps) => {
   const navigate = useNavigate();
+  const [university, setUniversity] = useState<string | null>(null);
   const {
     currentStep,
     formData,
@@ -37,6 +40,25 @@ export const ProfileCompletionFlow = ({ open, onComplete }: ProfileCompletionFlo
     skipStep,
     loading
   } = useProfileCompletion();
+
+  // Fetch user's university on mount
+  useEffect(() => {
+    const fetchUniversity = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('university')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile?.university) {
+          setUniversity(profile.university);
+        }
+      }
+    };
+    fetchUniversity();
+  }, []);
 
   const totalSteps = 11;
   const progress = (currentStep / totalSteps) * 100;
@@ -59,7 +81,10 @@ export const ProfileCompletionFlow = ({ open, onComplete }: ProfileCompletionFlo
     
     switch (currentStep) {
       case 1:
-        stepData = { major: formData.major };
+        stepData = { 
+          major: formData.major,
+          course_id: formData.course_id
+        };
         break;
       case 2:
         stepData = { 
@@ -135,6 +160,16 @@ export const ProfileCompletionFlow = ({ open, onComplete }: ProfileCompletionFlo
           <MajorStep
             value={formData.major}
             onChange={(value) => setFormData({ ...formData, major: value })}
+            courseId={formData.course_id}
+            onCourseChange={(courseId, course) => {
+              setFormData({ 
+                ...formData, 
+                course_id: courseId,
+                course_duration_years: course?.duration_years || null,
+                course_total_semesters: course?.total_semesters || null
+              });
+            }}
+            university={university}
           />
         );
       case 2:
@@ -143,9 +178,20 @@ export const ProfileCompletionFlow = ({ open, onComplete }: ProfileCompletionFlo
             startYear={formData.start_year}
             expectedGraduationYear={formData.expected_graduation_year}
             academicYear={formData.academic_year}
-            onStartYearChange={(year) => setFormData({ ...formData, start_year: year })}
+            onStartYearChange={(year) => {
+              // Auto-calculate expected graduation year if course duration is set
+              const expectedGradYear = formData.course_duration_years 
+                ? year + formData.course_duration_years 
+                : formData.expected_graduation_year;
+              setFormData({ 
+                ...formData, 
+                start_year: year,
+                expected_graduation_year: expectedGradYear
+              });
+            }}
             onExpectedGraduationYearChange={(year) => setFormData({ ...formData, expected_graduation_year: year })}
             onAcademicYearChange={(year) => setFormData({ ...formData, academic_year: year })}
+            courseDurationYears={formData.course_duration_years}
           />
         );
       case 3:

@@ -67,7 +67,7 @@ export const useSemesterProgress = () => {
       // Get user profile to determine current year and account creation date
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('academic_year, start_year, expected_graduation_year, created_at')
+        .select('academic_year, start_year, expected_graduation_year, created_at, course_id')
         .eq('user_id', user.id)
         .single();
 
@@ -77,11 +77,24 @@ export const useSemesterProgress = () => {
       const expectedGradYear = profile?.expected_graduation_year;
       const accountCreatedAt = profile?.created_at ? new Date(profile.created_at) : new Date();
 
-      // Calculate total semesters based on expected program length
-      const programYears = expectedGradYear && startYear 
-        ? expectedGradYear - startYear 
-        : 4;
-      const totalSemesters = programYears * 2;
+      // Get total semesters from course if available, otherwise calculate from years
+      let totalSemesters = 8; // default
+
+      if (profile?.course_id) {
+        const { data: course } = await supabase
+          .from('university_courses')
+          .select('total_semesters')
+          .eq('id', profile.course_id)
+          .maybeSingle();
+
+        if (course?.total_semesters) {
+          totalSemesters = course.total_semesters;
+        }
+      } else if (expectedGradYear && startYear) {
+        // Fallback to calculating from years
+        const programYears = expectedGradYear - startYear;
+        totalSemesters = programYears * 2;
+      }
 
       // Get completed semesters from Supabase
       const { data: completionsData, error: completionsError } = await supabase
