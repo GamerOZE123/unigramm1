@@ -65,6 +65,7 @@ export const AcademicStatusSection = () => {
     yearNumber,
     yearLabel,
     isGraduationYear,
+    forceEnableGraduation: yearForceGraduation,
     loading: yearLoading
   } = useYearEligibility();
 
@@ -79,8 +80,12 @@ export const AcademicStatusSection = () => {
     hasMissedSemester,
     canCompleteSemester,
     semesterStartDate,
+    forceEnableGraduation: semesterForceGraduation,
     loading: semesterLoading
   } = useSemesterProgress();
+
+  // If any hook returns forceEnableGraduation, we show only graduation
+  const forceEnableGraduation = yearForceGraduation || semesterForceGraduation;
 
   const loading = graduationLoading || yearLoading || semesterLoading;
 
@@ -281,8 +286,8 @@ export const AcademicStatusSection = () => {
             </div>
           )}
 
-          {/* Semester Completion - Only for students */}
-          {!isAlumni && currentSemester && semesterInfo && (
+          {/* Semester Completion - Only for students, hidden when forceEnableGraduation is true */}
+          {!isAlumni && !forceEnableGraduation && currentSemester && semesterInfo && (
             <div className="pt-4 border-t">
               <div className="space-y-4">
                 {/* Past Semesters Button */}
@@ -395,8 +400,35 @@ export const AcademicStatusSection = () => {
             </div>
           )}
 
-          {/* Year Completion / Graduation Button - Only for eligible students who can complete semesters */}
-          {!isAlumni && canCompleteSemester && (
+          {/* Force Graduation Button - For courses with force_enable_graduation flag */}
+          {!isAlumni && forceEnableGraduation && canGraduate && (
+            <div className="pt-4 border-t">
+              <div className="space-y-4">
+                <div className="bg-primary/10 border-primary/20 border rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <GraduationCap className="h-5 w-5 text-primary mt-0.5" />
+                    <div>
+                      <p className="font-medium text-primary">Ready to Graduate!</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Your course allows direct graduation. Click below to start your graduation process and transition to Alumni status.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => setShowWrappedModal(true)}
+                  size="lg"
+                  className="w-full"
+                >
+                  <GraduationCap className="h-5 w-5 mr-2" />
+                  I Graduated 🎓
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Year Completion / Graduation Button - Only for eligible students who can complete semesters (not for forceEnableGraduation) */}
+          {!isAlumni && !forceEnableGraduation && canCompleteSemester && (
             <div className="pt-4 border-t">
               {canCompleteYear || canGraduate ? (
                 <div className="space-y-4">
