@@ -65,37 +65,66 @@ export const useSemesterEligibility = () => {
         const yearNumber = academicYear ? yearMapping[academicYear] : null;
         const startYear = profile?.start_year;
 
-        // Calculate current semester based on year and current month
+        // Calculate current semester based on start_year and current date
         // Academic calendar:
-        // - Fall/Monsoon semester: July (7) to December (12)
-        // - Spring semester: January (1) to May (5)
+        // - Fall/Monsoon semester: July (7) to December (12) - START of academic year
+        // - Spring semester: January (1) to May (5) - END of academic year
         // - June is typically a break month
+        // New academic year starts ONLY after monsoon/fall semester begins (July)
         let currentSemester: 'fall' | 'spring' | null = null;
         let semesterNumber: number | null = null;
         let semesterLabel: string | null = null;
+        let calculatedYearNumber: number | null = null;
 
-        if (yearNumber && startYear) {
-          const currentMonth = new Date().getMonth() + 1; // 1-12
+        if (startYear) {
+          const currentDate = new Date();
+          const currentYear = currentDate.getFullYear();
+          const currentMonth = currentDate.getMonth() + 1; // 1-12
+          
+          // Academic year starts in July
+          // Jan-June: Still in the academic year that started last July
+          // July-Dec: New academic year starts
+          const academicStartYear = currentMonth >= 7 ? currentYear : currentYear - 1;
+          const yearsCompleted = academicStartYear - startYear;
+          calculatedYearNumber = yearsCompleted + 1; // 1st year = 1, 2nd year = 2, etc.
+          
+          // Ensure year number is valid (at least 1)
+          if (calculatedYearNumber < 1) calculatedYearNumber = 1;
+          
+          // Get year label for display
+          const yearLabels: Record<number, string> = {
+            1: '1st Year',
+            2: '2nd Year', 
+            3: '3rd Year',
+            4: '4th Year',
+            5: '5th Year',
+            6: 'Graduate',
+            7: 'PhD',
+          };
+          const yearLabel = yearLabels[calculatedYearNumber] || `Year ${calculatedYearNumber}`;
           
           // Determine current semester based on month
-          // Fall: July (7) - December (12)
+          // Fall/Monsoon: July (7) - December (12)
           // Spring: January (1) - May (5)
           // June (6) is break - show as preparing for next fall
           if (currentMonth >= 7 && currentMonth <= 12) {
             currentSemester = 'fall';
             // Fall is the first semester of the academic year
-            semesterNumber = (yearNumber - 1) * 2 + 1;
-            semesterLabel = `${academicYear} - Fall Semester`;
+            semesterNumber = (calculatedYearNumber - 1) * 2 + 1;
+            semesterLabel = `${yearLabel} - Fall Semester`;
           } else if (currentMonth >= 1 && currentMonth <= 5) {
             currentSemester = 'spring';
-            // Spring is the second semester of the academic year
-            semesterNumber = (yearNumber - 1) * 2 + 2;
-            semesterLabel = `${academicYear} - Spring Semester`;
+            // Spring is the second semester of the same academic year
+            semesterNumber = (calculatedYearNumber - 1) * 2 + 2;
+            semesterLabel = `${yearLabel} - Spring Semester`;
           } else {
-            // June - break month, prepare for next fall
+            // June - break month, prepare for next fall (which will be the next academic year)
+            const nextYearNumber = calculatedYearNumber + 1;
+            const nextYearLabel = yearLabels[nextYearNumber] || `Year ${nextYearNumber}`;
             currentSemester = 'fall';
-            semesterNumber = (yearNumber - 1) * 2 + 1;
-            semesterLabel = `${academicYear} - Fall Semester (Upcoming)`;
+            semesterNumber = (nextYearNumber - 1) * 2 + 1;
+            semesterLabel = `${nextYearLabel} - Fall Semester (Upcoming)`;
+            calculatedYearNumber = nextYearNumber;
           }
         }
 
@@ -117,7 +146,7 @@ export const useSemesterEligibility = () => {
           semesterNumber,
           semesterLabel,
           academicYear,
-          yearNumber,
+          yearNumber: calculatedYearNumber,
           universityAllowsSemesterWrapped,
           loading: false,
         });
