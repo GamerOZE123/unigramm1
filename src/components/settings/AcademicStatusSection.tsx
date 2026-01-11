@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { GraduationCap, Calendar, Award, AlertCircle, Sparkles, MessageSquare, CheckCircle, Clock, FileCheck } from 'lucide-react';
+import { GraduationCap, Calendar, Award, AlertCircle, Sparkles, MessageSquare, CheckCircle, Clock, FileCheck, Leaf, Flower2 } from 'lucide-react';
 import { useGraduationEligibility } from '@/hooks/useGraduationEligibility';
 import { useYearEligibility } from '@/hooks/useYearEligibility';
+import { useSemesterProgress } from '@/hooks/useSemesterProgress';
 import { AccountBadge } from '@/components/alumni/AccountBadge';
 import GraduationWrappedModal from '@/components/alumni/GraduationWrappedModal';
 import YearWrappedModal from '@/components/alumni/YearWrappedModal';
+import SemesterWrappedModal from '@/components/alumni/SemesterWrappedModal';
 import AlumniVerificationModal from '@/components/alumni/AlumniVerificationModal';
 import UniversityReviewModal from '@/components/alumni/UniversityReviewModal';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,6 +27,11 @@ const yearButtonLabels: Record<string, string> = {
   'Final Year': 'I Graduated 🎓',
 };
 
+const semesterLabels = {
+  fall: { label: 'Fall Semester Done 🍂', icon: Leaf, gradient: 'from-orange-500 to-amber-500' },
+  spring: { label: 'Spring Semester Done 🌸', icon: Flower2, gradient: 'from-pink-500 to-rose-500' },
+};
+
 interface VerificationStatus {
   status: 'none' | 'pending' | 'approved' | 'rejected';
   verificationType?: string;
@@ -35,6 +42,7 @@ export const AcademicStatusSection = () => {
   const { user } = useAuth();
   const [showWrappedModal, setShowWrappedModal] = useState(false);
   const [showYearWrappedModal, setShowYearWrappedModal] = useState(false);
+  const [showSemesterWrappedModal, setShowSemesterWrappedModal] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>({ status: 'none' });
@@ -58,7 +66,14 @@ export const AcademicStatusSection = () => {
     loading: yearLoading
   } = useYearEligibility();
 
-  const loading = graduationLoading || yearLoading;
+  const {
+    currentSemester,
+    semesterNumber,
+    completeSemester,
+    loading: semesterLoading
+  } = useSemesterProgress();
+
+  const loading = graduationLoading || yearLoading || semesterLoading;
 
   // Fetch verification status
   useEffect(() => {
@@ -125,12 +140,23 @@ export const AcademicStatusSection = () => {
 
   const isAlumni = accountStatus === 'alumni' || accountStatus === 'verified_alumni';
   const buttonLabel = academicYear ? yearButtonLabels[academicYear] || `${yearLabel} Complete ✨` : 'Year Complete ✨';
+  const semesterInfo = currentSemester ? semesterLabels[currentSemester] : null;
 
   const handleYearComplete = () => {
     if (isGraduationYear) {
       setShowWrappedModal(true);
     } else {
       setShowYearWrappedModal(true);
+    }
+  };
+
+  const handleSemesterComplete = () => {
+    setShowSemesterWrappedModal(true);
+  };
+
+  const handleSemesterCompleted = () => {
+    if (semesterNumber) {
+      completeSemester(semesterNumber);
     }
   };
 
@@ -226,6 +252,35 @@ export const AcademicStatusSection = () => {
                 </div>
               </div>
               <Badge variant="outline">Class of {expectedGraduationYear}</Badge>
+            </div>
+          )}
+
+          {/* Semester Completion - Only for students */}
+          {!isAlumni && currentSemester && semesterInfo && (
+            <div className="pt-4 border-t">
+              <div className="space-y-4">
+                <div className={`bg-gradient-to-r ${semesterInfo.gradient}/10 border border-${currentSemester === 'fall' ? 'orange' : 'pink'}-500/20 rounded-lg p-4`}>
+                  <div className="flex items-start gap-3">
+                    <semesterInfo.icon className={`h-5 w-5 ${currentSemester === 'fall' ? 'text-orange-500' : 'text-pink-500'} mt-0.5`} />
+                    <div>
+                      <p className={`font-medium ${currentSemester === 'fall' ? 'text-orange-600 dark:text-orange-400' : 'text-pink-600 dark:text-pink-400'}`}>
+                        {currentSemester === 'fall' ? 'Fall' : 'Spring'} Semester
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Complete your {currentSemester === 'fall' ? 'fall' : 'spring'} semester and view your Semester Wrapped!
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <Button 
+                  onClick={handleSemesterComplete}
+                  className={`w-full bg-gradient-to-r ${semesterInfo.gradient} hover:opacity-90`}
+                  size="lg"
+                >
+                  <semesterInfo.icon className="h-5 w-5 mr-2" />
+                  {semesterInfo.label}
+                </Button>
+              </div>
             </div>
           )}
 
@@ -409,6 +464,19 @@ export const AcademicStatusSection = () => {
           yearNumber={yearNumber}
           yearLabel={yearLabel}
           isGraduationYear={isGraduationYear}
+        />
+      )}
+
+      {/* Semester Wrapped Modal */}
+      {yearNumber && yearLabel && currentSemester && semesterNumber && (
+        <SemesterWrappedModal
+          open={showSemesterWrappedModal}
+          onClose={() => setShowSemesterWrappedModal(false)}
+          semesterType={currentSemester}
+          semesterNumber={semesterNumber}
+          yearLabel={yearLabel}
+          yearNumber={yearNumber}
+          onSemesterComplete={handleSemesterCompleted}
         />
       )}
 
