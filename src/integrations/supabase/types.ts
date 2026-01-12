@@ -359,6 +359,74 @@ export type Database = {
         }
         Relationships: []
       }
+      business_profiles: {
+        Row: {
+          analytics_tier: string | null
+          business_description: string | null
+          business_name: string
+          business_size: string | null
+          created_at: string
+          headquarters: string | null
+          id: string
+          industry: string | null
+          logo_url: string | null
+          monthly_posts_limit: number | null
+          monthly_posts_used: number | null
+          subscription_expires_at: string | null
+          subscription_tier: string | null
+          targeting_enabled: boolean | null
+          updated_at: string
+          user_id: string
+          website_url: string | null
+        }
+        Insert: {
+          analytics_tier?: string | null
+          business_description?: string | null
+          business_name: string
+          business_size?: string | null
+          created_at?: string
+          headquarters?: string | null
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          monthly_posts_limit?: number | null
+          monthly_posts_used?: number | null
+          subscription_expires_at?: string | null
+          subscription_tier?: string | null
+          targeting_enabled?: boolean | null
+          updated_at?: string
+          user_id: string
+          website_url?: string | null
+        }
+        Update: {
+          analytics_tier?: string | null
+          business_description?: string | null
+          business_name?: string
+          business_size?: string | null
+          created_at?: string
+          headquarters?: string | null
+          id?: string
+          industry?: string | null
+          logo_url?: string | null
+          monthly_posts_limit?: number | null
+          monthly_posts_used?: number | null
+          subscription_expires_at?: string | null
+          subscription_tier?: string | null
+          targeting_enabled?: boolean | null
+          updated_at?: string
+          user_id?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       carpool_ride_requests: {
         Row: {
           created_at: string
@@ -852,74 +920,6 @@ export type Database = {
             foreignKeyName: "fk_comments_user_profile"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
-      company_profiles: {
-        Row: {
-          analytics_tier: string | null
-          company_description: string | null
-          company_name: string
-          company_size: string | null
-          created_at: string
-          headquarters: string | null
-          id: string
-          industry: string | null
-          logo_url: string | null
-          monthly_posts_limit: number | null
-          monthly_posts_used: number | null
-          subscription_expires_at: string | null
-          subscription_tier: string | null
-          targeting_enabled: boolean | null
-          updated_at: string
-          user_id: string
-          website_url: string | null
-        }
-        Insert: {
-          analytics_tier?: string | null
-          company_description?: string | null
-          company_name: string
-          company_size?: string | null
-          created_at?: string
-          headquarters?: string | null
-          id?: string
-          industry?: string | null
-          logo_url?: string | null
-          monthly_posts_limit?: number | null
-          monthly_posts_used?: number | null
-          subscription_expires_at?: string | null
-          subscription_tier?: string | null
-          targeting_enabled?: boolean | null
-          updated_at?: string
-          user_id: string
-          website_url?: string | null
-        }
-        Update: {
-          analytics_tier?: string | null
-          company_description?: string | null
-          company_name?: string
-          company_size?: string | null
-          created_at?: string
-          headquarters?: string | null
-          id?: string
-          industry?: string | null
-          logo_url?: string | null
-          monthly_posts_limit?: number | null
-          monthly_posts_used?: number | null
-          subscription_expires_at?: string | null
-          subscription_tier?: string | null
-          targeting_enabled?: boolean | null
-          updated_at?: string
-          user_id?: string
-          website_url?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "company_profiles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
@@ -3565,7 +3565,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
-      user_type: "student" | "company" | "clubs"
+      user_type: "student" | "company" | "clubs" | "business"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3694,7 +3694,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
-      user_type: ["student", "company", "clubs"],
+      user_type: ["student", "company", "clubs", "business"],
     },
   },
 } as const
