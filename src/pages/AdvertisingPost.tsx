@@ -26,8 +26,8 @@ interface AdvertisingPost {
   views_count: number;
   created_at: string;
   company_id: string;
-  company_profiles?: {
-    company_name: string;
+  business_profiles?: {
+    business_name: string;
     logo_url?: string;
   };
 }
@@ -67,16 +67,16 @@ export default function AdvertisingPostPage() {
         return;
       }
 
-      // Fetch company profile separately
-      const { data: companyData } = await supabase
-        .from("company_profiles")
-        .select("company_name, logo_url")
+      // Fetch business profile separately
+      const { data: businessData } = await supabase
+        .from("business_profiles")
+        .select("business_name, logo_url")
         .eq("user_id", data.company_id)
         .maybeSingle();
 
       const postWithCompany: AdvertisingPost = {
         ...data,
-        company_profiles: companyData || undefined
+        business_profiles: businessData || undefined
       };
 
       setPost(postWithCompany);
@@ -201,8 +201,8 @@ export default function AdvertisingPostPage() {
     );
   }
 
-  const companyName = post.company_profiles?.company_name || "Company";
-  const companyLogo = post.company_profiles?.logo_url;
+  const companyName = post.business_profiles?.business_name || "Business";
+  const companyLogo = post.business_profiles?.logo_url;
 
   return (
     <Layout>

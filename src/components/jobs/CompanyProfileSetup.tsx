@@ -10,19 +10,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { normalizeUrl } from '@/lib/utils';
 
-interface CompanyProfileSetupProps {
+interface BusinessProfileSetupProps {
   onComplete: () => void;
 }
 
-export default function CompanyProfileSetup({ onComplete }: CompanyProfileSetupProps) {
+export default function CompanyProfileSetup({ onComplete }: BusinessProfileSetupProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    company_name: '',
-    company_description: '',
+    business_name: '',
+    business_description: '',
     website_url: '',
     industry: '',
-    company_size: '',
+    business_size: '',
     headquarters: '',
     logo_url: ''
   });
@@ -47,7 +47,7 @@ export default function CompanyProfileSetup({ onComplete }: CompanyProfileSetupP
       };
 
       const { error } = await supabase
-        .from('company_profiles')
+        .from('business_profiles')
         .insert({
           user_id: user.id,
           ...normalizedData
@@ -55,11 +55,11 @@ export default function CompanyProfileSetup({ onComplete }: CompanyProfileSetupP
 
       if (error) throw error;
 
-      toast.success('Company profile created successfully!');
+      toast.success('Business profile created successfully!');
       onComplete();
     } catch (error: any) {
       console.error('Error creating company profile:', error);
-      toast.error('Failed to create company profile. Please try again.');
+      toast.error('Failed to create business profile. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -68,32 +68,32 @@ export default function CompanyProfileSetup({ onComplete }: CompanyProfileSetupP
   return (
     <div className="post-card">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-foreground mb-2">Set Up Your Company Profile</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-2">Set Up Your Business Profile</h2>
         <p className="text-muted-foreground">
-          Complete your company profile to start posting jobs and finding great candidates.
+          Complete your business profile to start posting jobs and finding great candidates.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-2">
-          <Label htmlFor="company_name">Company Name *</Label>
+          <Label htmlFor="business_name">Business Name *</Label>
           <Input
-            id="company_name"
-            name="company_name"
-            placeholder="Enter your company name"
-            value={formData.company_name}
+            id="business_name"
+            name="business_name"
+            placeholder="Enter your business name"
+            value={formData.business_name}
             onChange={handleInputChange}
             required
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="company_description">Company Description</Label>
+          <Label htmlFor="business_description">Business Description</Label>
           <Textarea
-            id="company_description"
-            name="company_description"
-            placeholder="Describe your company and what you do..."
-            value={formData.company_description}
+            id="business_description"
+            name="business_description"
+            placeholder="Describe your business and what you do..."
+            value={formData.business_description}
             onChange={handleInputChange}
             rows={4}
           />
@@ -126,10 +126,10 @@ export default function CompanyProfileSetup({ onComplete }: CompanyProfileSetupP
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="company_size">Company Size</Label>
-            <Select onValueChange={(value) => setFormData({...formData, company_size: value})}>
+            <Label htmlFor="business_size">Business Size</Label>
+            <Select onValueChange={(value) => setFormData({...formData, business_size: value})}>
               <SelectTrigger>
-                <SelectValue placeholder="Select company size" />
+                <SelectValue placeholder="Select business size" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="1-10">1-10 employees</SelectItem>
@@ -155,7 +155,7 @@ export default function CompanyProfileSetup({ onComplete }: CompanyProfileSetupP
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="logo_url">Company Logo URL</Label>
+          <Label htmlFor="logo_url">Business Logo URL</Label>
           <Input
             id="logo_url"
             name="logo_url"
@@ -166,7 +166,7 @@ export default function CompanyProfileSetup({ onComplete }: CompanyProfileSetupP
         </div>
 
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? 'Creating Profile...' : 'Complete Company Profile'}
+          {loading ? 'Creating Profile...' : 'Complete Business Profile'}
         </Button>
       </form>
     </div>

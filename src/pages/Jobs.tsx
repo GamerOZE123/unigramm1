@@ -28,7 +28,8 @@ export default function Jobs() {
         
         if (error) throw error;
         if (data) {
-          setUserType(data.user_type || 'student');
+          const uType = data.user_type === 'company' ? 'business' : (data.user_type || 'student');
+          setUserType(uType as 'student' | 'business' | 'clubs');
         }
       } catch (error) {
         console.error('Error fetching user type:', error);
