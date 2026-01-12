@@ -39,6 +39,7 @@ export const MajorStep = ({ value, onChange, courseId, onCourseChange, universit
   const [courses, setCourses] = useState<UniversityCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [useFallback, setUseFallback] = useState(false);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(courseId || null);
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -55,28 +56,34 @@ export const MajorStep = ({ value, onChange, courseId, onCourseChange, universit
         const { data: universityData } = await supabase
           .from('universities')
           .select('id')
-          .or(`abbreviation.eq.${university},name.eq.${university}`)
+          .or(`abbreviation.eq."${university}",name.eq."${university}"`)
           .maybeSingle();
 
         if (!universityData) {
+          console.log('No university found for:', university);
           setUseFallback(true);
           setLoading(false);
           return;
         }
 
-        // Fetch courses for this university
+        // Fetch courses for this university - filter out empty course names
         const { data: coursesData, error } = await supabase
           .from('university_courses')
           .select('id, course_name, duration_years, total_semesters')
           .eq('university_id', universityData.id)
+          .neq('course_name', '')
+          .not('course_name', 'is', null)
           .order('course_name');
 
         if (error) throw error;
+
+        console.log('Fetched courses:', coursesData);
 
         if (coursesData && coursesData.length > 0) {
           setCourses(coursesData);
           setUseFallback(false);
         } else {
+          console.log('No courses found, using fallback');
           setUseFallback(true);
         }
       } catch (error) {
@@ -91,6 +98,8 @@ export const MajorStep = ({ value, onChange, courseId, onCourseChange, universit
   }, [university]);
 
   const handleCourseSelect = (course: UniversityCourse) => {
+    console.log('Course selected:', course);
+    setSelectedCourseId(course.id);
     onChange(course.course_name);
     onCourseChange?.(course.id, course);
   };
@@ -149,7 +158,7 @@ export const MajorStep = ({ value, onChange, courseId, onCourseChange, universit
               key={course.id}
               className={cn(
                 "p-4 cursor-pointer transition-all hover:border-primary",
-                (courseId === course.id || value === course.course_name) && "border-primary bg-primary/5"
+                (selectedCourseId === course.id || courseId === course.id || value === course.course_name) && "border-primary bg-primary/5"
               )}
               onClick={() => handleCourseSelect(course)}
             >
