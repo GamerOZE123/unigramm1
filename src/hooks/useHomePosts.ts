@@ -282,7 +282,7 @@ const fetchTargetedAds = async (profile: UserProfile | null) => {
   
   // Fetch company profiles and user profiles in parallel
   const [{ data: companies }, { data: profiles }] = await Promise.all([
-    supabase.from("company_profiles").select("user_id, company_name, logo_url").in("user_id", ids),
+    supabase.from("business_profiles").select("user_id, business_name, logo_url").in("user_id", ids),
     supabase.from("profiles").select("user_id, full_name, avatar_url").in("user_id", ids),
   ]);
 

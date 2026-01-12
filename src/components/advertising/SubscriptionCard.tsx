@@ -63,9 +63,9 @@ export default function SubscriptionCard({ onUpgradeClick }: SubscriptionCardPro
       if (subError && subError.code !== 'PGRST116') throw subError;
       setSubscription(subData);
 
-      // Fetch company profile
+      // Fetch business profile
       const { data: profileData, error: profileError } = await supabase
-        .from('company_profiles')
+        .from('business_profiles')
         .select('monthly_posts_used, monthly_posts_limit')
         .eq('user_id', user?.id)
         .maybeSingle();

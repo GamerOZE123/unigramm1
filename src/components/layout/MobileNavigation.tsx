@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Home, MessageCircle, User, Search, Bell } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
@@ -10,6 +9,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 
 const baseNavigation = [
   { name: 'Home', href: '/home', icon: Home },
+  { name: 'Explore', href: '/explore', icon: Search },
   { name: 'Chat', href: '/chat', icon: MessageCircle },
   { name: 'Notifications', href: '/notifications', icon: Bell },
 ];

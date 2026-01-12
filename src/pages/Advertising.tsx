@@ -43,17 +43,17 @@ export default function Advertising() {
 
       if (error) throw error;
       
-      // Fetch company profile for the current user
-      const { data: companyProfile } = await supabase
-        .from('company_profiles')
-        .select('user_id, company_name, logo_url')
+      // Fetch business profile for the current user
+      const { data: businessProfile } = await supabase
+        .from('business_profiles')
+        .select('user_id, business_name, logo_url')
         .eq('user_id', user.id)
         .single();
       
-      // Map company profile to advertising posts
+      // Map business profile to advertising posts
       const postsWithProfiles = (data || []).map(post => ({
         ...post,
-        company_profiles: companyProfile || null
+        business_profiles: businessProfile || null
       }));
       
       const posts = postsWithProfiles;

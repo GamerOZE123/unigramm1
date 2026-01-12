@@ -21,7 +21,7 @@ const universityOptions = [
     icon: Target,
     path: '/advertising',
     color: 'bg-orange-500',
-    allowedFor: ['company']
+    allowedFor: ['business']
   },
   {
     id: 'clubs',
@@ -46,7 +46,7 @@ const universityOptions = [
 export default function University() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [userType, setUserType] = useState<'student' | 'company' | 'clubs'>('student');
+  const [userType, setUserType] = useState<'student' | 'business' | 'clubs'>('student');
   const [loading, setLoading] = useState(true);
   const isMobile = useIsMobile();
 
@@ -99,7 +99,7 @@ export default function University() {
         <div className="text-center">
           <h1 className="text-3xl font-bold text-foreground mb-2">University Hub</h1>
           <p className="text-muted-foreground">
-            {userType === 'company' 
+            {userType === 'business' 
               ? 'Connect with students and promote your opportunities'
               : userType === 'clubs'
               ? 'Connect with your university community'
