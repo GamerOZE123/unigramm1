@@ -35,30 +35,30 @@ export default function CreateJobModal({ open, onOpenChange }: CreateJobModalPro
   });
 
   useEffect(() => {
-    const fetchCompanyProfile = async () => {
+    const fetchBusinessProfile = async () => {
       if (!user) return;
 
       try {
         const { data, error } = await supabase
-          .from('company_profiles')
+          .from('business_profiles')
           .select('*')
           .eq('user_id', user.id)
           .single();
 
         if (error) {
-          console.error('Error fetching company profile:', error);
-          toast.error('Company profile not found. Please complete your profile first.');
+          console.error('Error fetching business profile:', error);
+          toast.error('Business profile not found. Please complete your profile first.');
           return;
         }
 
         setCompanyProfile(data);
       } catch (error) {
-        console.error('Error fetching company profile:', error);
+        console.error('Error fetching business profile:', error);
       }
     };
 
     if (open && user) {
-      fetchCompanyProfile();
+      fetchBusinessProfile();
     }
   }, [open, user]);
 
@@ -169,11 +169,11 @@ export default function CreateJobModal({ open, onOpenChange }: CreateJobModalPro
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Company Profile Required</DialogTitle>
+            <DialogTitle>Business Profile Required</DialogTitle>
           </DialogHeader>
           <div className="text-center py-6">
             <p className="text-muted-foreground mb-4">
-              You need to complete your company profile before posting jobs.
+              You need to complete your business profile before posting jobs.
             </p>
             <Button onClick={() => onOpenChange(false)}>
               Close

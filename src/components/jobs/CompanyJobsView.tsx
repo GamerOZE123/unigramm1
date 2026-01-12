@@ -15,15 +15,15 @@ export default function CompanyJobsView() {
   const [showCreateJob, setShowCreateJob] = useState(false);
 
   useEffect(() => {
-    checkCompanyProfile();
+    checkBusinessProfile();
   }, [user]);
 
-  const checkCompanyProfile = async () => {
+  const checkBusinessProfile = async () => {
     if (!user) return;
 
     try {
       const { data, error } = await supabase
-        .from('company_profiles')
+        .from('business_profiles')
         .select('id')
         .eq('user_id', user.id)
         .single();
@@ -34,7 +34,7 @@ export default function CompanyJobsView() {
 
       setHasProfile(!!data);
     } catch (error) {
-      console.error('Error checking company profile:', error);
+      console.error('Error checking business profile:', error);
     } finally {
       setLoading(false);
     }

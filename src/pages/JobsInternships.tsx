@@ -37,7 +37,8 @@ export default function JobsInternships() {
         
         if (profileError) throw profileError;
         if (profileData) {
-          setUserType(profileData.user_type || 'student');
+          const uType = profileData.user_type === 'company' ? 'business' : (profileData.user_type || 'student');
+          setUserType(uType as 'student' | 'business' | 'clubs');
           
           // Check if user has the appropriate profile
           if (profileData.user_type === 'student') {

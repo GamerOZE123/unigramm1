@@ -8,7 +8,7 @@ import { GraduationCap, Mail, Lock, User, ArrowLeft, Building2 } from 'lucide-re
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { ProfileCompletionFlow } from '@/components/auth/ProfileCompletionFlow';
-import CompanyOnboardingFlow from '@/components/auth/CompanyOnboardingFlow';
+import BusinessOnboardingFlow from '@/components/auth/BusinessOnboardingFlow';
 import ClubOnboardingFlow from '@/components/auth/ClubOnboardingFlow';
 import { signUpSchema, signInSchema, resetPasswordSchema } from '@/lib/validation';
 import {
@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 
 type AuthMode = 'login' | 'signup' | 'forgot' | 'reset';
-type UserType = 'student' | 'company' | 'clubs';
+type UserType = 'student' | 'business' | 'clubs';
 
 export default function Auth() {
   const [mode, setMode] = useState<AuthMode>('login');
@@ -30,7 +30,7 @@ export default function Auth() {
   const [userType, setUserType] = useState<UserType>('student');
   const [universities, setUniversities] = useState<Array<{id: string, name: string}>>([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [showCompanyOnboarding, setShowCompanyOnboarding] = useState(false);
+  const [showBusinessOnboarding, setShowBusinessOnboarding] = useState(false);
   const [showClubOnboarding, setShowClubOnboarding] = useState(false);
   const navigate = useNavigate();
   
@@ -177,8 +177,8 @@ export default function Auth() {
 
         if (profileData && !profileData.profile_completed) {
           // Show appropriate onboarding based on user type
-          if (profileData.user_type === 'company') {
-            setShowCompanyOnboarding(true);
+          if (profileData.user_type === 'company' || profileData.user_type === 'business') {
+            setShowBusinessOnboarding(true);
           } else if (profileData.user_type === 'clubs') {
             setShowClubOnboarding(true);
           } else {
@@ -226,7 +226,7 @@ export default function Auth() {
           data: {
             full_name: validationResult.data.fullName,
             university: (userType === 'student' || userType === 'clubs') ? formData.university : undefined,
-            company_name: userType === 'company' ? formData.companyName : undefined,
+            company_name: userType === 'business' ? formData.companyName : undefined,
             club_name: userType === 'clubs' ? validationResult.data.fullName : undefined,
             username: validationResult.data.username,
             user_type: userType,
@@ -420,8 +420,8 @@ export default function Auth() {
             .single();
 
           if (profileData && !profileData.profile_completed) {
-            if (profileData.user_type === 'company') {
-              setShowCompanyOnboarding(true);
+            if (profileData.user_type === 'company' || profileData.user_type === 'business') {
+              setShowBusinessOnboarding(true);
             } else if (profileData.user_type === 'clubs') {
               setShowClubOnboarding(true);
             } else {
@@ -450,7 +450,7 @@ export default function Auth() {
         }} 
       />
 
-      {showCompanyOnboarding && <CompanyOnboardingFlow />}
+      {showBusinessOnboarding && <BusinessOnboardingFlow />}
       {showClubOnboarding && <ClubOnboardingFlow />}
       
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -514,11 +514,11 @@ export default function Auth() {
                         <span className="font-medium text-center">Student</span>
                       </Label>
                     </div>
-                    <div className="flex items-center p-4 border rounded-md cursor-pointer transition-colors hover:bg-muted/50 data-[state=checked]:bg-muted" data-state={userType === 'company' ? 'checked' : 'unchecked'}>
-                      <RadioGroupItem value="company" id="company" className="sr-only" />
-                      <Label htmlFor="company" className="flex flex-col items-center gap-2 w-full cursor-pointer">
+                    <div className="flex items-center p-4 border rounded-md cursor-pointer transition-colors hover:bg-muted/50 data-[state=checked]:bg-muted" data-state={userType === 'business' ? 'checked' : 'unchecked'}>
+                      <RadioGroupItem value="business" id="business" className="sr-only" />
+                      <Label htmlFor="business" className="flex flex-col items-center gap-2 w-full cursor-pointer">
                         <Building2 className="w-6 h-6 text-primary" />
-                        <span className="font-medium text-center">Company</span>
+                        <span className="font-medium text-center">Business</span>
                       </Label>
                     </div>
                     <div className="flex items-center p-4 border rounded-md cursor-pointer transition-colors hover:bg-muted/50 data-[state=checked]:bg-muted" data-state={userType === 'clubs' ? 'checked' : 'unchecked'}>
@@ -551,16 +551,16 @@ export default function Auth() {
                     </div>
                   </div>
 
-                  {userType === 'company' && (
+                  {userType === 'business' && (
                     <div className="space-y-2">
-                      <Label htmlFor="companyName">Company Name</Label>
+                      <Label htmlFor="companyName">Business Name</Label>
                       <div className="relative">
                         <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                         <Input
                           id="companyName"
                           name="companyName"
                           type="text"
-                          placeholder="Enter your company name"
+                          placeholder="Enter your business name"
                           className="pl-10 bg-surface border-border"
                           value={formData.companyName}
                           onChange={handleInputChange}
