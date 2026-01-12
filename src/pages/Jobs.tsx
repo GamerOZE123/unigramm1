@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import StudentJobsView from '@/components/jobs/StudentJobsView';
-import CompanyJobsView from '@/components/jobs/CompanyJobsView';
+import BusinessJobsView from '@/components/jobs/BusinessJobsView';
 
 export default function Jobs() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [userType, setUserType] = useState<'student' | 'company' | 'clubs'>('student');
+  const [userType, setUserType] = useState<'student' | 'business' | 'clubs'>('student');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export default function Jobs() {
           </h1>
         </div>
 
-        {userType === 'student' ? <StudentJobsView /> : <CompanyJobsView />}
+        {userType === 'student' ? <StudentJobsView /> : <BusinessJobsView />}
       </div>
     </Layout>
   );

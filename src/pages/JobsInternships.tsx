@@ -10,14 +10,14 @@ import { supabase } from '@/integrations/supabase/client';
 import DetailedJobForm from '@/components/jobs/DetailedJobForm';
 import StudentApplicationForm from '@/components/jobs/StudentApplicationForm';
 import StudentJobsView from '@/components/jobs/StudentJobsView';
-import CompanyApplicantsView from '@/components/jobs/CompanyApplicantsView';
+import BusinessApplicantsView from '@/components/jobs/BusinessApplicantsView';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function JobsInternships() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isMobile = useIsMobile();
-  const [userType, setUserType] = useState<'student' | 'company' | 'clubs'>('student');
+  const [userType, setUserType] = useState<'student' | 'business' | 'clubs'>('student');
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
@@ -52,16 +52,16 @@ export default function JobsInternships() {
             }
             setHasProfile(!!studentProfile);
           } else {
-            const { data: companyProfile, error: companyError } = await supabase
-              .from('company_profiles')
+            const { data: businessProfile, error: businessError } = await supabase
+              .from('business_profiles')
               .select('id')
               .eq('user_id', user.id)
               .single();
             
-            if (companyError && companyError.code !== 'PGRST116') {
-              throw companyError;
+            if (businessError && businessError.code !== 'PGRST116') {
+              throw businessError;
             }
-            setHasProfile(!!companyProfile);
+            setHasProfile(!!businessProfile);
           }
         }
       } catch (error) {
@@ -109,10 +109,10 @@ export default function JobsInternships() {
                 <ArrowLeft className="w-4 h-4" />
               </Button>
               <h1 className="text-2xl font-bold text-foreground">
-                {userType === 'student' ? 'Complete Your Profile' : 'Company Setup'}
+                {userType === 'student' ? 'Complete Your Profile' : 'Business Setup'}
               </h1>
             </div>
-            {userType === 'company' && (
+            {userType === 'business' && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -124,8 +124,8 @@ export default function JobsInternships() {
             )}
           </div>
 
-          {userType === 'company' ? (
-            <DetailedJobForm 
+          {userType === 'business' ? (
+            <DetailedJobForm
               onComplete={handleFormComplete}
               onCancel={() => navigate('/university')}
             />
@@ -164,7 +164,7 @@ export default function JobsInternships() {
               {userType === 'student' ? 'Explore Jobs' : 'Job Applications'}
             </h1>
           </div>
-          {userType === 'company' && (
+          {userType === 'business' && (
             <Button
               variant="ghost"
               size="sm"
@@ -176,7 +176,7 @@ export default function JobsInternships() {
           )}
         </div>
 
-        {userType === 'student' ? <StudentJobsView /> : <CompanyApplicantsView />}
+        {userType === 'student' ? <StudentJobsView /> : <BusinessApplicantsView />}
       </div>
     </div>
   );
