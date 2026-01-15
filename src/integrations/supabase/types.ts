@@ -1613,6 +1613,60 @@ export type Database = {
           },
         ]
       }
+      message_notifications: {
+        Row: {
+          conversation_id: string
+          created_at: string | null
+          delivered: boolean | null
+          delivery_attempts: number | null
+          error_message: string | null
+          id: string
+          last_attempt_at: string | null
+          message_id: string
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string | null
+          delivered?: boolean | null
+          delivery_attempts?: number | null
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          message_id: string
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string | null
+          delivered?: boolean | null
+          delivery_attempts?: number | null
+          error_message?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          message_id?: string
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_notifications_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_notifications_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_reactions: {
         Row: {
           created_at: string
@@ -1749,6 +1803,39 @@ export type Database = {
           id?: string
           muted_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      notification_batches: {
+        Row: {
+          batch_sent: boolean | null
+          created_at: string | null
+          first_message_at: string | null
+          id: string
+          last_message_at: string | null
+          message_count: number | null
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          batch_sent?: boolean | null
+          created_at?: string | null
+          first_message_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          message_count?: number | null
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          batch_sent?: boolean | null
+          created_at?: string | null
+          first_message_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          message_count?: number | null
+          receiver_id?: string
+          sender_id?: string
         }
         Relationships: []
       }
@@ -2193,6 +2280,9 @@ export type Database = {
           preferred_event_types: string[] | null
           profile_completed: boolean | null
           profile_completion_date: string | null
+          push_token: string | null
+          push_token_type: string | null
+          push_token_updated_at: string | null
           start_year: number | null
           state: string | null
           status_message: string | null
@@ -2233,6 +2323,9 @@ export type Database = {
           preferred_event_types?: string[] | null
           profile_completed?: boolean | null
           profile_completion_date?: string | null
+          push_token?: string | null
+          push_token_type?: string | null
+          push_token_updated_at?: string | null
           start_year?: number | null
           state?: string | null
           status_message?: string | null
@@ -2273,6 +2366,9 @@ export type Database = {
           preferred_event_types?: string[] | null
           profile_completed?: boolean | null
           profile_completion_date?: string | null
+          push_token?: string | null
+          push_token_type?: string | null
+          push_token_updated_at?: string | null
           start_year?: number | null
           state?: string | null
           status_message?: string | null
@@ -3432,6 +3528,9 @@ export type Database = {
           preferred_event_types: string[] | null
           profile_completed: boolean | null
           profile_completion_date: string | null
+          push_token: string | null
+          push_token_type: string | null
+          push_token_updated_at: string | null
           start_year: number | null
           state: string | null
           status_message: string | null
