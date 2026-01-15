@@ -6,6 +6,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Toaster } from '@/components/ui/sonner';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { PushNotificationInitializer } from '@/components/notifications/PushNotificationInitializer';
 import Index from '@/pages/Index';
 import Login from '@/pages/Login';
 import Auth from '@/pages/Auth';
@@ -69,6 +70,7 @@ function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
             <Toaster />
+            <PushNotificationInitializer />
           </Router>
         </ThemeProvider>
       </AuthProvider>
