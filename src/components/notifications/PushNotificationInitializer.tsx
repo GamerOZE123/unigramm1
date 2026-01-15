@@ -1,24 +1,46 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const PushNotificationInitializer: React.FC = () => {
   const { user } = useAuth();
-  const { isSupported, permission, isSubscribed, subscribe } = usePushNotifications();
+  const { isSupported, permission, isSubscribed, isLoading, subscribe } = usePushNotifications();
+  const hasAttemptedSubscribe = useRef(false);
 
+  // Auto-subscribe when user logs in
   useEffect(() => {
-    // Only attempt to subscribe if:
+    // Reset the attempt flag when user changes (logout/login)
+    if (!user) {
+      hasAttemptedSubscribe.current = false;
+      return;
+    }
+
+    // Only attempt to subscribe once per session if:
     // 1. User is logged in
     // 2. Push is supported
     // 3. Permission is not denied
     // 4. Not already subscribed
-    if (user && isSupported && permission !== 'denied' && !isSubscribed) {
-      // Auto-subscribe if permission was previously granted
-      if (permission === 'granted') {
-        subscribe();
-      }
+    // 5. Not currently loading
+    // 6. Haven't already attempted this session
+    if (
+      user && 
+      isSupported && 
+      permission !== 'denied' && 
+      !isSubscribed && 
+      !isLoading &&
+      !hasAttemptedSubscribe.current
+    ) {
+      hasAttemptedSubscribe.current = true;
+      console.log('Auto-subscribing to push notifications...');
+      subscribe().then((success) => {
+        if (success) {
+          console.log('Push notification subscription successful');
+        } else {
+          console.log('Push notification subscription failed or was denied');
+        }
+      });
     }
-  }, [user, isSupported, permission, isSubscribed, subscribe]);
+  }, [user, isSupported, permission, isSubscribed, isLoading, subscribe]);
 
   // Register service worker on mount
   useEffect(() => {
