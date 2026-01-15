@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 // VAPID public key - this should match the one in your edge function secrets
-const VAPID_PUBLIC_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U';
+const VAPID_PUBLIC_KEY = "BBz-skKIQ9IkvQmhW0JuhlCG1397LxWgRkhcVKZnb_H8UGSyqrR6RiS3d6mU8qo2VKB0KlZLCTWHWC25Apz9cfA";
 
 interface PushNotificationState {
   isSupported: boolean;
-  permission: NotificationPermission | 'default';
+  permission: NotificationPermission | "default";
   isSubscribed: boolean;
   isLoading: boolean;
   error: string | null;
@@ -17,7 +17,7 @@ export const usePushNotifications = () => {
   const { user } = useAuth();
   const [state, setState] = useState<PushNotificationState>({
     isSupported: false,
-    permission: 'default',
+    permission: "default",
     isSubscribed: false,
     isLoading: false,
     error: null,
@@ -25,12 +25,12 @@ export const usePushNotifications = () => {
 
   // Check if push notifications are supported
   useEffect(() => {
-    const isSupported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-    
-    setState(prev => ({
+    const isSupported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+
+    setState((prev) => ({
       ...prev,
       isSupported,
-      permission: isSupported ? Notification.permission : 'default',
+      permission: isSupported ? Notification.permission : "default",
     }));
   }, []);
 
@@ -45,39 +45,37 @@ export const usePushNotifications = () => {
     try {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
-      
-      setState(prev => ({
+
+      setState((prev) => ({
         ...prev,
         isSubscribed: !!subscription,
       }));
     } catch (error) {
-      console.error('Error checking subscription:', error);
+      console.error("Error checking subscription:", error);
     }
   };
 
   const registerServiceWorker = async (): Promise<ServiceWorkerRegistration | null> => {
     try {
-      const registration = await navigator.serviceWorker.register('/sw.js', {
-        scope: '/',
+      const registration = await navigator.serviceWorker.register("/sw.js", {
+        scope: "/",
       });
-      
-      console.log('Service Worker registered:', registration);
-      
+
+      console.log("Service Worker registered:", registration);
+
       // Wait for the service worker to be ready
       await navigator.serviceWorker.ready;
-      
+
       return registration;
     } catch (error) {
-      console.error('Service Worker registration failed:', error);
+      console.error("Service Worker registration failed:", error);
       return null;
     }
   };
 
   const urlBase64ToUint8Array = (base64String: string): ArrayBuffer => {
-    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding)
-      .replace(/-/g, '+')
-      .replace(/_/g, '/');
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
 
     const rawData = window.atob(base64);
     const outputArray = new Uint8Array(rawData.length);
@@ -90,22 +88,22 @@ export const usePushNotifications = () => {
 
   const subscribe = useCallback(async (): Promise<boolean> => {
     if (!state.isSupported || !user) {
-      setState(prev => ({ ...prev, error: 'Push notifications not supported or user not logged in' }));
+      setState((prev) => ({ ...prev, error: "Push notifications not supported or user not logged in" }));
       return false;
     }
 
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
       // Request notification permission
       const permission = await Notification.requestPermission();
-      setState(prev => ({ ...prev, permission }));
+      setState((prev) => ({ ...prev, permission }));
 
-      if (permission !== 'granted') {
-        setState(prev => ({ 
-          ...prev, 
-          isLoading: false, 
-          error: 'Notification permission denied' 
+      if (permission !== "granted") {
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: "Notification permission denied",
         }));
         return false;
       }
@@ -113,7 +111,7 @@ export const usePushNotifications = () => {
       // Register service worker
       const registration = await registerServiceWorker();
       if (!registration) {
-        throw new Error('Failed to register service worker');
+        throw new Error("Failed to register service worker");
       }
 
       // Subscribe to push notifications
@@ -122,25 +120,25 @@ export const usePushNotifications = () => {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
 
-      console.log('Push subscription:', subscription);
+      console.log("Push subscription:", subscription);
 
       // Store the subscription in the database
       const subscriptionJson = JSON.stringify(subscription.toJSON());
-      
+
       const { error: updateError } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({
           push_token: subscriptionJson,
-          push_token_type: 'web',
+          push_token_type: "web",
           push_token_updated_at: new Date().toISOString(),
         })
-        .eq('user_id', user.id);
+        .eq("user_id", user.id);
 
       if (updateError) {
         throw updateError;
       }
 
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         isSubscribed: true,
         isLoading: false,
@@ -148,11 +146,11 @@ export const usePushNotifications = () => {
 
       return true;
     } catch (error) {
-      console.error('Error subscribing to push notifications:', error);
-      setState(prev => ({
+      console.error("Error subscribing to push notifications:", error);
+      setState((prev) => ({
         ...prev,
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to subscribe',
+        error: error instanceof Error ? error.message : "Failed to subscribe",
       }));
       return false;
     }
@@ -161,7 +159,7 @@ export const usePushNotifications = () => {
   const unsubscribe = useCallback(async (): Promise<boolean> => {
     if (!user) return false;
 
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
       const registration = await navigator.serviceWorker.ready;
@@ -173,19 +171,19 @@ export const usePushNotifications = () => {
 
       // Remove token from database
       const { error: updateError } = await supabase
-        .from('profiles')
+        .from("profiles")
         .update({
           push_token: null,
           push_token_type: null,
           push_token_updated_at: new Date().toISOString(),
         })
-        .eq('user_id', user.id);
+        .eq("user_id", user.id);
 
       if (updateError) {
         throw updateError;
       }
 
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         isSubscribed: false,
         isLoading: false,
@@ -193,11 +191,11 @@ export const usePushNotifications = () => {
 
       return true;
     } catch (error) {
-      console.error('Error unsubscribing from push notifications:', error);
-      setState(prev => ({
+      console.error("Error unsubscribing from push notifications:", error);
+      setState((prev) => ({
         ...prev,
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to unsubscribe',
+        error: error instanceof Error ? error.message : "Failed to unsubscribe",
       }));
       return false;
     }
