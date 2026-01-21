@@ -3032,26 +3032,29 @@ export type Database = {
         Row: {
           abbreviation: string
           allow_graduation_button: boolean | null
+          country: string | null
           created_at: string | null
           id: string
           name: string
-          program_duration_years: number | null
+          state: string | null
         }
         Insert: {
           abbreviation: string
           allow_graduation_button?: boolean | null
+          country?: string | null
           created_at?: string | null
           id?: string
           name: string
-          program_duration_years?: number | null
+          state?: string | null
         }
         Update: {
           abbreviation?: string
           allow_graduation_button?: boolean | null
+          country?: string | null
           created_at?: string | null
           id?: string
           name?: string
-          program_duration_years?: number | null
+          state?: string | null
         }
         Relationships: []
       }
