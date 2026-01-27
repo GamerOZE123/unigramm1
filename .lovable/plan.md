@@ -1,251 +1,157 @@
 
+# Push Notification System Enhancement for Mobile
 
-# Chat System Database Optimization Plan
+## Current State Analysis
 
-## Overview
-This migration adds optimized RPC functions for chat, performance indexes, and an enhanced notification trigger while maintaining full backward compatibility with existing code.
+Your project already has a working push notification system:
+- `profiles.push_token` / `push_token_type` columns for single web push token
+- `message_notifications` queue table with batching support
+- `enqueue_message_notification` trigger on message insert
+- `send-message-notification` edge function with Expo Push support
+- VAPID keys configured for Web Push
+
+## What This Plan Adds
+
+The enhancement creates a **multi-device push notification system** for native mobile apps:
+
+1. **Multiple devices per user** - A user can have the web app + Android + iOS all registered
+2. **FCM support** - Native Android/iOS push via Firebase Cloud Messaging
+3. **Token lifecycle management** - Auto-cleanup of invalid tokens
+4. **Platform awareness** - Different delivery paths for web vs mobile
 
 ---
 
-## 1. New RPC: `get_user_conversations_v2`
+## Technical Implementation
 
-**Purpose**: Replace the current `get_user_conversations` with a more efficient version that:
-- Returns only conversations for the authenticated user (uses `auth.uid()`)
-- Joins participant profile data directly (no separate user fetch needed)
-- Filters out deleted conversations inline
-- Calculates unread count from `message_status` table
+### 1. Database: New device_tokens Table
 
-**Returns:**
-| Column | Type | Description |
-|--------|------|-------------|
-| conversation_id | uuid | The conversation ID |
-| participant_id | uuid | Other user's ID |
-| participant_name | text | Other user's display name |
-| participant_avatar | text | Other user's avatar URL |
-| last_message | text | Most recent message content |
-| last_message_at | timestamptz | When last message was sent |
-| unread_count | int | Number of unread messages |
+```sql
+CREATE TABLE device_tokens (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES profiles(user_id) ON DELETE CASCADE,
+  token text UNIQUE NOT NULL,
+  token_type text NOT NULL CHECK (token_type IN ('expo', 'fcm', 'web')),
+  platform text NOT NULL CHECK (platform IN ('android', 'ios', 'web')),
+  device_name text,
+  last_seen timestamptz DEFAULT now(),
+  created_at timestamptz DEFAULT now()
+);
 
-**SQL:**
+-- Indexes for efficient lookups
+CREATE INDEX idx_device_tokens_user_id ON device_tokens(user_id);
+CREATE INDEX idx_device_tokens_token_type ON device_tokens(token_type);
+
+-- RLS policies
+ALTER TABLE device_tokens ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage their own tokens"
+  ON device_tokens FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Service role full access"
+  ON device_tokens FOR ALL
+  USING (true)
+  WITH CHECK (true);
+```
+
+### 2. Edge Function: Enhanced send-message-notification
+
+The existing edge function will be updated to:
+
 ```text
-CREATE OR REPLACE FUNCTION public.get_user_conversations_v2()
-RETURNS TABLE (
-  conversation_id uuid,
-  participant_id uuid,
-  participant_name text,
-  participant_avatar text,
-  last_message text,
-  last_message_at timestamptz,
-  unread_count int
-)
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT 
-    c.id AS conversation_id,
-    CASE 
-      WHEN c.user1_id = auth.uid() THEN c.user2_id 
-      ELSE c.user1_id 
-    END AS participant_id,
-    p.full_name AS participant_name,
-    p.avatar_url AS participant_avatar,
-    m.content AS last_message,
-    m.created_at AS last_message_at,
-    COALESCE(
-      (SELECT COUNT(*)::int 
-       FROM messages msg
-       JOIN message_status ms ON ms.message_id = msg.id
-       WHERE msg.conversation_id = c.id 
-         AND msg.sender_id != auth.uid()
-         AND ms.user_id = auth.uid()
-         AND ms.status != 'read'),
-      0
-    ) AS unread_count
-  FROM conversations c
-  JOIN profiles p ON p.user_id = (
-    CASE 
-      WHEN c.user1_id = auth.uid() THEN c.user2_id 
-      ELSE c.user1_id 
-    END
-  )
-  LEFT JOIN messages m ON m.id = c.last_message_id
-  WHERE (c.user1_id = auth.uid() OR c.user2_id = auth.uid())
-    AND NOT EXISTS (
-      SELECT 1 FROM deleted_chats dc 
-      WHERE dc.conversation_id = c.id 
-        AND dc.user_id = auth.uid()
-    )
-  ORDER BY COALESCE(c.last_activity, c.created_at) DESC;
-$$;
++-------------------+     +----------------------+     +------------------+
+|  message_         |     |  send-message-       |     |  Push Services   |
+|  notifications    | --> |  notification        | --> |  - Expo API      |
+|  (queue table)    |     |  (edge function)     |     |  - FCM HTTP v1   |
++-------------------+     +----------------------+     |  - Web Push      |
+                                   |                   +------------------+
+                                   v
+                          +----------------------+
+                          |  device_tokens       |
+                          |  (lookup all devices)|
+                          +----------------------+
+```
+
+Key changes:
+- Query `device_tokens` table instead of `profiles.push_token`
+- Add FCM HTTP v1 API integration (requires FCM service account key)
+- Delete invalid tokens automatically (410 Gone responses)
+- Send to all registered devices for a user
+
+### 3. Required Secrets
+
+You'll need to add one new secret for FCM:
+
+| Secret Name | Purpose |
+|-------------|---------|
+| `FCM_SERVICE_ACCOUNT_KEY` | JSON string of Firebase service account for FCM HTTP v1 API |
+
+Note: Existing VAPID keys remain for web push.
+
+### 4. Migration Path
+
+Since the existing system stores tokens in `profiles`, we'll:
+1. Create the new `device_tokens` table
+2. Migrate existing web tokens from `profiles` to `device_tokens`
+3. Update the edge function to read from `device_tokens`
+4. Keep `profiles.push_token` columns for backward compatibility (deprecated)
+
+---
+
+## Files to Create/Modify
+
+| File | Action | Description |
+|------|--------|-------------|
+| `supabase/migrations/xxx_device_tokens.sql` | Create | New table, indexes, RLS, data migration |
+| `supabase/functions/send-message-notification/index.ts` | Modify | Add FCM support, multi-device delivery |
+| `supabase/config.toml` | No change | Function config already correct |
+
+---
+
+## Security Considerations
+
+1. **FCM key protection**: The `FCM_SERVICE_ACCOUNT_KEY` is stored as a Supabase secret, never exposed to clients
+2. **RLS on device_tokens**: Users can only manage their own tokens
+3. **Token validation**: Invalid tokens are auto-deleted to prevent data leaks
+4. **Edge function auth**: `verify_jwt = false` allows cron/webhook triggers, but function uses service role key internally
+
+---
+
+## Deployment Steps
+
+1. Add `FCM_SERVICE_ACCOUNT_KEY` secret (you'll need to provide the Firebase service account JSON)
+2. Run database migration to create `device_tokens` table
+3. Deploy updated edge function
+4. Update mobile app to call token registration endpoint
+
+---
+
+## Mobile App Integration
+
+The mobile app will need to:
+
+```typescript
+// Register device token
+const { error } = await supabase
+  .from('device_tokens')
+  .upsert({
+    user_id: user.id,
+    token: expoPushToken,
+    token_type: 'expo', // or 'fcm'
+    platform: Platform.OS, // 'android' or 'ios'
+  }, { 
+    onConflict: 'token' 
+  });
 ```
 
 ---
 
-## 2. New RPC: `sync_messages`
+## Before Proceeding
 
-**Purpose**: Fetch messages since a specific timestamp for efficient syncing (pull-based refresh, resume after disconnect).
+Do you have a Firebase project set up for FCM? If so, you'll need to:
+1. Go to Firebase Console > Project Settings > Service Accounts
+2. Generate a new private key (JSON file)
+3. Provide it as the `FCM_SERVICE_ACCOUNT_KEY` secret
 
-**Parameters:**
-- `convo_id` (uuid) - The conversation to sync
-- `since_ts` (timestamptz) - Fetch messages created after this time
-
-**Returns**: All message columns where `created_at > since_ts`, ordered ascending.
-
-**SQL:**
-```text
-CREATE OR REPLACE FUNCTION public.sync_messages(
-  convo_id uuid,
-  since_ts timestamptz
-)
-RETURNS SETOF messages
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT *
-  FROM messages
-  WHERE conversation_id = convo_id
-    AND created_at > since_ts
-    AND (
-      -- Ensure caller is a participant
-      EXISTS (
-        SELECT 1 FROM conversations c
-        WHERE c.id = convo_id
-          AND (c.user1_id = auth.uid() OR c.user2_id = auth.uid())
-      )
-    )
-  ORDER BY created_at ASC;
-$$;
-```
-
----
-
-## 3. Performance Indexes
-
-**Analysis of existing indexes:**
-- `idx_messages_conversation_created` already exists
-- Conversation user indexes are MISSING
-
-**Indexes to add:**
-```text
--- Optimize conversation lookup by user
-CREATE INDEX IF NOT EXISTS idx_conversations_user1
-  ON conversations (user1_id);
-
-CREATE INDEX IF NOT EXISTS idx_conversations_user2
-  ON conversations (user2_id);
-
--- Composite index for unread count queries
-CREATE INDEX IF NOT EXISTS idx_message_status_user_status
-  ON message_status (user_id, status)
-  WHERE status != 'read';
-```
-
----
-
-## 4. Message Status Enhancement
-
-**Current state:**
-- `message_status` table has: `id`, `message_id`, `user_id`, `status`, `timestamp`, `created_at`
-- Status values: `'sent'`, `'delivered'`, `'read'`
-
-**Additions needed:**
-```text
--- Add separate timestamp columns for delivery/read tracking
-ALTER TABLE message_status 
-  ADD COLUMN IF NOT EXISTS delivered_at timestamptz,
-  ADD COLUMN IF NOT EXISTS read_at timestamptz;
-```
-
----
-
-## 5. Enhanced Notifications Trigger
-
-**Current triggers on messages:**
-- `update_conversation_activity_trigger` - Updates `last_activity` and `last_message_id`
-- `create_message_status_trigger` - Creates message_status entries
-- `update_recent_chats_trigger` - Updates recent_chats table
-
-**New trigger to add**: Increment unread count for receiver
-
-```text
-CREATE OR REPLACE FUNCTION public.increment_unread_on_message()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  v_receiver_id uuid;
-BEGIN
-  -- Determine receiver
-  SELECT 
-    CASE 
-      WHEN c.user1_id = NEW.sender_id THEN c.user2_id 
-      ELSE c.user1_id 
-    END INTO v_receiver_id
-  FROM conversations c 
-  WHERE c.id = NEW.conversation_id;
-
-  -- Increment appropriate unread counter
-  IF v_receiver_id IS NOT NULL THEN
-    UPDATE conversations
-    SET 
-      unread_count_user1 = CASE 
-        WHEN user1_id = v_receiver_id 
-        THEN COALESCE(unread_count_user1, 0) + 1 
-        ELSE unread_count_user1 
-      END,
-      unread_count_user2 = CASE 
-        WHEN user2_id = v_receiver_id 
-        THEN COALESCE(unread_count_user2, 0) + 1 
-        ELSE unread_count_user2 
-      END
-    WHERE id = NEW.conversation_id;
-  END IF;
-
-  RETURN NEW;
-END;
-$$;
-
--- Create the trigger
-CREATE TRIGGER increment_unread_trigger
-  AFTER INSERT ON messages
-  FOR EACH ROW
-  EXECUTE FUNCTION increment_unread_on_message();
-```
-
----
-
-## Summary of Changes
-
-| Change | Type | Impact |
-|--------|------|--------|
-| `get_user_conversations_v2` | New RPC | More efficient conversation loading |
-| `sync_messages` | New RPC | Efficient message syncing |
-| `idx_conversations_user1` | New Index | Faster user conversation queries |
-| `idx_conversations_user2` | New Index | Faster user conversation queries |
-| `idx_message_status_user_status` | New Index | Faster unread count queries |
-| `delivered_at`, `read_at` columns | Schema addition | Detailed delivery tracking |
-| `increment_unread_trigger` | New Trigger | Auto-increment unread counts |
-
----
-
-## Backward Compatibility
-
-- Existing `get_user_conversations` RPC remains unchanged
-- No column renames or deletions
-- All new columns are nullable with no breaking defaults
-- Frontend can migrate to v2 RPC at its own pace
-
----
-
-## Technical Notes
-
-- All new functions use `auth.uid()` instead of requiring `target_user_id` parameter (more secure)
-- Indexes use partial index syntax where beneficial for query optimization
-- Trigger fires AFTER INSERT to not block message sending
-
+If you're using Expo Push only (no native FCM), we can skip the FCM integration and just add multi-device support with Expo.
