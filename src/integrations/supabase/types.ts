@@ -1046,6 +1046,47 @@ export type Database = {
         }
         Relationships: []
       }
+      device_tokens: {
+        Row: {
+          created_at: string | null
+          device_name: string | null
+          id: string
+          last_seen: string | null
+          platform: string
+          token: string
+          token_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          device_name?: string | null
+          id?: string
+          last_seen?: string | null
+          platform: string
+          token: string
+          token_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          device_name?: string | null
+          id?: string
+          last_seen?: string | null
+          platform?: string
+          token?: string
+          token_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       fitness_challenges: {
         Row: {
           challenge_type: string

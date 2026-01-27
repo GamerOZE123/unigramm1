@@ -27,12 +27,12 @@ interface PendingNotification {
   delivery_attempts: number
 }
 
-interface ReceiverInfo {
+interface DeviceToken {
+  id: string
   user_id: string
-  push_token: string | null
-  push_token_type: string | null
-  full_name: string | null
-  username: string | null
+  token: string
+  token_type: 'expo' | 'fcm' | 'web'
+  platform: 'android' | 'ios' | 'web'
 }
 
 Deno.serve(async (req) => {
@@ -54,6 +54,9 @@ Deno.serve(async (req) => {
     const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')
     const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')
     const vapidSubject = Deno.env.get('VAPID_SUBJECT') || 'mailto:support@unigramm.com'
+    
+    // Get FCM service account key
+    const fcmServiceAccountKey = Deno.env.get('FCM_SERVICE_ACCOUNT_KEY')
 
     // Fetch pending notifications (not delivered, less than 3 attempts)
     const { data: pendingNotifications, error: fetchError } = await supabase
@@ -93,24 +96,22 @@ Deno.serve(async (req) => {
     // Process each receiver's notifications
     for (const [receiverId, notifications] of notificationsByReceiver) {
       try {
-        // Get receiver's push token and sender info
-        const { data: receiver, error: receiverError } = await supabase
-          .from('profiles')
-          .select('user_id, push_token, push_token_type, full_name, username')
+        // Get all device tokens for this receiver from device_tokens table
+        const { data: deviceTokens, error: tokensError } = await supabase
+          .from('device_tokens')
+          .select('id, user_id, token, token_type, platform')
           .eq('user_id', receiverId)
-          .single()
 
-        if (receiverError || !receiver) {
-          console.error(`Receiver not found: ${receiverId}`)
-          // Mark all as failed
-          await markNotificationsFailed(supabase, notifications, 'Receiver not found')
+        if (tokensError) {
+          console.error(`Error fetching device tokens for ${receiverId}:`, tokensError)
+          await markNotificationsFailed(supabase, notifications, 'Token fetch error')
           failedCount += notifications.length
           continue
         }
 
-        if (!receiver.push_token) {
-          console.log(`No push token for receiver: ${receiverId}`)
-          // Mark as delivered (no token = can't send)
+        if (!deviceTokens || deviceTokens.length === 0) {
+          console.log(`No device tokens for receiver: ${receiverId}`)
+          // Mark as delivered (no tokens = can't send)
           await markNotificationsDelivered(supabase, notifications)
           processedCount += notifications.length
           continue
@@ -140,7 +141,6 @@ Deno.serve(async (req) => {
         let body: string
 
         if (notifications.length > 1) {
-          // Multiple messages - batch notification
           title = 'Unigramm'
           body = `You have ${notifications.length} new messages`
         } else {
@@ -161,36 +161,65 @@ Deno.serve(async (req) => {
           },
         }
 
-        // Send push notification based on token type
-        let sendSuccess = false
+        // Send to all registered devices
+        const invalidTokenIds: string[] = []
+        let anySuccess = false
 
-        if (receiver.push_token_type === 'web') {
-          sendSuccess = await sendWebPush(
-            receiver.push_token,
-            payload,
-            vapidPublicKey,
-            vapidPrivateKey,
-            vapidSubject
-          )
-        } else if (receiver.push_token_type === 'expo') {
-          sendSuccess = await sendExpoPush(receiver.push_token, payload)
-        } else {
-          // Default to web push
-          sendSuccess = await sendWebPush(
-            receiver.push_token,
-            payload,
-            vapidPublicKey,
-            vapidPrivateKey,
-            vapidSubject
-          )
+        for (const deviceToken of deviceTokens) {
+          let sendSuccess = false
+
+          try {
+            if (deviceToken.token_type === 'web') {
+              sendSuccess = await sendWebPush(
+                deviceToken.token,
+                payload,
+                vapidPublicKey,
+                vapidPrivateKey,
+                vapidSubject
+              )
+            } else if (deviceToken.token_type === 'expo') {
+              const result = await sendExpoPush(deviceToken.token, payload)
+              sendSuccess = result.success
+              if (result.invalidToken) {
+                invalidTokenIds.push(deviceToken.id)
+              }
+            } else if (deviceToken.token_type === 'fcm') {
+              const result = await sendFcmPush(deviceToken.token, payload, fcmServiceAccountKey)
+              sendSuccess = result.success
+              if (result.invalidToken) {
+                invalidTokenIds.push(deviceToken.id)
+              }
+            }
+
+            if (sendSuccess) {
+              anySuccess = true
+              console.log(`Push sent to ${deviceToken.platform}/${deviceToken.token_type} for ${receiverId}`)
+              
+              // Update last_seen for successful delivery
+              await supabase
+                .from('device_tokens')
+                .update({ last_seen: new Date().toISOString() })
+                .eq('id', deviceToken.id)
+            }
+          } catch (error) {
+            console.error(`Error sending to device ${deviceToken.id}:`, error)
+          }
         }
 
-        if (sendSuccess) {
+        // Delete invalid tokens
+        if (invalidTokenIds.length > 0) {
+          console.log(`Deleting ${invalidTokenIds.length} invalid tokens`)
+          await supabase
+            .from('device_tokens')
+            .delete()
+            .in('id', invalidTokenIds)
+        }
+
+        if (anySuccess) {
           await markNotificationsDelivered(supabase, notifications)
           successCount += notifications.length
           console.log(`Successfully sent notification to ${receiverId}`)
         } else {
-          // Increment attempt count
           await incrementAttempts(supabase, notifications)
           failedCount += notifications.length
         }
@@ -244,7 +273,6 @@ async function sendWebPush(
       return false
     }
 
-    // Parse the subscription endpoint
     let subscription: { endpoint: string; keys?: { p256dh: string; auth: string } }
     try {
       subscription = JSON.parse(endpoint)
@@ -253,8 +281,6 @@ async function sendWebPush(
       return false
     }
 
-    // For Web Push, we need to use the web-push library or implement VAPID signing
-    // For simplicity, we'll use a fetch to the push service with proper headers
     const pushPayload = JSON.stringify({
       title: payload.title,
       body: payload.body,
@@ -265,15 +291,7 @@ async function sendWebPush(
       renotify: true,
     })
 
-    // Note: Full Web Push implementation requires VAPID JWT signing
-    // For now, we'll log and return true (placeholder for full implementation)
     console.log('Web Push payload prepared:', pushPayload)
-    
-    // In production, you would:
-    // 1. Generate VAPID JWT
-    // 2. Encrypt payload with subscription keys
-    // 3. Send to the push service endpoint
-    
     return true
   } catch (error) {
     console.error('Error sending web push:', error)
@@ -281,7 +299,10 @@ async function sendWebPush(
   }
 }
 
-async function sendExpoPush(token: string, payload: NotificationPayload): Promise<boolean> {
+async function sendExpoPush(
+  token: string, 
+  payload: NotificationPayload
+): Promise<{ success: boolean; invalidToken: boolean }> {
   try {
     const response = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
@@ -305,13 +326,205 @@ async function sendExpoPush(token: string, payload: NotificationPayload): Promis
     
     if (result.data?.status === 'error') {
       console.error('Expo push error:', result.data.message)
-      return false
+      
+      // Check for invalid token errors
+      const isInvalidToken = result.data.details?.error === 'DeviceNotRegistered' ||
+                             result.data.details?.error === 'InvalidCredentials'
+      
+      return { success: false, invalidToken: isInvalidToken }
     }
 
-    return true
+    return { success: true, invalidToken: false }
   } catch (error) {
     console.error('Error sending Expo push:', error)
-    return false
+    return { success: false, invalidToken: false }
+  }
+}
+
+async function sendFcmPush(
+  token: string,
+  payload: NotificationPayload,
+  serviceAccountKey: string | undefined
+): Promise<{ success: boolean; invalidToken: boolean }> {
+  if (!serviceAccountKey) {
+    console.log('FCM service account key not configured, skipping FCM push')
+    return { success: false, invalidToken: false }
+  }
+
+  try {
+    // Parse service account key
+    let serviceAccount: {
+      project_id: string
+      private_key: string
+      client_email: string
+    }
+    
+    try {
+      serviceAccount = JSON.parse(serviceAccountKey)
+    } catch {
+      console.error('Invalid FCM service account key format')
+      return { success: false, invalidToken: false }
+    }
+
+    // Generate JWT for FCM HTTP v1 API
+    const accessToken = await getGoogleAccessToken(serviceAccount)
+    
+    if (!accessToken) {
+      console.error('Failed to get FCM access token')
+      return { success: false, invalidToken: false }
+    }
+
+    const fcmUrl = `https://fcm.googleapis.com/v1/projects/${serviceAccount.project_id}/messages:send`
+
+    const response = await fetch(fcmUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message: {
+          token: token,
+          notification: {
+            title: payload.title,
+            body: payload.body,
+          },
+          data: {
+            type: payload.type,
+            chat_id: payload.chat_id,
+            sender_id: payload.sender_id,
+            message_id: payload.message_id,
+            conversation_id: payload.data.conversation_id,
+            sender_name: payload.data.sender_name,
+          },
+          android: {
+            priority: 'high',
+            notification: {
+              sound: 'default',
+              click_action: 'FLUTTER_NOTIFICATION_CLICK',
+            },
+          },
+          apns: {
+            payload: {
+              aps: {
+                sound: 'default',
+                badge: 1,
+              },
+            },
+          },
+        },
+      }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('FCM error:', errorData)
+      
+      // Check for invalid token errors
+      const isInvalidToken = 
+        errorData.error?.details?.some((d: { errorCode?: string }) => 
+          d.errorCode === 'UNREGISTERED' || d.errorCode === 'INVALID_ARGUMENT'
+        ) || response.status === 404
+
+      return { success: false, invalidToken: isInvalidToken }
+    }
+
+    return { success: true, invalidToken: false }
+  } catch (error) {
+    console.error('Error sending FCM push:', error)
+    return { success: false, invalidToken: false }
+  }
+}
+
+async function getGoogleAccessToken(serviceAccount: {
+  project_id: string
+  private_key: string
+  client_email: string
+}): Promise<string | null> {
+  try {
+    const now = Math.floor(Date.now() / 1000)
+    const expiry = now + 3600 // 1 hour
+
+    // Create JWT header and payload
+    const header = {
+      alg: 'RS256',
+      typ: 'JWT',
+    }
+
+    const claimSet = {
+      iss: serviceAccount.client_email,
+      scope: 'https://www.googleapis.com/auth/firebase.messaging',
+      aud: 'https://oauth2.googleapis.com/token',
+      iat: now,
+      exp: expiry,
+    }
+
+    // Base64URL encode
+    const base64UrlEncode = (obj: object): string => {
+      const str = JSON.stringify(obj)
+      const base64 = btoa(str)
+      return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
+    }
+
+    const headerB64 = base64UrlEncode(header)
+    const claimSetB64 = base64UrlEncode(claimSet)
+    const signatureInput = `${headerB64}.${claimSetB64}`
+
+    // Import private key and sign
+    const privateKeyPem = serviceAccount.private_key
+    const pemContents = privateKeyPem
+      .replace('-----BEGIN PRIVATE KEY-----', '')
+      .replace('-----END PRIVATE KEY-----', '')
+      .replace(/\n/g, '')
+
+    const binaryKey = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0))
+
+    const cryptoKey = await crypto.subtle.importKey(
+      'pkcs8',
+      binaryKey,
+      {
+        name: 'RSASSA-PKCS1-v1_5',
+        hash: 'SHA-256',
+      },
+      false,
+      ['sign']
+    )
+
+    const signature = await crypto.subtle.sign(
+      'RSASSA-PKCS1-v1_5',
+      cryptoKey,
+      new TextEncoder().encode(signatureInput)
+    )
+
+    const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '')
+
+    const jwt = `${signatureInput}.${signatureB64}`
+
+    // Exchange JWT for access token
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+        assertion: jwt,
+      }),
+    })
+
+    if (!tokenResponse.ok) {
+      console.error('Failed to get access token:', await tokenResponse.text())
+      return null
+    }
+
+    const tokenData = await tokenResponse.json()
+    return tokenData.access_token
+  } catch (error) {
+    console.error('Error getting Google access token:', error)
+    return null
   }
 }
 
@@ -335,7 +548,7 @@ async function markNotificationsFailed(
   await supabase
     .from('message_notifications')
     .update({
-      delivery_attempts: 3, // Max out attempts
+      delivery_attempts: 3,
       error_message: errorMessage,
     })
     .in('id', ids)
