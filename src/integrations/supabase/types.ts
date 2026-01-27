@@ -1702,24 +1702,30 @@ export type Database = {
       message_status: {
         Row: {
           created_at: string
+          delivered_at: string | null
           id: string
           message_id: string
+          read_at: string | null
           status: string
           timestamp: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          delivered_at?: string | null
           id?: string
           message_id: string
+          read_at?: string | null
           status?: string
           timestamp?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          delivered_at?: string | null
           id?: string
           message_id?: string
+          read_at?: string | null
           status?: string
           timestamp?: string
           user_id?: string
@@ -3603,6 +3609,18 @@ export type Database = {
           unread_count: number
         }[]
       }
+      get_user_conversations_v2: {
+        Args: never
+        Returns: {
+          conversation_id: string
+          last_message: string
+          last_message_at: string
+          participant_avatar: string
+          participant_id: string
+          participant_name: string
+          unread_count: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -3628,6 +3646,26 @@ export type Database = {
         Returns: undefined
       }
       reset_monthly_post_usage: { Args: never; Returns: undefined }
+      sync_messages: {
+        Args: { convo_id: string; since_ts: string }
+        Returns: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          media_type: string | null
+          media_url: string[] | null
+          message_type: string | null
+          reply_to_message_id: string | null
+          sender_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "messages"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       update_typing_status: {
         Args: {
           conversation_uuid: string
