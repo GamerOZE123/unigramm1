@@ -3646,26 +3646,48 @@ export type Database = {
         Returns: undefined
       }
       reset_monthly_post_usage: { Args: never; Returns: undefined }
-      sync_messages: {
-        Args: { convo_id: string; since_ts: string }
-        Returns: {
-          content: string
-          conversation_id: string
-          created_at: string
-          id: string
-          media_type: string | null
-          media_url: string[] | null
-          message_type: string | null
-          reply_to_message_id: string | null
-          sender_id: string
-        }[]
-        SetofOptions: {
-          from: "*"
-          to: "messages"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
+      reset_unread_count: { Args: { convo_id: string }; Returns: undefined }
+      sync_messages:
+        | {
+            Args: { convo_id: string; since_ts: string }
+            Returns: {
+              content: string
+              conversation_id: string
+              created_at: string
+              id: string
+              media_type: string | null
+              media_url: string[] | null
+              message_type: string | null
+              reply_to_message_id: string | null
+              sender_id: string
+            }[]
+            SetofOptions: {
+              from: "*"
+              to: "messages"
+              isOneToOne: false
+              isSetofReturn: true
+            }
+          }
+        | {
+            Args: { convo_id: string; msg_limit?: number; since_ts: string }
+            Returns: {
+              content: string
+              conversation_id: string
+              created_at: string
+              id: string
+              media_type: string | null
+              media_url: string[] | null
+              message_type: string | null
+              reply_to_message_id: string | null
+              sender_id: string
+            }[]
+            SetofOptions: {
+              from: "*"
+              to: "messages"
+              isOneToOne: false
+              isSetofReturn: true
+            }
+          }
       update_typing_status: {
         Args: {
           conversation_uuid: string
