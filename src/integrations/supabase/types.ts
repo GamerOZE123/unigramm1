@@ -3650,18 +3650,40 @@ export type Database = {
           unread_count: number
         }[]
       }
-      get_user_conversations_v2: {
-        Args: never
-        Returns: {
-          conversation_id: string
-          last_message: string
-          last_message_at: string
-          participant_avatar: string
-          participant_id: string
-          participant_name: string
-          unread_count: number
-        }[]
-      }
+      get_user_conversations_v2:
+        | {
+            Args: never
+            Returns: {
+              conversation_id: string
+              last_message: string
+              last_message_at: string
+              participant_avatar: string
+              participant_id: string
+              participant_name: string
+              unread_count: number
+            }[]
+          }
+        | {
+            Args: { target_user_id: string }
+            Returns: {
+              blocked: boolean
+              blocked_by_me: boolean
+              conversation_id: string
+              image_url: string
+              last_message: string
+              last_message_at: string
+              muted: boolean
+              name: string
+              other_user_avatar: string
+              other_user_id: string
+              other_user_name: string
+              other_user_university: string
+              participants: Json
+              pinned: boolean
+              type: string
+              unread_count: number
+            }[]
+          }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
