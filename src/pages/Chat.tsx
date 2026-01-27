@@ -67,7 +67,6 @@ export default function Chat() {
   const { reactions, toggleReaction } = useMessageReactions(selectedConversationId);
   const { searchResults, loading: searchLoading, searchMessages, clearSearch } = useMessageSearch();
   const {
-    conversations,
     currentMessages,
     loading: chatLoading,
     fetchMessages,
@@ -76,7 +75,6 @@ export default function Chat() {
     createConversation,
     clearChat,
     deleteChat,
-    refreshConversations,
   } = useChat();
   const { recentChats, loading, addRecentChat, refreshRecentChats } = useRecentChats();
   const { groups, loading: groupsLoading, refreshGroups } = useChatGroups();
@@ -255,32 +253,33 @@ export default function Chat() {
     if (conversationId && conversationId !== selectedConversationId) {
       setSelectedConversationId(conversationId);
       
-      // Get user details from the conversation
+      // Get user details from the conversation using recent_chats as source of truth
       const loadConversation = async () => {
-        // First check if conversation is already in the list
-        let conversation = conversations.find(c => c.conversation_id === conversationId);
+        // Get the other user from conversation_participants
+        const { data: participants } = await supabase
+          .from('conversation_participants')
+          .select('user_id')
+          .eq('conversation_id', conversationId)
+          .neq('user_id', user?.id || '');
         
-        // If not found, refresh conversations list
-        if (!conversation) {
-          await refreshConversations();
-          // Wait a bit for conversations to update
-          await new Promise(resolve => setTimeout(resolve, 100));
-          conversation = conversations.find(c => c.conversation_id === conversationId);
-        }
-        
-        // If still not found, we might need to query the database
-        if (!conversation) {
-          // Try to get conversation from database
-          const { data } = await supabase
-            .rpc('get_user_conversations', { target_user_id: user?.id || '' });
-          conversation = data?.find((c: any) => c.conversation_id === conversationId);
-        }
-        
-        if (conversation) {
-          const userData = await getUserById(conversation.other_user_id);
-          if (userData) {
-            setSelectedUser(userData);
-            if (isMobile) setShowUserList(false);
+        if (participants && participants.length > 0) {
+          const otherUserId = participants[0].user_id;
+          // Find in recentChats (single source of truth)
+          const recentChat = recentChats.find(c => c.other_user_id === otherUserId);
+          
+          if (recentChat) {
+            const userData = await getUserById(recentChat.other_user_id);
+            if (userData) {
+              setSelectedUser(userData);
+              if (isMobile) setShowUserList(false);
+            }
+          } else {
+            // If not in recentChats, fetch user directly
+            const userData = await getUserById(otherUserId);
+            if (userData) {
+              setSelectedUser(userData);
+              if (isMobile) setShowUserList(false);
+            }
           }
         }
       };
@@ -604,9 +603,15 @@ const handleBackToUserList = () => {
 
     let successCount = 0;
     for (const otherUserId of selectedChatsForBulk) {
-      const conv = conversations.find((c) => c.other_user_id === otherUserId);
-      if (conv) {
-        const result = await deleteChat(conv.conversation_id, otherUserId);
+      // Find conversation ID from conversation_participants
+      const { data: convData } = await supabase
+        .from('conversation_participants')
+        .select('conversation_id')
+        .eq('user_id', otherUserId)
+        .single();
+      
+      if (convData) {
+        const result = await deleteChat(convData.conversation_id, otherUserId);
         if (result.success) successCount++;
         else console.error('Failed to delete chat:', otherUserId, result.error);
       }
@@ -617,7 +622,6 @@ const handleBackToUserList = () => {
       setSelectedChatsForBulk(new Set());
       setSelectedConversationId(null);
       setSelectedUser(null);
-      refreshConversations();
       refreshRecentChats();
     } else {
       toast.error('Failed to delete chats');
@@ -639,7 +643,6 @@ const handleBackToUserList = () => {
       toast.success('Chat deleted for you');
       setSelectedConversationId(null);
       setSelectedUser(null);
-      refreshConversations();
       refreshRecentChats();
     } else {
       toast.error('Failed to delete chat: ' + result.error);
@@ -911,7 +914,6 @@ const handleBackToUserList = () => {
                   onChatDeleted={() => {
                     setSelectedConversationId(null);
                     setSelectedUser(null);
-                    refreshConversations();
                     refreshRecentChats();
                   }}
                   onBlockStatusChange={(blocked) => setIsUserBlocked(blocked)}
@@ -1458,7 +1460,6 @@ const handleBackToUserList = () => {
               setSelectedConversationId(null);
               setSelectedUser(null);
               setShowChatSettings(false);
-              refreshConversations();
               refreshRecentChats();
               setShowUserList(true);
             }}

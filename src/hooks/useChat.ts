@@ -25,35 +25,13 @@ interface Message {
 
 export const useChat = () => {
   const { user } = useAuth();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
+  // NOTE: Conversations list is now handled by useRecentChats hook (get_recent_chats RPC)
+  // This hook focuses on message operations only
   const [currentMessages, setCurrentMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [isChatCleared, setIsChatCleared] = useState<boolean>(false);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [clearedAt, setClearedAt] = useState<string | null>(null);
-
-  const fetchConversations = async () => {
-    if (!user) return;
-    try {
-      const { data, error } = await supabase.rpc('get_user_conversations', {
-        target_user_id: user.id,
-      });
-      if (error) throw error;
-      // Filter out conversations deleted by the user
-      const { data: deleted } = await supabase
-        .from('deleted_chats')
-        .select('conversation_id')
-        .eq('user_id', user.id);
-      const deletedIds = deleted?.map((d) => d.conversation_id) || [];
-      setConversations((data || []).filter(
-        (conv: Conversation) => !deletedIds.includes(conv.conversation_id)
-      ));
-    } catch (error) {
-      console.error('Error fetching conversations:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const fetchMessages = async (conversationId: string, offset = 0, limit = 15) => {
     if (!user) return;
@@ -142,7 +120,7 @@ export const useChat = () => {
         user2_id: otherUserId,
       });
       if (error) throw error;
-      await fetchConversations();
+      // NOTE: recent_chats is updated automatically via update_recent_chats_on_message trigger
       return data;
     } catch (error) {
       console.error('Error creating conversation:', error);
@@ -217,14 +195,13 @@ const deleteChat = async (conversationId: string, otherUserId: string) => {
       console.warn('No recent chat found; skipping update');
     }
 
-    // Local UI update
-    setConversations((prev) =>
-      prev.filter((c) => c.conversation_id !== conversationId)
-    );
+    // Local UI update - clear messages from view
     if (activeConversationId === conversationId) {
       setCurrentMessages([]);  // Clear messages from view (Instagram: empty on re-open)
       setActiveConversationId(null);
     }
+
+    // NOTE: recent_chats list refresh is handled by the caller (Chat.tsx calls refreshRecentChats)
 
     // Trigger refresh for recent list
     // Note: Call refreshRecentChats() in Chat.tsx after this
@@ -261,7 +238,7 @@ const deleteChat = async (conversationId: string, otherUserId: string) => {
               );
             }
           }
-          fetchConversations();
+          // NOTE: recent_chats list is updated automatically via triggers
         }
       )
       .subscribe();
@@ -271,7 +248,6 @@ const deleteChat = async (conversationId: string, otherUserId: string) => {
   }, [user, activeConversationId, clearedAt]);
 
   return {
-    conversations,
     currentMessages,
     loading,
     isChatCleared,
@@ -281,6 +257,5 @@ const deleteChat = async (conversationId: string, otherUserId: string) => {
     createConversation,
     clearChat,
     deleteChat,
-    refreshConversations: fetchConversations,
   };
 };
