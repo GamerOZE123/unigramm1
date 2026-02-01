@@ -244,8 +244,8 @@ export default function Carpooling() {
     try {
       const { data: conversationId, error } = await supabase
         .rpc('get_or_create_conversation', {
-          user1_id: user.id,
-          user2_id: driverId
+          p_user1_id: user.id,
+          p_user2_id: driverId
         });
 
       if (error) throw error;
