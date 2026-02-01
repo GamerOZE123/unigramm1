@@ -116,8 +116,8 @@ export const useChat = () => {
     if (!user) return null;
     try {
       const { data, error } = await supabase.rpc('get_or_create_conversation', {
-        user1_id: user.id,
-        user2_id: otherUserId,
+        p_user1_id: user.id,
+        p_user2_id: otherUserId,
       });
       if (error) throw error;
       // NOTE: recent_chats is updated automatically via update_recent_chats_on_message trigger
