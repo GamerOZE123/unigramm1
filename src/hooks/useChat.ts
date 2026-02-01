@@ -28,21 +28,27 @@ export const useChat = () => {
   // NOTE: Conversations list is now handled by useRecentChats hook (get_recent_chats RPC)
   // This hook focuses on message operations only
   const [currentMessages, setCurrentMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Loading state should reflect initial message fetch for the active conversation.
+  // (Previously it was never set to false, causing the UI to stay in a perpetual spinner.)
+  const [loading, setLoading] = useState(false);
   const [isChatCleared, setIsChatCleared] = useState<boolean>(false);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [clearedAt, setClearedAt] = useState<string | null>(null);
 
   const fetchMessages = async (conversationId: string, offset = 0, limit = 15) => {
     if (!user) return;
+    // Only show the global loading spinner for the initial load.
+    if (offset === 0) setLoading(true);
     try {
       setActiveConversationId(conversationId);
-      const { data: clearedData } = await supabase
+      const { data: clearedData, error: clearedError } = await supabase
         .from('cleared_chats')
         .select('cleared_at')
         .eq('user_id', user.id)
         .eq('conversation_id', conversationId)
-        .single();
+        .maybeSingle();
+
+      if (clearedError) throw clearedError;
       if (clearedData?.cleared_at) {
         setIsChatCleared(true);
         setClearedAt(clearedData.cleared_at);
@@ -69,6 +75,8 @@ export const useChat = () => {
     } catch (error) {
       console.error('Error fetching messages:', error);
       if (offset === 0) setCurrentMessages([]);
+    } finally {
+      if (offset === 0) setLoading(false);
     }
   };
 
