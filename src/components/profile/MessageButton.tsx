@@ -21,8 +21,8 @@ export default function MessageButton({ userId }: MessageButtonProps) {
     try {
       const { data, error } = await supabase
         .rpc('get_or_create_conversation', {
-          p_user1_id: user.id,
-          p_user2_id: userId
+          user1_id: user.id,
+          user2_id: userId
         });
 
       if (error) throw error;

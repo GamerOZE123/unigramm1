@@ -28,27 +28,21 @@ export const useChat = () => {
   // NOTE: Conversations list is now handled by useRecentChats hook (get_recent_chats RPC)
   // This hook focuses on message operations only
   const [currentMessages, setCurrentMessages] = useState<Message[]>([]);
-  // Loading state should reflect initial message fetch for the active conversation.
-  // (Previously it was never set to false, causing the UI to stay in a perpetual spinner.)
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [isChatCleared, setIsChatCleared] = useState<boolean>(false);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [clearedAt, setClearedAt] = useState<string | null>(null);
 
   const fetchMessages = async (conversationId: string, offset = 0, limit = 15) => {
     if (!user) return;
-    // Only show the global loading spinner for the initial load.
-    if (offset === 0) setLoading(true);
     try {
       setActiveConversationId(conversationId);
-      const { data: clearedData, error: clearedError } = await supabase
+      const { data: clearedData } = await supabase
         .from('cleared_chats')
         .select('cleared_at')
         .eq('user_id', user.id)
         .eq('conversation_id', conversationId)
-        .maybeSingle();
-
-      if (clearedError) throw clearedError;
+        .single();
       if (clearedData?.cleared_at) {
         setIsChatCleared(true);
         setClearedAt(clearedData.cleared_at);
@@ -75,8 +69,6 @@ export const useChat = () => {
     } catch (error) {
       console.error('Error fetching messages:', error);
       if (offset === 0) setCurrentMessages([]);
-    } finally {
-      if (offset === 0) setLoading(false);
     }
   };
 
@@ -124,8 +116,8 @@ export const useChat = () => {
     if (!user) return null;
     try {
       const { data, error } = await supabase.rpc('get_or_create_conversation', {
-        p_user1_id: user.id,
-        p_user2_id: otherUserId,
+        user1_id: user.id,
+        user2_id: otherUserId,
       });
       if (error) throw error;
       // NOTE: recent_chats is updated automatically via update_recent_chats_on_message trigger
