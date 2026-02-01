@@ -930,18 +930,21 @@ export type Database = {
           conversation_id: string
           id: string
           joined_at: string
+          last_read_at: string | null
           user_id: string
         }
         Insert: {
           conversation_id: string
           id?: string
           joined_at?: string
+          last_read_at?: string | null
           user_id: string
         }
         Update: {
           conversation_id?: string
           id?: string
           joined_at?: string
+          last_read_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -1162,21 +1165,27 @@ export type Database = {
           created_at: string
           group_id: string
           id: string
-          sender_id: string
+          message_type: string | null
+          metadata: Json | null
+          sender_id: string | null
         }
         Insert: {
           content: string
           created_at?: string
           group_id: string
           id?: string
-          sender_id: string
+          message_type?: string | null
+          metadata?: Json | null
+          sender_id?: string | null
         }
         Update: {
           content?: string
           created_at?: string
           group_id?: string
           id?: string
-          sender_id?: string
+          message_type?: string | null
+          metadata?: Json | null
+          sender_id?: string | null
         }
         Relationships: [
           {
@@ -2233,6 +2242,7 @@ export type Database = {
           post_type: string
           startup_id: string | null
           survey_questions: Json | null
+          survey_responses: Json | null
           updated_at: string | null
           user_id: string
           views_count: number
@@ -2259,6 +2269,7 @@ export type Database = {
           post_type?: string
           startup_id?: string | null
           survey_questions?: Json | null
+          survey_responses?: Json | null
           updated_at?: string | null
           user_id: string
           views_count?: number
@@ -2285,6 +2296,7 @@ export type Database = {
           post_type?: string
           startup_id?: string | null
           survey_questions?: Json | null
+          survey_responses?: Json | null
           updated_at?: string | null
           user_id?: string
           views_count?: number
@@ -3546,7 +3558,7 @@ export type Database = {
         }[]
       }
       get_or_create_conversation: {
-        Args: { user1_id: string; user2_id: string }
+        Args: { p_user1_id: string; p_user2_id: string }
         Returns: string
       }
       get_public_profile_columns: { Args: never; Returns: string }
@@ -3615,11 +3627,16 @@ export type Database = {
       get_recent_chats: {
         Args: { target_user_id: string }
         Returns: {
+          conversation_id: string
           last_interacted_at: string
+          last_message: string
+          last_message_at: string
           other_user_avatar: string
           other_user_id: string
           other_user_name: string
           other_user_university: string
+          type: string
+          unread_count: number
         }[]
       }
       get_safe_profile_fields: { Args: never; Returns: string[] }
@@ -3709,48 +3726,32 @@ export type Database = {
         Returns: undefined
       }
       reset_monthly_post_usage: { Args: never; Returns: undefined }
-      reset_unread_count: { Args: { convo_id: string }; Returns: undefined }
-      sync_messages:
+      reset_unread_count:
         | {
-            Args: { convo_id: string; since_ts: string }
-            Returns: {
-              content: string
-              conversation_id: string
-              created_at: string
-              id: string
-              media_type: string | null
-              media_url: string[] | null
-              message_type: string | null
-              reply_to_message_id: string | null
-              sender_id: string
-            }[]
-            SetofOptions: {
-              from: "*"
-              to: "messages"
-              isOneToOne: false
-              isSetofReturn: true
-            }
+            Args: { conversation_id: string; user_id: string }
+            Returns: undefined
           }
-        | {
-            Args: { convo_id: string; msg_limit?: number; since_ts: string }
-            Returns: {
-              content: string
-              conversation_id: string
-              created_at: string
-              id: string
-              media_type: string | null
-              media_url: string[] | null
-              message_type: string | null
-              reply_to_message_id: string | null
-              sender_id: string
-            }[]
-            SetofOptions: {
-              from: "*"
-              to: "messages"
-              isOneToOne: false
-              isSetofReturn: true
-            }
-          }
+        | { Args: { convo_id: string }; Returns: undefined }
+      sync_messages: {
+        Args: { convo_id: string; msg_limit?: number; since_ts: string }
+        Returns: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          media_type: string | null
+          media_url: string[] | null
+          message_type: string | null
+          reply_to_message_id: string | null
+          sender_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "messages"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       update_typing_status: {
         Args: {
           conversation_uuid: string
