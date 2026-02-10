@@ -21,7 +21,7 @@ export default function Dating() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { profile, loading: profileLoading } = useDatingProfile();
-  const { candidates, loading: candidatesLoading, fetchCandidates, likeUser, passUser, matchedUserId, clearMatch } = useDatingCandidates();
+  const { candidates, loading: candidatesLoading, fetchCandidates, likeUser, passUser, matchedUserId, matchedUserInfo, clearMatch } = useDatingCandidates();
   const { matches, loading: matchesLoading } = useDatingMatches();
 
   const [tab, setTab] = useState<Tab>('discover');
@@ -41,10 +41,7 @@ export default function Dating() {
     if (profile) fetchCandidates();
   }, [profile]);
 
-  // Find matched user info for modal
-  const matchedCandidate = matchedUserId
-    ? candidates.find(c => c.user_id === matchedUserId) || null
-    : null;
+  // matchedUserInfo is stored in the hook before the candidate is removed
 
   const handleLike = useCallback(async (userId: string) => {
     await likeUser(userId);
@@ -148,7 +145,7 @@ export default function Dating() {
           <MatchModal
             open={!!matchedUserId}
             onClose={clearMatch}
-            matchedUser={matchedCandidate}
+            matchedUser={matchedUserInfo}
             onChat={handleMatchChat}
           />
         </div>
@@ -198,7 +195,7 @@ export default function Dating() {
         <MatchModal
           open={!!matchedUserId}
           onClose={clearMatch}
-          matchedUser={matchedCandidate}
+          matchedUser={matchedUserInfo}
           onChat={handleMatchChat}
         />
       </div>

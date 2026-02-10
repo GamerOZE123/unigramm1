@@ -24,6 +24,7 @@ export function useDatingCandidates() {
   const [candidates, setCandidates] = useState<DatingCandidate[]>([]);
   const [loading, setLoading] = useState(false);
   const [matchedUserId, setMatchedUserId] = useState<string | null>(null);
+  const [matchedUserInfo, setMatchedUserInfo] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
 
   const fetchCandidates = useCallback(async () => {
     if (!user) return;
@@ -120,6 +121,10 @@ export function useDatingCandidates() {
         .maybeSingle();
 
       if (mutual) {
+        // Save matched user info BEFORE removing from candidates
+        const candidate = candidates.find(c => c.user_id === toUserId);
+        setMatchedUserInfo(candidate ? { full_name: candidate.full_name, avatar_url: candidate.avatar_url } : null);
+        
         // It's a match! Create match record
         const { error: matchErr } = await supabase
           .from('dating_matches')
@@ -129,6 +134,8 @@ export function useDatingCandidates() {
           });
         if (matchErr && !matchErr.message.includes('duplicate')) throw matchErr;
         setMatchedUserId(toUserId);
+        // Remove from candidates
+        setCandidates(prev => prev.filter(c => c.user_id !== toUserId));
         return true; // match!
       }
 
@@ -155,7 +162,10 @@ export function useDatingCandidates() {
     }
   };
 
-  const clearMatch = () => setMatchedUserId(null);
+  const clearMatch = () => {
+    setMatchedUserId(null);
+    setMatchedUserInfo(null);
+  };
 
-  return { candidates, loading, fetchCandidates, likeUser, passUser, matchedUserId, clearMatch };
+  return { candidates, loading, fetchCandidates, likeUser, passUser, matchedUserId, matchedUserInfo, clearMatch };
 }
