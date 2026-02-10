@@ -162,10 +162,16 @@ export function useDatingCandidates() {
     }
   };
 
+  const reloadCandidates = useCallback(async () => {
+    if (!user) return;
+    await supabase.from('dating_passes').delete().eq('from_user_id', user.id);
+    await fetchCandidates();
+  }, [user, fetchCandidates]);
+
   const clearMatch = () => {
     setMatchedUserId(null);
     setMatchedUserInfo(null);
   };
 
-  return { candidates, loading, fetchCandidates, likeUser, passUser, matchedUserId, matchedUserInfo, clearMatch };
+  return { candidates, loading, fetchCandidates, likeUser, passUser, matchedUserId, matchedUserInfo, clearMatch, reloadCandidates };
 }

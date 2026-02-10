@@ -344,18 +344,21 @@ export type Database = {
           blocked_id: string
           blocker_id: string
           id: string
+          scope: string | null
         }
         Insert: {
           blocked_at?: string
           blocked_id: string
           blocker_id: string
           id?: string
+          scope?: string | null
         }
         Update: {
           blocked_at?: string
           blocked_id?: string
           blocker_id?: string
           id?: string
+          scope?: string | null
         }
         Relationships: []
       }
