@@ -390,16 +390,20 @@ export function useHomePosts(user: User | null) {
 
       const { prioritizedPosts, newSeenIds } = prioritizeUnseenPosts(filtered, seenIds, existing);
 
-      // Log impressions
+      // Log impressions (non-blocking - don't let this break the feed)
       if (user && prioritizedPosts.length > 0) {
-        await supabase.from("post_impressions").upsert(
-          prioritizedPosts.map((p) => ({
-            user_id: user.id,
-            post_id: p.id,
-            seen_at: new Date().toISOString(),
-          })),
-          { onConflict: "user_id,post_id", ignoreDuplicates: true },
-        );
+        try {
+          await supabase.from("post_impressions").upsert(
+            prioritizedPosts.map((p) => ({
+              user_id: user.id,
+              post_id: p.id,
+              seen_at: new Date().toISOString(),
+            })),
+            { onConflict: "user_id,post_id", ignoreDuplicates: true },
+          );
+        } catch (err) {
+          console.warn("Impressions log failed:", err);
+        }
       }
 
       let mixed: MixedPost[] = prioritizedPosts.map((p) => ({

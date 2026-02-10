@@ -8,6 +8,7 @@ import DatingMatchesList from '@/components/dating/DatingMatchesList';
 import DatingChatWindow from '@/components/dating/DatingChatWindow';
 import DatingFilters from '@/components/dating/DatingFilters';
 import MatchModal from '@/components/dating/MatchModal';
+import DatingProfileView from '@/components/dating/DatingProfileView';
 import MobileLayout from '@/components/layout/MobileLayout';
 import { Heart, Users, Settings, Compass } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -127,14 +128,7 @@ export default function Dating() {
                 </div>
               )}
               {tab === 'profile' && (
-                <div className="p-6">
-                  <button
-                    onClick={() => navigate('/dating/setup')}
-                    className="text-pink-500 hover:underline text-sm font-medium"
-                  >
-                    Edit Dating Profile →
-                  </button>
-                </div>
+                <DatingProfileView />
               )}
             </div>
 
@@ -198,14 +192,7 @@ export default function Dating() {
         )}
 
         {tab === 'profile' && (
-          <div className="p-6 text-center">
-            <button
-              onClick={() => navigate('/dating/setup')}
-              className="text-pink-500 hover:underline text-sm font-medium"
-            >
-              Edit Dating Profile →
-            </button>
-          </div>
+          <DatingProfileView />
         )}
 
         <MatchModal
