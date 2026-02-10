@@ -21,7 +21,7 @@ export default function Dating() {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { profile, loading: profileLoading } = useDatingProfile();
-  const { candidates, loading: candidatesLoading, fetchCandidates, likeUser, passUser, matchedUserId, matchedUserInfo, clearMatch } = useDatingCandidates();
+  const { candidates, loading: candidatesLoading, fetchCandidates, likeUser, passUser, matchedUserId, matchedUserInfo, clearMatch, reloadCandidates } = useDatingCandidates();
   const { matches, loading: matchesLoading } = useDatingMatches();
 
   const [tab, setTab] = useState<Tab>('discover');
@@ -114,7 +114,7 @@ export default function Dating() {
                   onLike={handleLike}
                   onPass={handlePass}
                   onFetchMore={fetchCandidates}
-                  onReload={fetchCandidates}
+                    onReload={reloadCandidates}
                 />
               )}
               {tab === 'matches' && selectedMatch && (
@@ -173,7 +173,7 @@ export default function Dating() {
             onLike={handleLike}
             onPass={handlePass}
             onFetchMore={fetchCandidates}
-            onReload={fetchCandidates}
+            onReload={reloadCandidates}
           />
         )}
 
