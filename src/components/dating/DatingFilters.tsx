@@ -33,8 +33,8 @@ export default function DatingFilters({ ageRange, genderFilter, onAgeChange, onG
           <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="Everyone">Everyone</SelectItem>
-            <SelectItem value="Men">Men</SelectItem>
-            <SelectItem value="Women">Women</SelectItem>
+            <SelectItem value="Male">Male</SelectItem>
+            <SelectItem value="Female">Female</SelectItem>
             <SelectItem value="Non-binary">Non-binary</SelectItem>
           </SelectContent>
         </Select>
