@@ -1025,6 +1025,157 @@ export type Database = {
           },
         ]
       }
+      dating_likes: {
+        Row: {
+          created_at: string | null
+          from_user_id: string
+          id: string
+          to_user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          from_user_id: string
+          id?: string
+          to_user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          from_user_id?: string
+          id?: string
+          to_user_id?: string
+        }
+        Relationships: []
+      }
+      dating_matches: {
+        Row: {
+          created_at: string | null
+          id: string
+          user1_id: string
+          user2_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          user1_id: string
+          user2_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          user1_id?: string
+          user2_id?: string
+        }
+        Relationships: []
+      }
+      dating_messages: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          match_id: string
+          sender_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          match_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          match_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dating_messages_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "dating_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dating_passes: {
+        Row: {
+          created_at: string | null
+          from_user_id: string
+          id: string
+          to_user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          from_user_id: string
+          id?: string
+          to_user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          from_user_id?: string
+          id?: string
+          to_user_id?: string
+        }
+        Relationships: []
+      }
+      dating_profiles: {
+        Row: {
+          bio: string | null
+          created_at: string | null
+          gender: string | null
+          id: string
+          images_json: Json | null
+          interested_in: string | null
+          is_active: boolean | null
+          last_active: string | null
+          looking_for: string | null
+          prompts_json: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string | null
+          gender?: string | null
+          id?: string
+          images_json?: Json | null
+          interested_in?: string | null
+          is_active?: boolean | null
+          last_active?: string | null
+          looking_for?: string | null
+          prompts_json?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string | null
+          gender?: string | null
+          id?: string
+          images_json?: Json | null
+          interested_in?: string | null
+          is_active?: boolean | null
+          last_active?: string | null
+          looking_for?: string | null
+          prompts_json?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dating_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       deleted_chats: {
         Row: {
           conversation_id: string
@@ -1089,6 +1240,27 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      feature_flags: {
+        Row: {
+          end_date: string | null
+          is_enabled: boolean | null
+          key: string
+          start_date: string | null
+        }
+        Insert: {
+          end_date?: string | null
+          is_enabled?: boolean | null
+          key: string
+          start_date?: string | null
+        }
+        Update: {
+          end_date?: string | null
+          is_enabled?: boolean | null
+          key?: string
+          start_date?: string | null
+        }
+        Relationships: []
       }
       fitness_challenges: {
         Row: {
@@ -2222,6 +2394,7 @@ export type Database = {
       }
       posts: {
         Row: {
+          club_id: string | null
           comments_count: number | null
           content: string
           created_at: string | null
@@ -2249,6 +2422,7 @@ export type Database = {
           visibility: string | null
         }
         Insert: {
+          club_id?: string | null
           comments_count?: number | null
           content: string
           created_at?: string | null
@@ -2276,6 +2450,7 @@ export type Database = {
           visibility?: string | null
         }
         Update: {
+          club_id?: string | null
           comments_count?: number | null
           content?: string
           created_at?: string | null
@@ -2303,6 +2478,13 @@ export type Database = {
           visibility?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "posts_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "posts_startup_id_fkey"
             columns: ["startup_id"]
@@ -3052,6 +3234,42 @@ export type Database = {
           },
         ]
       }
+      timetables: {
+        Row: {
+          course_name: string
+          created_at: string | null
+          day_of_week: number
+          end_time: string
+          id: string
+          room: string | null
+          start_time: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          course_name: string
+          created_at?: string | null
+          day_of_week: number
+          end_time: string
+          id?: string
+          room?: string | null
+          start_time: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          course_name?: string
+          created_at?: string | null
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          room?: string | null
+          start_time?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       typing_status: {
         Row: {
           conversation_id: string
@@ -3504,6 +3722,16 @@ export type Database = {
         Args: { company_user_id: string }
         Returns: boolean
       }
+      check_timetable_overlap: {
+        Args: {
+          p_day_of_week: number
+          p_end_time: string
+          p_exclude_id?: string
+          p_start_time: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
       company_can_access_student_contact: {
         Args: { company_user_id: string; student_user_id: string }
         Returns: boolean
@@ -3707,6 +3935,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      increment_post_views: {
+        Args: { post_id_input: string }
+        Returns: undefined
       }
       is_group_admin: {
         Args: { group_id: string; user_id: string }

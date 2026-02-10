@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, MessageCircle, User, Search, Bell } from 'lucide-react';
+import { Home, MessageCircle, User, Search, Bell, Heart } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,6 +10,7 @@ import { useNotifications } from '@/hooks/useNotifications';
 const baseNavigation = [
   { name: 'Home', href: '/home', icon: Home },
   { name: 'Explore', href: '/explore', icon: Search },
+  { name: 'Discover', href: '/dating', icon: Heart },
   { name: 'Chat', href: '/chat', icon: MessageCircle },
   { name: 'Notifications', href: '/notifications', icon: Bell },
 ];
@@ -44,7 +45,7 @@ export default function MobileNavigation() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border md:hidden">
-      <div className="grid grid-cols-5 h-16">
+      <div className="grid grid-cols-6 h-16">
         {baseNavigation.map((item) => {
           const isActive = location.pathname === item.href;
           const showChatBadge = item.name === 'Chat' && unreadCount > 0;

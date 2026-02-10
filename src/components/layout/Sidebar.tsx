@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Home, MessageCircle, User, GraduationCap, LogOut, Search, Bell, Settings } from 'lucide-react';
+import { Home, MessageCircle, User, GraduationCap, LogOut, Search, Bell, Settings, Heart } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,6 +14,7 @@ const baseNavigation = [
   { name: 'Home', href: '/home', icon: Home },
   { name: 'Explore', href: '/explore', icon: Search },
   { name: 'University', href: '/university', icon: GraduationCap },
+  { name: 'Discover', href: '/dating', icon: Heart },
   { name: 'Chat', href: '/chat', icon: MessageCircle },
 ];
 

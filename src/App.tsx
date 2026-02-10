@@ -29,6 +29,9 @@ import StartupDetail from '@/pages/StartupDetail';
 import StartupManagement from '@/pages/StartupManagement';
 import Settings from '@/pages/Settings';
 import AdminCourses from '@/pages/AdminCourses';
+import Dating from '@/pages/Dating';
+import DatingSetup from '@/pages/DatingSetup';
+import DatingChat from '@/pages/DatingChat';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,6 +69,9 @@ function App() {
               <Route path="/startup/:slug/manage" element={<ProtectedRoute><StartupManagement /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/admin/courses" element={<ProtectedRoute><AdminCourses /></ProtectedRoute>} />
+              <Route path="/dating" element={<ProtectedRoute><Dating /></ProtectedRoute>} />
+              <Route path="/dating/setup" element={<ProtectedRoute><DatingSetup /></ProtectedRoute>} />
+              <Route path="/dating/chat/:matchId" element={<ProtectedRoute><DatingChat /></ProtectedRoute>} />
               <Route path="/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
