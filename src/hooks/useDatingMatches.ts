@@ -106,7 +106,7 @@ export function useDatingMatches() {
     fetchMatches();
   }, [fetchMatches]);
 
-  // Realtime subscription for new matches
+  // Realtime subscription for new matches AND message changes (for unread/last_message)
   useEffect(() => {
     if (!user) return;
     const channel = supabase
@@ -120,6 +120,20 @@ export function useDatingMatches() {
         if (row.user1_id === user.id || row.user2_id === user.id) {
           fetchMatches();
         }
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'dating_messages',
+      }, (payload) => {
+        const row = (payload.new || payload.old) as any;
+        if (!row?.match_id) return;
+        // Only refetch if this message belongs to one of our matches
+        setMatches(prev => {
+          const belongsToUs = prev.some(m => m.id === row.match_id);
+          if (belongsToUs) fetchMatches();
+          return prev;
+        });
       })
       .subscribe();
 
