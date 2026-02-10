@@ -77,13 +77,8 @@ export function useDatingCandidates() {
       const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
 
       const result: DatingCandidate[] = filtered
-        .filter(dp => {
-          const p = profileMap.get(dp.user_id);
-          // University gate
-          return p && myProfile?.university && p.university === myProfile.university;
-        })
         .map(dp => {
-          const p = profileMap.get(dp.user_id)!;
+          const p = profileMap.get(dp.user_id);
           return {
             user_id: dp.user_id,
             bio: dp.bio,
@@ -92,10 +87,10 @@ export function useDatingCandidates() {
             looking_for: dp.looking_for,
             images_json: Array.isArray(dp.images_json) ? dp.images_json as string[] : [],
             prompts_json: dp.prompts_json,
-            full_name: p.full_name,
-            username: p.username,
-            avatar_url: p.avatar_url,
-            university: p.university,
+            full_name: p?.full_name || null,
+            username: p?.username || null,
+            avatar_url: p?.avatar_url || null,
+            university: p?.university || null,
           };
         })
         .slice(0, 20);
