@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import DatingCard from './DatingCard';
 import type { DatingCandidate } from '@/hooks/useDatingCandidates';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface DatingCardStackProps {
   candidates: DatingCandidate[];
@@ -9,9 +10,10 @@ interface DatingCardStackProps {
   onLike: (userId: string) => void;
   onPass: (userId: string) => void;
   onFetchMore: () => void;
+  onReload: () => void;
 }
 
-export default function DatingCardStack({ candidates, loading, onLike, onPass, onFetchMore }: DatingCardStackProps) {
+export default function DatingCardStack({ candidates, loading, onLike, onPass, onFetchMore, onReload }: DatingCardStackProps) {
   // Prefetch when running low
   useEffect(() => {
     if (candidates.length <= 5 && candidates.length > 0) {
@@ -51,7 +53,15 @@ export default function DatingCardStack({ candidates, loading, onLike, onPass, o
           <span className="text-3xl">💜</span>
         </div>
         <h3 className="text-lg font-semibold text-foreground mb-2">No more profiles</h3>
-        <p className="text-sm text-muted-foreground">Check back later for new people at your university!</p>
+        <p className="text-sm text-muted-foreground mb-6">Check back later for new people at your university!</p>
+        <Button
+          onClick={onReload}
+          variant="outline"
+          className="gap-2"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Reload Profiles
+        </Button>
       </div>
     );
   }

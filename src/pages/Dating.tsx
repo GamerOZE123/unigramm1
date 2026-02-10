@@ -114,6 +114,7 @@ export default function Dating() {
                   onLike={handleLike}
                   onPass={handlePass}
                   onFetchMore={fetchCandidates}
+                  onReload={fetchCandidates}
                 />
               )}
               {tab === 'matches' && selectedMatch && (
@@ -172,6 +173,7 @@ export default function Dating() {
             onLike={handleLike}
             onPass={handlePass}
             onFetchMore={fetchCandidates}
+            onReload={fetchCandidates}
           />
         )}
 
