@@ -110,7 +110,7 @@ export default function DatingProfileForm({ profile, onSave, onUploadImage }: Da
           <SelectTrigger><SelectValue placeholder="Select gender" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="Male">Male</SelectItem>
-            <SelectItem value="Women">Women</SelectItem>
+            <SelectItem value="Female">Female</SelectItem>
             <SelectItem value="Non-binary">Non-binary</SelectItem>
           </SelectContent>
         </Select>
@@ -122,8 +122,8 @@ export default function DatingProfileForm({ profile, onSave, onUploadImage }: Da
         <Select value={interestedIn} onValueChange={setInterestedIn}>
           <SelectTrigger><SelectValue placeholder="Who are you interested in?" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="Men">Men</SelectItem>
-            <SelectItem value="Women">Women</SelectItem>
+            <SelectItem value="Male">Male</SelectItem>
+            <SelectItem value="Female">Female</SelectItem>
             <SelectItem value="Everyone">Everyone</SelectItem>
           </SelectContent>
         </Select>
