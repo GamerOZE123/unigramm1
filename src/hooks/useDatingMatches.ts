@@ -171,19 +171,30 @@ export function useDatingMessages(matchId: string | null) {
     const channel = supabase
       .channel(`dating-messages-${matchId}`)
       .on('postgres_changes', {
-        event: 'INSERT',
+        event: '*',
         schema: 'public',
         table: 'dating_messages',
         filter: `match_id=eq.${matchId}`,
       }, (payload) => {
-        const newMsg = payload.new as DatingMessage;
-        setMessages(prev => [...prev, newMsg]);
-        // Auto-mark as read if not sender
-        if (user && newMsg.sender_id !== user.id) {
-          supabase
-            .from('dating_messages')
-            .update({ is_read: true })
-            .eq('id', newMsg.id);
+        if (payload.eventType === 'INSERT') {
+          const newMsg = payload.new as DatingMessage;
+          setMessages(prev => {
+            // Deduplicate in case of race condition
+            if (prev.some(m => m.id === newMsg.id)) return prev;
+            return [...prev, newMsg];
+          });
+          // Auto-mark as read if not sender
+          if (user && newMsg.sender_id !== user.id) {
+            supabase
+              .from('dating_messages')
+              .update({ is_read: true })
+              .eq('id', newMsg.id);
+          }
+        } else if (payload.eventType === 'UPDATE') {
+          const updated = payload.new as DatingMessage;
+          setMessages(prev => prev.map(m => m.id === updated.id ? updated : m));
+        } else if (payload.eventType === 'DELETE') {
+          setMessages(prev => prev.filter(m => m.id !== (payload.old as any).id));
         }
       })
       .subscribe();
