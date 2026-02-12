@@ -763,6 +763,38 @@ export type Database = {
           },
         ]
       }
+      club_links: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          title: string
+          url: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          title: string
+          url: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          title?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_links_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       club_memberships: {
         Row: {
           club_id: string
@@ -1130,7 +1162,13 @@ export type Database = {
         Row: {
           bio: string | null
           created_at: string | null
+          drink: string | null
+          fav_artist: string | null
+          fav_song: string | null
           gender: string | null
+          height: string | null
+          hobbies: string[] | null
+          hometown: string | null
           id: string
           images_json: Json | null
           interested_in: string | null
@@ -1138,13 +1176,22 @@ export type Database = {
           last_active: string | null
           looking_for: string | null
           prompts_json: Json | null
+          smoke: string | null
           updated_at: string | null
           user_id: string
+          visibility_json: Json | null
+          zodiac: string | null
         }
         Insert: {
           bio?: string | null
           created_at?: string | null
+          drink?: string | null
+          fav_artist?: string | null
+          fav_song?: string | null
           gender?: string | null
+          height?: string | null
+          hobbies?: string[] | null
+          hometown?: string | null
           id?: string
           images_json?: Json | null
           interested_in?: string | null
@@ -1152,13 +1199,22 @@ export type Database = {
           last_active?: string | null
           looking_for?: string | null
           prompts_json?: Json | null
+          smoke?: string | null
           updated_at?: string | null
           user_id: string
+          visibility_json?: Json | null
+          zodiac?: string | null
         }
         Update: {
           bio?: string | null
           created_at?: string | null
+          drink?: string | null
+          fav_artist?: string | null
+          fav_song?: string | null
           gender?: string | null
+          height?: string | null
+          hobbies?: string[] | null
+          hometown?: string | null
           id?: string
           images_json?: Json | null
           interested_in?: string | null
@@ -1166,8 +1222,11 @@ export type Database = {
           last_active?: string | null
           looking_for?: string | null
           prompts_json?: Json | null
+          smoke?: string | null
           updated_at?: string | null
           user_id?: string
+          visibility_json?: Json | null
+          zodiac?: string | null
         }
         Relationships: [
           {
