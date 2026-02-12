@@ -790,7 +790,7 @@ export type Database = {
             foreignKeyName: "club_links_club_id_fkey"
             columns: ["club_id"]
             isOneToOne: false
-            referencedRelation: "clubs"
+            referencedRelation: "clubs_profiles"
             referencedColumns: ["id"]
           },
         ]
