@@ -763,38 +763,6 @@ export type Database = {
           },
         ]
       }
-      club_links: {
-        Row: {
-          club_id: string
-          created_at: string
-          id: string
-          title: string
-          url: string
-        }
-        Insert: {
-          club_id: string
-          created_at?: string
-          id?: string
-          title: string
-          url: string
-        }
-        Update: {
-          club_id?: string
-          created_at?: string
-          id?: string
-          title?: string
-          url?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "club_links_club_id_fkey"
-            columns: ["club_id"]
-            isOneToOne: false
-            referencedRelation: "clubs_profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       club_memberships: {
         Row: {
           club_id: string
@@ -829,39 +797,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      clubs: {
-        Row: {
-          admin_user_id: string
-          category: string | null
-          created_at: string
-          description: string | null
-          id: string
-          image_url: string | null
-          member_count: number | null
-          name: string
-        }
-        Insert: {
-          admin_user_id: string
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          image_url?: string | null
-          member_count?: number | null
-          name: string
-        }
-        Update: {
-          admin_user_id?: string
-          category?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          image_url?: string | null
-          member_count?: number | null
-          name?: string
-        }
-        Relationships: []
       }
       clubs_profiles: {
         Row: {
@@ -2456,7 +2391,6 @@ export type Database = {
       }
       posts: {
         Row: {
-          club_id: string | null
           comments_count: number | null
           content: string
           created_at: string | null
@@ -2484,7 +2418,6 @@ export type Database = {
           visibility: string | null
         }
         Insert: {
-          club_id?: string | null
           comments_count?: number | null
           content: string
           created_at?: string | null
@@ -2512,7 +2445,6 @@ export type Database = {
           visibility?: string | null
         }
         Update: {
-          club_id?: string | null
           comments_count?: number | null
           content?: string
           created_at?: string | null
@@ -2540,13 +2472,6 @@ export type Database = {
           visibility?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "posts_club_id_fkey"
-            columns: ["club_id"]
-            isOneToOne: false
-            referencedRelation: "clubs"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "posts_startup_id_fkey"
             columns: ["startup_id"]
