@@ -678,12 +678,20 @@ export type Database = {
           created_at: string
           current_attendees: number | null
           description: string | null
+          end_date: string | null
+          end_time: string | null
+          entry_fee: string | null
           event_date: string
+          event_scope: string | null
           event_time: string | null
+          event_type: string | null
+          event_visibility: string | null
           id: string
           image_url: string | null
           location: string | null
           max_attendees: number | null
+          max_capacity: number | null
+          registration_link: string | null
           title: string
           updated_at: string
         }
@@ -692,12 +700,20 @@ export type Database = {
           created_at?: string
           current_attendees?: number | null
           description?: string | null
+          end_date?: string | null
+          end_time?: string | null
+          entry_fee?: string | null
           event_date: string
+          event_scope?: string | null
           event_time?: string | null
+          event_type?: string | null
+          event_visibility?: string | null
           id?: string
           image_url?: string | null
           location?: string | null
           max_attendees?: number | null
+          max_capacity?: number | null
+          registration_link?: string | null
           title: string
           updated_at?: string
         }
@@ -706,12 +722,20 @@ export type Database = {
           created_at?: string
           current_attendees?: number | null
           description?: string | null
+          end_date?: string | null
+          end_time?: string | null
+          entry_fee?: string | null
           event_date?: string
+          event_scope?: string | null
           event_time?: string | null
+          event_type?: string | null
+          event_visibility?: string | null
           id?: string
           image_url?: string | null
           location?: string | null
           max_attendees?: number | null
+          max_capacity?: number | null
+          registration_link?: string | null
           title?: string
           updated_at?: string
         }
@@ -724,6 +748,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      club_followers: {
+        Row: {
+          club_id: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       club_join_requests: {
         Row: {
@@ -756,6 +801,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "club_join_requests_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_links: {
+        Row: {
+          club_id: string
+          created_at: string
+          id: string
+          title: string
+          url: string
+        }
+        Insert: {
+          club_id: string
+          created_at?: string
+          id?: string
+          title: string
+          url: string
+        }
+        Update: {
+          club_id?: string
+          created_at?: string
+          id?: string
+          title?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_links_club_id_fkey"
             columns: ["club_id"]
             isOneToOne: false
             referencedRelation: "clubs_profiles"
@@ -809,6 +886,8 @@ export type Database = {
           id: string
           logo_url: string | null
           member_count: number | null
+          show_events: boolean | null
+          show_members: boolean | null
           social_links: Json | null
           university: string | null
           updated_at: string
@@ -825,6 +904,8 @@ export type Database = {
           id?: string
           logo_url?: string | null
           member_count?: number | null
+          show_events?: boolean | null
+          show_members?: boolean | null
           social_links?: Json | null
           university?: string | null
           updated_at?: string
@@ -841,6 +922,8 @@ export type Database = {
           id?: string
           logo_url?: string | null
           member_count?: number | null
+          show_events?: boolean | null
+          show_members?: boolean | null
           social_links?: Json | null
           university?: string | null
           updated_at?: string
@@ -994,6 +1077,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      courses: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+          room: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+          room?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+          room?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       dating_likes: {
         Row: {
@@ -2397,6 +2504,7 @@ export type Database = {
           hashtags: string[] | null
           id: string
           image_medium_url: string | null
+          image_metadata: Json | null
           image_original_url: string | null
           image_thumbnail_url: string | null
           image_url: string | null
@@ -2424,6 +2532,7 @@ export type Database = {
           hashtags?: string[] | null
           id?: string
           image_medium_url?: string | null
+          image_metadata?: Json | null
           image_original_url?: string | null
           image_thumbnail_url?: string | null
           image_url?: string | null
@@ -2451,6 +2560,7 @@ export type Database = {
           hashtags?: string[] | null
           id?: string
           image_medium_url?: string | null
+          image_metadata?: Json | null
           image_original_url?: string | null
           image_thumbnail_url?: string | null
           image_url?: string | null
@@ -2507,6 +2617,7 @@ export type Database = {
           interests: string[] | null
           linkedin_url: string | null
           major: string | null
+          notifications_paused: boolean | null
           personal_email: string | null
           preferred_event_types: string[] | null
           profile_completed: boolean | null
@@ -2550,6 +2661,7 @@ export type Database = {
           interests?: string[] | null
           linkedin_url?: string | null
           major?: string | null
+          notifications_paused?: boolean | null
           personal_email?: string | null
           preferred_event_types?: string[] | null
           profile_completed?: boolean | null
@@ -2593,6 +2705,7 @@ export type Database = {
           interests?: string[] | null
           linkedin_url?: string | null
           major?: string | null
+          notifications_paused?: boolean | null
           personal_email?: string | null
           preferred_event_types?: string[] | null
           profile_completed?: boolean | null
@@ -3804,6 +3917,7 @@ export type Database = {
           interests: string[] | null
           linkedin_url: string | null
           major: string | null
+          notifications_paused: boolean | null
           personal_email: string | null
           preferred_event_types: string[] | null
           profile_completed: boolean | null
