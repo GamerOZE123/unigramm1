@@ -317,6 +317,7 @@ const fetchTargetedAds = async (profile: UserProfile | null) => {
 export function useHomePosts(user: User | null) {
   const [mixedPosts, setMixedPosts] = useState<MixedPost[]>([]);
   const [seenIds, setSeenIds] = useState(loadSeenPostIds);
+  const seenIdsRef = useRef(seenIds);
   const [pendingNewPosts, setPending] = useState<TransformedPost[]>([]);
   const [newAvailable, setNewAvailable] = useState(false);
 
@@ -331,7 +332,11 @@ export function useHomePosts(user: User | null) {
 
   const fetching = useRef(false);
 
-  useEffect(() => saveSeenPostIds(seenIds), [seenIds]);
+  // Keep ref in sync with state
+  useEffect(() => {
+    seenIdsRef.current = seenIds;
+    saveSeenPostIds(seenIds);
+  }, [seenIds]);
 
   // -----------------------------
   // FETCH POSTS
@@ -375,7 +380,7 @@ export function useHomePosts(user: User | null) {
       // Filter out posts already in existing list, but keep both seen and unseen for prioritization
       const filtered = transformed.filter((p) => !existing.some((e) => e.id === p.id));
 
-      const { prioritizedPosts, newSeenIds } = prioritizeUnseenPosts(filtered, seenIds, existing);
+      const { prioritizedPosts, newSeenIds } = prioritizeUnseenPosts(filtered, seenIdsRef.current, existing);
 
       // Log impressions (non-blocking - don't let this break the feed)
       if (user && prioritizedPosts.length > 0) {
@@ -473,7 +478,7 @@ export function useHomePosts(user: User | null) {
         const post = payload.new;
         const transformed = transformPost(post);
 
-        if (!seenIds.has(transformed.id)) {
+        if (!seenIdsRef.current.has(transformed.id)) {
           setPending((prev) => [transformed, ...prev]);
           setNewAvailable(true);
         }
@@ -509,7 +514,7 @@ export function useHomePosts(user: User | null) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [seenIds]);
+  }, []);
 
   // -----------------------------
   // INFINITE SCROLL
