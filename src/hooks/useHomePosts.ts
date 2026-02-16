@@ -380,7 +380,10 @@ export function useHomePosts(user: User | null) {
       // Filter out posts already in existing list, but keep both seen and unseen for prioritization
       const filtered = transformed.filter((p) => !existing.some((e) => e.id === p.id));
 
-      const { prioritizedPosts, newSeenIds } = prioritizeUnseenPosts(filtered, seenIdsRef.current, existing);
+      // On initial load, use empty seenIds so server-side ranking is preserved
+      // (all posts would get the same penalty otherwise, keeping original order)
+      const effectiveSeenIds = initial ? new Set<string>() : seenIdsRef.current;
+      const { prioritizedPosts, newSeenIds } = prioritizeUnseenPosts(filtered, effectiveSeenIds, existing);
 
       // Log impressions (non-blocking - don't let this break the feed)
       if (user && prioritizedPosts.length > 0) {
