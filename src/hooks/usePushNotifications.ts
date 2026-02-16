@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -45,7 +44,7 @@ export const usePushNotifications = () => {
   const checkSubscription = async () => {
     try {
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await (registration as any).pushManager.getSubscription();
+      const subscription = await registration.pushManager.getSubscription();
 
       setState((prev) => ({
         ...prev,
@@ -116,7 +115,7 @@ export const usePushNotifications = () => {
       }
 
       // Subscribe to push notifications
-      const subscription = await (registration as any).pushManager.subscribe({
+      const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
@@ -164,7 +163,7 @@ export const usePushNotifications = () => {
 
     try {
       const registration = await navigator.serviceWorker.ready;
-      const subscription = await (registration as any).pushManager.getSubscription();
+      const subscription = await registration.pushManager.getSubscription();
 
       if (subscription) {
         await subscription.unsubscribe();

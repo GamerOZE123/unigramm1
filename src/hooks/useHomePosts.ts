@@ -155,46 +155,36 @@ const transformPost = (post: any, startupsMap: Record<string, any> = {}): Transf
   survey_questions: post.survey_questions,
 });
 
-
-/**
- * Apply deterministic temporal jitter to make refreshes feel varied.
- * Uses 5-minute time buckets so jitter is stable within a short window
- * but changes across refreshes.
- */
-const applyTemporalJitter = (score: number, postId: string): number => {
-  // 5-minute bucket for deterministic-per-refresh jitter
-  const bucket = Math.floor(Date.now() / (5 * 60 * 1000));
-  // Simple hash from postId + bucket
-  let hash = 0;
-  const seed = postId + bucket.toString();
-  for (let i = 0; i < seed.length; i++) {
-    hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
+// Fisher-Yates shuffle
+const shuffleArray = <T>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-  // ±10% jitter range
-  const jitterFactor = 0.9 + (((hash >>> 0) % 2001) / 10000); // 0.9 to 1.1
-  return score * jitterFactor;
+  return shuffled;
 };
 
 const prioritizeUnseenPosts = (posts: TransformedPost[], seenIds: Set<string>, existing: TransformedPost[]) => {
   const existingIds = new Set(existing.map((p) => p.id));
   const filtered = posts.filter((p) => !existingIds.has(p.id));
 
-  // Apply view penalty and jitter, then re-sort by adjusted score
-  const scored = filtered.map((p) => {
-    const baseScore = p.score ?? 0;
-    const isSeen = seenIds.has(p.id);
-    // 70% penalty for already-seen posts
-    const penalized = isSeen ? baseScore * 0.3 : baseScore * 1.2; // 20% boost for unseen
-    // Apply temporal jitter for variety on refresh
-    const adjusted = applyTemporalJitter(penalized, p.id);
-    return { ...p, score: adjusted };
-  });
+  const unseen = filtered.filter((p) => !seenIds.has(p.id));
+  const seen = filtered.filter((p) => seenIds.has(p.id));
 
-  // Sort by adjusted score descending
-  scored.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+  // RELOOP: If ALL fetched posts are already seen, reset tracking and shuffle for fresh experience
+  if (unseen.length === 0 && seen.length > 0) {
+    const shuffled = shuffleArray(filtered);
+    const freshSeenIds = new Set(shuffled.map((p) => p.id));
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("seenPostIds");
+    }
+    return { prioritizedPosts: shuffled, newSeenIds: freshSeenIds };
+  }
 
+  // Normal case: prioritize unseen first, then seen
   const newSeen = new Set([...seenIds, ...filtered.map((p) => p.id)]);
-  return { prioritizedPosts: scored, newSeenIds: newSeen };
+  return { prioritizedPosts: [...unseen, ...seen], newSeenIds: newSeen };
 };
 
 const interleaveAds = (posts: MixedPost[], ads: AdvertisingPost[]): MixedPost[] => {
