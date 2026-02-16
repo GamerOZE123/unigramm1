@@ -155,36 +155,23 @@ const transformPost = (post: any, startupsMap: Record<string, any> = {}): Transf
   survey_questions: post.survey_questions,
 });
 
-// Fisher-Yates shuffle
-const shuffleArray = <T>(array: T[]): T[] => {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-};
+// shuffleArray removed — no longer needed after reloop logic was replaced by view penalty
 
 const prioritizeUnseenPosts = (posts: TransformedPost[], seenIds: Set<string>, existing: TransformedPost[]) => {
   const existingIds = new Set(existing.map((p) => p.id));
   const filtered = posts.filter((p) => !existingIds.has(p.id));
 
-  const unseen = filtered.filter((p) => !seenIds.has(p.id));
-  const seen = filtered.filter((p) => seenIds.has(p.id));
+  // Apply view penalty: seen posts get 30% of their original score
+  const adjusted = filtered.map((p) => ({
+    ...p,
+    score: seenIds.has(p.id) ? (p.score ?? 0) * 0.3 : (p.score ?? 0),
+  }));
 
-  // RELOOP: If ALL fetched posts are already seen, reset tracking and shuffle for fresh experience
-  if (unseen.length === 0 && seen.length > 0) {
-    const shuffled = shuffleArray(filtered);
-    const freshSeenIds = new Set(shuffled.map((p) => p.id));
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("seenPostIds");
-    }
-    return { prioritizedPosts: shuffled, newSeenIds: freshSeenIds };
-  }
+  // Re-sort by adjusted score (descending)
+  adjusted.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 
-  // Normal case: prioritize unseen first, then seen
   const newSeen = new Set([...seenIds, ...filtered.map((p) => p.id)]);
-  return { prioritizedPosts: [...unseen, ...seen], newSeenIds: newSeen };
+  return { prioritizedPosts: adjusted, newSeenIds: newSeen };
 };
 
 const interleaveAds = (posts: MixedPost[], ads: AdvertisingPost[]): MixedPost[] => {
