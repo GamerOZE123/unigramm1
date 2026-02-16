@@ -155,46 +155,36 @@ const transformPost = (post: any, startupsMap: Record<string, any> = {}): Transf
   survey_questions: post.survey_questions,
 });
 
-// Deterministic hash from string — used for time-based jitter
-const hashString = (str: string): number => {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
+// Fisher-Yates shuffle
+const shuffleArray = <T>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
-  return Math.abs(hash);
+  return shuffled;
 };
 
 const prioritizeUnseenPosts = (posts: TransformedPost[], seenIds: Set<string>, existing: TransformedPost[]) => {
   const existingIds = new Set(existing.map((p) => p.id));
   const filtered = posts.filter((p) => !existingIds.has(p.id));
 
-  // Time-based seed: changes every 5 minutes for consistent-yet-varied ordering
-  const timeSeed = Math.floor(Date.now() / (5 * 60 * 1000));
+  const unseen = filtered.filter((p) => !seenIds.has(p.id));
+  const seen = filtered.filter((p) => seenIds.has(p.id));
 
-  const adjusted = filtered.map((p) => {
-    const hasBeenSeen = seenIds.has(p.id);
-    const baseScore = p.score ?? 0;
-
-    // 1. Apply view penalty (seen → 30%) or unseen boost (+20%)
-    let score = hasBeenSeen ? baseScore * 0.3 : baseScore * 1.2;
-
-    // 2. Add temporal jitter to unseen posts so refresh shows variety
-    if (!hasBeenSeen && score > 0) {
-      const hash = hashString(`${p.id}-${timeSeed}`);
-      const jitterPercent = (hash % 20) - 10; // ±10%
-      score += (score * jitterPercent) / 100;
+  // RELOOP: If ALL fetched posts are already seen, reset tracking and shuffle for fresh experience
+  if (unseen.length === 0 && seen.length > 0) {
+    const shuffled = shuffleArray(filtered);
+    const freshSeenIds = new Set(shuffled.map((p) => p.id));
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("seenPostIds");
     }
+    return { prioritizedPosts: shuffled, newSeenIds: freshSeenIds };
+  }
 
-    return { ...p, score: Math.max(0, score) };
-  });
-
-  // Re-sort by adjusted score (descending)
-  adjusted.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
-
+  // Normal case: prioritize unseen first, then seen
   const newSeen = new Set([...seenIds, ...filtered.map((p) => p.id)]);
-  return { prioritizedPosts: adjusted, newSeenIds: newSeen };
+  return { prioritizedPosts: [...unseen, ...seen], newSeenIds: newSeen };
 };
 
 const interleaveAds = (posts: MixedPost[], ads: AdvertisingPost[]): MixedPost[] => {
@@ -340,7 +330,6 @@ const fetchTargetedAds = async (profile: UserProfile | null) => {
 export function useHomePosts(user: User | null) {
   const [mixedPosts, setMixedPosts] = useState<MixedPost[]>([]);
   const [seenIds, setSeenIds] = useState(loadSeenPostIds);
-  const seenIdsRef = useRef(seenIds);
   const [pendingNewPosts, setPending] = useState<TransformedPost[]>([]);
   const [newAvailable, setNewAvailable] = useState(false);
 
@@ -355,11 +344,7 @@ export function useHomePosts(user: User | null) {
 
   const fetching = useRef(false);
 
-  // Keep ref in sync with state
-  useEffect(() => {
-    seenIdsRef.current = seenIds;
-    saveSeenPostIds(seenIds);
-  }, [seenIds]);
+  useEffect(() => saveSeenPostIds(seenIds), [seenIds]);
 
   // -----------------------------
   // FETCH POSTS
@@ -403,9 +388,7 @@ export function useHomePosts(user: User | null) {
       // Filter out posts already in existing list, but keep both seen and unseen for prioritization
       const filtered = transformed.filter((p) => !existing.some((e) => e.id === p.id));
 
-      // On initial load, don't penalize seen posts — let temporal jitter handle variety
-      const effectiveSeenIds = initial ? new Set<string>() : seenIdsRef.current;
-      const { prioritizedPosts, newSeenIds } = prioritizeUnseenPosts(filtered, effectiveSeenIds, existing);
+      const { prioritizedPosts, newSeenIds } = prioritizeUnseenPosts(filtered, seenIds, existing);
 
       // Log impressions (non-blocking - don't let this break the feed)
       if (user && prioritizedPosts.length > 0) {
@@ -503,7 +486,7 @@ export function useHomePosts(user: User | null) {
         const post = payload.new;
         const transformed = transformPost(post);
 
-        if (!seenIdsRef.current.has(transformed.id)) {
+        if (!seenIds.has(transformed.id)) {
           setPending((prev) => [transformed, ...prev]);
           setNewAvailable(true);
         }
@@ -539,7 +522,7 @@ export function useHomePosts(user: User | null) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [seenIds]);
 
   // -----------------------------
   // INFINITE SCROLL
