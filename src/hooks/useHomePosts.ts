@@ -155,21 +155,39 @@ const transformPost = (post: any, startupsMap: Record<string, any> = {}): Transf
   survey_questions: post.survey_questions,
 });
 
-// shuffleArray removed — no longer needed after reloop logic was replaced by view penalty
+// Deterministic hash from string — used for time-based jitter
+const hashString = (str: string): number => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash);
+};
 
-const prioritizeUnseenPosts = (posts: TransformedPost[], seenIds: Set<string>, existing: TransformedPost[], addJitter = false) => {
+const prioritizeUnseenPosts = (posts: TransformedPost[], seenIds: Set<string>, existing: TransformedPost[]) => {
   const existingIds = new Set(existing.map((p) => p.id));
   const filtered = posts.filter((p) => !existingIds.has(p.id));
 
-  // Apply view penalty: seen posts get 30% of their original score
-  // Add random jitter (±15% of score) on initial loads so refreshing shows variety
+  // Time-based seed: changes every 5 minutes for consistent-yet-varied ordering
+  const timeSeed = Math.floor(Date.now() / (5 * 60 * 1000));
+
   const adjusted = filtered.map((p) => {
-    let score = seenIds.has(p.id) ? (p.score ?? 0) * 0.3 : (p.score ?? 0);
-    if (addJitter && score > 0) {
-      const jitter = (Math.random() - 0.5) * 0.3 * score; // ±15%
-      score = Math.max(0, score + jitter);
+    const hasBeenSeen = seenIds.has(p.id);
+    const baseScore = p.score ?? 0;
+
+    // 1. Apply view penalty (seen → 30%) or unseen boost (+20%)
+    let score = hasBeenSeen ? baseScore * 0.3 : baseScore * 1.2;
+
+    // 2. Add temporal jitter to unseen posts so refresh shows variety
+    if (!hasBeenSeen && score > 0) {
+      const hash = hashString(`${p.id}-${timeSeed}`);
+      const jitterPercent = (hash % 20) - 10; // ±10%
+      score += (score * jitterPercent) / 100;
     }
-    return { ...p, score };
+
+    return { ...p, score: Math.max(0, score) };
   });
 
   // Re-sort by adjusted score (descending)
@@ -385,10 +403,9 @@ export function useHomePosts(user: User | null) {
       // Filter out posts already in existing list, but keep both seen and unseen for prioritization
       const filtered = transformed.filter((p) => !existing.some((e) => e.id === p.id));
 
-      // On initial load, use empty seenIds so server-side ranking is preserved
-      // Add jitter on initial load so refreshing shows variety in similarly-scored posts
+      // On initial load, don't penalize seen posts — let temporal jitter handle variety
       const effectiveSeenIds = initial ? new Set<string>() : seenIdsRef.current;
-      const { prioritizedPosts, newSeenIds } = prioritizeUnseenPosts(filtered, effectiveSeenIds, existing, initial);
+      const { prioritizedPosts, newSeenIds } = prioritizeUnseenPosts(filtered, effectiveSeenIds, existing);
 
       // Log impressions (non-blocking - don't let this break the feed)
       if (user && prioritizedPosts.length > 0) {
