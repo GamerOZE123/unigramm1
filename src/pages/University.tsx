@@ -8,7 +8,8 @@ import {
   Target,
   UserCircle,
   Rocket,
-  Ghost
+  Ghost,
+  Users
 } from 'lucide-react';
 import MobileHeader from '@/components/layout/MobileHeader';
 // Re-importing to force refresh
@@ -49,6 +50,15 @@ const universityOptions = [
     icon: Ghost,
     path: '/confessions',
     color: 'bg-pink-500',
+    allowedFor: ['student']
+  },
+  {
+    id: 'communities',
+    title: 'Communities',
+    description: 'Join open group chats with students at your university',
+    icon: Users,
+    path: '/communities',
+    color: 'bg-emerald-500',
     allowedFor: ['student']
   }
 ];
