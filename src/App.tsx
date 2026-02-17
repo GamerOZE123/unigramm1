@@ -32,6 +32,7 @@ import AdminCourses from '@/pages/AdminCourses';
 import Dating from '@/pages/Dating';
 import DatingSetup from '@/pages/DatingSetup';
 import DatingChat from '@/pages/DatingChat';
+import Confessions from '@/pages/Confessions';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -72,6 +73,7 @@ function App() {
               <Route path="/dating" element={<ProtectedRoute><Dating /></ProtectedRoute>} />
               <Route path="/dating/setup" element={<ProtectedRoute><DatingSetup /></ProtectedRoute>} />
               <Route path="/dating/chat/:matchId" element={<ProtectedRoute><DatingChat /></ProtectedRoute>} />
+              <Route path="/confessions" element={<ProtectedRoute><Confessions /></ProtectedRoute>} />
               <Route path="/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

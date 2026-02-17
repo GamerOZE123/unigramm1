@@ -7,7 +7,8 @@ import {
   PlusCircle,
   Target,
   UserCircle,
-  Rocket
+  Rocket,
+  Ghost
 } from 'lucide-react';
 import MobileHeader from '@/components/layout/MobileHeader';
 // Re-importing to force refresh
@@ -39,6 +40,15 @@ const universityOptions = [
     icon: Rocket,
     path: '/startups',
     color: 'bg-cyan-500',
+    allowedFor: ['student']
+  },
+  {
+    id: 'confessions',
+    title: 'Confessions',
+    description: 'Share anonymous confessions and tag people',
+    icon: Ghost,
+    path: '/confessions',
+    color: 'bg-pink-500',
     allowedFor: ['student']
   }
 ];
