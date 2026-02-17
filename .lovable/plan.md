@@ -1,102 +1,111 @@
 
 
-# Confessions Feature for University Hub
+# Communities / Groups Feature for University Hub
 
 ## Overview
-Add a "Confessions" section to the University Hub -- an anonymous posting board where students can share confessions. Unlike Ghost Chat (real-time chat), confessions are post-style cards with user tagging via `@mention`, reactions, and comment threads. All posts are anonymous but tagged users get clickable profile links.
+Add a "Communities" section to the University Hub where students can create and join public, university-scoped group chats. Unlike the existing private chat groups (which require invitation), communities are discoverable and open -- any student at the same university can browse and join them.
+
+## How It Differs from Existing Chat Groups
+- **Existing chat groups** (in Chat page): Private, invite-only, no discovery
+- **New communities** (in University Hub): Public, browsable, university-scoped, join freely
 
 ## Database
 
-### New Table: `confessions`
+### New Table: `communities`
 | Column | Type | Notes |
 |--------|------|-------|
 | id | uuid (PK) | Default gen_random_uuid() |
-| user_id | uuid | Author (hidden from UI) |
-| university | text | Scoped to same university |
-| content | text | Confession text (supports @mentions) |
+| name | text (NOT NULL) | Community name (max 50 chars) |
+| description | text | What the community is about |
+| avatar_url | text | Optional group image |
+| university | text (NOT NULL) | Scoped to creator's university |
+| created_by | uuid (NOT NULL) | Creator user ID |
+| is_public | boolean | Default true |
+| member_count | integer | Default 0, maintained by trigger |
+| created_at | timestamptz | Default now() |
+| updated_at | timestamptz | Default now() |
+
+### New Table: `community_members`
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid (PK) | Default gen_random_uuid() |
+| community_id | uuid (FK) | References communities(id) ON DELETE CASCADE |
+| user_id | uuid (NOT NULL) | Member |
+| role | text | Default 'member' (admin/member) |
+| joined_at | timestamptz | Default now() |
+| UNIQUE | | (community_id, user_id) |
+
+### New Table: `community_messages`
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid (PK) | Default gen_random_uuid() |
+| community_id | uuid (FK) | References communities(id) ON DELETE CASCADE |
+| sender_id | uuid (NOT NULL) | Who sent |
+| content | text (NOT NULL) | Message text |
 | created_at | timestamptz | Default now() |
 
-### New Table: `confession_reactions`
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid (PK) | Default gen_random_uuid() |
-| confession_id | uuid (FK) | References confessions(id) ON DELETE CASCADE |
-| user_id | uuid | Who reacted |
-| emoji | text | Emoji used |
-| created_at | timestamptz | Default now() |
-| UNIQUE | | (confession_id, user_id, emoji) |
-
-### New Table: `confession_comments`
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid (PK) | Default gen_random_uuid() |
-| confession_id | uuid (FK) | References confessions(id) ON DELETE CASCADE |
-| user_id | uuid | Commenter (also anonymous) |
-| content | text | Comment text |
-| created_at | timestamptz | Default now() |
+### Trigger: Auto-update `member_count`
+On INSERT/DELETE on `community_members`, increment/decrement `communities.member_count`.
 
 ### RLS Policies
-- All three tables: authenticated users can SELECT, INSERT
-- DELETE own rows only (user_id = auth.uid())
-- No UPDATE needed
+- **communities**: Authenticated can SELECT all public communities. INSERT if authenticated. UPDATE/DELETE only by creator.
+- **community_members**: Authenticated can SELECT. INSERT own membership (user_id = auth.uid()). DELETE own membership or if community creator.
+- **community_messages**: Members can SELECT (via subquery check). Members can INSERT. DELETE own messages.
 
-## Frontend Changes
+## Frontend
 
 ### 1. University Hub Card
-Add a new option to the `universityOptions` array in `src/pages/University.tsx`:
-- Title: "Confessions"
-- Description: "Share anonymous confessions and tag people"
-- Icon: `MessageSquareOff` (from lucide)
-- Color: `bg-pink-500`
-- Path: `/confessions`
+Add a "Communities" card to `University.tsx`:
+- Icon: `Users` (from lucide)
+- Color: `bg-emerald-500`
+- Path: `/communities`
 - Allowed for: `['student']`
 
 ### 2. New Route
-Add `/confessions` route in `src/App.tsx` pointing to a new `Confessions` page.
+Add `/communities` and `/communities/:communityId` routes in `App.tsx`.
 
-### 3. New Page: `src/pages/Confessions.tsx`
-- Uses `Layout` wrapper
-- Displays a feed of confession cards sorted by newest first
-- "New Confession" button opens a modal
-- Each confession shows: anonymous avatar, content (with clickable @mentions), time ago, reactions, comment count
+### 3. New Page: `src/pages/Communities.tsx`
+- **Browse tab**: Lists all public communities at the user's university with member count, description, and a Join/Joined button
+- **My Communities tab**: Shows communities the user has joined
+- **Create button**: Opens a modal to create a new community (name, description, optional avatar)
+- Clicking a community navigates to `/communities/:communityId`
 
-### 4. New Hook: `src/hooks/useConfessions.ts`
-Modeled after `useAnonymousChat.ts` but for post-style content:
-- `fetchConfessions()` -- paginated, newest first, with reactions
-- `createConfession(content)` -- inserts with university from profile
-- `toggleReaction(confessionId, emoji)` -- same pattern as anonymous chat
-- `addComment(confessionId, content)` -- insert comment
-- `fetchComments(confessionId)` -- load comments for a confession
-- Realtime subscription for new confessions and reactions
+### 4. New Page: `src/pages/CommunityChat.tsx`
+- Full chat interface similar to the existing group chat in Chat.tsx
+- Header showing community name, member count, and a settings/members button
+- Real-time message feed with sender avatars and names
+- Message input bar at the bottom
+- Members panel (slide-out or modal) showing all members
+- Leave community button
 
-### 5. New Component: `src/components/confessions/ConfessionCard.tsx`
-- Anonymous ghost avatar with pink accent
-- Content text with @mentions parsed into clickable links (navigates to `/:username`)
-- Time ago display
-- Reaction buttons (same emoji set as Ghost Chat)
-- Comment toggle to expand/collapse inline comments
-- Comments are also anonymous
+### 5. New Hook: `src/hooks/useCommunities.ts`
+- `fetchCommunities(university)` -- get all public communities for a university
+- `fetchMyCommunities()` -- get communities user has joined
+- `createCommunity(name, description)` -- create with user's university
+- `joinCommunity(communityId)` -- insert into community_members
+- `leaveCommunity(communityId)` -- delete from community_members
 
-### 6. New Component: `src/components/confessions/CreateConfessionModal.tsx`
-- Dialog/modal with a textarea
-- Supports `@mention` for tagging users (reuses the user-search pattern from `MentionInput`)
-- Only searches users (not startups/clubs) since confessions are personal
-- Submit button posts the confession
+### 6. New Hook: `src/hooks/useCommunityMessages.ts`
+- Modeled after `useGroupMessages.ts`
+- `fetchMessages(communityId)` -- paginated, with sender profiles
+- `sendMessage(communityId, content)` -- insert message
+- Realtime subscription for new messages
 
-### 7. Mention Rendering
-In `ConfessionCard`, parse `@username` patterns in confession content and render them as clickable links styled with a highlight color, navigating to the tagged user's profile.
-
-## Bug Fix
-### `src/hooks/usePushNotifications.ts` TypeScript Error
-Add `pushManager` to the ServiceWorkerRegistration type by declaring it in a `.d.ts` file or casting `registration as any` at the three usage points (lines 47, 118, 166). This fixes the existing build error.
+### 7. New Components
+- **`src/components/communities/CommunityCard.tsx`**: Card for browse list (name, description, member count, join button)
+- **`src/components/communities/CreateCommunityModal.tsx`**: Modal with name, description fields
+- **`src/components/communities/CommunityMembersPanel.tsx`**: Shows list of members with roles
 
 ## Files Created/Modified
-- **New**: `src/pages/Confessions.tsx`
-- **New**: `src/hooks/useConfessions.ts`
-- **New**: `src/components/confessions/ConfessionCard.tsx`
-- **New**: `src/components/confessions/CreateConfessionModal.tsx`
-- **New**: Supabase migration (3 tables + RLS)
-- **Modified**: `src/App.tsx` (add route)
+- **New migration**: 3 tables + trigger + RLS policies
+- **New**: `src/pages/Communities.tsx`
+- **New**: `src/pages/CommunityChat.tsx`
+- **New**: `src/hooks/useCommunities.ts`
+- **New**: `src/hooks/useCommunityMessages.ts`
+- **New**: `src/components/communities/CommunityCard.tsx`
+- **New**: `src/components/communities/CreateCommunityModal.tsx`
+- **New**: `src/components/communities/CommunityMembersPanel.tsx`
+- **Modified**: `src/App.tsx` (add routes)
 - **Modified**: `src/pages/University.tsx` (add card)
-- **Modified**: `src/hooks/usePushNotifications.ts` (fix TS error)
 - **Modified**: `src/integrations/supabase/types.ts` (auto-updated)
+
