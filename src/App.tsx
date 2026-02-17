@@ -33,6 +33,8 @@ import Dating from '@/pages/Dating';
 import DatingSetup from '@/pages/DatingSetup';
 import DatingChat from '@/pages/DatingChat';
 import Confessions from '@/pages/Confessions';
+import Communities from '@/pages/Communities';
+import CommunityChat from '@/pages/CommunityChat';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -74,6 +76,8 @@ function App() {
               <Route path="/dating/setup" element={<ProtectedRoute><DatingSetup /></ProtectedRoute>} />
               <Route path="/dating/chat/:matchId" element={<ProtectedRoute><DatingChat /></ProtectedRoute>} />
               <Route path="/confessions" element={<ProtectedRoute><Confessions /></ProtectedRoute>} />
+              <Route path="/communities" element={<ProtectedRoute><Communities /></ProtectedRoute>} />
+              <Route path="/communities/:communityId" element={<ProtectedRoute><CommunityChat /></ProtectedRoute>} />
               <Route path="/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
