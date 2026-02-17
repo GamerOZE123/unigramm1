@@ -1,117 +1,102 @@
 
 
-# Home Feed Algorithm Overhaul: Hybrid Scoring Architecture
+# Confessions Feature for University Hub
 
-## Current Problems
+## Overview
+Add a "Confessions" section to the University Hub -- an anonymous posting board where students can share confessions. Unlike Ghost Chat (real-time chat), confessions are post-style cards with user tagging via `@mention`, reactions, and comment threads. All posts are anonymous but tagged users get clickable profile links.
 
-1. **+50 freshness bonus** dominates all other signals -- a 23-hour-old post with 0 engagement beats a 25-hour-old post with 500 likes
-2. **Engagement formula** `raw/(raw+20)` saturates too fast -- 20 engagements scores 0.5, 200 engagements only scores 0.91 (barely different)
-3. **State/country bonuses** are irrelevant for a university-focused app
-4. **Impressions join** in the view adds query overhead; view penalty belongs on the client
-5. **No engagement velocity** -- total likes matter but speed of engagement does not
+## Database
 
-## Proposed Architecture
+### New Table: `confessions`
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid (PK) | Default gen_random_uuid() |
+| user_id | uuid | Author (hidden from UI) |
+| university | text | Scoped to same university |
+| content | text | Confession text (supports @mentions) |
+| created_at | timestamptz | Default now() |
 
-```text
-+-------------------------------------------+
-|           SERVER (PostgreSQL View)         |
-|                                            |
-|  1. Engagement Velocity (log-based)        |
-|  2. Recency Decay (exponential)            |
-|  3. Social Proof (capped)                  |
-|  4. Content Quality (media bonus)          |
-|  5. Following Bonus                        |
-|  6. University Bonus                       |
-|  7. Major/Department Bonus (NEW)           |
-|                                            |
-|  Output: Top posts sorted by base_score    |
-+-------------------------------------------+
-                    |
-                    v
-+-------------------------------------------+
-|          CLIENT (useHomePosts.ts)          |
-|                                            |
-|  1. View Penalty (score * 0.3 if seen)     |
-|  2. Re-sort by adjusted score              |
-|  3. Author diversity (max 2 consecutive)   |
-|  4. Ad interleaving (every 5 posts)        |
-|  5. Display top results                    |
-+-------------------------------------------+
-```
+### New Table: `confession_reactions`
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid (PK) | Default gen_random_uuid() |
+| confession_id | uuid (FK) | References confessions(id) ON DELETE CASCADE |
+| user_id | uuid | Who reacted |
+| emoji | text | Emoji used |
+| created_at | timestamptz | Default now() |
+| UNIQUE | | (confession_id, user_id, emoji) |
 
-## Detailed Changes
+### New Table: `confession_comments`
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid (PK) | Default gen_random_uuid() |
+| confession_id | uuid (FK) | References confessions(id) ON DELETE CASCADE |
+| user_id | uuid | Commenter (also anonymous) |
+| content | text | Comment text |
+| created_at | timestamptz | Default now() |
 
-### 1. Server-Side: New `ranked_posts` View
+### RLS Policies
+- All three tables: authenticated users can SELECT, INSERT
+- DELETE own rows only (user_id = auth.uid())
+- No UPDATE needed
 
-**Migration SQL** replaces the current view with:
+## Frontend Changes
 
-**Engagement Velocity (35% weight)**
-- Formula: `log(1 + (likes*1 + comments*2) / GREATEST(age_hours, 0.5)) * 35`
-- Catches trending content early
-- Logarithmic prevents runaway scores
+### 1. University Hub Card
+Add a new option to the `universityOptions` array in `src/pages/University.tsx`:
+- Title: "Confessions"
+- Description: "Share anonymous confessions and tag people"
+- Icon: `MessageSquareOff` (from lucide)
+- Color: `bg-pink-500`
+- Path: `/confessions`
+- Allowed for: `['student']`
 
-**Recency Decay (25% weight)**
-- Formula: `25 * exp(-age_hours / 24)`
-- No flat +50 bonus -- purely exponential decay
-- 24-hour half-life
+### 2. New Route
+Add `/confessions` route in `src/App.tsx` pointing to a new `Confessions` page.
 
-**Social Proof (20% weight)**
-- Formula: `LEAST((likes + comments) / 10.0, 50) * 0.4`
-- Capped at 50 raw points (scaled to ~20 max)
-- Validates quality independent of velocity
+### 3. New Page: `src/pages/Confessions.tsx`
+- Uses `Layout` wrapper
+- Displays a feed of confession cards sorted by newest first
+- "New Confession" button opens a modal
+- Each confession shows: anonymous avatar, content (with clickable @mentions), time ago, reactions, comment count
 
-**Content Quality (10% weight)**
-- `+10` if post has image(s)
-- Simple media presence bonus
+### 4. New Hook: `src/hooks/useConfessions.ts`
+Modeled after `useAnonymousChat.ts` but for post-style content:
+- `fetchConfessions()` -- paginated, newest first, with reactions
+- `createConfession(content)` -- inserts with university from profile
+- `toggleReaction(confessionId, emoji)` -- same pattern as anonymous chat
+- `addComment(confessionId, content)` -- insert comment
+- `fetchComments(confessionId)` -- load comments for a confession
+- Realtime subscription for new confessions and reactions
 
-**Static Bonuses (10% weight)**
-- Following: +8
-- Same University: +5
-- Same Major/Department: +3 (NEW -- replaces state/country)
+### 5. New Component: `src/components/confessions/ConfessionCard.tsx`
+- Anonymous ghost avatar with pink accent
+- Content text with @mentions parsed into clickable links (navigates to `/:username`)
+- Time ago display
+- Reaction buttons (same emoji set as Ghost Chat)
+- Comment toggle to expand/collapse inline comments
+- Comments are also anonymous
 
-**Removed from server:**
-- Flat +50 freshness bonus (eliminated)
-- State/country bonuses (eliminated)
-- `post_impressions` join (moved to client) -- faster queries
+### 6. New Component: `src/components/confessions/CreateConfessionModal.tsx`
+- Dialog/modal with a textarea
+- Supports `@mention` for tagging users (reuses the user-search pattern from `MentionInput`)
+- Only searches users (not startups/clubs) since confessions are personal
+- Submit button posts the confession
 
-### 2. Client-Side: Updated `useHomePosts.ts`
+### 7. Mention Rendering
+In `ConfessionCard`, parse `@username` patterns in confession content and render them as clickable links styled with a highlight color, navigating to the tagged user's profile.
 
-**View Penalty** (new logic in `prioritizeUnseenPosts`):
-- Posts the user has already seen get `score * 0.3` (70% penalty)
-- Unseen posts keep their full score
-- Re-sort all posts by adjusted score after penalty
+## Bug Fix
+### `src/hooks/usePushNotifications.ts` TypeScript Error
+Add `pushManager` to the ServiceWorkerRegistration type by declaring it in a `.d.ts` file or casting `registration as any` at the three usage points (lines 47, 118, 166). This fixes the existing build error.
 
-**Existing features preserved:**
-- Author diversity (max 2 consecutive) -- already works
-- Ad interleaving (every 5 posts) -- already works
-- Infinite scroll and realtime updates -- already work
-
-### Technical Details
-
-**File: New Supabase migration**
-- `DROP VIEW IF EXISTS ranked_posts`
-- `CREATE OR REPLACE VIEW ranked_posts AS ...` with the new scoring formula
-- Removes `post_impressions` join from the view
-- Adds `major` column output for client use
-- Replaces state/country joins with major comparison
-
-**File: `src/hooks/useHomePosts.ts`**
-- Update `prioritizeUnseenPosts` to apply `score * 0.3` penalty to seen posts instead of just reordering
-- Add re-sort by adjusted score after penalty
-- Remove the "reloop" reset logic (view penalty handles recycling gracefully)
-- Keep all existing diversity, ad, and scroll logic
-
-**No other files change** -- `Home.tsx` and `PostCard` consume the same data shape.
-
-### Score Examples (New Formula)
-
-| Post | Age | Likes | Comments | Has Image | Velocity | Recency | Social | Quality | Total |
-|------|-----|-------|----------|-----------|----------|---------|--------|---------|-------|
-| Viral new | 1h | 50 | 10 | Yes | 56 | 24 | 2.4 | 10 | ~92 |
-| Moderate new | 3h | 10 | 3 | Yes | 30 | 22 | 0.5 | 10 | ~63 |
-| Popular old | 48h | 200 | 50 | No | 10 | 3 | 20 | 0 | ~33 |
-| Fresh empty | 0.5h | 0 | 0 | No | 0 | 25 | 0 | 0 | ~25 |
-| Seen viral | 1h | 50 | 10 | Yes | - | - | - | - | ~28 (x0.3) |
-
-Key improvement: A fresh post with zero engagement (25 pts) no longer beats a 48-hour post with 250 engagements (33 pts). The old system gave the fresh post 51+ points via the flat bonus.
-
+## Files Created/Modified
+- **New**: `src/pages/Confessions.tsx`
+- **New**: `src/hooks/useConfessions.ts`
+- **New**: `src/components/confessions/ConfessionCard.tsx`
+- **New**: `src/components/confessions/CreateConfessionModal.tsx`
+- **New**: Supabase migration (3 tables + RLS)
+- **Modified**: `src/App.tsx` (add route)
+- **Modified**: `src/pages/University.tsx` (add card)
+- **Modified**: `src/hooks/usePushNotifications.ts` (fix TS error)
+- **Modified**: `src/integrations/supabase/types.ts` (auto-updated)
