@@ -75,16 +75,15 @@ export default function PostHeader({
     <div className="flex gap-3">
       {/* Avatar */}
       <div 
-        className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-primary to-accent flex items-center justify-center transition-opacity cursor-pointer hover:opacity-90"
+        className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center transition-opacity cursor-pointer hover:opacity-90"
         onClick={handleProfileClick}
       >
-        {displayAvatar ? (
-          <img src={displayAvatar} alt={displayName} className="w-full h-full object-cover" />
-        ) : (
-          <span className="text-sm font-bold text-white">
-            {displayName?.charAt(0) || 'U'}
-          </span>
-        )}
+        <img
+          src={displayAvatar || '/default-avatar.png'}
+          alt={displayName}
+          className="w-full h-full object-cover"
+          onError={(e) => { e.currentTarget.src = '/default-avatar.png'; }}
+        />
       </div>
 
       {/* Right section */}

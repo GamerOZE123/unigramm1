@@ -174,14 +174,13 @@ export default function Sidebar() {
           </Button>
           
           <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface transition-colors cursor-pointer">
-            <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center overflow-hidden">
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt={profile.username || 'User'} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-sm font-bold text-white">
-                  {profile?.username?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
-                </span>
-              )}
+            <div className="w-10 h-10 rounded-full overflow-hidden">
+              <img
+                src={profile?.avatar_url || '/default-avatar.png'}
+                alt={profile?.username || 'User'}
+                className="w-full h-full object-cover"
+                onError={(e) => { e.currentTarget.src = '/default-avatar.png'; }}
+              />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">

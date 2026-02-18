@@ -166,10 +166,8 @@ export default function NewCommentSection({ postId }: NewCommentSectionProps) {
       {/* Add Comment */}
       {user && (
         <div className="flex gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center flex-shrink-0">
-            <span className="text-xs font-bold text-white">
-              {user.email?.charAt(0).toUpperCase()}
-            </span>
+          <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <img src="/default-avatar.png" alt="Your avatar" className="w-full h-full object-cover" />
           </div>
           <div className="flex-1 flex gap-2">
             <Input
@@ -199,10 +197,13 @@ export default function NewCommentSection({ postId }: NewCommentSectionProps) {
       <div className="space-y-3">
         {comments.map((comment) => (
           <div key={comment.id} className="flex gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center flex-shrink-0">
-              <span className="text-xs font-bold text-white">
-                {comment.profiles?.full_name?.charAt(0) || comment.profiles?.username?.charAt(0) || 'U'}
-              </span>
+            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+              <img
+                src={comment.profiles?.avatar_url || '/default-avatar.png'}
+                alt={comment.profiles?.full_name || comment.profiles?.username || 'User'}
+                className="w-full h-full object-cover"
+                onError={(e) => { e.currentTarget.src = '/default-avatar.png'; }}
+              />
             </div>
             <div className="flex-1 bg-muted/50 rounded-lg p-3">
               <div className="flex items-center justify-between mb-1">

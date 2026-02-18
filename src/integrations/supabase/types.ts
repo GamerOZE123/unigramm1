@@ -2816,6 +2816,7 @@ export type Database = {
           push_token: string | null
           push_token_type: string | null
           push_token_updated_at: string | null
+          show_message_previews: boolean | null
           start_year: number | null
           state: string | null
           status_message: string | null
@@ -2860,6 +2861,7 @@ export type Database = {
           push_token?: string | null
           push_token_type?: string | null
           push_token_updated_at?: string | null
+          show_message_previews?: boolean | null
           start_year?: number | null
           state?: string | null
           status_message?: string | null
@@ -2904,6 +2906,7 @@ export type Database = {
           push_token?: string | null
           push_token_type?: string | null
           push_token_updated_at?: string | null
+          show_message_previews?: boolean | null
           start_year?: number | null
           state?: string | null
           status_message?: string | null
@@ -4116,6 +4119,7 @@ export type Database = {
           push_token: string | null
           push_token_type: string | null
           push_token_updated_at: string | null
+          show_message_previews: boolean | null
           start_year: number | null
           state: string | null
           status_message: string | null
