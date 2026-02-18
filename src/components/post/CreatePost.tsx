@@ -58,10 +58,8 @@ export default function CreatePost() {
   return (
     <div className="bg-card border border-border rounded-2xl p-6 mb-6">
       <div className="flex gap-3">
-        <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center flex-shrink-0">
-          <span className="text-sm font-bold text-white">
-            {user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
-          </span>
+        <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+          <img src="/default-avatar.png" alt="Your avatar" className="w-full h-full object-cover" />
         </div>
         <div className="flex-1">
           <Textarea

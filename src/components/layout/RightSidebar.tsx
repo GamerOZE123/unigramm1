@@ -212,19 +212,12 @@ export default function RightSidebar() {
                 className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-muted/20 transition-colors"
                 onClick={() => handleUserClick(randomUser.username || '')}
               >
-                {randomUser.avatar_url ? (
-                  <img 
-                    src={randomUser.avatar_url} 
-                    alt={randomUser.full_name || randomUser.username || 'User'} 
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
-                    <span className="text-sm font-bold text-white">
-                      {randomUser.full_name?.charAt(0) || randomUser.username?.charAt(0) || 'U'}
-                    </span>
-                  </div>
-                )}
+                <img
+                  src={randomUser.avatar_url || '/default-avatar.png'}
+                  alt={randomUser.full_name || randomUser.username || 'User'}
+                  className="w-10 h-10 rounded-full object-cover"
+                  onError={(e) => { e.currentTarget.src = '/default-avatar.png'; }}
+                />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-foreground">
                     {randomUser.full_name || randomUser.username}

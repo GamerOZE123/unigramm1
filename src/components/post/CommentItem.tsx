@@ -31,9 +31,9 @@ export default function CommentItem({ comment }: CommentItemProps) {
   return (
     <div className="flex gap-3 group animate-fade-in">
       <Avatar className="w-8 h-8">
-        <AvatarImage src={comment.profiles?.avatar_url || ''} />
+        <AvatarImage src={comment.profiles?.avatar_url || '/default-avatar.png'} />
         <AvatarFallback>
-          {comment.profiles?.full_name?.[0] || comment.profiles?.username?.[0] || 'U'}
+          <img src="/default-avatar.png" className="w-full h-full object-cover" alt="Default avatar" />
         </AvatarFallback>
       </Avatar>
       
