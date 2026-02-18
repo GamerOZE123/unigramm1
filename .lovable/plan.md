@@ -1,111 +1,84 @@
 
+# Replace All Avatar Fallbacks with Custom Default Avatar Image
 
-# Communities / Groups Feature for University Hub
+## What This Does
 
-## Overview
-Add a "Communities" section to the University Hub where students can create and join public, university-scoped group chats. Unlike the existing private chat groups (which require invitation), communities are discoverable and open -- any student at the same university can browse and join them.
+Everywhere in the app where a user has no profile picture, a gradient circle with a letter is shown. This plan replaces every single one of those fallbacks with your custom `/default-avatar.png` image.
 
-## How It Differs from Existing Chat Groups
-- **Existing chat groups** (in Chat page): Private, invite-only, no discovery
-- **New communities** (in University Hub): Public, browsable, university-scoped, join freely
+## Files to Change (7 files)
 
-## Database
+| File | What Changes |
+|------|-------------|
+| `src/components/post/PostHeader.tsx` | Main post card avatar — replace letter fallback |
+| `src/components/post/CommentItem.tsx` | Comment avatars in `InlineCommentSection` — replace Radix fallback |
+| `src/components/post/CommentSection.tsx` | Comment section (post detail page) — both "your avatar" and comment list avatars |
+| `src/components/post/NewCommentSection.tsx` | Alternative comment section — both inputs and comment list |
+| `src/components/post/CreatePost.tsx` | "What's happening" box avatar — replace letter fallback |
+| `src/components/layout/Sidebar.tsx` | Bottom-left logged-in user avatar — replace letter fallback |
+| `src/components/layout/UsersSidebar.tsx` | Suggested users list — replace letter fallback |
+| `src/components/layout/RightSidebar.tsx` | Random users list — replace letter fallback |
 
-### New Table: `communities`
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid (PK) | Default gen_random_uuid() |
-| name | text (NOT NULL) | Community name (max 50 chars) |
-| description | text | What the community is about |
-| avatar_url | text | Optional group image |
-| university | text (NOT NULL) | Scoped to creator's university |
-| created_by | uuid (NOT NULL) | Creator user ID |
-| is_public | boolean | Default true |
-| member_count | integer | Default 0, maintained by trigger |
-| created_at | timestamptz | Default now() |
-| updated_at | timestamptz | Default now() |
+## Prerequisite
 
-### New Table: `community_members`
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid (PK) | Default gen_random_uuid() |
-| community_id | uuid (FK) | References communities(id) ON DELETE CASCADE |
-| user_id | uuid (NOT NULL) | Member |
-| role | text | Default 'member' (admin/member) |
-| joined_at | timestamptz | Default now() |
-| UNIQUE | | (community_id, user_id) |
+You must upload your custom image and name it `default-avatar.png`, placing it inside the `public/` folder of the project. This makes it available at the URL `/default-avatar.png` with no imports needed.
 
-### New Table: `community_messages`
-| Column | Type | Notes |
-|--------|------|-------|
-| id | uuid (PK) | Default gen_random_uuid() |
-| community_id | uuid (FK) | References communities(id) ON DELETE CASCADE |
-| sender_id | uuid (NOT NULL) | Who sent |
-| content | text (NOT NULL) | Message text |
-| created_at | timestamptz | Default now() |
+## The Change Pattern (Same Logic Applied Everywhere)
 
-### Trigger: Auto-update `member_count`
-On INSERT/DELETE on `community_members`, increment/decrement `communities.member_count`.
+Every avatar block currently looks like this:
 
-### RLS Policies
-- **communities**: Authenticated can SELECT all public communities. INSERT if authenticated. UPDATE/DELETE only by creator.
-- **community_members**: Authenticated can SELECT. INSERT own membership (user_id = auth.uid()). DELETE own membership or if community creator.
-- **community_messages**: Members can SELECT (via subquery check). Members can INSERT. DELETE own messages.
+```
+if avatar_url exists → show real photo
+else → show gradient circle with first letter
+```
 
-## Frontend
+After the change, it becomes:
 
-### 1. University Hub Card
-Add a "Communities" card to `University.tsx`:
-- Icon: `Users` (from lucide)
-- Color: `bg-emerald-500`
-- Path: `/communities`
-- Allowed for: `['student']`
+```
+<img
+  src={avatar_url || '/default-avatar.png'}
+  onError={(e) => { e.currentTarget.src = '/default-avatar.png'; }}
+/>
+```
 
-### 2. New Route
-Add `/communities` and `/communities/:communityId` routes in `App.tsx`.
+The `onError` handler is a safety net — if a stored Supabase URL is broken or expired, the custom image still shows instead of a broken icon.
 
-### 3. New Page: `src/pages/Communities.tsx`
-- **Browse tab**: Lists all public communities at the user's university with member count, description, and a Join/Joined button
-- **My Communities tab**: Shows communities the user has joined
-- **Create button**: Opens a modal to create a new community (name, description, optional avatar)
-- Clicking a community navigates to `/communities/:communityId`
+## Technical Details per File
 
-### 4. New Page: `src/pages/CommunityChat.tsx`
-- Full chat interface similar to the existing group chat in Chat.tsx
-- Header showing community name, member count, and a settings/members button
-- Real-time message feed with sender avatars and names
-- Message input bar at the bottom
-- Members panel (slide-out or modal) showing all members
-- Leave community button
+### 1. PostHeader.tsx (lines 77–88)
+Remove the `{displayAvatar ? ... : <span>letter</span>}` conditional. Replace with a single `<img>` using `src={displayAvatar || '/default-avatar.png'}` and an `onError` fallback. Remove the gradient background classes from the wrapper div.
 
-### 5. New Hook: `src/hooks/useCommunities.ts`
-- `fetchCommunities(university)` -- get all public communities for a university
-- `fetchMyCommunities()` -- get communities user has joined
-- `createCommunity(name, description)` -- create with user's university
-- `joinCommunity(communityId)` -- insert into community_members
-- `leaveCommunity(communityId)` -- delete from community_members
+### 2. CommentItem.tsx (lines 33–38)
+The Radix `<AvatarImage>` already handles the `src`. Change its `src` to `comment.profiles?.avatar_url || '/default-avatar.png'`. Replace the `<AvatarFallback>` letter content with `<img src="/default-avatar.png" className="w-full h-full object-cover" />`.
 
-### 6. New Hook: `src/hooks/useCommunityMessages.ts`
-- Modeled after `useGroupMessages.ts`
-- `fetchMessages(communityId)` -- paginated, with sender profiles
-- `sendMessage(communityId, content)` -- insert message
-- Realtime subscription for new messages
+### 3. CommentSection.tsx (lines 79–86 and 116–123)
+Two avatar blocks — the logged-in user's avatar when typing a comment, and each comment's avatar in the list. Both get the same `<img src={url || '/default-avatar.png'} onError={...} />` pattern.
 
-### 7. New Components
-- **`src/components/communities/CommunityCard.tsx`**: Card for browse list (name, description, member count, join button)
-- **`src/components/communities/CreateCommunityModal.tsx`**: Modal with name, description fields
-- **`src/components/communities/CommunityMembersPanel.tsx`**: Shows list of members with roles
+### 4. NewCommentSection.tsx (lines 169–172 and 202–205)
+Same as CommentSection — two gradient blocks, both replaced with the image fallback pattern.
 
-## Files Created/Modified
-- **New migration**: 3 tables + trigger + RLS policies
-- **New**: `src/pages/Communities.tsx`
-- **New**: `src/pages/CommunityChat.tsx`
-- **New**: `src/hooks/useCommunities.ts`
-- **New**: `src/hooks/useCommunityMessages.ts`
-- **New**: `src/components/communities/CommunityCard.tsx`
-- **New**: `src/components/communities/CreateCommunityModal.tsx`
-- **New**: `src/components/communities/CommunityMembersPanel.tsx`
-- **Modified**: `src/App.tsx` (add routes)
-- **Modified**: `src/pages/University.tsx` (add card)
-- **Modified**: `src/integrations/supabase/types.ts` (auto-updated)
+### 5. CreatePost.tsx (lines 61–65)
+The avatar shown next to the "What's happening" textarea. This one currently doesn't even fetch the user's avatar — it just uses a letter. We update it to use `/default-avatar.png` directly since there's no avatar URL available in this component.
 
+### 6. Sidebar.tsx (lines 177–184)
+The bottom-left logged-in user info strip. Already has the `if avatar_url then img else span` pattern — just change the `else` to show the default image.
+
+### 7. UsersSidebar.tsx (lines 71–78)
+Suggested users list. Same pattern — change the fallback `<span>` to `<img src="/default-avatar.png" />`.
+
+### 8. RightSidebar.tsx (lines 222–226)
+Random users panel. Same pattern — the else block gets replaced with `<img src="/default-avatar.png" className="w-10 h-10 rounded-full object-cover" />`.
+
+## Summary of the Rule
+
+Anywhere you see:
+```tsx
+<span className="... font-bold text-white">
+  {someName?.charAt(0) || 'U'}
+</span>
+```
+inside a rounded avatar container — it becomes:
+```tsx
+<img src="/default-avatar.png" className="w-full h-full object-cover" alt="Default avatar" />
+```
+
+And the wrapper `div` has its gradient background classes removed since the image covers the entire area.
