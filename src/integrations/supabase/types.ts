@@ -261,6 +261,33 @@ export type Database = {
         }
         Relationships: []
       }
+      app_config: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: number
+          key: string
+          updated_at: string | null
+          value: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: never
+          key: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: never
+          key?: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Relationships: []
+      }
       auction_bids: {
         Row: {
           amount: number
@@ -877,12 +904,14 @@ export type Database = {
       }
       clubs_profiles: {
         Row: {
+          banner_url: string | null
           category: string | null
           club_description: string | null
           club_name: string
           contact_email: string | null
           contact_phone: string | null
           created_at: string
+          description: string | null
           id: string
           logo_url: string | null
           member_count: number | null
@@ -895,12 +924,14 @@ export type Database = {
           website_url: string | null
         }
         Insert: {
+          banner_url?: string | null
           category?: string | null
           club_description?: string | null
           club_name: string
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          description?: string | null
           id?: string
           logo_url?: string | null
           member_count?: number | null
@@ -913,12 +944,14 @@ export type Database = {
           website_url?: string | null
         }
         Update: {
+          banner_url?: string | null
           category?: string | null
           club_description?: string | null
           club_name?: string
           contact_email?: string | null
           contact_phone?: string | null
           created_at?: string
+          description?: string | null
           id?: string
           logo_url?: string | null
           member_count?: number | null
@@ -3141,6 +3174,38 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      startup_links: {
+        Row: {
+          created_at: string
+          id: string
+          startup_id: string
+          title: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          startup_id: string
+          title: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          startup_id?: string
+          title?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "startup_links_startup_id_fkey"
+            columns: ["startup_id"]
+            isOneToOne: false
+            referencedRelation: "student_startups"
+            referencedColumns: ["id"]
           },
         ]
       }
