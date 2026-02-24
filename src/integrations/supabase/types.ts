@@ -1575,18 +1575,21 @@ export type Database = {
           is_enabled: boolean | null
           key: string
           start_date: string | null
+          university: string | null
         }
         Insert: {
           end_date?: string | null
           is_enabled?: boolean | null
           key: string
           start_date?: string | null
+          university?: string | null
         }
         Update: {
           end_date?: string | null
           is_enabled?: boolean | null
           key?: string
           start_date?: string | null
+          university?: string | null
         }
         Relationships: []
       }
@@ -2397,6 +2400,7 @@ export type Database = {
       }
       notifications: {
         Row: {
+          conversation_id: string | null
           created_at: string
           id: string
           is_read: boolean
@@ -2409,6 +2413,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          conversation_id?: string | null
           created_at?: string
           id?: string
           is_read?: boolean
@@ -2421,6 +2426,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          conversation_id?: string | null
           created_at?: string
           id?: string
           is_read?: boolean
@@ -4023,20 +4029,24 @@ export type Database = {
           hashtags: string[] | null
           id: string | null
           image_medium_url: string | null
+          image_metadata: Json | null
           image_original_url: string | null
           image_thumbnail_url: string | null
           image_url: string | null
           image_urls: string[] | null
           is_approved_for_startup: boolean | null
+          is_pinned: boolean | null
           likes_count: number | null
           major: string | null
           poll_ends_at: string | null
           poll_options: Json | null
           poll_question: string | null
+          poll_votes: Json | null
           post_type: string | null
           score: number | null
           startup_id: string | null
           survey_questions: Json | null
+          survey_responses: Json | null
           university: string | null
           updated_at: string | null
           user_id: string | null
