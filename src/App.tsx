@@ -38,6 +38,7 @@ import CommunityChat from '@/pages/CommunityChat';
 import Support from '@/pages/Support';
 import PrivacyPolicy from '@/pages/PrivacyPolicy';
 import DeleteAccount from '@/pages/DeleteAccount';
+import ChildSafety from '@/pages/ChildSafety';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -84,6 +85,7 @@ function App() {
               <Route path="/support" element={<Support />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/delete-account" element={<DeleteAccount />} />
+              <Route path="/child-safety" element={<ChildSafety />} />
               <Route path="/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
