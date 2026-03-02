@@ -4152,6 +4152,7 @@ export type Database = {
           updated_at: string | null
           user_id: string | null
           username: string | null
+          video_url: string | null
           views_count: number | null
           visibility: string | null
         }

@@ -47,6 +47,7 @@ export interface TransformedPost {
   score?: number;
   startup_id?: string;
   startup?: { title: string };
+  video_url?: string;
 }
 
 export interface AdvertisingPost {
@@ -153,6 +154,7 @@ const transformPost = (post: any, startupsMap: Record<string, any> = {}): Transf
   poll_options: post.poll_options,
   poll_ends_at: post.poll_ends_at,
   survey_questions: post.survey_questions,
+  video_url: post.video_url,
 });
 
 // Fisher-Yates shuffle
