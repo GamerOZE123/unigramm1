@@ -2825,6 +2825,7 @@ export type Database = {
         Row: {
           academic_year: string | null
           account_status: string | null
+          age: number | null
           area: string | null
           avatar_url: string | null
           banner_height: number | null
@@ -2841,6 +2842,7 @@ export type Database = {
           followers_count: number | null
           following_count: number | null
           full_name: string | null
+          gender: string | null
           graduated_at: string | null
           id: string
           instagram_url: string | null
@@ -2870,6 +2872,7 @@ export type Database = {
         Insert: {
           academic_year?: string | null
           account_status?: string | null
+          age?: number | null
           area?: string | null
           avatar_url?: string | null
           banner_height?: number | null
@@ -2886,6 +2889,7 @@ export type Database = {
           followers_count?: number | null
           following_count?: number | null
           full_name?: string | null
+          gender?: string | null
           graduated_at?: string | null
           id?: string
           instagram_url?: string | null
@@ -2915,6 +2919,7 @@ export type Database = {
         Update: {
           academic_year?: string | null
           account_status?: string | null
+          age?: number | null
           area?: string | null
           avatar_url?: string | null
           banner_height?: number | null
@@ -2931,6 +2936,7 @@ export type Database = {
           followers_count?: number | null
           following_count?: number | null
           full_name?: string | null
+          gender?: string | null
           graduated_at?: string | null
           id?: string
           instagram_url?: string | null
@@ -3011,6 +3017,41 @@ export type Database = {
           },
           {
             foreignKeyName: "recent_chats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          status: string | null
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -3550,6 +3591,30 @@ export type Database = {
           targeting_enabled?: boolean | null
           updated_at?: string | null
           user_type?: string
+        }
+        Relationships: []
+      }
+      suggestions: {
+        Row: {
+          created_at: string | null
+          id: string
+          priority: number | null
+          type: string
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          priority?: number | null
+          type: string
+          value: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          priority?: number | null
+          type?: string
+          value?: string
         }
         Relationships: []
       }
@@ -4164,6 +4229,7 @@ export type Database = {
         Returns: {
           academic_year: string | null
           account_status: string | null
+          age: number | null
           area: string | null
           avatar_url: string | null
           banner_height: number | null
@@ -4180,6 +4246,7 @@ export type Database = {
           followers_count: number | null
           following_count: number | null
           full_name: string | null
+          gender: string | null
           graduated_at: string | null
           id: string
           instagram_url: string | null
