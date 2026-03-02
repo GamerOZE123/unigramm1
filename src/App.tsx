@@ -36,6 +36,7 @@ import Confessions from '@/pages/Confessions';
 import Communities from '@/pages/Communities';
 import CommunityChat from '@/pages/CommunityChat';
 import Support from '@/pages/Support';
+import PrivacyPolicy from '@/pages/PrivacyPolicy';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -80,6 +81,7 @@ function App() {
               <Route path="/communities" element={<ProtectedRoute><Communities /></ProtectedRoute>} />
               <Route path="/communities/:communityId" element={<ProtectedRoute><CommunityChat /></ProtectedRoute>} />
               <Route path="/support" element={<Support />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>

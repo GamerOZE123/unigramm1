@@ -64,7 +64,7 @@ export default function Support() {
             <MessageCircle className="w-5 h-5 text-primary" />
             <span className="text-sm font-medium text-foreground">Community</span>
           </a>
-          <a href="/privacy-policy.html" target="_blank" rel="noopener" className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:bg-accent/50 transition-colors">
+          <a href="/privacy-policy" className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:bg-accent/50 transition-colors">
             <FileText className="w-5 h-5 text-primary" />
             <span className="text-sm font-medium text-foreground">Privacy Policy</span>
           </a>
