@@ -37,6 +37,7 @@ import Communities from '@/pages/Communities';
 import CommunityChat from '@/pages/CommunityChat';
 import Support from '@/pages/Support';
 import PrivacyPolicy from '@/pages/PrivacyPolicy';
+import DeleteAccount from '@/pages/DeleteAccount';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -82,6 +83,7 @@ function App() {
               <Route path="/communities/:communityId" element={<ProtectedRoute><CommunityChat /></ProtectedRoute>} />
               <Route path="/support" element={<Support />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/delete-account" element={<DeleteAccount />} />
               <Route path="/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
