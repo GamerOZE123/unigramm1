@@ -2740,6 +2740,7 @@ export type Database = {
           image_url: string | null
           image_urls: string[] | null
           is_approved_for_startup: boolean | null
+          is_hidden: boolean
           is_pinned: boolean
           likes_count: number | null
           poll_ends_at: string | null
@@ -2768,6 +2769,7 @@ export type Database = {
           image_url?: string | null
           image_urls?: string[] | null
           is_approved_for_startup?: boolean | null
+          is_hidden?: boolean
           is_pinned?: boolean
           likes_count?: number | null
           poll_ends_at?: string | null
@@ -2796,6 +2798,7 @@ export type Database = {
           image_url?: string | null
           image_urls?: string[] | null
           is_approved_for_startup?: boolean | null
+          is_hidden?: boolean
           is_pinned?: boolean
           likes_count?: number | null
           poll_ends_at?: string | null
