@@ -255,9 +255,12 @@ export default function Landing() {
             <GraduationCap className="w-4 h-4 text-primary" />
             <span className="text-sm font-semibold text-foreground">Unigramm</span>
           </div>
-          <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Unigramm
-          </p>
+          <div className="flex items-center gap-4">
+            <a href="/support" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Support</a>
+            <p className="text-xs text-muted-foreground">
+              © {new Date().getFullYear()} Unigramm
+            </p>
+          </div>
         </div>
       </footer>
     </div>
