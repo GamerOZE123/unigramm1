@@ -258,7 +258,7 @@ export default function Landing() {
           <div className="flex items-center gap-4">
             <a href="/support" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Support</a>
             <a href="/privacy-policy" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</a>
-            <a href="/delete-account" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Delete Account</a>
+            
             <p className="text-xs text-muted-foreground">
               © {new Date().getFullYear()} Unigramm
             </p>
