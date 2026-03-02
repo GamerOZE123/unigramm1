@@ -2783,6 +2783,7 @@ export type Database = {
           survey_responses: Json | null
           updated_at: string | null
           user_id: string
+          video_url: string | null
           views_count: number
           visibility: string | null
         }
@@ -2812,6 +2813,7 @@ export type Database = {
           survey_responses?: Json | null
           updated_at?: string | null
           user_id: string
+          video_url?: string | null
           views_count?: number
           visibility?: string | null
         }
@@ -2841,6 +2843,7 @@ export type Database = {
           survey_responses?: Json | null
           updated_at?: string | null
           user_id?: string
+          video_url?: string | null
           views_count?: number
           visibility?: string | null
         }
