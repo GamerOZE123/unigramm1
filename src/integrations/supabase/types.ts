@@ -2873,6 +2873,8 @@ export type Database = {
           country: string | null
           course_id: string | null
           created_at: string
+          deactivated_at: string | null
+          deletion_scheduled_at: string | null
           email: string | null
           expected_graduation_year: number | null
           followers_count: number | null
@@ -2920,6 +2922,8 @@ export type Database = {
           country?: string | null
           course_id?: string | null
           created_at?: string
+          deactivated_at?: string | null
+          deletion_scheduled_at?: string | null
           email?: string | null
           expected_graduation_year?: number | null
           followers_count?: number | null
@@ -2967,6 +2971,8 @@ export type Database = {
           country?: string | null
           course_id?: string | null
           created_at?: string
+          deactivated_at?: string | null
+          deletion_scheduled_at?: string | null
           email?: string | null
           expected_graduation_year?: number | null
           followers_count?: number | null
@@ -4278,6 +4284,8 @@ export type Database = {
           country: string | null
           course_id: string | null
           created_at: string
+          deactivated_at: string | null
+          deletion_scheduled_at: string | null
           email: string | null
           expected_graduation_year: number | null
           followers_count: number | null
