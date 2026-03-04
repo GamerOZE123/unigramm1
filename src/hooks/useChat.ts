@@ -102,6 +102,8 @@ export const useChat = () => {
         // Determine media type from URL
         if (mediaUrl.match(/\.(mp4|webm|ogg)$/i)) {
           messageData.media_type = 'video';
+        } else if (mediaUrl.match(/\.(pdf|pptx?|docx?)(\?|$)/i)) {
+          messageData.media_type = 'document';
         } else {
           messageData.media_type = 'image';
         }
