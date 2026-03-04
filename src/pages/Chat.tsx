@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Send, MoreVertical, Trash2, MessageSquareX, UserX, Loader2, ImagePlus, Smile, Search, X, Users, Settings, Ban, Plus } from 'lucide-react';
+import { Send, MoreVertical, Trash2, MessageSquareX, UserX, Loader2, ImagePlus, Smile, Search, X, Users, Settings, Ban, Plus, FileText, Download } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/hooks/useChat';
 import { useRecentChats } from '@/hooks/useRecentChats';
@@ -56,6 +56,7 @@ export default function Chat() {
   const [selectedChatsForBulk, setSelectedChatsForBulk] = useState<Set<string>>(new Set());
   const [uploadingImage, setUploadingImage] = useState(false);
   const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isUserBlocked, setIsUserBlocked] = useState(false);
@@ -405,17 +406,44 @@ const handleBackToUserList = () => {
     setIsBlockedByUser(false);
   };
 
+  const ALLOWED_DOC_TYPES = [
+    'application/pdf',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  ];
+  const ALLOWED_DOC_EXTENSIONS = ['pdf', 'ppt', 'pptx', 'doc', 'docx'];
+
+  const isDocumentFile = (file: File) => {
+    if (ALLOWED_DOC_TYPES.includes(file.type)) return true;
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    return ALLOWED_DOC_EXTENSIONS.includes(ext);
+  };
+
+  const isDocumentUrl = (url: string) => {
+    return /\.(pdf|pptx?|docx?)(\?|$)/i.test(url);
+  };
+
+  const getDocFileName = (url: string) => {
+    try {
+      const path = new URL(url).pathname;
+      return decodeURIComponent(path.split('/').pop() || 'Document');
+    } catch {
+      return 'Document';
+    }
+  };
+
   const uploadMediaFile = async (file: File) => {
-    // Validate file type
     const isImage = file.type.startsWith("image/");
     const isVideo = file.type.startsWith("video/");
+    const isDocument = isDocumentFile(file);
     
-    if (!isImage && !isVideo) {
-      toast.error("Please upload an image or video file");
+    if (!isImage && !isVideo && !isDocument) {
+      toast.error("Please upload an image, video, PDF, or PPT file");
       return null;
     }
 
-    // Validate file size (max 100MB for videos, 50MB for images)
     const maxSize = isVideo ? 100 * 1024 * 1024 : 50 * 1024 * 1024;
     if (file.size > maxSize) {
       toast.error(`File size must be less than ${isVideo ? '100MB' : '50MB'}`);
@@ -425,20 +453,15 @@ const handleBackToUserList = () => {
     setUploadingImage(true);
     try {
       const fileExt = file.name.split(".").pop();
-      const fileName = `${user?.id}/${Date.now()}.${fileExt}`;
+      const fileName = `${user?.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
       
-      // Use resumable upload for files larger than 6MB
-      const useResumable = file.size > 6 * 1024 * 1024;
-      
-      const uploadOptions = useResumable ? {
-        cacheControl: '3600',
-        upsert: false,
-        contentType: file.type
-      } : {};
-
       const { data, error } = await supabase.storage
         .from("chat-media")
-        .upload(fileName, file, uploadOptions);
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type,
+        });
 
       if (error) throw error;
 
@@ -446,11 +469,12 @@ const handleBackToUserList = () => {
         .from("chat-media")
         .getPublicUrl(data.path);
 
-      toast.success(file.type.startsWith("image/") ? "Image uploaded" : "Video uploaded");
+      const typeLabel = isImage ? 'Image' : isVideo ? 'Video' : 'File';
+      toast.success(`${typeLabel} uploaded`);
       return publicUrl;
     } catch (error) {
       console.error("Error uploading media:", error);
-      toast.error(`Failed to upload media: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(`Failed to upload: ${error instanceof Error ? error.message : 'Unknown error'}`);
       return null;
     } finally {
       setUploadingImage(false);
@@ -496,6 +520,86 @@ const handleBackToUserList = () => {
         setMediaUrls(prev => [...prev, ...validUrls]);
       }
     }
+  };
+
+  // Drag and drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget === e.target || !e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDraggingOver(false);
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingOver(false);
+
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+
+    const urls = await uploadMultipleMedia(files);
+    if (urls.length > 0) {
+      setMediaUrls(prev => [...prev, ...urls]);
+    }
+  };
+
+  const renderFilePreview = (url: string, index: number, size: 'sm' | 'lg' = 'lg') => {
+    const h = size === 'sm' ? 'h-16' : 'h-24';
+    if (url.match(/\.(mp4|webm|ogg)$/i)) {
+      return <video src={url} className={`${h} rounded-xl ring-2 ring-border`} controls />;
+    }
+    if (isDocumentUrl(url)) {
+      const name = getDocFileName(url);
+      return (
+        <div className={`${h} w-32 rounded-xl ring-2 ring-border bg-muted flex flex-col items-center justify-center gap-1 p-2`}>
+          <FileText className="w-6 h-6 text-primary" />
+          <span className="text-[10px] text-muted-foreground truncate w-full text-center">{name}</span>
+        </div>
+      );
+    }
+    return <img src={url} alt="Preview" className={`${h} rounded-xl ring-2 ring-border`} />;
+  };
+
+  const renderMessageAttachment = (url: string, idx: number) => {
+    if (url.match(/\.(mp4|webm|ogg)$/i)) {
+      return <video key={idx} src={url} className="max-w-xs rounded-lg" controls />;
+    }
+    if (isDocumentUrl(url)) {
+      const name = getDocFileName(url);
+      return (
+        <a
+          key={idx}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 px-4 py-3 rounded-lg bg-muted/50 border border-border hover:bg-muted transition-colors max-w-xs"
+        >
+          <FileText className="w-8 h-8 text-primary flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{name}</p>
+            <p className="text-xs text-muted-foreground">Tap to open</p>
+          </div>
+          <Download className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        </a>
+      );
+    }
+    return (
+      <img
+        key={idx}
+        src={url}
+        alt="Message attachment"
+        className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+        onClick={() => window.open(url, '_blank')}
+      />
+    );
   };
 
   const addEmoji = (emoji: string) => {
@@ -1008,8 +1112,19 @@ const handleBackToUserList = () => {
                 <div
                   ref={messagesContainerRef}
                   onScroll={handleScroll}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
                   className="flex-1 p-6 overflow-y-auto space-y-3 relative bg-background/50"
                 >
+                  {isDraggingOver && (
+                    <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary rounded-lg z-50 flex items-center justify-center pointer-events-none">
+                      <div className="bg-card px-6 py-4 rounded-xl shadow-lg border border-border flex items-center gap-3">
+                        <FileText className="w-6 h-6 text-primary" />
+                        <span className="text-sm font-medium">Drop files here</span>
+                      </div>
+                    </div>
+                  )}
                   {currentMessages.length ? (
                     currentMessages.map((message, index) => {
                       const messageReactions = reactions[message.id] || [];
@@ -1032,24 +1147,7 @@ const handleBackToUserList = () => {
                             >
                               {message.media_url && message.media_url.length > 0 && (
                                 <div className="mb-2 space-y-2">
-                                  {message.media_url.map((url, idx) => (
-                                    url.match(/\.(mp4|webm|ogg)$/i) ? (
-                                      <video
-                                        key={idx}
-                                        src={url}
-                                        className="max-w-xs rounded-lg"
-                                        controls
-                                      />
-                                    ) : (
-                                      <img
-                                        key={idx}
-                                        src={url}
-                                        alt="Message attachment"
-                                        className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                                        onClick={() => window.open(url, '_blank')}
-                                      />
-                                    )
-                                  ))}
+                                  {message.media_url.map((url, idx) => renderMessageAttachment(url, idx))}
                                 </div>
                               )}
                               <div className="break-all whitespace-pre-wrap text-sm">{renderMessageContent(message.content)}</div>
@@ -1159,11 +1257,7 @@ const handleBackToUserList = () => {
                         <div className="mb-3 flex flex-wrap gap-2">
                           {mediaUrls.map((url, index) => (
                             <div key={index} className="relative inline-block group">
-                              {url.match(/\.(mp4|webm|ogg)$/i) ? (
-                                <video src={url} className="h-24 rounded-xl ring-2 ring-border" controls />
-                              ) : (
-                                <img src={url} alt="Preview" className="h-24 rounded-xl ring-2 ring-border" />
-                              )}
+                              {renderFilePreview(url, index, 'lg')}
                               <button
                                 onClick={() => setMediaUrls(prev => prev.filter((_, i) => i !== index))}
                                 className="absolute -top-2 -right-2 w-6 h-6 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-sm font-bold shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
@@ -1179,7 +1273,7 @@ const handleBackToUserList = () => {
                           type="file"
                           ref={fileInputRef}
                           onChange={handleMediaUpload}
-                          accept="image/*,video/*"
+                          accept="image/*,video/*,.pdf,.ppt,.pptx,.doc,.docx"
                           multiple
                           className="hidden"
                         />
@@ -1479,9 +1573,20 @@ const handleBackToUserList = () => {
             <div
               ref={messagesContainerRef}
               onScroll={handleScroll}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
               className="flex-1 p-4 overflow-y-auto space-y-4 pb-safe relative"
               style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
             >
+              {isDraggingOver && (
+                <div className="absolute inset-0 bg-primary/10 border-2 border-dashed border-primary rounded-lg z-50 flex items-center justify-center pointer-events-none">
+                  <div className="bg-card px-6 py-4 rounded-xl shadow-lg border border-border flex items-center gap-3">
+                    <FileText className="w-6 h-6 text-primary" />
+                    <span className="text-sm font-medium">Drop files here</span>
+                  </div>
+                </div>
+              )}
               {chatLoading && (
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -1505,24 +1610,7 @@ const handleBackToUserList = () => {
                         >
                           {message.media_url && message.media_url.length > 0 && (
                             <div className="mb-2 space-y-2">
-                              {message.media_url.map((url, idx) => (
-                                url.match(/\.(mp4|webm|ogg)$/i) ? (
-                                  <video
-                                    key={idx}
-                                    src={url}
-                                    className="max-w-xs rounded-lg"
-                                    controls
-                                  />
-                                ) : (
-                                  <img
-                                    key={idx}
-                                    src={url}
-                                    alt="Message attachment"
-                                    className="max-w-xs rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                                    onClick={() => window.open(url, '_blank')}
-                                  />
-                                )
-                              ))}
+                              {message.media_url.map((url, idx) => renderMessageAttachment(url, idx))}
                             </div>
                           )}
                         <div className="break-all whitespace-pre-wrap">{renderMessageContent(message.content)}</div>
@@ -1631,11 +1719,7 @@ const handleBackToUserList = () => {
                     <div className="mb-2 px-2 flex flex-wrap gap-2">
                       {mediaUrls.map((url, index) => (
                         <div key={index} className="relative inline-block">
-                          {url.match(/\.(mp4|webm|ogg)$/i) ? (
-                            <video src={url} className="h-16 rounded-lg" controls />
-                          ) : (
-                            <img src={url} alt="Preview" className="h-16 rounded-lg" />
-                          )}
+                          {renderFilePreview(url, index, 'sm')}
                           <button
                             onClick={() => setMediaUrls(prev => prev.filter((_, i) => i !== index))}
                             className="absolute -top-2 -right-2 w-5 h-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-xs"
@@ -1651,7 +1735,7 @@ const handleBackToUserList = () => {
                       type="file"
                       ref={fileInputRef}
                       onChange={handleMediaUpload}
-                      accept="image/*,video/*"
+                      accept="image/*,video/*,.pdf,.ppt,.pptx,.doc,.docx"
                       multiple
                       className="hidden"
                     />
