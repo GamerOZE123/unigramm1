@@ -63,7 +63,7 @@ export default function Auth() {
     const fetchUniversities = async () => {
       const { data } = await supabase
         .from('universities')
-        .select('id, name')
+        .select('id, name, abbreviation')
         .order('name');
       if (data) setUniversities(data);
     };
