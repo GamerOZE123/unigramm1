@@ -72,11 +72,12 @@ export default function Auth() {
 
   const detectUniversityFromEmail = (email: string) => {
     const domain = email.split('@')[1]?.toLowerCase();
-    if (domain?.includes('.snu')) {
-      return 'Shiv Nadar University';
-    }
-    // Add more university mappings here
-    return '';
+    if (!domain) return '';
+    // Auto-detect university by matching domain patterns to known abbreviations
+    const matchedUni = universities.find(uni => 
+      domain.includes(uni.abbreviation.toLowerCase())
+    );
+    return matchedUni?.abbreviation || '';
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
