@@ -138,7 +138,7 @@ export const useSemesterEligibility = () => {
           const { data: university } = await supabase
             .from('universities')
             .select('allow_graduation_button')
-            .or(`abbreviation.eq.${profile.university},name.eq.${profile.university}`)
+            .or(`abbreviation.eq."${profile.university}",name.eq."${profile.university}"`)
             .maybeSingle();
 
           universityAllowsSemesterWrapped = university?.allow_graduation_button || false;

@@ -615,8 +615,8 @@ export default function Auth() {
                     </SelectTrigger>
                     <SelectContent className="bg-background border-border z-50">
                       {universities.map(uni => (
-                        <SelectItem key={uni.id} value={uni.name}>
-                          {uni.name}
+                        <SelectItem key={uni.id} value={uni.abbreviation}>
+                          {uni.name} ({uni.abbreviation})
                         </SelectItem>
                       ))}
                     </SelectContent>
