@@ -28,7 +28,7 @@ export default function Auth() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [userType, setUserType] = useState<UserType>('student');
-  const [universities, setUniversities] = useState<Array<{id: string, name: string}>>([]);
+  const [universities, setUniversities] = useState<Array<{id: string, name: string, abbreviation: string}>>([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showBusinessOnboarding, setShowBusinessOnboarding] = useState(false);
   const [showClubOnboarding, setShowClubOnboarding] = useState(false);
@@ -63,7 +63,7 @@ export default function Auth() {
     const fetchUniversities = async () => {
       const { data } = await supabase
         .from('universities')
-        .select('id, name')
+        .select('id, name, abbreviation')
         .order('name');
       if (data) setUniversities(data);
     };
@@ -72,11 +72,12 @@ export default function Auth() {
 
   const detectUniversityFromEmail = (email: string) => {
     const domain = email.split('@')[1]?.toLowerCase();
-    if (domain?.includes('.snu')) {
-      return 'Shiv Nadar University';
-    }
-    // Add more university mappings here
-    return '';
+    if (!domain) return '';
+    // Auto-detect university by matching domain patterns to known abbreviations
+    const matchedUni = universities.find(uni => 
+      domain.includes(uni.abbreviation.toLowerCase())
+    );
+    return matchedUni?.abbreviation || '';
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -614,8 +615,8 @@ export default function Auth() {
                     </SelectTrigger>
                     <SelectContent className="bg-background border-border z-50">
                       {universities.map(uni => (
-                        <SelectItem key={uni.id} value={uni.name}>
-                          {uni.name}
+                        <SelectItem key={uni.id} value={uni.abbreviation}>
+                          {uni.name} ({uni.abbreviation})
                         </SelectItem>
                       ))}
                     </SelectContent>
