@@ -203,12 +203,7 @@ export default function Auth() {
     setMessage('');
 
     try {
-      // Validate .edu email for signup
-      if (!formData.email.toLowerCase().endsWith('.edu')) {
-        setError('Only .edu email addresses are allowed to sign up.');
-        setLoading(false);
-        return;
-      }
+      // .edu email validation temporarily disabled
 
       // Validate input
       const validationResult = signUpSchema.safeParse({
