@@ -204,7 +204,6 @@ export default function Auth() {
 
     try {
       // .edu email validation temporarily disabled
-      }
 
       // Validate input
       const validationResult = signUpSchema.safeParse({
