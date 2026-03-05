@@ -28,7 +28,7 @@ export default function Auth() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [userType, setUserType] = useState<UserType>('student');
-  const [universities, setUniversities] = useState<Array<{id: string, name: string}>>([]);
+  const [universities, setUniversities] = useState<Array<{id: string, name: string, abbreviation: string}>>([]);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showBusinessOnboarding, setShowBusinessOnboarding] = useState(false);
   const [showClubOnboarding, setShowClubOnboarding] = useState(false);
