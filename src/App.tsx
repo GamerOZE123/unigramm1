@@ -87,6 +87,7 @@ function App() {
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/delete-account" element={<DeleteAccount />} />
               <Route path="/child-safety" element={<ChildSafety />} />
+              <Route path="/email-confirmed" element={<EmailConfirmed />} />
               <Route path="/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
