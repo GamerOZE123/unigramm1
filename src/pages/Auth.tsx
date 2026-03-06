@@ -225,7 +225,7 @@ export default function Auth() {
         email: validationResult.data.email,
         password: validationResult.data.password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth`,
+          emailRedirectTo: 'https://unigramm1.lovable.app/email-confirmed',
           data: {
             full_name: validationResult.data.fullName,
             university: (userType === 'student' || userType === 'clubs') ? formData.university : undefined,
