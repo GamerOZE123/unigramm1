@@ -39,6 +39,7 @@ import Support from '@/pages/Support';
 import PrivacyPolicy from '@/pages/PrivacyPolicy';
 import DeleteAccount from '@/pages/DeleteAccount';
 import ChildSafety from '@/pages/ChildSafety';
+import EmailConfirmed from '@/pages/EmailConfirmed';
 
 const queryClient = new QueryClient({
   defaultOptions: {
