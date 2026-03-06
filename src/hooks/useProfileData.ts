@@ -31,7 +31,6 @@ interface ExtendedProfileData {
   instagram_url: string | null;
   twitter_url: string | null;
   website_url: string | null;
-  campus_groups: string[] | null;
   campus_year: string | null;
   created_at: string | null;
 }
