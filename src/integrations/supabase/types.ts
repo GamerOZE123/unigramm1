@@ -2868,12 +2868,12 @@ export type Database = {
           banner_position: number | null
           banner_url: string | null
           bio: string | null
-          campus_groups: string[] | null
           campus_year: string | null
           country: string | null
           course_id: string | null
           created_at: string
           deactivated_at: string | null
+          degree_level: string | null
           deletion_scheduled_at: string | null
           email: string | null
           expected_graduation_year: number | null
@@ -2887,7 +2887,6 @@ export type Database = {
           interests: string[] | null
           linkedin_url: string | null
           major: string | null
-          notifications_paused: boolean | null
           personal_email: string | null
           preferred_event_types: string[] | null
           profile_completed: boolean | null
@@ -2895,12 +2894,12 @@ export type Database = {
           push_token: string | null
           push_token_type: string | null
           push_token_updated_at: string | null
-          show_message_previews: boolean | null
           start_year: number | null
           state: string | null
           status_message: string | null
           twitter_url: string | null
           university: string | null
+          university_id: string | null
           updated_at: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"] | null
@@ -2917,12 +2916,12 @@ export type Database = {
           banner_position?: number | null
           banner_url?: string | null
           bio?: string | null
-          campus_groups?: string[] | null
           campus_year?: string | null
           country?: string | null
           course_id?: string | null
           created_at?: string
           deactivated_at?: string | null
+          degree_level?: string | null
           deletion_scheduled_at?: string | null
           email?: string | null
           expected_graduation_year?: number | null
@@ -2936,7 +2935,6 @@ export type Database = {
           interests?: string[] | null
           linkedin_url?: string | null
           major?: string | null
-          notifications_paused?: boolean | null
           personal_email?: string | null
           preferred_event_types?: string[] | null
           profile_completed?: boolean | null
@@ -2944,12 +2942,12 @@ export type Database = {
           push_token?: string | null
           push_token_type?: string | null
           push_token_updated_at?: string | null
-          show_message_previews?: boolean | null
           start_year?: number | null
           state?: string | null
           status_message?: string | null
           twitter_url?: string | null
           university?: string | null
+          university_id?: string | null
           updated_at?: string
           user_id: string
           user_type?: Database["public"]["Enums"]["user_type"] | null
@@ -2966,12 +2964,12 @@ export type Database = {
           banner_position?: number | null
           banner_url?: string | null
           bio?: string | null
-          campus_groups?: string[] | null
           campus_year?: string | null
           country?: string | null
           course_id?: string | null
           created_at?: string
           deactivated_at?: string | null
+          degree_level?: string | null
           deletion_scheduled_at?: string | null
           email?: string | null
           expected_graduation_year?: number | null
@@ -2985,7 +2983,6 @@ export type Database = {
           interests?: string[] | null
           linkedin_url?: string | null
           major?: string | null
-          notifications_paused?: boolean | null
           personal_email?: string | null
           preferred_event_types?: string[] | null
           profile_completed?: boolean | null
@@ -2993,12 +2990,12 @@ export type Database = {
           push_token?: string | null
           push_token_type?: string | null
           push_token_updated_at?: string | null
-          show_message_previews?: boolean | null
           start_year?: number | null
           state?: string | null
           status_message?: string | null
           twitter_url?: string | null
           university?: string | null
+          university_id?: string | null
           updated_at?: string
           user_id?: string
           user_type?: Database["public"]["Enums"]["user_type"] | null
@@ -3011,6 +3008,13 @@ export type Database = {
             columns: ["course_id"]
             isOneToOne: false
             referencedRelation: "university_courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
             referencedColumns: ["id"]
           },
         ]
@@ -4279,12 +4283,12 @@ export type Database = {
           banner_position: number | null
           banner_url: string | null
           bio: string | null
-          campus_groups: string[] | null
           campus_year: string | null
           country: string | null
           course_id: string | null
           created_at: string
           deactivated_at: string | null
+          degree_level: string | null
           deletion_scheduled_at: string | null
           email: string | null
           expected_graduation_year: number | null
@@ -4298,7 +4302,6 @@ export type Database = {
           interests: string[] | null
           linkedin_url: string | null
           major: string | null
-          notifications_paused: boolean | null
           personal_email: string | null
           preferred_event_types: string[] | null
           profile_completed: boolean | null
@@ -4306,12 +4309,12 @@ export type Database = {
           push_token: string | null
           push_token_type: string | null
           push_token_updated_at: string | null
-          show_message_previews: boolean | null
           start_year: number | null
           state: string | null
           status_message: string | null
           twitter_url: string | null
           university: string | null
+          university_id: string | null
           updated_at: string
           user_id: string
           user_type: Database["public"]["Enums"]["user_type"] | null
