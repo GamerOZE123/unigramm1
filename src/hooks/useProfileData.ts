@@ -31,7 +31,6 @@ interface ExtendedProfileData {
   instagram_url: string | null;
   twitter_url: string | null;
   website_url: string | null;
-  campus_groups: string[] | null;
   campus_year: string | null;
   created_at: string | null;
 }
@@ -57,7 +56,7 @@ export function useProfileData(userId: string | null) {
         const { data: profileData } = await supabase
           .from("profiles")
           .select(
-            "interests, status_message, linkedin_url, instagram_url, twitter_url, website_url, campus_groups, campus_year, created_at"
+            "interests, status_message, linkedin_url, instagram_url, twitter_url, website_url, campus_year, created_at"
           )
           .eq("user_id", userId)
           .single();
