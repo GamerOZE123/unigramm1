@@ -43,13 +43,28 @@ export default function Auth() {
     companyName: ''
   });
 
+  const redirectToEmailConfirmed = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Error clearing auth session after email confirmation:', err);
+    }
+    navigate('/email-confirmed', { replace: true });
+  };
+
   // Check if user is already logged in (but not in password recovery)
   useEffect(() => {
     const checkUser = async () => {
-      // Check if this is a password recovery flow by looking at URL hash
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const isRecovery = hashParams.get('type') === 'recovery';
-      
+      const flowType = hashParams.get('type');
+      const isRecovery = flowType === 'recovery';
+      const isSignupConfirmation = flowType === 'signup';
+
+      if (isSignupConfirmation) {
+        await redirectToEmailConfirmed();
+        return;
+      }
+
       if (!isRecovery) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
