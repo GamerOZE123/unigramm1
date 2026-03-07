@@ -468,7 +468,7 @@ export default function Auth() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, redirectToEmailConfirmed]);
 
   return (
     <>
