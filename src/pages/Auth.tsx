@@ -83,7 +83,7 @@ export default function Auth() {
       if (data) setUniversities(data);
     };
     fetchUniversities();
-  }, [navigate]);
+  }, [navigate, redirectToEmailConfirmed]);
 
   const detectUniversityFromEmail = (email: string) => {
     const domain = email.split('@')[1]?.toLowerCase();
