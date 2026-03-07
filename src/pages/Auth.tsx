@@ -43,14 +43,14 @@ export default function Auth() {
     companyName: ''
   });
 
-  const redirectToEmailConfirmed = async () => {
+  const redirectToEmailConfirmed = useCallback(async () => {
     try {
       await supabase.auth.signOut();
     } catch (err) {
       console.error('Error clearing auth session after email confirmation:', err);
     }
     navigate('/email-confirmed', { replace: true });
-  };
+  }, [navigate]);
 
   // Check if user is already logged in (but not in password recovery)
   useEffect(() => {
