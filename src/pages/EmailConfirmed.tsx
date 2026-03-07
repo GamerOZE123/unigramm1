@@ -2,24 +2,28 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircle, GraduationCap, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function EmailConfirmed() {
   const navigate = useNavigate();
   const [isMobileDevice, setIsMobileDevice] = useState(false);
 
   useEffect(() => {
-    // Detect if user is on a mobile device
-    const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    setIsMobileDevice(mobile);
+    const initializePage = async () => {
+      // Detect if user is on a mobile device
+      const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      setIsMobileDevice(mobile);
 
-    // If on desktop browser, auto-redirect to login after 5 seconds
-    if (!mobile) {
-      const timer = setTimeout(() => {
-        navigate('/auth', { replace: true });
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [navigate]);
+      // Ensure confirmation flow does not keep user auto-logged in
+      try {
+        await supabase.auth.signOut();
+      } catch (error) {
+        console.error('Error clearing session on email confirmation page:', error);
+      }
+    };
+
+    initializePage();
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
@@ -65,7 +69,7 @@ export default function EmailConfirmed() {
             </Button>
           </div>
         ) : (
-          /* Desktop: Auto-redirect with manual button */
+          /* Desktop: Stay on confirmation page with manual button */
           <div className="space-y-4">
             <Button
               onClick={() => navigate('/auth', { replace: true })}
@@ -75,7 +79,7 @@ export default function EmailConfirmed() {
               Go to Login
             </Button>
             <p className="text-sm text-muted-foreground">
-              You will be redirected automatically in a few seconds...
+              You are verified — log in when you're ready.
             </p>
           </div>
         )}

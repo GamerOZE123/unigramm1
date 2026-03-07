@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,13 +43,28 @@ export default function Auth() {
     companyName: ''
   });
 
+  const redirectToEmailConfirmed = useCallback(async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Error clearing auth session after email confirmation:', err);
+    }
+    navigate('/email-confirmed', { replace: true });
+  }, [navigate]);
+
   // Check if user is already logged in (but not in password recovery)
   useEffect(() => {
     const checkUser = async () => {
-      // Check if this is a password recovery flow by looking at URL hash
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const isRecovery = hashParams.get('type') === 'recovery';
-      
+      const flowType = hashParams.get('type');
+      const isRecovery = flowType === 'recovery';
+      const isSignupConfirmation = flowType === 'signup';
+
+      if (isSignupConfirmation) {
+        await redirectToEmailConfirmed();
+        return;
+      }
+
       if (!isRecovery) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
@@ -68,7 +83,7 @@ export default function Auth() {
       if (data) setUniversities(data);
     };
     fetchUniversities();
-  }, [navigate]);
+  }, [navigate, redirectToEmailConfirmed]);
 
   const detectUniversityFromEmail = (email: string) => {
     const domain = email.split('@')[1]?.toLowerCase();
@@ -360,13 +375,19 @@ export default function Auth() {
       const type = hashParams.get('type');
       const accessToken = hashParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token');
-      
+
+      // Handle signup confirmation callback and prevent auto-login redirect
+      if (type === 'signup' && accessToken) {
+        await redirectToEmailConfirmed();
+        return;
+      }
+
       // Check for recovery flow
       if (type === 'recovery' && accessToken) {
         isRecoveryFlow = true;
         setMode('reset');
         setMessage('Please enter your new password below.');
-        
+
         // Set the session from the URL tokens
         if (refreshToken) {
           await supabase.auth.setSession({
@@ -376,7 +397,7 @@ export default function Auth() {
         }
         return;
       }
-      
+
       // Also check for error in URL (e.g., expired link)
       const errorDescription = hashParams.get('error_description');
       if (errorDescription) {
@@ -396,22 +417,29 @@ export default function Auth() {
         setMessage('Please enter your new password below.');
         return;
       }
-      
+
+      // Handle signup confirmation callback and prevent auto-login redirect
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const isSignupInUrl = hashParams.get('type') === 'signup';
+      if (event === 'SIGNED_IN' && isSignupInUrl) {
+        await redirectToEmailConfirmed();
+        return;
+      }
+
       // Skip redirect logic if we're in recovery flow
       if (isRecoveryFlow) {
         return;
       }
-      
+
       // Check URL hash again for recovery (in case of race condition)
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const isRecoveryInUrl = hashParams.get('type') === 'recovery';
-      
+
       if (isRecoveryInUrl) {
         setMode('reset');
         setMessage('Please enter your new password below.');
         return;
       }
-      
+
       // Only handle SIGNED_IN if not in password recovery mode
       if (event === 'SIGNED_IN' && session) {
         // Use setTimeout to defer database calls
@@ -440,7 +468,7 @@ export default function Auth() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [navigate, redirectToEmailConfirmed]);
 
   return (
     <>
