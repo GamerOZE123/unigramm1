@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, GraduationCap, Smartphone } from 'lucide-react';
+import { CheckCircle, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -28,12 +28,6 @@ export default function EmailConfirmed() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="max-w-md w-full text-center space-y-6">
-        {/* Logo */}
-        <div className="flex justify-center">
-          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center">
-            <GraduationCap className="w-8 h-8 text-primary" />
-          </div>
-        </div>
 
         {/* Success Icon */}
         <div className="flex justify-center">
@@ -70,13 +64,6 @@ export default function EmailConfirmed() {
               </p>
             </div>
 
-            <Button
-              variant="outline"
-              onClick={() => navigate('/auth', { replace: true })}
-              className="w-full"
-            >
-              Log in here instead
-            </Button>
           </div>
         ) : (
           <div className="space-y-4">
