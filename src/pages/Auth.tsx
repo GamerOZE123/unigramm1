@@ -375,13 +375,19 @@ export default function Auth() {
       const type = hashParams.get('type');
       const accessToken = hashParams.get('access_token');
       const refreshToken = hashParams.get('refresh_token');
-      
+
+      // Handle signup confirmation callback and prevent auto-login redirect
+      if (type === 'signup' && accessToken) {
+        await redirectToEmailConfirmed();
+        return;
+      }
+
       // Check for recovery flow
       if (type === 'recovery' && accessToken) {
         isRecoveryFlow = true;
         setMode('reset');
         setMessage('Please enter your new password below.');
-        
+
         // Set the session from the URL tokens
         if (refreshToken) {
           await supabase.auth.setSession({
@@ -391,7 +397,7 @@ export default function Auth() {
         }
         return;
       }
-      
+
       // Also check for error in URL (e.g., expired link)
       const errorDescription = hashParams.get('error_description');
       if (errorDescription) {
@@ -411,22 +417,29 @@ export default function Auth() {
         setMessage('Please enter your new password below.');
         return;
       }
-      
+
+      // Handle signup confirmation callback and prevent auto-login redirect
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const isSignupInUrl = hashParams.get('type') === 'signup';
+      if (event === 'SIGNED_IN' && isSignupInUrl) {
+        await redirectToEmailConfirmed();
+        return;
+      }
+
       // Skip redirect logic if we're in recovery flow
       if (isRecoveryFlow) {
         return;
       }
-      
+
       // Check URL hash again for recovery (in case of race condition)
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const isRecoveryInUrl = hashParams.get('type') === 'recovery';
-      
+
       if (isRecoveryInUrl) {
         setMode('reset');
         setMessage('Please enter your new password below.');
         return;
       }
-      
+
       // Only handle SIGNED_IN if not in password recovery mode
       if (event === 'SIGNED_IN' && session) {
         // Use setTimeout to defer database calls
