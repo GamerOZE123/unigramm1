@@ -37,7 +37,7 @@ export default function EmailConfirmed() {
 
         {/* Success Icon */}
         <div className="flex justify-center">
-          <CheckCircle className="w-20 h-20 text-green-500" />
+          <CheckCircle className="w-20 h-20 text-emerald-500 dark:text-emerald-400" />
         </div>
 
         {/* Message */}
