@@ -9,20 +9,20 @@ export default function EmailConfirmed() {
   const [isMobileDevice, setIsMobileDevice] = useState(false);
 
   useEffect(() => {
-    const initializePage = async () => {
-      // Detect if user is on a mobile device
-      const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-      setIsMobileDevice(mobile);
+    // Detect if user is on a mobile device
+    const mobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    setIsMobileDevice(mobile);
 
-      // Ensure confirmation flow does not keep user auto-logged in
-      try {
-        await supabase.auth.signOut();
-      } catch (error) {
-        console.error('Error clearing session on email confirmation page:', error);
-      }
-    };
+    // Force sign out — prevent any auto-login from confirmation tokens
+    supabase.auth.signOut().catch(() => {});
 
-    initializePage();
+    // On mobile, attempt deep link after 1.5s
+    if (mobile) {
+      const timer = setTimeout(() => {
+        window.location.href = 'unigramm://login';
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   return (
@@ -37,31 +37,41 @@ export default function EmailConfirmed() {
 
         {/* Success Icon */}
         <div className="flex justify-center">
-          <CheckCircle className="w-20 h-20 text-green-500" />
+          <CheckCircle className="w-20 h-20 text-emerald-500 dark:text-emerald-400" />
         </div>
 
         {/* Message */}
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-foreground">Email Confirmed!</h1>
           <p className="text-muted-foreground">
-            Your email has been verified successfully. You can now log in to your account.
+            Your Unigramm account is ready.
+            {isMobileDevice
+              ? ' Tap the button below to open the app and log in.'
+              : ' You can now log in to your account.'}
           </p>
         </div>
 
         {isMobileDevice ? (
-          /* Mobile: Show "Open App" message */
           <div className="space-y-4">
+            <a
+              href="unigramm://login"
+              className="inline-flex items-center justify-center w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold text-base"
+            >
+              Open Unigramm & Login
+            </a>
+
             <div className="bg-card border border-border rounded-xl p-4 space-y-3">
               <div className="flex items-center justify-center gap-2 text-primary">
                 <Smartphone className="w-5 h-5" />
-                <span className="font-medium">Open the Unigramm app to log in</span>
+                <span className="font-medium">Or go back to the app manually</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                Go back to the Unigramm app and log in with your credentials.
+                If the button above didn't work, open the Unigramm app and log in with your credentials.
               </p>
             </div>
 
             <Button
+              variant="outline"
               onClick={() => navigate('/auth', { replace: true })}
               className="w-full"
             >
@@ -69,7 +79,6 @@ export default function EmailConfirmed() {
             </Button>
           </div>
         ) : (
-          /* Desktop: Stay on confirmation page with manual button */
           <div className="space-y-4">
             <Button
               onClick={() => navigate('/auth', { replace: true })}

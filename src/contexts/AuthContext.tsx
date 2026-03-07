@@ -56,8 +56,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    // Check if this is an email confirmation landing — prevent auto-login
+    const isEmailConfirmedPage = window.location.pathname === '/email-confirmed';
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const isSignupConfirmation = hashParams.get('type') === 'signup';
+    const shouldBlockAutoLogin = isEmailConfirmedPage || isSignupConfirmation;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (shouldBlockAutoLogin && event === 'SIGNED_IN') {
+          // User arrived via email confirmation — sign out immediately, don't set session
+          await supabase.auth.signOut();
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          return;
+        }
+
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -70,6 +85,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (shouldBlockAutoLogin && session) {
+        supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
