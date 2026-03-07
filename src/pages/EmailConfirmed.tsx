@@ -64,13 +64,6 @@ export default function EmailConfirmed() {
               </p>
             </div>
 
-            <Button
-              variant="outline"
-              onClick={() => navigate('/auth', { replace: true })}
-              className="w-full"
-            >
-              Log in here instead
-            </Button>
           </div>
         ) : (
           <div className="space-y-4">
