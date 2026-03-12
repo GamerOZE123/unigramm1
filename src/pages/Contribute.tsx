@@ -443,11 +443,17 @@ export default function Contribute() {
                         type="button"
                         size="lg"
                         onClick={goNext}
-                        disabled={!canProceed}
+                        disabled={!canProceed || savingStep1}
                         className="btn-primary w-full h-12 text-sm group"
                       >
-                        Continue
-                        <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1 transition-transform" />
+                        {savingStep1 ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            Save & Continue
+                            <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1 transition-transform" />
+                          </>
+                        )}
                       </Button>
                     </motion.div>
                   </motion.div>
