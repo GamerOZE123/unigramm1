@@ -52,6 +52,8 @@ export default function Contribute() {
   const [submitted, setSubmitted] = useState(false);
   const [step, setStep] = useState(0); // 0 = about you, 1 = towards unigramm
   const [direction, setDirection] = useState(1);
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [savingStep1, setSavingStep1] = useState(false);
   const [selectedRole, setSelectedRole] = useState('');
   const [formData, setFormData] = useState({
     full_name: '',
@@ -74,8 +76,42 @@ export default function Contribute() {
   const canProceed = formData.full_name.trim() && formData.email.trim();
   const canSubmit = selectedRole && (selectedRole !== 'other' || formData.custom_role.trim());
 
-  const goNext = () => {
+  const goNext = async () => {
     if (!canProceed) return;
+    setSavingStep1(true);
+    try {
+      const { data, error } = await supabase
+        .from('contributor_applications')
+        .insert({
+          full_name: formData.full_name.trim(),
+          email: formData.email.trim().toLowerCase(),
+          skills: formData.skills.trim() || null,
+          experience: formData.experience.trim() || null,
+          experience_links: formData.experience_links.trim() || null,
+          university: formData.university.trim() || null,
+          year_of_study: formData.year_of_study.trim() || null,
+        })
+        .select('id')
+        .single();
+
+      if (error) {
+        // If duplicate email, try to update instead
+        if (error.code === '23505') {
+          toast.info("We already have your info — let's continue!");
+        } else {
+          toast.error('Something went wrong. Please try again.');
+          setSavingStep1(false);
+          return;
+        }
+      } else if (data) {
+        setSavedId(data.id);
+      }
+    } catch {
+      toast.error('Something went wrong. Please try again.');
+      setSavingStep1(false);
+      return;
+    }
+    setSavingStep1(false);
     setDirection(1);
     setStep(1);
   };
@@ -91,22 +127,27 @@ export default function Contribute() {
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('contributor_applications')
-        .insert({
-          full_name: formData.full_name.trim(),
-          email: formData.email.trim().toLowerCase(),
-          role: selectedRole,
-          custom_role: selectedRole === 'other' ? formData.custom_role.trim() || null : null,
-          skills: formData.skills.trim() || null,
-          message: formData.message.trim() || null,
-          portfolio_url: formData.portfolio_url.trim() || null,
-          experience: formData.experience.trim() || null,
-          experience_links: formData.experience_links.trim() || null,
-          university: formData.university.trim() || null,
-          year_of_study: formData.year_of_study.trim() || null,
-          availability: formData.availability.trim() || null,
-        });
+      const updateData = {
+        role: selectedRole,
+        custom_role: selectedRole === 'other' ? formData.custom_role.trim() || null : null,
+        message: formData.message.trim() || null,
+        portfolio_url: formData.portfolio_url.trim() || null,
+        availability: formData.availability.trim() || null,
+      };
+
+      let error;
+      if (savedId) {
+        ({ error } = await supabase
+          .from('contributor_applications')
+          .update(updateData)
+          .eq('id', savedId));
+      } else {
+        // Fallback: update by email
+        ({ error } = await supabase
+          .from('contributor_applications')
+          .update(updateData)
+          .eq('email', formData.email.trim().toLowerCase()));
+      }
 
       if (error) {
         toast.error('Something went wrong. Please try again.');
@@ -402,11 +443,17 @@ export default function Contribute() {
                         type="button"
                         size="lg"
                         onClick={goNext}
-                        disabled={!canProceed}
+                        disabled={!canProceed || savingStep1}
                         className="btn-primary w-full h-12 text-sm group"
                       >
-                        Continue
-                        <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1 transition-transform" />
+                        {savingStep1 ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            Save & Continue
+                            <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1 transition-transform" />
+                          </>
+                        )}
                       </Button>
                     </motion.div>
                   </motion.div>
