@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   GraduationCap, ArrowLeft, CheckCircle, Loader2,
   Code, Palette, Megaphone, Sparkles
@@ -16,7 +16,7 @@ const roles = [
   { value: 'developer', label: 'Developer', icon: Code, description: 'Frontend, backend, mobile' },
   { value: 'designer', label: 'Designer', icon: Palette, description: 'UI/UX, branding, graphics' },
   { value: 'marketing', label: 'Marketing', icon: Megaphone, description: 'Social media, growth, content' },
-  { value: 'other', label: 'Other', icon: Sparkles, description: 'Ideas, feedback, anything else' },
+  { value: 'other', label: 'Other', icon: Sparkles, description: 'Specify your own' },
 ];
 
 export default function Contribute() {
@@ -30,6 +30,12 @@ export default function Contribute() {
     skills: '',
     message: '',
     portfolio_url: '',
+    custom_role: '',
+    experience: '',
+    experience_links: '',
+    university: '',
+    year_of_study: '',
+    availability: '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -48,9 +54,15 @@ export default function Contribute() {
           full_name: formData.full_name.trim(),
           email: formData.email.trim().toLowerCase(),
           role: selectedRole,
+          custom_role: selectedRole === 'other' ? formData.custom_role.trim() || null : null,
           skills: formData.skills.trim() || null,
           message: formData.message.trim() || null,
           portfolio_url: formData.portfolio_url.trim() || null,
+          experience: formData.experience.trim() || null,
+          experience_links: formData.experience_links.trim() || null,
+          university: formData.university.trim() || null,
+          year_of_study: formData.year_of_study.trim() || null,
+          availability: formData.availability.trim() || null,
         });
 
       if (error) {
@@ -79,7 +91,7 @@ export default function Contribute() {
           </div>
           <h1 className="text-2xl font-bold mb-2">Application received!</h1>
           <p className="text-muted-foreground text-sm mb-8">
-            Thanks for wanting to help build Unigramm. We'll review your application and get back to you soon.
+            Thanks for wanting to be part of Unigramm. We'll review your application and get back to you soon.
           </p>
           <Button variant="outline" onClick={() => navigate('/')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -115,10 +127,10 @@ export default function Contribute() {
         >
           <div className="text-center mb-10">
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">
-              Help build Unigramm
+              Be part of Unigramm
             </h1>
             <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-              We're looking for passionate people to help shape the future of campus life. Tell us about yourself.
+              We're building something special for students everywhere. Tell us about yourself and how you'd like to contribute.
             </p>
           </div>
 
@@ -152,6 +164,35 @@ export default function Contribute() {
               </div>
             </div>
 
+            {/* Custom role field for "Other" */}
+            <AnimatePresence>
+              {selectedRole === 'other' && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-1.5 overflow-hidden"
+                >
+                  <Label htmlFor="custom_role" className="text-sm">What field or role do you have in mind? *</Label>
+                  <Input
+                    id="custom_role"
+                    name="custom_role"
+                    value={formData.custom_role}
+                    onChange={handleChange}
+                    required={selectedRole === 'other'}
+                    placeholder="e.g. Community manager, Content writer, Video editor..."
+                    className="bg-card/60 border-border/50"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* About you section */}
+            <div className="space-y-1 pt-2">
+              <h3 className="text-sm font-semibold text-foreground">About you</h3>
+              <p className="text-xs text-muted-foreground">Help us get to know you better</p>
+            </div>
+
             {/* Name & Email */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -181,6 +222,32 @@ export default function Contribute() {
               </div>
             </div>
 
+            {/* University & Year */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="university" className="text-sm">University</Label>
+                <Input
+                  id="university"
+                  name="university"
+                  value={formData.university}
+                  onChange={handleChange}
+                  placeholder="Your university"
+                  className="bg-card/60 border-border/50"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="year_of_study" className="text-sm">Year of study</Label>
+                <Input
+                  id="year_of_study"
+                  name="year_of_study"
+                  value={formData.year_of_study}
+                  onChange={handleChange}
+                  placeholder="e.g. 2nd year, Graduate..."
+                  className="bg-card/60 border-border/50"
+                />
+              </div>
+            </div>
+
             {/* Skills */}
             <div className="space-y-1.5">
               <Label htmlFor="skills" className="text-sm">Skills / Tech stack</Label>
@@ -189,34 +256,67 @@ export default function Contribute() {
                 name="skills"
                 value={formData.skills}
                 onChange={handleChange}
-                placeholder="e.g. React, Figma, Python..."
+                placeholder="e.g. React, Figma, Python, Premiere Pro..."
                 className="bg-card/60 border-border/50"
               />
             </div>
 
-            {/* Portfolio */}
+            {/* Experience section */}
+            <div className="space-y-1 pt-2">
+              <h3 className="text-sm font-semibold text-foreground">Experience</h3>
+              <p className="text-xs text-muted-foreground">Share any relevant prior experience</p>
+            </div>
+
+            {/* Prior experience */}
             <div className="space-y-1.5">
-              <Label htmlFor="portfolio_url" className="text-sm">Portfolio / LinkedIn / GitHub</Label>
-              <Input
-                id="portfolio_url"
-                name="portfolio_url"
-                type="url"
-                value={formData.portfolio_url}
+              <Label htmlFor="experience" className="text-sm">Do you have any prior experience in this area?</Label>
+              <Textarea
+                id="experience"
+                name="experience"
+                value={formData.experience}
                 onChange={handleChange}
-                placeholder="https://..."
+                placeholder="Tell us about relevant projects, internships, or anything you've worked on..."
+                rows={3}
+                className="bg-card/60 border-border/50 resize-none"
+              />
+            </div>
+
+            {/* Experience links / portfolio */}
+            <div className="space-y-1.5">
+              <Label htmlFor="experience_links" className="text-sm">Links to your work (portfolio, GitHub, Behance, etc.)</Label>
+              <Textarea
+                id="experience_links"
+                name="experience_links"
+                value={formData.experience_links}
+                onChange={handleChange}
+                placeholder={"Paste links to your portfolio, past projects, designs, code repos...\ne.g.\nhttps://github.com/yourname\nhttps://dribbble.com/yourname"}
+                rows={3}
+                className="bg-card/60 border-border/50 resize-none"
+              />
+            </div>
+
+            {/* Availability */}
+            <div className="space-y-1.5">
+              <Label htmlFor="availability" className="text-sm">How many hours per week can you dedicate?</Label>
+              <Input
+                id="availability"
+                name="availability"
+                value={formData.availability}
+                onChange={handleChange}
+                placeholder="e.g. 5-10 hours, weekends only..."
                 className="bg-card/60 border-border/50"
               />
             </div>
 
             {/* Message */}
             <div className="space-y-1.5">
-              <Label htmlFor="message" className="text-sm">Why do you want to help?</Label>
+              <Label htmlFor="message" className="text-sm">How would you like to contribute to being a part of Unigramm?</Label>
               <Textarea
                 id="message"
                 name="message"
                 value={formData.message}
                 onChange={handleChange}
-                placeholder="Tell us a bit about yourself and what excites you about Unigramm..."
+                placeholder="What excites you about Unigramm? What ideas do you have? How do you see yourself contributing?"
                 rows={4}
                 className="bg-card/60 border-border/50 resize-none"
               />
@@ -225,7 +325,7 @@ export default function Contribute() {
             <Button
               type="submit"
               size="lg"
-              disabled={loading || !selectedRole || !formData.full_name || !formData.email}
+              disabled={loading || !selectedRole || !formData.full_name || !formData.email || (selectedRole === 'other' && !formData.custom_role)}
               className="btn-primary w-full h-12 text-sm"
             >
               {loading ? (

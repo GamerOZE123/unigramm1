@@ -1234,34 +1234,52 @@ export type Database = {
       }
       contributor_applications: {
         Row: {
+          availability: string | null
           created_at: string | null
+          custom_role: string | null
           email: string
+          experience: string | null
+          experience_links: string | null
           full_name: string
           id: string
           message: string | null
           portfolio_url: string | null
           role: string
           skills: string | null
+          university: string | null
+          year_of_study: string | null
         }
         Insert: {
+          availability?: string | null
           created_at?: string | null
+          custom_role?: string | null
           email: string
+          experience?: string | null
+          experience_links?: string | null
           full_name: string
           id?: string
           message?: string | null
           portfolio_url?: string | null
           role: string
           skills?: string | null
+          university?: string | null
+          year_of_study?: string | null
         }
         Update: {
+          availability?: string | null
           created_at?: string | null
+          custom_role?: string | null
           email?: string
+          experience?: string | null
+          experience_links?: string | null
           full_name?: string
           id?: string
           message?: string | null
           portfolio_url?: string | null
           role?: string
           skills?: string | null
+          university?: string | null
+          year_of_study?: string | null
         }
         Relationships: []
       }
