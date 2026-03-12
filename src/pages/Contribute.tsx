@@ -449,7 +449,7 @@ export default function Contribute() {
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                           <>
-                            Save & Continue
+                            Continue
                             <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-1 transition-transform" />
                           </>
                         )}
