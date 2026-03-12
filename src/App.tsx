@@ -40,6 +40,7 @@ import PrivacyPolicy from '@/pages/PrivacyPolicy';
 import DeleteAccount from '@/pages/DeleteAccount';
 import ChildSafety from '@/pages/ChildSafety';
 import EmailConfirmed from '@/pages/EmailConfirmed';
+import Contribute from '@/pages/Contribute';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,8 +59,9 @@ function App() {
           <Router>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/auth" element={<Auth />} />
+              <Route path="/login" element={<Index />} />
+              <Route path="/auth" element={<Index />} />
+              <Route path="/contribute" element={<Contribute />} />
               <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
               <Route path="/explore" element={<ProtectedRoute><Explore /></ProtectedRoute>} />
               <Route path="/chat/:conversationId?" element={<ProtectedRoute><Chat /></ProtectedRoute>} />

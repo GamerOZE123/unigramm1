@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   GraduationCap, MessageCircle, Users, Briefcase, Heart,
-  TrendingUp, Shield, Zap, Globe, ChevronRight, Star, ArrowRight
+  TrendingUp, Shield, ArrowRight, Star, CheckCircle, Loader2
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const words = ['connect', 'discover', 'grow', 'belong'];
 
@@ -55,6 +58,81 @@ function RotatingWord() {
   );
 }
 
+function EarlyAccessForm() {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('early_access_signups')
+        .insert({ email: email.trim().toLowerCase() });
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.info("You're already on the list! We'll be in touch soon.");
+          setSubmitted(true);
+        } else {
+          toast.error('Something went wrong. Please try again.');
+        }
+      } else {
+        setSubmitted(true);
+        toast.success("You're on the list! We'll notify you when Unigramm launches.");
+      }
+    } catch {
+      toast.error('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="flex items-center gap-2 px-4 py-3 rounded-xl bg-success/10 border border-success/20 text-success"
+      >
+        <CheckCircle className="w-5 h-5 shrink-0" />
+        <span className="text-sm font-medium">You're on the list! We'll be in touch.</span>
+      </motion.div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 w-full max-w-md mx-auto">
+      <Input
+        type="email"
+        placeholder="Enter your email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        required
+        className="flex-1 h-12 bg-card/60 border-border/50 placeholder:text-muted-foreground/60"
+      />
+      <Button
+        type="submit"
+        size="lg"
+        disabled={loading}
+        className="btn-primary text-sm px-6 h-12 shrink-0 group"
+      >
+        {loading ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <>
+            Get early access
+            <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-0.5 transition-transform" />
+          </>
+        )}
+      </Button>
+    </form>
+  );
+}
+
 export default function Landing() {
   const navigate = useNavigate();
 
@@ -67,14 +145,14 @@ export default function Landing() {
             <GraduationCap className="w-6 h-6 text-primary" />
             <span className="text-lg font-bold tracking-tight text-foreground">Unigramm</span>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/auth')} className="text-muted-foreground hover:text-foreground">
-              Log in
-            </Button>
-            <Button size="sm" onClick={() => navigate('/auth')} className="btn-primary text-sm px-5">
-              Sign up
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate('/contribute')}
+            className="text-muted-foreground hover:text-foreground text-sm"
+          >
+            Want to help?
+          </Button>
         </div>
       </nav>
 
@@ -118,8 +196,8 @@ export default function Landing() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-            Built for university students
+            <span className="w-1.5 h-1.5 rounded-full bg-warning animate-pulse" />
+            Coming soon — Sign up for early access
           </motion.div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-[1.1] mb-5">
@@ -133,27 +211,11 @@ export default function Landing() {
           </p>
 
           <motion.div
-            className="flex flex-col sm:flex-row items-center justify-center gap-3"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
           >
-            <Button
-              size="lg"
-              onClick={() => navigate('/auth')}
-              className="btn-primary text-sm px-8 py-5 w-full sm:w-auto group"
-            >
-              Get started free
-              <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-0.5 transition-transform" />
-            </Button>
-            <Button
-              size="lg"
-              variant="ghost"
-              onClick={() => navigate('/auth')}
-              className="text-sm text-muted-foreground hover:text-foreground w-full sm:w-auto"
-            >
-              I have an account
-            </Button>
+            <EarlyAccessForm />
           </motion.div>
         </motion.div>
 
@@ -232,18 +294,34 @@ export default function Landing() {
           viewport={{ once: true }}
         >
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
-            Join your campus
+            Be the first on your campus
           </h2>
           <p className="text-muted-foreground text-sm mb-8">
-            Free to use. Takes 30 seconds.
+            Sign up for early access. We'll let you know when it's time.
+          </p>
+          <EarlyAccessForm />
+        </motion.div>
+      </section>
+
+      {/* Contribute CTA */}
+      <section className="py-12 px-5 border-t border-border/30">
+        <motion.div
+          className="max-w-md mx-auto text-center"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+        >
+          <p className="text-muted-foreground text-sm mb-3">
+            Want to help build Unigramm?
           </p>
           <Button
-            size="lg"
-            onClick={() => navigate('/auth')}
-            className="btn-primary text-sm px-10 py-5 group"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/contribute')}
+            className="text-sm"
           >
-            Create account
-            <ArrowRight className="w-4 h-4 ml-1.5 group-hover:translate-x-0.5 transition-transform" />
+            Join the team
+            <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
           </Button>
         </motion.div>
       </section>
@@ -258,7 +336,6 @@ export default function Landing() {
           <div className="flex items-center gap-4">
             <a href="/support" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Support</a>
             <a href="/privacy-policy" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</a>
-            
             <p className="text-xs text-muted-foreground">
               © {new Date().getFullYear()} Unigramm
             </p>
