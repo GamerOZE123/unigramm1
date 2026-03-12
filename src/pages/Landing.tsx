@@ -82,7 +82,7 @@ function EarlyAccessForm() {
         }
       } else {
         setSubmitted(true);
-        toast.success('You're on the list! We'll notify you when Unigramm launches.');
+        toast.success("You're on the list! We'll notify you when Unigramm launches.");
       }
     } catch {
       toast.error('Something went wrong. Please try again.');
