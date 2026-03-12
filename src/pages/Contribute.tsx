@@ -52,6 +52,8 @@ export default function Contribute() {
   const [submitted, setSubmitted] = useState(false);
   const [step, setStep] = useState(0); // 0 = about you, 1 = towards unigramm
   const [direction, setDirection] = useState(1);
+  const [savedId, setSavedId] = useState<string | null>(null);
+  const [savingStep1, setSavingStep1] = useState(false);
   const [selectedRole, setSelectedRole] = useState('');
   const [formData, setFormData] = useState({
     full_name: '',
