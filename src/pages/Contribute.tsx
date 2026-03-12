@@ -95,9 +95,8 @@ export default function Contribute() {
         .single();
 
       if (error) {
-        // If duplicate email, try to update instead
         if (error.code === '23505') {
-          toast.info("We already have your info — let's continue!");
+          // Duplicate email — just continue silently
         } else {
           toast.error('Something went wrong. Please try again.');
           setSavingStep1(false);
