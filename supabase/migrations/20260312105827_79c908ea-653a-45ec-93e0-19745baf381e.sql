@@ -1,0 +1,1 @@
+ALTER TABLE public.contributor_applications ALTER COLUMN role DROP NOT NULL;
