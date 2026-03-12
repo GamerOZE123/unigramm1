@@ -57,7 +57,7 @@ export default function Contribute() {
         toast.error('Something went wrong. Please try again.');
       } else {
         setSubmitted(true);
-        toast.success('Application submitted! We'll reach out soon.');
+        toast.success("Application submitted! We'll reach out soon.");
       }
     } catch {
       toast.error('Something went wrong. Please try again.');
