@@ -42,7 +42,7 @@ const fieldVariants = {
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.06, duration: 0.35, ease: 'easeOut' },
+    transition: { delay: i * 0.06, duration: 0.35 },
   }),
 };
 
