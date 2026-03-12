@@ -1232,6 +1232,39 @@ export type Database = {
         }
         Relationships: []
       }
+      contributor_applications: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          message: string | null
+          portfolio_url: string | null
+          role: string
+          skills: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name: string
+          id?: string
+          message?: string | null
+          portfolio_url?: string | null
+          role: string
+          skills?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          message?: string | null
+          portfolio_url?: string | null
+          role?: string
+          skills?: string | null
+        }
+        Relationships: []
+      }
       conversation_participants: {
         Row: {
           conversation_id: string
@@ -1598,6 +1631,30 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      early_access_signups: {
+        Row: {
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          university: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id?: string
+          university?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          university?: string | null
+        }
+        Relationships: []
       }
       feature_flags: {
         Row: {
