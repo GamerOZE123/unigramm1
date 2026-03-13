@@ -146,12 +146,13 @@ export default function Landing() {
             <span className="text-lg font-bold tracking-tight text-foreground">Unigramm</span>
           </div>
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() => navigate('/contribute')}
-            className="text-muted-foreground hover:text-foreground text-sm"
+            className="text-sm"
           >
-            Want to help?
+            Join the team
+            <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
           </Button>
         </div>
       </nav>
