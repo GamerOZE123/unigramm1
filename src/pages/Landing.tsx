@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   GraduationCap, MessageCircle, Users, Briefcase, Heart,
-  TrendingUp, Shield, ArrowRight, Star, CheckCircle, Loader2
+  TrendingUp, Shield, ArrowRight, CheckCircle, Loader2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -146,12 +146,13 @@ export default function Landing() {
             <span className="text-lg font-bold tracking-tight text-foreground">Unigramm</span>
           </div>
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() => navigate('/contribute')}
-            className="text-muted-foreground hover:text-foreground text-sm"
+            className="text-sm"
           >
-            Want to help?
+            Join the team
+            <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
           </Button>
         </div>
       </nav>
@@ -265,66 +266,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Social proof */}
-      <section className="py-16 px-5">
-        <motion.div
-          className="max-w-xl mx-auto text-center"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-        >
-          <div className="flex items-center justify-center gap-0.5 mb-4">
-            {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-4 h-4 fill-primary text-primary" />
-            ))}
-          </div>
-          <blockquote className="text-base sm:text-lg font-medium text-foreground/90 leading-relaxed mb-4 italic">
-            "Unigramm changed how I experience university — study groups, internships, friends — all here."
-          </blockquote>
-          <p className="text-xs text-muted-foreground">— Student at Cairo University</p>
-        </motion.div>
-      </section>
-
-      {/* Final CTA */}
-      <section className="py-20 px-5">
-        <motion.div
-          className="max-w-md mx-auto text-center"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
-            Be the first on your campus
-          </h2>
-          <p className="text-muted-foreground text-sm mb-8">
-            Sign up for early access. We'll let you know when it's time.
-          </p>
-          <EarlyAccessForm />
-        </motion.div>
-      </section>
-
-      {/* Contribute CTA */}
-      <section className="py-12 px-5 border-t border-border/30">
-        <motion.div
-          className="max-w-md mx-auto text-center"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-        >
-          <p className="text-muted-foreground text-sm mb-3">
-            Want to help build Unigramm?
-          </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/contribute')}
-            className="text-sm"
-          >
-            Join the team
-            <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-          </Button>
-        </motion.div>
-      </section>
 
       {/* Footer */}
       <footer className="border-t border-border/30 py-6 px-5">
