@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   GraduationCap, MessageCircle, Users, Briefcase, Heart,
-  TrendingUp, Shield, ArrowRight, Star, CheckCircle, Loader2
+  TrendingUp, Shield, ArrowRight, CheckCircle, Loader2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
