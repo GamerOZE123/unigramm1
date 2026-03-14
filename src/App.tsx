@@ -60,6 +60,7 @@ function App() {
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Index />} />
+              <Route path="/signup" element={<Index />} />
               <Route path="/auth" element={<Index />} />
               <Route path="/contribute" element={<Contribute />} />
               <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
