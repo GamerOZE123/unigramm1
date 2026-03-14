@@ -59,9 +59,9 @@ function App() {
           <Router>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Index />} />
-              <Route path="/signup" element={<Index />} />
-              <Route path="/auth" element={<Index />} />
+              <Route path="/login" element={<Navigate to="/" replace />} />
+              <Route path="/signup" element={<Navigate to="/" replace />} />
+              <Route path="/auth" element={<Navigate to="/" replace />} />
               <Route path="/contribute" element={<Contribute />} />
               <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
               <Route path="/explore" element={<ProtectedRoute><Explore /></ProtectedRoute>} />
