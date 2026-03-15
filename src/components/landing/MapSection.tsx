@@ -44,7 +44,7 @@ export default function MapSection({ indiaMap }: { indiaMap: string }) {
             <img src={indiaMap} alt="India map" className="w-full h-full object-contain opacity-30" />
 
             {/* Delhi dot — coordinates relative to the map container */}
-            <div className="absolute" style={{ left: "38%", top: "32%", transform: "translate(-50%, -50%)" }}>
+            <div className="absolute" style={{ left: "41%", top: "30%", transform: "translate(-50%, -50%)" }}>
               {/* Pulsing rings */}
               {[0, 1, 2].map((i) => (
                 <div
