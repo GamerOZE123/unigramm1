@@ -120,8 +120,8 @@ export default function MapSection({ indiaMap }: { indiaMap: string }) {
             </p>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { n: "240+", l: "Students" },
-                { n: "15+", l: "Startups" },
+                { n: `${waitlistCount}+`, l: "Students" },
+                { n: `${startupCount}+`, l: "Startups" },
                 { n: "8+", l: "Clubs" },
               ].map((s) => (
                 <div key={s.l} className="text-center p-2.5 rounded-xl" style={{ background: "rgba(79,142,255,0.06)" }}>
