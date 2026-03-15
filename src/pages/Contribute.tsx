@@ -101,6 +101,12 @@ export default function Contribute() {
     if (!canProceed) return;
     setSavingStep1(true);
     try {
+      // Upload attachment if present
+      let uploadedUrl: string | null = null;
+      if (attachmentFile) {
+        uploadedUrl = await uploadAttachment();
+      }
+
       const { data, error } = await supabase
         .from('contributor_applications')
         .insert({
@@ -111,6 +117,7 @@ export default function Contribute() {
           experience_links: formData.experience_links.trim() || null,
           university: formData.university.trim() || null,
           year_of_study: formData.year_of_study.trim() || null,
+          portfolio_url: uploadedUrl || formData.portfolio_url.trim() || null,
         })
         .select('id')
         .single();
