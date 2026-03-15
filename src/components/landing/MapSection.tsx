@@ -142,6 +142,14 @@ export default function MapSection({ indiaMap }: { indiaMap: string }) {
           0% { transform: scale(1); opacity: 0.6; }
           100% { transform: scale(2.5); opacity: 0; }
         }
+        /* Mobile: keep current position */
+        .map-zoom-origin { transform-origin: 41% 30%; }
+        .map-dot-position { left: 41%; top: 30%; }
+        /* Desktop: center the zoom so it doesn't drift right */
+        @media (min-width: 768px) {
+          .map-zoom-origin { transform-origin: 50% 32%; }
+          .map-dot-position { left: 50%; top: 32%; }
+        }
       `}</style>
     </section>
   );
