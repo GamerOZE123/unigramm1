@@ -1,8 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, ArrowRight, CheckCircle } from 'lucide-react';
+import { ArrowRight, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 
 const words = ['connect', 'discover', 'grow', 'explore', 'belong'];
 
@@ -87,54 +86,26 @@ function PhoneMockup({ src, rotate, delay }: { src: string; rotate: number; dela
   );
 }
 
-function WaitlistForm() {
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
+export default function HeroSection({ indiaMap, screenshots }: { indiaMap: string; screenshots: string[] }) {
+  const [waitlistCount, setWaitlistCount] = useState(240);
+  const [startupCount, setStartupCount] = useState(15);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) return;
-    setLoading(true);
-    try {
-      const { error } = await supabase.from('early_access_signups').insert({ email: email.trim().toLowerCase() });
-      if (error) {
-        if (error.code === '23505') { toast.info("You're already on the list!"); setSubmitted(true); }
-        else toast.error('Something went wrong.');
-      } else {
-        setSubmitted(true);
-        toast.success("You're in! We'll notify you when Unigramm launches.");
-      }
-    } catch { toast.error('Something went wrong.'); }
-    finally { setLoading(false); }
+  useEffect(() => {
+    const fetchCounts = async () => {
+      const [waitlistRes, startupRes] = await Promise.all([
+        supabase.from('early_access_signups').select('id', { count: 'exact', head: true }),
+        supabase.from('student_startups').select('id', { count: 'exact', head: true }),
+      ]);
+      if (waitlistRes.count && waitlistRes.count > 0) setWaitlistCount(waitlistRes.count);
+      if (startupRes.count && startupRes.count > 0) setStartupCount(startupRes.count);
+    };
+    fetchCounts();
+  }, []);
+
+  const scrollToWaitlist = () => {
+    document.getElementById('cta-section')?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  if (submitted) {
-    return (
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-        className="flex items-center gap-2 px-4 py-3 rounded-xl" style={{ background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.15)' }}>
-        <CheckCircle className="w-4 h-4 text-[#38bdf8]" />
-        <span className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.8)' }}>You're on the list!</span>
-      </motion.div>
-    );
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="flex gap-2 w-full max-w-sm">
-      <input type="email" placeholder="your@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required
-        className="flex-1 h-11 px-4 rounded-xl text-sm outline-none transition-all"
-        style={{ background: '#111827', border: '1px solid rgba(79,142,255,0.2)', color: '#fff' }}
-      />
-      <button type="submit" disabled={loading}
-        className="h-11 px-5 rounded-xl text-sm font-semibold shrink-0 flex items-center gap-1.5 transition-all hover:brightness-110"
-        style={{ background: 'linear-gradient(135deg, #4f8eff, #38bdf8)', color: '#080c17' }}>
-        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Join waitlist <ArrowRight className="w-3.5 h-3.5" /></>}
-      </button>
-    </form>
-  );
-}
-
-export default function HeroSection({ indiaMap, screenshots }: { indiaMap: string; screenshots: string[] }) {
   return (
     <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden" style={{ padding: 'clamp(5rem, 10vw, 8rem) clamp(1rem, 4vw, 2rem) clamp(2rem, 6vw, 4rem)' }}>
       {/* India map bg */}
@@ -151,16 +122,31 @@ export default function HeroSection({ indiaMap, screenshots }: { indiaMap: strin
           <p className="mx-auto mb-8" style={{ fontSize: 'clamp(0.85rem, 2vw, 1rem)', color: 'rgba(255,255,255,0.45)', maxWidth: '420px', lineHeight: 1.6 }}>
             Chat, clubs, jobs, dating & more — your entire campus life in one app. Currently live at SNU.
           </p>
-          <div className="flex justify-center mb-12">
-            <WaitlistForm />
+          
+          {/* Two CTA buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-12">
+            <button
+              onClick={scrollToWaitlist}
+              className="h-11 px-6 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all hover:brightness-110"
+              style={{ background: 'linear-gradient(135deg, #4f8eff, #38bdf8)', color: '#080c17' }}
+            >
+              Join waitlist <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+            <a
+              href="/contribute"
+              className="h-11 px-6 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all hover:bg-[#4f8eff]/10"
+              style={{ border: '1px solid rgba(79,142,255,0.35)', color: '#4f8eff' }}
+            >
+              <Users className="w-3.5 h-3.5" /> Be a part of Unigramm
+            </a>
           </div>
         </motion.div>
 
         {/* Stats */}
         <motion.div className="grid grid-cols-3 gap-6 sm:gap-10 mb-14" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <AnimatedCounter target={240} suffix="+" label="Students waiting" />
+          <AnimatedCounter target={waitlistCount} suffix="+" label="Students waiting" />
           <AnimatedCounter target={7} suffix="" label="Features live" />
-          <AnimatedCounter target={15} suffix="+" label="Student startups" />
+          <AnimatedCounter target={startupCount} suffix="+" label="Student startups" />
         </motion.div>
 
         {/* Phone mockups */}
