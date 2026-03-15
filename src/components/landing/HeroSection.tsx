@@ -144,9 +144,9 @@ export default function HeroSection({ indiaMap, screenshots }: { indiaMap: strin
 
         {/* Stats */}
         <motion.div className="grid grid-cols-3 gap-6 sm:gap-10 mb-14" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <AnimatedCounter target={waitlistCount} suffix="+" label="Students waiting" />
+          <AnimatedCounter target={waitlistCount} suffix="" label="Students waiting" />
           <AnimatedCounter target={7} suffix="" label="Features live" />
-          <AnimatedCounter target={startupCount} suffix="+" label="Student startups" />
+          <AnimatedCounter target={startupCount} suffix="" label="Student startups" />
         </motion.div>
 
         {/* Phone mockups */}
