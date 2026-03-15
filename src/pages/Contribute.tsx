@@ -50,6 +50,45 @@ export default function Contribute() {
     custom_role: '', experience: '', experience_links: '', university: '',
     year_of_study: '', availability: '',
   });
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFileSelect(file);
+  }, []);
+
+  const handleFileSelect = (file: File) => {
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) { toast.error('File must be under 10MB'); return; }
+    const allowed = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowed.includes(file.type)) { toast.error('Please upload a PDF, DOC, or image file'); return; }
+    setAttachmentFile(file);
+  };
+
+  const uploadAttachment = async (): Promise<string | null> => {
+    if (!attachmentFile) return null;
+    setUploadingAttachment(true);
+    try {
+      const ext = attachmentFile.name.split('.').pop();
+      const fileName = `contributor-attachments/${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
+      const { error } = await supabase.storage.from('post-images').upload(fileName, attachmentFile);
+      if (error) throw error;
+      const { data } = supabase.storage.from('post-images').getPublicUrl(fileName);
+      setAttachmentUrl(data.publicUrl);
+      return data.publicUrl;
+    } catch {
+      toast.error('Failed to upload attachment');
+      return null;
+    } finally {
+      setUploadingAttachment(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
