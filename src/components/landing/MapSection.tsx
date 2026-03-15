@@ -37,11 +37,11 @@ export default function MapSection({ indiaMap }: { indiaMap: string }) {
           style={{ height: "clamp(280px, 50vw, 450px)", background: "#0f1525" }}
         >
           {/* Map + dot scale together so the dot stays pinned during zoom */}
-          <motion.div className="absolute inset-0 flex items-center justify-center" style={{ scale, transformOrigin: "48% 32%" }}>
+          <motion.div className="absolute inset-0 flex items-center justify-center" style={{ scale, transformOrigin: "38% 32%" }}>
             <img src={indiaMap} alt="India map" className="w-full h-full object-contain opacity-30" />
 
             {/* Delhi dot — coordinates relative to the map container */}
-            <div className="absolute" style={{ left: "48%", top: "32%", transform: "translate(-50%, -50%)" }}>
+            <div className="absolute" style={{ left: "38%", top: "32%", transform: "translate(-50%, -50%)" }}>
               {/* Pulsing rings */}
               {[0, 1, 2].map((i) => (
                 <div
