@@ -38,12 +38,12 @@ export default function MapSection({ indiaMap }: { indiaMap: string }) {
 
         {/* Map container */}
         <div ref={containerRef} className="relative rounded-2xl overflow-hidden mb-6" style={{ height: 'clamp(280px, 50vw, 450px)', background: '#0f1525' }}>
-          <motion.div className="absolute inset-0" style={{ scale, transformOrigin: '33.7% 30.3%' }}>
-            <img src={indiaMap} alt="India map" className="w-full h-full object-contain opacity-30" />
+          <motion.div className="absolute inset-0 flex items-center justify-center" style={{ scale, transformOrigin: '52% 28%' }}>
+            <img src={indiaMap} alt="India map" className="h-full object-contain opacity-30" style={{ maxWidth: 'none' }} />
           </motion.div>
 
           {/* Delhi dot */}
-          <div className="absolute" style={{ left: '33.7%', top: '30.3%', transform: 'translate(-50%, -50%)' }}>
+          <div className="absolute" style={{ left: '52%', top: '28%', transform: 'translate(-50%, -50%)' }}>
             {[0, 1, 2].map(i => (
               <div key={i} className="absolute rounded-full"
                 style={{
@@ -87,12 +87,12 @@ export default function MapSection({ indiaMap }: { indiaMap: string }) {
             </div>
           </div>
 
-          <div className="rounded-2xl p-5 flex items-center justify-center"
-            style={{ border: '2px dashed rgba(79,142,255,0.15)', background: 'rgba(15,21,37,0.5)', minHeight: '160px' }}>
+          <div className="rounded-2xl p-4 flex items-center justify-center"
+            style={{ border: '2px dashed rgba(79,142,255,0.15)', background: 'rgba(15,21,37,0.5)', minHeight: '120px' }}>
             <div className="text-center">
-              <div className="text-2xl mb-2">🎓</div>
-              <p className="text-sm font-semibold text-white mb-1">More campuses coming soon</p>
-              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Your university could be next</p>
+              <div className="text-lg mb-1">🎓</div>
+              <p className="text-xs font-semibold text-white mb-0.5">More campuses coming soon</p>
+              <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Your university could be next</p>
             </div>
           </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, ArrowRight, CheckCircle, Loader2,
-  Code, Palette, Megaphone, Sparkles, User, Rocket
+  Code, Palette, Megaphone, Sparkles, User, Rocket, Upload, X, FileText
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -50,6 +50,45 @@ export default function Contribute() {
     custom_role: '', experience: '', experience_links: '', university: '',
     year_of_study: '', availability: '',
   });
+  const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [attachmentUrl, setAttachmentUrl] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleFileSelect(file);
+  }, []);
+
+  const handleFileSelect = (file: File) => {
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) { toast.error('File must be under 10MB'); return; }
+    const allowed = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowed.includes(file.type)) { toast.error('Please upload a PDF, DOC, or image file'); return; }
+    setAttachmentFile(file);
+  };
+
+  const uploadAttachment = async (): Promise<string | null> => {
+    if (!attachmentFile) return null;
+    setUploadingAttachment(true);
+    try {
+      const ext = attachmentFile.name.split('.').pop();
+      const fileName = `contributor-attachments/${Date.now()}-${Math.random().toString(36).substring(2)}.${ext}`;
+      const { error } = await supabase.storage.from('post-images').upload(fileName, attachmentFile);
+      if (error) throw error;
+      const { data } = supabase.storage.from('post-images').getPublicUrl(fileName);
+      setAttachmentUrl(data.publicUrl);
+      return data.publicUrl;
+    } catch {
+      toast.error('Failed to upload attachment');
+      return null;
+    } finally {
+      setUploadingAttachment(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -62,6 +101,12 @@ export default function Contribute() {
     if (!canProceed) return;
     setSavingStep1(true);
     try {
+      // Upload attachment if present
+      let uploadedUrl: string | null = null;
+      if (attachmentFile) {
+        uploadedUrl = await uploadAttachment();
+      }
+
       const { data, error } = await supabase
         .from('contributor_applications')
         .insert({
@@ -72,6 +117,7 @@ export default function Contribute() {
           experience_links: formData.experience_links.trim() || null,
           university: formData.university.trim() || null,
           year_of_study: formData.year_of_study.trim() || null,
+          portfolio_url: uploadedUrl || formData.portfolio_url.trim() || null,
         })
         .select('id')
         .single();
@@ -267,7 +313,51 @@ export default function Contribute() {
                         className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none" style={inputStyle} />
                     </motion.div>
 
-                    <motion.div variants={fieldVariants} initial="hidden" animate="visible" custom={6} className="pt-2">
+                    {/* Attachment drag & drop */}
+                    <motion.div className="space-y-1.5" variants={fieldVariants} initial="hidden" animate="visible" custom={6}>
+                      <Label className="text-sm text-white/70">Attachment (resume, portfolio, etc.)</Label>
+                      <div
+                        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                        onDragLeave={() => setIsDragging(false)}
+                        onDrop={handleFileDrop}
+                        onClick={() => fileInputRef.current?.click()}
+                        className="cursor-pointer rounded-xl p-5 text-center transition-all duration-200"
+                        style={{
+                          background: isDragging ? 'rgba(79,142,255,0.12)' : 'rgba(79,142,255,0.04)',
+                          border: `2px dashed ${isDragging ? 'rgba(79,142,255,0.5)' : 'rgba(79,142,255,0.15)'}`,
+                        }}
+                      >
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                          className="hidden"
+                          onChange={(e) => { if (e.target.files?.[0]) handleFileSelect(e.target.files[0]); }}
+                        />
+                        {attachmentFile ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <FileText className="w-4 h-4" style={{ color: '#4f8eff' }} />
+                            <span className="text-sm text-white/80 truncate max-w-[200px]">{attachmentFile.name}</span>
+                            <button type="button" onClick={(e) => { e.stopPropagation(); setAttachmentFile(null); setAttachmentUrl(null); }}
+                              className="w-5 h-5 rounded-full flex items-center justify-center hover:bg-white/10">
+                              <X className="w-3 h-3 text-white/50" />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <Upload className="w-5 h-5 mx-auto mb-2" style={{ color: 'rgba(255,255,255,0.3)' }} />
+                            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                              Drag & drop or click to upload
+                            </p>
+                            <p className="text-[10px] mt-1" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                              PDF, DOC, or images · Max 10MB
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    </motion.div>
+
+                    <motion.div variants={fieldVariants} initial="hidden" animate="visible" custom={7} className="pt-2">
                       <button type="button" onClick={goNext} disabled={!canProceed || savingStep1}
                         className="w-full h-12 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 transition-all hover:brightness-110 disabled:opacity-50"
                         style={{ background: 'linear-gradient(135deg, #4f8eff, #38bdf8)', color: '#080c17' }}>

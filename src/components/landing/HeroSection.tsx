@@ -72,7 +72,7 @@ function PhoneMockup({ src, rotate, delay }: { src: string; rotate: number; dela
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
       className="relative shrink-0"
-      style={{ transform: `rotate(${rotate}deg)`, width: 'clamp(120px, 22vw, 200px)' }}
+      style={{ transform: `rotate(${rotate}deg)`, width: 'clamp(90px, 22vw, 200px)' }}
     >
       <motion.div
         animate={{ y: [0, -8, 0] }}
@@ -150,7 +150,7 @@ export default function HeroSection({ indiaMap, screenshots }: { indiaMap: strin
         </motion.div>
 
         {/* Phone mockups */}
-        <div className="flex items-center justify-center gap-3 sm:gap-5" style={{ perspective: '1000px' }}>
+        <div className="flex items-center justify-center gap-2 sm:gap-5 mx-auto w-full max-w-[340px] sm:max-w-none" style={{ perspective: '1000px' }}>
           <PhoneMockup src={screenshots[0]} rotate={-8} delay={0.4} />
           <PhoneMockup src={screenshots[1]} rotate={0} delay={0.5} />
           <PhoneMockup src={screenshots[2]} rotate={8} delay={0.6} />
