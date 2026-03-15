@@ -1,8 +1,23 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { MapPin } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function MapSection({ indiaMap }: { indiaMap: string }) {
+  const [waitlistCount, setWaitlistCount] = useState(240);
+  const [startupCount, setStartupCount] = useState(15);
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      const [waitlistRes, startupRes] = await Promise.all([
+        supabase.from('early_access_signups').select('id', { count: 'exact', head: true }),
+        supabase.from('student_startups').select('id', { count: 'exact', head: true }),
+      ]);
+      if (waitlistRes.count && waitlistRes.count > 0) setWaitlistCount(waitlistRes.count);
+      if (startupRes.count && startupRes.count > 0) setStartupCount(startupRes.count);
+    };
+    fetchCounts();
+  }, []);
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start end", "end start"] });
   const scale = useTransform(scrollYProgress, [0.1, 0.6], [1, 2.4]);
