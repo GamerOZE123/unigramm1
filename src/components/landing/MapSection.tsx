@@ -38,12 +38,12 @@ export default function MapSection({ indiaMap }: { indiaMap: string }) {
 
         {/* Map container */}
         <div ref={containerRef} className="relative rounded-2xl overflow-hidden mb-6" style={{ height: 'clamp(280px, 50vw, 450px)', background: '#0f1525' }}>
-          <motion.div className="absolute inset-0" style={{ scale, transformOrigin: '33.7% 30.3%' }}>
-            <img src={indiaMap} alt="India map" className="w-full h-full object-contain opacity-30" />
+          <motion.div className="absolute inset-0 flex items-center justify-center" style={{ scale, transformOrigin: '52% 28%' }}>
+            <img src={indiaMap} alt="India map" className="h-full object-contain opacity-30" style={{ maxWidth: 'none' }} />
           </motion.div>
 
           {/* Delhi dot */}
-          <div className="absolute" style={{ left: '33.7%', top: '30.3%', transform: 'translate(-50%, -50%)' }}>
+          <div className="absolute" style={{ left: '52%', top: '28%', transform: 'translate(-50%, -50%)' }}>
             {[0, 1, 2].map(i => (
               <div key={i} className="absolute rounded-full"
                 style={{
