@@ -38,13 +38,13 @@ export default function MapSection({ indiaMap }: { indiaMap: string }) {
         >
           {/* Map + dot scale together so the dot stays pinned during zoom */}
           <motion.div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ scale, transformOrigin: "38% 32%" }}
+            className="absolute inset-0 flex items-center justify-center map-zoom-origin"
+            style={{ scale }}
           >
             <img src={indiaMap} alt="India map" className="w-full h-full object-contain opacity-30" />
 
             {/* Delhi dot — coordinates relative to the map container */}
-            <div className="absolute" style={{ left: "41%", top: "30%", transform: "translate(-50%, -50%)" }}>
+            <div className="absolute map-dot-position" style={{ transform: "translate(-50%, -50%)" }}>
               {/* Pulsing rings */}
               {[0, 1, 2].map((i) => (
                 <div
@@ -141,6 +141,14 @@ export default function MapSection({ indiaMap }: { indiaMap: string }) {
         @keyframes ping-ring {
           0% { transform: scale(1); opacity: 0.6; }
           100% { transform: scale(2.5); opacity: 0; }
+        }
+        /* Mobile: keep current position */
+        .map-zoom-origin { transform-origin: 41% 30%; }
+        .map-dot-position { left: 41%; top: 30%; }
+        /* Desktop: center the zoom so it doesn't drift right */
+        @media (min-width: 768px) {
+          .map-zoom-origin { transform-origin: 50% 32%; }
+          .map-dot-position { left: 50%; top: 32%; }
         }
       `}</style>
     </section>
