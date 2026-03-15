@@ -147,8 +147,8 @@ export default function MapSection({ indiaMap }: { indiaMap: string }) {
         .map-dot-position { left: 41%; top: 30%; }
         /* Desktop: center the zoom so it doesn't drift right */
         @media (min-width: 768px) {
-          .map-zoom-origin { transform-origin: 50% 32%; }
-          .map-dot-position { left: 50%; top: 32%; }
+          .map-zoom-origin { transform-origin: 45% 32%; }
+          .map-dot-position { left: 45%; top: 32%; }
         }
       `}</style>
     </section>
