@@ -87,12 +87,12 @@ export default function MapSection({ indiaMap }: { indiaMap: string }) {
             </div>
           </div>
 
-          <div className="rounded-2xl p-5 flex items-center justify-center"
-            style={{ border: '2px dashed rgba(79,142,255,0.15)', background: 'rgba(15,21,37,0.5)', minHeight: '160px' }}>
+          <div className="rounded-2xl p-4 flex items-center justify-center"
+            style={{ border: '2px dashed rgba(79,142,255,0.15)', background: 'rgba(15,21,37,0.5)', minHeight: '120px' }}>
             <div className="text-center">
-              <div className="text-2xl mb-2">🎓</div>
-              <p className="text-sm font-semibold text-white mb-1">More campuses coming soon</p>
-              <p className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Your university could be next</p>
+              <div className="text-lg mb-1">🎓</div>
+              <p className="text-xs font-semibold text-white mb-0.5">More campuses coming soon</p>
+              <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Your university could be next</p>
             </div>
           </div>
         </div>

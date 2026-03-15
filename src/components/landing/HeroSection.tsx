@@ -72,7 +72,7 @@ function PhoneMockup({ src, rotate, delay }: { src: string; rotate: number; dela
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
       className="relative shrink-0"
-      style={{ transform: `rotate(${rotate}deg)`, width: 'clamp(120px, 22vw, 200px)' }}
+      style={{ transform: `rotate(${rotate}deg)`, width: 'clamp(90px, 22vw, 200px)' }}
     >
       <motion.div
         animate={{ y: [0, -8, 0] }}

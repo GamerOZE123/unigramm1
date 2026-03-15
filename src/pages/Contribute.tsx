@@ -313,7 +313,51 @@ export default function Contribute() {
                         className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none" style={inputStyle} />
                     </motion.div>
 
-                    <motion.div variants={fieldVariants} initial="hidden" animate="visible" custom={6} className="pt-2">
+                    {/* Attachment drag & drop */}
+                    <motion.div className="space-y-1.5" variants={fieldVariants} initial="hidden" animate="visible" custom={6}>
+                      <Label className="text-sm text-white/70">Attachment (resume, portfolio, etc.)</Label>
+                      <div
+                        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                        onDragLeave={() => setIsDragging(false)}
+                        onDrop={handleFileDrop}
+                        onClick={() => fileInputRef.current?.click()}
+                        className="cursor-pointer rounded-xl p-5 text-center transition-all duration-200"
+                        style={{
+                          background: isDragging ? 'rgba(79,142,255,0.12)' : 'rgba(79,142,255,0.04)',
+                          border: `2px dashed ${isDragging ? 'rgba(79,142,255,0.5)' : 'rgba(79,142,255,0.15)'}`,
+                        }}
+                      >
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                          className="hidden"
+                          onChange={(e) => { if (e.target.files?.[0]) handleFileSelect(e.target.files[0]); }}
+                        />
+                        {attachmentFile ? (
+                          <div className="flex items-center justify-center gap-2">
+                            <FileText className="w-4 h-4" style={{ color: '#4f8eff' }} />
+                            <span className="text-sm text-white/80 truncate max-w-[200px]">{attachmentFile.name}</span>
+                            <button type="button" onClick={(e) => { e.stopPropagation(); setAttachmentFile(null); setAttachmentUrl(null); }}
+                              className="w-5 h-5 rounded-full flex items-center justify-center hover:bg-white/10">
+                              <X className="w-3 h-3 text-white/50" />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <Upload className="w-5 h-5 mx-auto mb-2" style={{ color: 'rgba(255,255,255,0.3)' }} />
+                            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                              Drag & drop or click to upload
+                            </p>
+                            <p className="text-[10px] mt-1" style={{ color: 'rgba(255,255,255,0.25)' }}>
+                              PDF, DOC, or images · Max 10MB
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    </motion.div>
+
+                    <motion.div variants={fieldVariants} initial="hidden" animate="visible" custom={7} className="pt-2">
                       <button type="button" onClick={goNext} disabled={!canProceed || savingStep1}
                         className="w-full h-12 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 transition-all hover:brightness-110 disabled:opacity-50"
                         style={{ background: 'linear-gradient(135deg, #4f8eff, #38bdf8)', color: '#080c17' }}>
