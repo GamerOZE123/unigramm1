@@ -37,31 +37,34 @@ export default function MapSection({ indiaMap }: { indiaMap: string }) {
         </motion.div>
 
         {/* Map container */}
+        {/* MAP_COORDINATE_GUIDE: To move the dot, change left/top % values below. 
+             left = horizontal (higher = more right), top = vertical (higher = more down).
+             Current: left 53%, top 30% — adjust these to reposition Delhi dot. */}
         <div ref={containerRef} className="relative rounded-2xl overflow-hidden mb-6" style={{ height: 'clamp(280px, 50vw, 450px)', background: '#0f1525' }}>
-          <motion.div className="absolute inset-0 flex items-center justify-center" style={{ scale, transformOrigin: '52% 28%' }}>
+          <motion.div className="absolute inset-0 flex items-center justify-center" style={{ scale, transformOrigin: '53% 30%' }}>
             <img src={indiaMap} alt="India map" className="h-full object-contain opacity-30" style={{ maxWidth: 'none' }} />
-          </motion.div>
 
-          {/* Delhi dot */}
-          <div className="absolute" style={{ left: '52%', top: '28%', transform: 'translate(-50%, -50%)' }}>
-            {[0, 1, 2].map(i => (
-              <div key={i} className="absolute rounded-full"
-                style={{
-                  width: `${24 + i * 16}px`, height: `${24 + i * 16}px`,
-                  left: `${-(12 + i * 8)}px`, top: `${-(12 + i * 8)}px`,
-                  border: '1px solid rgba(79,142,255,0.3)',
-                  animation: `ping-ring 2s ${i * 0.4}s infinite ease-out`,
-                }}
-              />
-            ))}
-            <div className="w-3 h-3 rounded-full relative" style={{ background: '#4f8eff', boxShadow: '0 0 20px rgba(79,142,255,0.6)', transform: 'translate(-50%, -50%)' }}>
-              <div className="absolute inset-0 rounded-full animate-ping" style={{ background: 'rgba(79,142,255,0.4)' }} />
+            {/* Delhi dot — INSIDE the scaling div so it zooms with the map */}
+            <div className="absolute" style={{ left: '53%', top: '30%', transform: 'translate(-50%, -50%)' }}>
+              {[0, 1, 2].map(i => (
+                <div key={i} className="absolute rounded-full"
+                  style={{
+                    width: `${24 + i * 16}px`, height: `${24 + i * 16}px`,
+                    left: `${-(12 + i * 8)}px`, top: `${-(12 + i * 8)}px`,
+                    border: '1px solid rgba(79,142,255,0.3)',
+                    animation: `ping-ring 2s ${i * 0.4}s infinite ease-out`,
+                  }}
+                />
+              ))}
+              <div className="w-3 h-3 rounded-full relative" style={{ background: '#4f8eff', boxShadow: '0 0 20px rgba(79,142,255,0.6)', transform: 'translate(-50%, -50%)' }}>
+                <div className="absolute inset-0 rounded-full animate-ping" style={{ background: 'rgba(79,142,255,0.4)' }} />
+              </div>
+              <div className="absolute left-5 top-1/2 -translate-y-1/2 whitespace-nowrap flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium"
+                style={{ background: 'rgba(79,142,255,0.12)', color: '#4f8eff', border: '1px solid rgba(79,142,255,0.2)' }}>
+                <MapPin className="w-3 h-3" /> SNU · Delhi NCR
+              </div>
             </div>
-            <div className="absolute left-5 top-1/2 -translate-y-1/2 whitespace-nowrap flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium"
-              style={{ background: 'rgba(79,142,255,0.12)', color: '#4f8eff', border: '1px solid rgba(79,142,255,0.2)' }}>
-              <MapPin className="w-3 h-3" /> SNU · Delhi NCR
-            </div>
-          </div>
+          </motion.div>
         </div>
 
         {/* Campus cards */}
