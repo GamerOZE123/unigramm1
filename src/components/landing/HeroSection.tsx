@@ -150,7 +150,7 @@ export default function HeroSection({ indiaMap, screenshots }: { indiaMap: strin
         </motion.div>
 
         {/* Phone mockups */}
-        <div className="flex items-center justify-center gap-3 sm:gap-5" style={{ perspective: '1000px' }}>
+        <div className="flex items-center justify-center gap-2 sm:gap-5 mx-auto w-full max-w-[340px] sm:max-w-none" style={{ perspective: '1000px' }}>
           <PhoneMockup src={screenshots[0]} rotate={-8} delay={0.4} />
           <PhoneMockup src={screenshots[1]} rotate={0} delay={0.5} />
           <PhoneMockup src={screenshots[2]} rotate={8} delay={0.6} />
