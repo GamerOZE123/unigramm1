@@ -26,18 +26,22 @@ const Admin: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [inviting, setInviting] = useState<string | null>(null);
 
+  // Store password for subsequent API calls
+  const [storedPassword, setStoredPassword] = useState('');
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setVerifying(true);
     try {
       const { data, error } = await supabase.functions.invoke('verify-admin', {
-        body: { password },
+        body: { password, action: 'fetch' },
       });
       if (error || !data?.valid) {
         toast.error('Invalid password');
       } else {
         setAuthenticated(true);
-        fetchSignups();
+        setStoredPassword(password);
+        setSignups(data.signups || []);
       }
     } catch {
       toast.error('Failed to verify');
@@ -47,15 +51,17 @@ const Admin: React.FC = () => {
 
   const fetchSignups = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('early_access_signups')
-      .select('id, full_name, email, university, created_at, invited')
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-admin', {
+        body: { password: storedPassword, action: 'fetch' },
+      });
+      if (error || !data?.valid) {
+        toast.error('Failed to fetch signups');
+      } else {
+        setSignups(data.signups || []);
+      }
+    } catch {
       toast.error('Failed to fetch signups');
-    } else {
-      setSignups(data || []);
     }
     setLoading(false);
   };
@@ -69,19 +75,18 @@ const Admin: React.FC = () => {
       return;
     }
 
-    // 1. Flip invited = true
-    const { error: updateError } = await supabase
-      .from('early_access_signups')
-      .update({ invited: true })
-      .eq('id', id);
+    // 1. Flip invited = true via edge function (bypasses RLS)
+    const { data, error: updateError } = await supabase.functions.invoke('verify-admin', {
+      body: { password: storedPassword, action: 'invite', id },
+    });
 
-    if (updateError) {
+    if (updateError || !data?.success) {
       toast.error('Failed to update signup status');
       setInviting(null);
       return;
     }
 
-    // 2. Send invite email via edge function
+    // 2. Send invite email via send-invite edge function
     const { error: invokeError } = await supabase.functions.invoke('send-invite', {
       body: { email: signup.email, name: signup.full_name || '' },
     });
@@ -131,7 +136,12 @@ const Admin: React.FC = () => {
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-5xl mx-auto space-y-6">
-        <h1 className="text-2xl font-bold text-foreground">Waitlist Admin</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-foreground">Waitlist Admin</h1>
+          <Button variant="outline" size="sm" onClick={fetchSignups} disabled={loading}>
+            {loading ? 'Refreshing…' : 'Refresh'}
+          </Button>
+        </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           <Card>
