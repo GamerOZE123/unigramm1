@@ -1,4 +1,4 @@
-import { SMTPClient } from 'https://deno.land/x/denomailer@1.6.0/mod.ts'
+import nodemailer from 'npm:nodemailer@6.9.16'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,20 +20,23 @@ Deno.serve(async (req) => {
       )
     }
 
-    const smtpHost = Deno.env.get('SMTP_HOST')!
-    const smtpPort = parseInt(Deno.env.get('SMTP_PORT') || '465')
-    const smtpUser = Deno.env.get('SMTP_USER')!
-    const smtpPass = Deno.env.get('SMTP_PASS')!
+    const smtpHost = Deno.env.get('SMTP_HOST')
+    const smtpPort = parseInt(Deno.env.get('SMTP_PORT') || '587')
+    const smtpUser = Deno.env.get('SMTP_USER')
+    const smtpPass = Deno.env.get('SMTP_PASS')
 
-    const client = new SMTPClient({
-      connection: {
-        hostname: smtpHost,
-        port: smtpPort,
-        tls: smtpPort === 465,
-        auth: {
-          username: smtpUser,
-          password: smtpPass,
-        },
+    if (!smtpHost || !smtpUser || !smtpPass) {
+      throw new Error('SMTP credentials are not configured')
+    }
+
+    const transport = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465,
+      requireTLS: smtpPort !== 465,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
       },
     })
 
@@ -64,15 +67,13 @@ Deno.serve(async (req) => {
 </body>
 </html>`
 
-    await client.send({
+    await transport.sendMail({
       from: smtpUser,
       to: email,
       subject: "You're in — Welcome to Unigramm 🎓",
-      content: "auto",
+      text: `${greeting},\n\nYour early access to Unigramm has been approved. Download the app and sign up using this exact email address: ${email}\n\nGet started: https://unigramm.com`,
       html: htmlBody,
     })
-
-    await client.close()
 
     return new Response(
       JSON.stringify({ success: true }),
@@ -81,7 +82,7 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error('Send invite error:', err)
     return new Response(
-      JSON.stringify({ error: err.message || 'Failed to send invite' }),
+      JSON.stringify({ error: err instanceof Error ? err.message : 'Failed to send invite' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
