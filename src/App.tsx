@@ -42,6 +42,7 @@ import ChildSafety from '@/pages/ChildSafety';
 import EmailConfirmed from '@/pages/EmailConfirmed';
 import Contribute from '@/pages/Contribute';
 import Admin from '@/pages/Admin';
+import Waitlist from '@/pages/Waitlist';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -93,6 +94,7 @@ function App() {
               <Route path="/child-safety" element={<ChildSafety />} />
               <Route path="/email-confirmed" element={<EmailConfirmed />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/waitlist" element={<Waitlist />} />
               <Route path="/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
