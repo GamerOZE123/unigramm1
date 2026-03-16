@@ -71,6 +71,8 @@ const Admin: React.FC = () => {
         setAuthenticated(true);
         setStoredPassword(password);
         setSignups(data.signups || []);
+        // Fetch access config after login
+        fetchAccessConfig();
       }
     } catch {
       toast.error('Failed to verify');
