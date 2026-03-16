@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Check, Lock, Users, Mail, Clock } from 'lucide-react';
+import { Check, Lock, Users, Mail, Clock, Shield, ShieldOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SignupRow {
@@ -25,9 +25,38 @@ const Admin: React.FC = () => {
   const [signups, setSignups] = useState<SignupRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [inviting, setInviting] = useState<string | null>(null);
-
-  // Store password for subsequent API calls
   const [storedPassword, setStoredPassword] = useState('');
+
+  // Access control state
+  const [restrictedAccess, setRestrictedAccess] = useState<boolean | null>(null);
+  const [togglingAccess, setTogglingAccess] = useState(false);
+
+  const fetchAccessConfig = async () => {
+    const { data, error } = await supabase
+      .from('app_config')
+      .select('value')
+      .eq('key', 'restricted_access')
+      .single();
+    if (!error && data) {
+      setRestrictedAccess(data.value === 'true');
+    }
+  };
+
+  const toggleAccess = async () => {
+    setTogglingAccess(true);
+    const newValue = !restrictedAccess;
+    const { error } = await supabase
+      .from('app_config')
+      .update({ value: String(newValue), updated_at: new Date().toISOString() })
+      .eq('key', 'restricted_access');
+    if (error) {
+      toast.error('Failed to update access setting');
+    } else {
+      setRestrictedAccess(newValue);
+      toast.success(newValue ? 'Access restricted to approved users' : 'Access opened to everyone');
+    }
+    setTogglingAccess(false);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +71,8 @@ const Admin: React.FC = () => {
         setAuthenticated(true);
         setStoredPassword(password);
         setSignups(data.signups || []);
+        // Fetch access config after login
+        fetchAccessConfig();
       }
     } catch {
       toast.error('Failed to verify');
@@ -172,6 +203,41 @@ const Admin: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Access Control Toggle */}
+        {restrictedAccess !== null && (
+          <Card className={restrictedAccess ? 'border-destructive/50' : 'border-green-500/50'}>
+            <CardContent className="pt-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {restrictedAccess ? (
+                  <Shield className="w-5 h-5 text-destructive" />
+                ) : (
+                  <ShieldOff className="w-5 h-5 text-green-500" />
+                )}
+                <div>
+                  <p className="font-semibold text-foreground">Access Control</p>
+                  {restrictedAccess ? (
+                    <Badge variant="destructive" className="mt-1">Restricted — only approved users can access</Badge>
+                  ) : (
+                    <Badge className="mt-1 bg-green-500 hover:bg-green-600 text-white border-transparent">Open — all users can access</Badge>
+                  )}
+                </div>
+              </div>
+              <Button
+                variant={restrictedAccess ? 'default' : 'destructive'}
+                size="sm"
+                onClick={toggleAccess}
+                disabled={togglingAccess}
+              >
+                {togglingAccess
+                  ? 'Updating…'
+                  : restrictedAccess
+                    ? 'Open to everyone'
+                    : 'Restrict to approved only'}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {loading ? (
           <p className="text-muted-foreground text-center py-12">Loading…</p>
