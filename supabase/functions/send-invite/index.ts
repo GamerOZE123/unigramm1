@@ -45,33 +45,201 @@ Deno.serve(async (req) => {
     const htmlBody = `
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"></head>
-<body style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 16px; color: #1a1a1a;">
-  <h1 style="font-size: 22px; margin-bottom: 16px;">You're in! 🎓</h1>
-  <p style="font-size: 15px; line-height: 1.6;">${greeting},</p>
-  <p style="font-size: 15px; line-height: 1.6;">
-    Your early access to <strong>Unigramm</strong> has been approved! You're one of the first to join India's campus social network.
-  </p>
-  <p style="font-size: 15px; line-height: 1.6;">
-    Download the app and sign up using this exact email address:<br/>
-    <strong>${email}</strong>
-  </p>
-  <p style="font-size: 15px; line-height: 1.6; margin-top: 24px;">
-    <a href="https://unigramm.com" style="background: #000; color: #fff; padding: 12px 28px; border-radius: 8px; text-decoration: none; display: inline-block;">
-      Get Started →
-    </a>
-  </p>
-  <p style="font-size: 13px; color: #888; margin-top: 32px;">
-    Welcome aboard,<br/>Team Unigramm
-  </p>
-</body>
-</html>`
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+
+
+  
+
+
+    
+      
+        
+
+
+
+          
+          
+            
+              
+                Unigramm
+              
+            
+          
+
+          
+          
+            
+
+              
+              
+
+
+                Early Access Approved
+              
+
+
+
+              
+              
+
+
+                You're in! 🎓
+              
+
+
+
+              
+              
+
+
+
+              
+              
+
+
+                ${greeting},
+              
+
+
+              
+
+
+                Your early access to Unigramm has been approved. You're one of the first to join India's campus social network.
+              
+
+
+              
+
+
+                Download the app and sign up using this exact email address:
+              
+
+
+
+              
+              
+
+
+                ${email}
+              
+
+
+
+              
+              
+                Download on the App Store →
+              
+
+              
+              
+
+
+
+              
+              
+
+
+                
+                  
+                    
+
+💬
+
+
+                    
+
+Campus Chat
+
+
+                    
+
+DMs & groups
+
+
+                  
+                  
+                    
+
+🚀
+
+
+                    
+
+Startups
+
+
+                    
+
+Find co-founders
+
+
+                  
+                  
+                    
+
+🤝
+
+
+                    
+
+Clubs
+
+
+                    
+
+Join your campus
+
+
+                  
+                
+              
+
+
+
+            
+          
+
+          
+          
+            
+              
+
+
+                Welcome aboard — Team Unigramm
+              
+
+
+              
+
+
+                © 2026 Unigramm ·
+                unigramm.com
+              
+
+
+            
+          
+
+        
+
+
+      
+    
+
+
+
+
+`
 
     await transport.sendMail({
       from: smtpUser,
       to: email,
       subject: "You're in — Welcome to Unigramm 🎓",
-      text: `${greeting},\n\nYour early access to Unigramm has been approved. Download the app and sign up using this exact email address: ${email}\n\nGet started: https://unigramm.com`,
+      text: `${greeting},\n\nYour early access to Unigramm has been approved.\nDownload the app and sign up using this exact email: ${email}\n\nDownload: https://apps.apple.com/us/app/unigramm/id6759472658\n\nWelcome aboard,\nTeam Unigramm`,
       html: htmlBody,
     })
 
