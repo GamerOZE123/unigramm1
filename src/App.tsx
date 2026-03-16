@@ -41,6 +41,7 @@ import DeleteAccount from '@/pages/DeleteAccount';
 import ChildSafety from '@/pages/ChildSafety';
 import EmailConfirmed from '@/pages/EmailConfirmed';
 import Contribute from '@/pages/Contribute';
+import Admin from '@/pages/Admin';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -91,6 +92,7 @@ function App() {
               <Route path="/delete-account" element={<DeleteAccount />} />
               <Route path="/child-safety" element={<ChildSafety />} />
               <Route path="/email-confirmed" element={<EmailConfirmed />} />
+              <Route path="/admin" element={<Admin />} />
               <Route path="/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
