@@ -62,19 +62,39 @@ const Admin: React.FC = () => {
 
   const handleInvite = async (id: string) => {
     setInviting(id);
-    const { error } = await supabase
+    const signup = signups.find(s => s.id === id);
+    if (!signup) {
+      toast.error('Signup not found');
+      setInviting(null);
+      return;
+    }
+
+    // 1. Flip invited = true
+    const { error: updateError } = await supabase
       .from('early_access_signups')
       .update({ invited: true })
       .eq('id', id);
 
-    if (error) {
-      toast.error('Failed to invite user');
-    } else {
-      toast.success('User invited!');
-      setSignups(prev =>
-        prev.map(s => (s.id === id ? { ...s, invited: true } : s))
-      );
+    if (updateError) {
+      toast.error('Failed to update signup status');
+      setInviting(null);
+      return;
     }
+
+    // 2. Send invite email via edge function
+    const { error: invokeError } = await supabase.functions.invoke('send-invite', {
+      body: { email: signup.email, name: signup.full_name || '' },
+    });
+
+    if (invokeError) {
+      toast.error('Invited but email failed to send: ' + invokeError.message);
+    } else {
+      toast.success('Invite sent to ' + signup.email);
+    }
+
+    setSignups(prev =>
+      prev.map(s => (s.id === id ? { ...s, invited: true } : s))
+    );
     setInviting(null);
   };
 
