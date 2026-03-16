@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Check, Lock, Users, Mail, Clock } from 'lucide-react';
+import { Check, Lock, Users, Mail, Clock, Shield, ShieldOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SignupRow {
