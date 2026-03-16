@@ -1656,6 +1656,7 @@ export type Database = {
           email: string
           full_name: string | null
           id: string
+          invited: boolean
           university: string | null
         }
         Insert: {
@@ -1663,6 +1664,7 @@ export type Database = {
           email: string
           full_name?: string | null
           id?: string
+          invited?: boolean
           university?: string | null
         }
         Update: {
@@ -1670,6 +1672,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           id?: string
+          invited?: boolean
           university?: string | null
         }
         Relationships: []
@@ -2937,6 +2940,7 @@ export type Database = {
           academic_year: string | null
           account_status: string | null
           age: number | null
+          approved: boolean
           area: string | null
           avatar_url: string | null
           banner_height: number | null
@@ -2985,6 +2989,7 @@ export type Database = {
           academic_year?: string | null
           account_status?: string | null
           age?: number | null
+          approved?: boolean
           area?: string | null
           avatar_url?: string | null
           banner_height?: number | null
@@ -3033,6 +3038,7 @@ export type Database = {
           academic_year?: string | null
           account_status?: string | null
           age?: number | null
+          approved?: boolean
           area?: string | null
           avatar_url?: string | null
           banner_height?: number | null
@@ -4352,6 +4358,7 @@ export type Database = {
           academic_year: string | null
           account_status: string | null
           age: number | null
+          approved: boolean
           area: string | null
           avatar_url: string | null
           banner_height: number | null
