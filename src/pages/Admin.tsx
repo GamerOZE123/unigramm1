@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,8 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Check, Lock, Users, Mail, Clock } from 'lucide-react';
 import { toast } from 'sonner';
-
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || '';
 
 interface SignupRow {
   id: string;
@@ -23,18 +21,28 @@ interface SignupRow {
 const Admin: React.FC = () => {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
+  const [verifying, setVerifying] = useState(false);
   const [signups, setSignups] = useState<SignupRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [inviting, setInviting] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD && ADMIN_PASSWORD !== '') {
-      setAuthenticated(true);
-      fetchSignups();
-    } else {
-      toast.error('Invalid password');
+    setVerifying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-admin', {
+        body: { password },
+      });
+      if (error || !data?.valid) {
+        toast.error('Invalid password');
+      } else {
+        setAuthenticated(true);
+        fetchSignups();
+      }
+    } catch {
+      toast.error('Failed to verify');
     }
+    setVerifying(false);
   };
 
   const fetchSignups = async () => {
@@ -90,8 +98,8 @@ const Admin: React.FC = () => {
                 onChange={e => setPassword(e.target.value)}
                 autoFocus
               />
-              <Button type="submit" className="w-full">
-                Unlock
+              <Button type="submit" className="w-full" disabled={verifying}>
+                {verifying ? 'Verifying…' : 'Unlock'}
               </Button>
             </form>
           </CardContent>
@@ -117,7 +125,7 @@ const Admin: React.FC = () => {
           </Card>
           <Card>
             <CardContent className="pt-6 flex items-center gap-3">
-              <Clock className="w-5 h-5 text-yellow-500" />
+              <Clock className="w-5 h-5 text-muted-foreground" />
               <div>
                 <p className="text-2xl font-bold text-foreground">{pendingCount}</p>
                 <p className="text-sm text-muted-foreground">Pending</p>
@@ -126,7 +134,7 @@ const Admin: React.FC = () => {
           </Card>
           <Card>
             <CardContent className="pt-6 flex items-center gap-3">
-              <Mail className="w-5 h-5 text-green-500" />
+              <Mail className="w-5 h-5 text-muted-foreground" />
               <div>
                 <p className="text-2xl font-bold text-foreground">{invitedCount}</p>
                 <p className="text-sm text-muted-foreground">Invited</p>
@@ -167,8 +175,8 @@ const Admin: React.FC = () => {
                       </TableCell>
                       <TableCell className="text-right">
                         {s.invited ? (
-                          <Badge className="bg-green-500/15 text-green-600 border-green-500/30 hover:bg-green-500/15">
-                            <Check className="w-3 h-3 mr-1" />
+                          <Badge variant="secondary" className="gap-1">
+                            <Check className="w-3 h-3" />
                             Invited
                           </Badge>
                         ) : (
