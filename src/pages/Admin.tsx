@@ -204,6 +204,41 @@ const Admin: React.FC = () => {
           </Card>
         </div>
 
+        {/* Access Control Toggle */}
+        {restrictedAccess !== null && (
+          <Card className={restrictedAccess ? 'border-destructive/50' : 'border-green-500/50'}>
+            <CardContent className="pt-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {restrictedAccess ? (
+                  <Shield className="w-5 h-5 text-destructive" />
+                ) : (
+                  <ShieldOff className="w-5 h-5 text-green-500" />
+                )}
+                <div>
+                  <p className="font-semibold text-foreground">Access Control</p>
+                  {restrictedAccess ? (
+                    <Badge variant="destructive" className="mt-1">Restricted — only approved users can access</Badge>
+                  ) : (
+                    <Badge className="mt-1 bg-green-500 hover:bg-green-600 text-white border-transparent">Open — all users can access</Badge>
+                  )}
+                </div>
+              </div>
+              <Button
+                variant={restrictedAccess ? 'default' : 'destructive'}
+                size="sm"
+                onClick={toggleAccess}
+                disabled={togglingAccess}
+              >
+                {togglingAccess
+                  ? 'Updating…'
+                  : restrictedAccess
+                    ? 'Open to everyone'
+                    : 'Restrict to approved only'}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {loading ? (
           <p className="text-muted-foreground text-center py-12">Loading…</p>
         ) : (
