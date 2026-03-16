@@ -25,9 +25,38 @@ const Admin: React.FC = () => {
   const [signups, setSignups] = useState<SignupRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [inviting, setInviting] = useState<string | null>(null);
-
-  // Store password for subsequent API calls
   const [storedPassword, setStoredPassword] = useState('');
+
+  // Access control state
+  const [restrictedAccess, setRestrictedAccess] = useState<boolean | null>(null);
+  const [togglingAccess, setTogglingAccess] = useState(false);
+
+  const fetchAccessConfig = async () => {
+    const { data, error } = await supabase
+      .from('app_config')
+      .select('value')
+      .eq('key', 'restricted_access')
+      .single();
+    if (!error && data) {
+      setRestrictedAccess(data.value === 'true' || data.value === true);
+    }
+  };
+
+  const toggleAccess = async () => {
+    setTogglingAccess(true);
+    const newValue = !restrictedAccess;
+    const { error } = await supabase
+      .from('app_config')
+      .update({ value: String(newValue), updated_at: new Date().toISOString() })
+      .eq('key', 'restricted_access');
+    if (error) {
+      toast.error('Failed to update access setting');
+    } else {
+      setRestrictedAccess(newValue);
+      toast.success(newValue ? 'Access restricted to approved users' : 'Access opened to everyone');
+    }
+    setTogglingAccess(false);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
