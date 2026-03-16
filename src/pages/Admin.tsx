@@ -38,7 +38,7 @@ const Admin: React.FC = () => {
       .eq('key', 'restricted_access')
       .single();
     if (!error && data) {
-      setRestrictedAccess(data.value === 'true' || data.value === true);
+      setRestrictedAccess(data.value === 'true');
     }
   };
 
