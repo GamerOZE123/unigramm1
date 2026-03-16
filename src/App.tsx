@@ -41,6 +41,7 @@ import DeleteAccount from '@/pages/DeleteAccount';
 import ChildSafety from '@/pages/ChildSafety';
 import EmailConfirmed from '@/pages/EmailConfirmed';
 import Contribute from '@/pages/Contribute';
+import Admin from '@/pages/Admin';
 
 const queryClient = new QueryClient({
   defaultOptions: {
