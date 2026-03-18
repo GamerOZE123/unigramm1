@@ -81,19 +81,22 @@ const AdminAppConfig: React.FC<Props> = ({ password }) => {
       const ext = compressed.type === 'image/png' ? 'png' : 'jpg';
       const path = `config/${key}_${Date.now()}.${ext}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('posts')
-        .upload(path, compressed, { upsert: true });
+      const formData = new FormData();
+      formData.append('password', password);
+      formData.append('path', path);
+      formData.append('file', compressed, `${key}.${ext}`);
 
-      if (uploadError) {
-        toast.error('Upload failed: ' + uploadError.message);
+      const { data: uploadData, error: uploadError } = await supabase.functions.invoke('verify-admin', {
+        body: formData,
+      });
+
+      if (uploadError || !uploadData?.url) {
+        toast.error('Upload failed: ' + (uploadData?.error || uploadError?.message || 'Unknown error'));
         setUploading(null);
         return;
       }
 
-      const { data: urlData } = supabase.storage.from('posts').getPublicUrl(path);
-      const url = urlData.publicUrl;
-
+      const url = uploadData.url;
       setEditValues(prev => ({ ...prev, [key]: url }));
 
       // Auto-save after upload
