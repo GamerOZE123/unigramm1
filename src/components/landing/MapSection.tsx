@@ -4,16 +4,16 @@ import { MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function MapSection({ indiaMap }: { indiaMap: string }) {
-  const [waitlistCount, setWaitlistCount] = useState(240);
+  const [userCount, setUserCount] = useState(240);
   const [startupCount, setStartupCount] = useState(15);
 
   useEffect(() => {
     const fetchCounts = async () => {
-      const [waitlistRes, startupRes] = await Promise.all([
-        supabase.from('early_access_signups').select('id', { count: 'exact', head: true }),
+      const [profilesRes, startupRes] = await Promise.all([
+        supabase.from('profiles').select('id', { count: 'exact', head: true }),
         supabase.from('student_startups').select('id', { count: 'exact', head: true }),
       ]);
-      if (waitlistRes.count && waitlistRes.count > 0) setWaitlistCount(waitlistRes.count);
+      if (profilesRes.count && profilesRes.count > 0) setUserCount(profilesRes.count);
       if (startupRes.count && startupRes.count > 0) setStartupCount(startupRes.count);
     };
     fetchCounts();
@@ -41,7 +41,7 @@ export default function MapSection({ indiaMap }: { indiaMap: string }) {
               fontWeight: 700,
             }}
           >
-            Live at SNU, Delhi NCR.
+            Going live at SNU, Delhi.
           </h2>
         </motion.div>
 
@@ -51,14 +51,13 @@ export default function MapSection({ indiaMap }: { indiaMap: string }) {
           className="relative rounded-2xl overflow-hidden mb-6"
           style={{ height: "clamp(280px, 50vw, 450px)", background: "#0f1525" }}
         >
-          {/* Map + dot scale together so the dot stays pinned during zoom */}
           <motion.div
             className="absolute inset-0 flex items-center justify-center map-zoom-origin"
             style={{ scale }}
           >
             <img src={indiaMap} alt="India map" className="w-full h-full object-contain opacity-30" />
 
-            {/* Delhi dot — coordinates relative to the map container */}
+            {/* Delhi dot */}
             <div className="absolute map-dot-position" style={{ transform: "translate(-50%, -50%)" }}>
               {/* Pulsing rings */}
               {[0, 1, 2].map((i) => (
@@ -89,65 +88,49 @@ export default function MapSection({ indiaMap }: { indiaMap: string }) {
                   style={{ background: "rgba(79,142,255,0.4)" }}
                 />
               </div>
-              {/* Label */}
+              {/* Label — positioned above the dot */}
               <div
-                className="absolute left-5 top-1/2 -translate-y-1/2 whitespace-nowrap flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium"
+                className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium"
                 style={{
+                  bottom: "18px",
                   background: "rgba(79,142,255,0.12)",
                   color: "#4f8eff",
                   border: "1px solid rgba(79,142,255,0.2)",
                 }}
               >
-                <MapPin className="w-3 h-3" /> SNU · Delhi NCR
+                <MapPin className="w-3 h-3" /> SNU · Delhi
               </div>
             </div>
           </motion.div>
         </div>
 
-        {/* Campus cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {/* Live campus */}
-          <div className="rounded-2xl p-5" style={{ background: "#111827", border: "1px solid rgba(79,142,255,0.1)" }}>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-2 h-2 rounded-full" style={{ background: "#4ade80" }} />
-              <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#4ade80" }}>
-                Currently live
-              </span>
-            </div>
-            <p className="text-base font-bold text-white mb-1">Shiv Nadar University</p>
-            <p className="text-xs mb-4" style={{ color: "rgba(255,255,255,0.4)" }}>
-              Greater Noida, Delhi NCR
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { n: `${waitlistCount}`, l: "Students" },
-                { n: `${startupCount}`, l: "Startups" },
-                { n: "8", l: "Clubs" },
-              ].map((s) => (
-                <div key={s.l} className="text-center p-2.5 rounded-xl" style={{ background: "rgba(79,142,255,0.06)" }}>
-                  <div className="text-sm font-bold" style={{ color: "#4f8eff" }}>
-                    {s.n}
-                  </div>
-                  <div className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>
-                    {s.l}
-                  </div>
-                </div>
-              ))}
-            </div>
+        {/* Single campus card — no "coming soon" */}
+        <div className="rounded-2xl p-5" style={{ background: "#111827", border: "1px solid rgba(79,142,255,0.1)" }}>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-2 h-2 rounded-full" style={{ background: "#fbbf24" }} />
+            <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#fbbf24" }}>
+              Going live
+            </span>
           </div>
-
-          {/* Coming soon */}
-          <div
-            className="rounded-2xl p-5 flex items-center justify-center"
-            style={{ border: "2px dashed rgba(79,142,255,0.15)", background: "rgba(15,21,37,0.5)", minHeight: "160px" }}
-          >
-            <div className="text-center">
-              <div className="text-2xl mb-2">🎓</div>
-              <p className="text-sm font-semibold text-white mb-1">More campuses coming soon</p>
-              <p className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
-                Your university could be next
-              </p>
-            </div>
+          <p className="text-base font-bold text-white mb-1">Shiv Nadar University</p>
+          <p className="text-xs mb-4" style={{ color: "rgba(255,255,255,0.4)" }}>
+            Greater Noida, Delhi
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              { n: `${userCount}`, l: "Users" },
+              { n: `${startupCount}`, l: "Startups" },
+              { n: "8", l: "Clubs" },
+            ].map((s) => (
+              <div key={s.l} className="text-center p-2.5 rounded-xl" style={{ background: "rgba(79,142,255,0.06)" }}>
+                <div className="text-sm font-bold" style={{ color: "#4f8eff" }}>
+                  {s.n}
+                </div>
+                <div className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  {s.l}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -157,10 +140,8 @@ export default function MapSection({ indiaMap }: { indiaMap: string }) {
           0% { transform: scale(1); opacity: 0.6; }
           100% { transform: scale(2.5); opacity: 0; }
         }
-        /* Mobile: keep current position */
         .map-zoom-origin { transform-origin: 41% 30%; }
         .map-dot-position { left: 41%; top: 30%; }
-        /* Desktop: center the zoom so it doesn't drift right */
         @media (min-width: 768px) {
           .map-zoom-origin { transform-origin: 45% 32%; }
           .map-dot-position { left: 45%; top: 32%; }

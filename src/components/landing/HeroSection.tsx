@@ -87,16 +87,16 @@ function PhoneMockup({ src, rotate, delay }: { src: string; rotate: number; dela
 }
 
 export default function HeroSection({ indiaMap, screenshots }: { indiaMap: string; screenshots: string[] }) {
-  const [waitlistCount, setWaitlistCount] = useState(240);
+  const [userCount, setUserCount] = useState(240);
   const [startupCount, setStartupCount] = useState(15);
 
   useEffect(() => {
     const fetchCounts = async () => {
-      const [waitlistRes, startupRes] = await Promise.all([
-        supabase.from('early_access_signups').select('id', { count: 'exact', head: true }),
+      const [profilesRes, startupRes] = await Promise.all([
+        supabase.from('profiles').select('id', { count: 'exact', head: true }),
         supabase.from('student_startups').select('id', { count: 'exact', head: true }),
       ]);
-      if (waitlistRes.count && waitlistRes.count > 0) setWaitlistCount(waitlistRes.count);
+      if (profilesRes.count && profilesRes.count > 0) setUserCount(profilesRes.count);
       if (startupRes.count && startupRes.count > 0) setStartupCount(startupRes.count);
     };
     fetchCounts();
@@ -120,7 +120,7 @@ export default function HeroSection({ indiaMap, screenshots }: { indiaMap: strin
             <RotatingWord />
           </h1>
           <p className="mx-auto mb-8" style={{ fontSize: 'clamp(0.85rem, 2vw, 1rem)', color: 'rgba(255,255,255,0.45)', maxWidth: '420px', lineHeight: 1.6 }}>
-            Chat, clubs, jobs, dating & more — your entire campus life in one app. Currently live at SNU.
+            Chat, clubs, jobs & more — your entire campus life in one app. Currently going live at SNU.
           </p>
           
           {/* Two CTA buttons */}
@@ -144,7 +144,7 @@ export default function HeroSection({ indiaMap, screenshots }: { indiaMap: strin
 
         {/* Stats */}
         <motion.div className="grid grid-cols-3 gap-6 sm:gap-10 mb-14" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-          <AnimatedCounter target={waitlistCount} suffix="" label="Students waiting" />
+          <AnimatedCounter target={userCount} suffix="" label="Users" />
           <AnimatedCounter target={7} suffix="" label="Features live" />
           <AnimatedCounter target={startupCount} suffix="" label="Student startups" />
         </motion.div>

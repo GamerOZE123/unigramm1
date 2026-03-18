@@ -35,7 +35,7 @@ function FeatureCard({ feature, index }: { feature: typeof features[0]; index: n
       }}
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
-      className="relative rounded-2xl overflow-hidden aspect-square sm:aspect-auto"
+      className="group relative rounded-2xl overflow-hidden aspect-square sm:aspect-auto"
       style={{ background: '#111827', border: '1px solid rgba(79,142,255,0.08)' }}
     >
       {/* Mouse glow */}
@@ -46,8 +46,8 @@ function FeatureCard({ feature, index }: { feature: typeof features[0]; index: n
       )}
       <div className="relative z-10 p-4 sm:p-5 h-full flex flex-col justify-between">
         <div>
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ background: 'rgba(79,142,255,0.1)' }}>
-            <Icon className="w-4 h-4" style={{ color: '#4f8eff' }} />
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110" style={{ background: 'rgba(79,142,255,0.1)' }}>
+            <Icon className="w-4.5 h-4.5" style={{ color: '#4f8eff' }} />
           </div>
           <p className="text-sm font-semibold text-white mb-1">{feature.title}</p>
           <p className="text-xs hidden sm:block" style={{ color: 'rgba(255,255,255,0.4)', lineHeight: 1.5 }}>{feature.desc}</p>
@@ -73,8 +73,11 @@ export default function FeaturesSection() {
         <motion.div className="mb-10" initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#4f8eff' }}>Everything inside</p>
           <h2 style={{ fontFamily: "'Clash Display', sans-serif", fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', fontWeight: 700 }}>
-            Eight worlds. One campus.
+            Your campus, supercharged.
           </h2>
+          <p className="mt-2 text-sm" style={{ color: 'rgba(255,255,255,0.4)', maxWidth: '480px' }}>
+            Nine powerful tools built for student life — from day-one conversations to graduation-day memories.
+          </p>
         </motion.div>
 
         {/* Desktop: asymmetric grid, Mobile: 2-col square grid */}
@@ -88,7 +91,6 @@ export default function FeaturesSection() {
               'col-span-6', 'col-span-6',
               'col-span-4', 'col-span-4', 'col-span-4',
             ];
-            // Last card spans remaining
             const span = i < spans.length ? spans[i] : 'col-span-12';
             return <div key={f.title} className={span}><FeatureCard feature={f} index={i} /></div>;
           })}
