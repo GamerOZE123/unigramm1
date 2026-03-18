@@ -1,13 +1,16 @@
-
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { Check, Lock, Users, Mail, Clock, Shield, ShieldOff } from 'lucide-react';
 import { toast } from 'sonner';
+import AdminFeatureFlags from '@/components/admin/AdminFeatureFlags';
+import AdminAppConfig from '@/components/admin/AdminAppConfig';
+import AdminUserManagement from '@/components/admin/AdminUserManagement';
 
 interface SignupRow {
   id: string;
@@ -71,7 +74,6 @@ const Admin: React.FC = () => {
         setAuthenticated(true);
         setStoredPassword(password);
         setSignups(data.signups || []);
-        // Fetch access config after login
         fetchAccessConfig();
       }
     } catch {
@@ -100,37 +102,27 @@ const Admin: React.FC = () => {
   const handleInvite = async (id: string) => {
     setInviting(id);
     const signup = signups.find(s => s.id === id);
-    if (!signup) {
-      toast.error('Signup not found');
-      setInviting(null);
-      return;
-    }
+    if (!signup) { setInviting(null); return; }
 
-    // 1. Flip invited = true via edge function (bypasses RLS)
     const { data, error: updateError } = await supabase.functions.invoke('verify-admin', {
       body: { password: storedPassword, action: 'invite', id },
     });
-
     if (updateError || !data?.success) {
       toast.error('Failed to update signup status');
       setInviting(null);
       return;
     }
 
-    // 2. Send invite email via send-invite edge function
     const { error: invokeError } = await supabase.functions.invoke('send-invite', {
       body: { email: signup.email, name: signup.full_name || '' },
     });
-
     if (invokeError) {
-      toast.error('Invited but email failed to send: ' + invokeError.message);
+      toast.error('Invited but email failed to send');
     } else {
       toast.success('Invite sent to ' + signup.email);
     }
 
-    setSignups(prev =>
-      prev.map(s => (s.id === id ? { ...s, invited: true } : s))
-    );
+    setSignups(prev => prev.map(s => (s.id === id ? { ...s, invited: true } : s)));
     setInviting(null);
   };
 
@@ -166,45 +158,10 @@ const Admin: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-5xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-foreground">Waitlist Admin</h1>
-          <Button variant="outline" size="sm" onClick={fetchSignups} disabled={loading}>
-            {loading ? 'Refreshing…' : 'Refresh'}
-          </Button>
-        </div>
+      <div className="max-w-6xl mx-auto space-y-6">
+        <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="pt-6 flex items-center gap-3">
-              <Users className="w-5 h-5 text-muted-foreground" />
-              <div>
-                <p className="text-2xl font-bold text-foreground">{signups.length}</p>
-                <p className="text-sm text-muted-foreground">Total</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 flex items-center gap-3">
-              <Clock className="w-5 h-5 text-muted-foreground" />
-              <div>
-                <p className="text-2xl font-bold text-foreground">{pendingCount}</p>
-                <p className="text-sm text-muted-foreground">Pending</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6 flex items-center gap-3">
-              <Mail className="w-5 h-5 text-muted-foreground" />
-              <div>
-                <p className="text-2xl font-bold text-foreground">{invitedCount}</p>
-                <p className="text-sm text-muted-foreground">Invited</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Access Control Toggle */}
+        {/* Access Control Banner */}
         {restrictedAccess !== null && (
           <Card className={restrictedAccess ? 'border-destructive/50' : 'border-green-500/50'}>
             <CardContent className="pt-6 flex items-center justify-between">
@@ -217,9 +174,9 @@ const Admin: React.FC = () => {
                 <div>
                   <p className="font-semibold text-foreground">Access Control</p>
                   {restrictedAccess ? (
-                    <Badge variant="destructive" className="mt-1">Restricted — only approved users can access</Badge>
+                    <Badge variant="destructive" className="mt-1">Restricted — only approved users</Badge>
                   ) : (
-                    <Badge className="mt-1 bg-green-500 hover:bg-green-600 text-white border-transparent">Open — all users can access</Badge>
+                    <Badge className="mt-1 bg-green-500 hover:bg-green-600 text-white border-transparent">Open — all users</Badge>
                   )}
                 </div>
               </div>
@@ -229,77 +186,93 @@ const Admin: React.FC = () => {
                 onClick={toggleAccess}
                 disabled={togglingAccess}
               >
-                {togglingAccess
-                  ? 'Updating…'
-                  : restrictedAccess
-                    ? 'Open to everyone'
-                    : 'Restrict to approved only'}
+                {togglingAccess ? 'Updating…' : restrictedAccess ? 'Open to everyone' : 'Restrict access'}
               </Button>
             </CardContent>
           </Card>
         )}
 
-        {loading ? (
-          <p className="text-muted-foreground text-center py-12">Loading…</p>
-        ) : (
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>University</TableHead>
-                    <TableHead>Signed Up</TableHead>
-                    <TableHead className="text-right">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {signups.map(s => (
-                    <TableRow key={s.id}>
-                      <TableCell className="font-medium">{s.full_name || '—'}</TableCell>
-                      <TableCell>{s.email}</TableCell>
-                      <TableCell>{s.university || '—'}</TableCell>
-                      <TableCell>
-                        {s.created_at
-                          ? new Date(s.created_at).toLocaleDateString('en-IN', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric',
-                            })
-                          : '—'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {s.invited ? (
-                          <Badge variant="secondary" className="gap-1">
-                            <Check className="w-3 h-3" />
-                            Invited
-                          </Badge>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleInvite(s.id)}
-                            disabled={inviting === s.id}
-                          >
-                            {inviting === s.id ? 'Inviting…' : 'Invite'}
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {signups.length === 0 && (
+        <Tabs defaultValue="waitlist" className="w-full">
+          <TabsList className="w-full justify-start">
+            <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="flags">Feature Flags</TabsTrigger>
+            <TabsTrigger value="config">App Config</TabsTrigger>
+          </TabsList>
+
+          {/* Waitlist Tab */}
+          <TabsContent value="waitlist" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex gap-3">
+                <Badge variant="secondary"><Users className="w-3 h-3 mr-1" /> {signups.length} total</Badge>
+                <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" /> {pendingCount} pending</Badge>
+                <Badge variant="secondary"><Mail className="w-3 h-3 mr-1" /> {invitedCount} invited</Badge>
+              </div>
+              <Button variant="outline" size="sm" onClick={fetchSignups} disabled={loading}>
+                {loading ? 'Refreshing…' : 'Refresh'}
+              </Button>
+            </div>
+
+            <Card>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                        No signups yet
-                      </TableCell>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>University</TableHead>
+                      <TableHead>Signed Up</TableHead>
+                      <TableHead className="text-right">Status</TableHead>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        )}
+                  </TableHeader>
+                  <TableBody>
+                    {signups.map(s => (
+                      <TableRow key={s.id}>
+                        <TableCell className="font-medium">{s.full_name || '—'}</TableCell>
+                        <TableCell>{s.email}</TableCell>
+                        <TableCell>{s.university || '—'}</TableCell>
+                        <TableCell>
+                          {s.created_at
+                            ? new Date(s.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                            : '—'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {s.invited ? (
+                            <Badge variant="secondary" className="gap-1"><Check className="w-3 h-3" /> Invited</Badge>
+                          ) : (
+                            <Button size="sm" variant="outline" onClick={() => handleInvite(s.id)} disabled={inviting === s.id}>
+                              {inviting === s.id ? 'Inviting…' : 'Invite'}
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {signups.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No signups yet</TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Users Tab */}
+          <TabsContent value="users">
+            <AdminUserManagement password={storedPassword} />
+          </TabsContent>
+
+          {/* Feature Flags Tab */}
+          <TabsContent value="flags">
+            <AdminFeatureFlags password={storedPassword} />
+          </TabsContent>
+
+          {/* App Config Tab */}
+          <TabsContent value="config">
+            <AdminAppConfig password={storedPassword} />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
