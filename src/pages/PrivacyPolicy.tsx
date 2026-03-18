@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ChevronDown, Mail, ExternalLink, Shield, MessageCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, Mail, ExternalLink, Shield, MessageCircle, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import logoImg from '@/assets/unigramm-logo.png';
 
 const sections = [
   {
@@ -135,20 +135,20 @@ function renderContent(text: string) {
     const trimmed = line.trim();
     if (!trimmed) return null;
     if (trimmed.startsWith('**') && trimmed.endsWith('**')) {
-      return <p key={i} className="font-medium text-foreground mt-3 first:mt-0">{trimmed.replace(/\*\*/g, '')}</p>;
+      return <p key={i} className="font-medium text-white mt-4 first:mt-0">{trimmed.replace(/\*\*/g, '')}</p>;
     }
     if (trimmed.startsWith('**') && trimmed.includes('**')) {
       const parts = trimmed.split('**');
       return (
-        <p key={i} className="font-medium text-foreground mt-3 first:mt-0">
+        <p key={i} className="font-medium text-white mt-4 first:mt-0">
           {parts.map((part, j) => j % 2 === 1 ? <strong key={j}>{part}</strong> : part)}
         </p>
       );
     }
     if (trimmed.startsWith('•')) {
-      return <p key={i} className="text-sm text-muted-foreground pl-3 py-0.5">{trimmed}</p>;
+      return <p key={i} className="text-sm pl-3 py-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{trimmed}</p>;
     }
-    return <p key={i} className="text-sm text-muted-foreground">{trimmed}</p>;
+    return <p key={i} className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>{trimmed}</p>;
   });
 }
 
@@ -157,92 +157,132 @@ export default function PrivacyPolicy() {
   const [openSection, setOpenSection] = useState<number | null>(null);
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border">
-        <div className="max-w-2xl mx-auto flex items-center gap-3 px-4 h-14">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <h1 className="text-lg font-semibold text-foreground">Privacy Policy</h1>
+    <div className="min-h-screen text-white" style={{ background: '#080c17', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+      {/* Nav */}
+      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b" style={{ background: 'rgba(8,12,23,0.8)', borderColor: 'rgba(79,142,255,0.08)' }}>
+        <div className="max-w-3xl mx-auto flex items-center gap-3" style={{ padding: 'clamp(0.75rem, 2vw, 1rem) clamp(1rem, 4vw, 2rem)' }}>
+          <button onClick={() => navigate(-1)} className="p-2 rounded-xl transition-colors hover:bg-white/5">
+            <ArrowLeft className="w-5 h-5" style={{ color: 'rgba(255,255,255,0.6)' }} />
+          </button>
+          <a href="/">
+            <img src={logoImg} alt="Unigramm" className="h-8 sm:h-10" />
+          </a>
         </div>
-      </header>
+      </nav>
 
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-10 pb-24">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6" style={{ paddingTop: 'clamp(5rem, 10vw, 7rem)', paddingBottom: 'clamp(3rem, 6vw, 5rem)' }}>
+        {/* Hero */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-12">
+          <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#4f8eff' }}>Legal</p>
+          <h1 style={{ fontFamily: "'Clash Display', sans-serif", fontSize: 'clamp(1.8rem, 5vw, 3rem)', fontWeight: 700, lineHeight: 1.1 }}>
+            Privacy Policy
+          </h1>
+          <p className="mt-3 text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Last updated: February 5, 2026</p>
+        </motion.div>
+
         {/* Quick links */}
-        <section className="grid grid-cols-2 gap-3">
-          <a href="mailto:manage@unigramm.com" className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:bg-accent/50 transition-colors">
-            <Mail className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium text-foreground">Email Us</span>
-          </a>
-          <a href="/support" className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:bg-accent/50 transition-colors">
-            <MessageCircle className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium text-foreground">Support</span>
-          </a>
-          <a href="https://unigramm.com" target="_blank" rel="noopener" className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:bg-accent/50 transition-colors">
-            <ExternalLink className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium text-foreground">Website</span>
-          </a>
-          <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card">
-            <Shield className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium text-foreground">Last Updated: Feb 5, 2026</span>
-          </div>
-        </section>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10">
+          {[
+            { icon: Mail, label: 'Email Us', href: 'mailto:manage@unigramm.com' },
+            { icon: MessageCircle, label: 'Support', href: '/support' },
+            { icon: ExternalLink, label: 'Website', href: 'https://unigramm.com' },
+            { icon: Shield, label: 'Delete Account', href: '/delete-account' },
+          ].map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              target={link.href.startsWith('http') ? '_blank' : undefined}
+              rel={link.href.startsWith('http') ? 'noopener' : undefined}
+              className="flex items-center gap-2.5 p-3.5 rounded-xl transition-colors hover:bg-white/5"
+              style={{ background: '#111827', border: '1px solid rgba(79,142,255,0.1)' }}
+            >
+              <link.icon className="w-4 h-4" style={{ color: '#4f8eff' }} />
+              <span className="text-xs font-medium text-white">{link.label}</span>
+            </a>
+          ))}
+        </div>
 
         {/* Intro */}
-        <section>
-          <div className="border border-border rounded-xl bg-card p-4">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Welcome to UnigrammApp ("we," "our," or "us"). We are committed to protecting your privacy and ensuring transparency about how we collect, use, and safeguard your personal information. By using UnigrammApp, you agree to the collection and use of information in accordance with this policy.
-            </p>
-          </div>
-        </section>
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="rounded-xl p-5 mb-8"
+          style={{ background: '#111827', border: '1px solid rgba(79,142,255,0.1)' }}
+        >
+          <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>
+            Welcome to UnigrammApp ("we," "our," or "us"). We are committed to protecting your privacy and ensuring transparency about how we collect, use, and safeguard your personal information. By using UnigrammApp, you agree to the collection and use of information in accordance with this policy.
+          </p>
+        </motion.div>
 
         {/* Accordion sections */}
-        <section>
-          <h2 className="text-base font-semibold text-foreground mb-4">Policy Details</h2>
-          <div className="space-y-2">
-            {sections.map((section, i) => (
-              <div key={i} className="border border-border rounded-xl overflow-hidden bg-card">
-                <button
-                  onClick={() => setOpenSection(openSection === i ? null : i)}
-                  className="w-full flex items-center justify-between p-4 text-left"
-                >
-                  <span className="text-sm font-medium text-foreground pr-4">{section.title}</span>
-                  <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${openSection === i ? 'rotate-180' : ''}`} />
-                </button>
-                <AnimatePresence>
-                  {openSection === i && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="px-4 pb-4 space-y-1">
-                        {renderContent(section.content)}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ))}
-          </div>
-        </section>
+        <div className="space-y-2 mb-12">
+          {sections.map((section, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 * i }}
+              className="rounded-xl overflow-hidden"
+              style={{ background: '#111827', border: '1px solid rgba(79,142,255,0.08)' }}
+            >
+              <button
+                onClick={() => setOpenSection(openSection === i ? null : i)}
+                className="w-full flex items-center justify-between p-4 text-left hover:bg-white/[0.02] transition-colors"
+              >
+                <span className="text-sm font-medium text-white pr-4">{section.title}</span>
+                <ChevronDown
+                  className="w-4 h-4 shrink-0 transition-transform"
+                  style={{ color: 'rgba(255,255,255,0.3)', transform: openSection === i ? 'rotate(180deg)' : undefined }}
+                />
+              </button>
+              <AnimatePresence>
+                {openSection === i && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-4 pb-4 space-y-1">
+                      {renderContent(section.content)}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          ))}
+        </div>
 
         {/* Contact */}
-        <section>
-          <h2 className="text-base font-semibold text-foreground mb-4">Contact Us</h2>
-          <div className="border border-border rounded-xl bg-card p-4 space-y-2">
-            <p className="text-sm text-muted-foreground">If you have questions, concerns, or requests regarding this Privacy Policy or your data:</p>
-            <p className="text-sm text-muted-foreground">• <strong className="text-foreground">Email:</strong> <a href="mailto:manage@unigramm.com" className="text-primary hover:underline">manage@unigramm.com</a></p>
-            <p className="text-sm text-muted-foreground">• <strong className="text-foreground">Website:</strong> <a href="https://unigramm.com" target="_blank" rel="noopener" className="text-primary hover:underline">unigramm.com</a></p>
-            <p className="text-sm text-muted-foreground">• <strong className="text-foreground">App Support:</strong> <a href="/support" className="text-primary hover:underline">Help & Support</a></p>
+        <div className="rounded-xl p-5 mb-8" style={{ background: '#111827', border: '1px solid rgba(79,142,255,0.1)' }}>
+          <h3 className="text-sm font-semibold text-white mb-3">Contact Us</h3>
+          <div className="space-y-1.5">
+            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>• <span className="text-white font-medium">Email:</span> <a href="mailto:manage@unigramm.com" className="hover:underline" style={{ color: '#4f8eff' }}>manage@unigramm.com</a></p>
+            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>• <span className="text-white font-medium">Website:</span> <a href="https://unigramm.com" target="_blank" rel="noopener" className="hover:underline" style={{ color: '#4f8eff' }}>unigramm.com</a></p>
+            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>• <span className="text-white font-medium">App Support:</span> <a href="/support" className="hover:underline" style={{ color: '#4f8eff' }}>Help & Support</a></p>
           </div>
-        </section>
+        </div>
 
-        <p className="text-xs text-center text-muted-foreground">By using Unigramm, you acknowledge that you have read and understood this Privacy Policy.</p>
+        <p className="text-xs text-center" style={{ color: 'rgba(255,255,255,0.25)' }}>
+          By using Unigramm, you acknowledge that you have read and understood this Privacy Policy.
+        </p>
       </div>
+
+      {/* Footer */}
+      <footer className="border-t" style={{ borderColor: 'rgba(79,142,255,0.08)', padding: 'clamp(1.25rem, 3vw, 1.5rem) clamp(1rem, 4vw, 2rem)' }}>
+        <div className="max-w-3xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <img src={logoImg} alt="Unigramm" className="h-4" />
+            <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.3)' }}>© {new Date().getFullYear()} Unigramm</span>
+          </div>
+          <div className="flex items-center gap-5">
+            <a href="/support" className="text-[11px] transition-colors hover:text-white" style={{ color: 'rgba(255,255,255,0.3)' }}>Support</a>
+            <a href="/" className="text-[11px] transition-colors hover:text-white" style={{ color: 'rgba(255,255,255,0.3)' }}>Home</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
