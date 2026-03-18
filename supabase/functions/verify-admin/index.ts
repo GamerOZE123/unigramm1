@@ -11,7 +11,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { password, action, id } = await req.json();
+    const body = await req.json();
+    const { password, action, id } = body;
     const adminPassword = Deno.env.get('ADMIN_PASSWORD');
 
     if (!adminPassword || password !== adminPassword) {
@@ -26,52 +27,93 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    // Action: fetch signups
+    const json = (data: unknown, status = 200) =>
+      new Response(JSON.stringify(data), {
+        status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+
+    // ── Waitlist ──────────────────────────────────────────────
     if (action === 'fetch') {
       const { data, error } = await supabaseAdmin
         .from('early_access_signups')
         .select('id, full_name, email, university, created_at, invited')
         .order('created_at', { ascending: false });
-
-      if (error) {
-        return new Response(
-          JSON.stringify({ valid: true, error: error.message }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      return new Response(
-        JSON.stringify({ valid: true, signups: data }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, signups: data });
     }
 
-    // Action: invite a signup
     if (action === 'invite' && id) {
-      // Flip invited = true
-      const { error: updateError } = await supabaseAdmin
+      const { error } = await supabaseAdmin
         .from('early_access_signups')
         .update({ invited: true })
         .eq('id', id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
 
-      if (updateError) {
-        return new Response(
-          JSON.stringify({ valid: true, error: updateError.message }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+    // ── Feature Flags ────────────────────────────────────────
+    if (action === 'fetch_flags') {
+      const { data, error } = await supabaseAdmin
+        .from('feature_flags')
+        .select('*')
+        .order('key');
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, flags: data });
+    }
 
-      return new Response(
-        JSON.stringify({ valid: true, success: true }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (action === 'toggle_flag') {
+      const { key, is_enabled } = body;
+      const { error } = await supabaseAdmin
+        .from('feature_flags')
+        .update({ is_enabled })
+        .eq('key', key);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
+    // ── App Config ───────────────────────────────────────────
+    if (action === 'fetch_configs') {
+      const { data, error } = await supabaseAdmin
+        .from('app_config')
+        .select('*')
+        .order('key');
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, configs: data });
+    }
+
+    if (action === 'update_config') {
+      const { key, value } = body;
+      const { error } = await supabaseAdmin
+        .from('app_config')
+        .update({ value, updated_at: new Date().toISOString() })
+        .eq('key', key);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
+    // ── User Management ──────────────────────────────────────
+    if (action === 'fetch_users') {
+      const { data, error } = await supabaseAdmin
+        .from('profiles')
+        .select('user_id, username, full_name, email, university, user_type, approved, created_at')
+        .order('created_at', { ascending: false });
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, users: data });
+    }
+
+    if (action === 'set_approved') {
+      const { user_id, approved } = body;
+      const { error } = await supabaseAdmin
+        .from('profiles')
+        .update({ approved })
+        .eq('user_id', user_id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
     }
 
     // Default: just validate password
-    return new Response(
-      JSON.stringify({ valid: true }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return json({ valid: true });
   } catch {
     return new Response(
       JSON.stringify({ error: 'Invalid request' }),
