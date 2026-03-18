@@ -11,6 +11,45 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const contentType = req.headers.get('content-type') || '';
+
+    // Handle multipart upload
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await req.formData();
+      const password = formData.get('password') as string;
+      const filePath = formData.get('path') as string;
+      const file = formData.get('file') as File;
+      const adminPassword = Deno.env.get('ADMIN_PASSWORD');
+
+      if (!adminPassword || password !== adminPassword) {
+        return new Response(JSON.stringify({ valid: false }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      );
+
+      const { error: uploadError } = await supabaseAdmin.storage
+        .from('posts')
+        .upload(filePath, file, { upsert: true, contentType: file.type });
+
+      if (uploadError) {
+        return new Response(JSON.stringify({ valid: true, error: uploadError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const { data: urlData } = supabaseAdmin.storage.from('posts').getPublicUrl(filePath);
+      return new Response(JSON.stringify({ valid: true, url: urlData.publicUrl }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const body = await req.json();
     const { password, action, id } = body;
     const adminPassword = Deno.env.get('ADMIN_PASSWORD');
