@@ -165,7 +165,7 @@ export default function PrivacyPolicy() {
             { icon: ExternalLink, label: 'Website', href: 'https://unigramm.com' },
             { icon: Shield, label: 'Delete Account', href: '/delete-account' },
           ].map((link) => (
-            
+            <a
               key={link.label}
               href={link.href}
               target={link.href.startsWith('http') ? '_blank' : undefined}
