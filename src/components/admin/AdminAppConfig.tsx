@@ -86,12 +86,22 @@ const AdminAppConfig: React.FC<Props> = ({ password }) => {
       formData.append('path', path);
       formData.append('file', compressed, `${key}.${ext}`);
 
-      const { data: uploadData, error: uploadError } = await supabase.functions.invoke('verify-admin', {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://sdqmiwsvplykgsxrthfp.supabase.co';
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkcW1pd3N2cGx5a2dzeHJ0aGZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1NjEwMzcsImV4cCI6MjA3MDEzNzAzN30.LbDPf7wuvAoqFHPmUnGz9kgA4dGFCO8OoowMi6szm90';
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/verify-admin`, {
+        method: 'POST',
+        headers: {
+          'apikey': anonKey,
+          'Authorization': `Bearer ${anonKey}`,
+        },
         body: formData,
       });
 
-      if (uploadError || !uploadData?.url) {
-        toast.error('Upload failed: ' + (uploadData?.error || uploadError?.message || 'Unknown error'));
+      const uploadData = await response.json();
+
+      if (!response.ok || !uploadData?.url) {
+        toast.error('Upload failed: ' + (uploadData?.error || 'Unknown error'));
         setUploading(null);
         return;
       }
