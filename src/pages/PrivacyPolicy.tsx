@@ -15,9 +15,7 @@ const sections = [
 
 **What you do on Unigramm**
 - Posts, comments, poll votes, and media you share
-- Messages you send in chats
 - Clubs and startups you join or create
-- Your timetable data
 
 **Basic technical info**
 - Device type and OS version
@@ -48,7 +46,7 @@ We take security seriously. No system is perfectly invulnerable — if something
   },
   {
     title: 'Who We Share It With',
-    content: `We do not sell your data. Ever.
+    content: `We do not sell your data. 
 
 Your information only leaves Unigramm in these situations:
 
@@ -75,11 +73,7 @@ Have a question about your data? Email us at manage@unigramm.com — we'll get b
   },
   {
     title: 'Age Requirement',
-    content: `Unigramm is for university students aged 18 and above.
-
-We don't knowingly collect data from anyone under 18. If we find out a minor has an account, we'll remove it immediately.
-
-If you think someone underage is using Unigramm, let us know at manage@unigramm.com.`,
+    content: `Unigramm is for university students.`,
   },
   {
     title: 'Indian Data Protection',
@@ -171,7 +165,7 @@ export default function PrivacyPolicy() {
             { icon: ExternalLink, label: 'Website', href: 'https://unigramm.com' },
             { icon: Shield, label: 'Delete Account', href: '/delete-account' },
           ].map((link) => (
-            <a
+            
               key={link.label}
               href={link.href}
               target={link.href.startsWith('http') ? '_blank' : undefined}
