@@ -78,16 +78,23 @@ const AdminAppConfig: React.FC<Props> = ({ password }) => {
         useWebWorker: true,
       });
 
-      const ext = compressed.type === 'image/png' ? 'png' : 'jpg';
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
       const path = `config/${key}_${Date.now()}.${ext}`;
+      
+      // Convert blob to File object explicitly
+      const uploadFile = new File([compressed], `${key}.${ext}`, { 
+        type: compressed.type || 'image/jpeg' 
+      });
 
       const formData = new FormData();
       formData.append('password', password);
       formData.append('path', path);
-      formData.append('file', compressed, `${key}.${ext}`);
+      formData.append('file', uploadFile);
 
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://sdqmiwsvplykgsxrthfp.supabase.co';
       const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkcW1pd3N2cGx5a2dzeHJ0aGZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ1NjEwMzcsImV4cCI6MjA3MDEzNzAzN30.LbDPf7wuvAoqFHPmUnGz9kgA4dGFCO8OoowMi6szm90';
+
+      console.log('Uploading to edge function:', path);
 
       const response = await fetch(`${supabaseUrl}/functions/v1/verify-admin`, {
         method: 'POST',
@@ -98,7 +105,17 @@ const AdminAppConfig: React.FC<Props> = ({ password }) => {
         body: formData,
       });
 
-      const uploadData = await response.json();
+      const responseText = await response.text();
+      console.log('Upload response:', response.status, responseText);
+      
+      let uploadData;
+      try {
+        uploadData = JSON.parse(responseText);
+      } catch {
+        toast.error('Upload failed: Invalid response');
+        setUploading(null);
+        return;
+      }
 
       if (!response.ok || !uploadData?.url) {
         toast.error('Upload failed: ' + (uploadData?.error || 'Unknown error'));
