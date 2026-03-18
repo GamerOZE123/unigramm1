@@ -6,136 +6,111 @@ import logoImg from '@/assets/unigramm-logo.png';
 
 const sections = [
   {
-    title: 'Information We Collect',
-    content: `**Personal Information You Provide**
-• Account Information: Username, email address, password (encrypted)
-• Profile Information: Full name, profile picture, bio, academic status (university, graduation year, major)
-• Club Affiliations: Information about clubs you join or create
-• User-Generated Content: Posts, comments, messages, advertisements, and media you upload
-• Draft Content: Saved drafts of posts and content
+    title: 'What We Collect',
+    content: `We collect only what we need to make Unigramm work for you.
 
-**Automatically Collected Information**
-• Device Information: Device type, operating system version, unique device identifiers
-• Usage Data: App interactions, features used, time spent in the app
-• Log Data: Error logs, crash reports, and diagnostic information
-• Push Notification Tokens: Firebase Cloud Messaging (FCM) tokens for sending notifications
+**Your account details**
+- Name, username, email address, and password
+- Profile info you choose to add: university, major, graduation year, bio, profile photo
 
-**Information from Third Parties**
-• Firebase Services: We use Firebase for authentication, cloud messaging, and analytics
-• Supabase: Our backend database service that stores your data`,
+**What you do on Unigramm**
+- Posts, comments, poll votes, and media you share
+- Messages you send in chats
+- Clubs and startups you join or create
+- Your timetable data
+
+**Basic technical info**
+- Device type and OS version
+- Push notification token so we can send you alerts
+- Crash logs to help us fix bugs`,
   },
   {
-    title: 'How We Use Your Information',
-    content: `• Providing Services: To create and manage your account, enable posting, messaging, and social interactions
-• Personalization: To customize your feed, suggest relevant content, and improve your experience
-• Communication: To send you notifications about messages, comments, likes, and app updates
-• Academic Features: To connect you with users from your university and relevant clubs
-• Safety & Security: To detect and prevent fraud, abuse, and security incidents
-• Analytics: To understand how users interact with the app and improve features
-• Legal Compliance: To comply with legal obligations and enforce our Terms of Service`,
+    title: 'How We Use It',
+    content: `We use your information to run Unigramm — nothing more.
+
+- To create and manage your account
+- To show you content relevant to your campus
+- To deliver messages and notifications
+- To connect you with clubs and students at your university
+- To keep the app secure and improve it over time
+
+We don't use your data for advertising. We don't build profiles to sell. Simple as that.`,
   },
   {
-    title: 'Data Storage and Security',
-    content: `**Storage**
-• Your data is stored securely using Supabase cloud infrastructure
-• Local data is cached on your device using SQLite for offline functionality
-• Media files (images, videos) are stored on secure cloud storage servers
+    title: 'How We Store and Protect It',
+    content: `Your data is stored on secure, industry-standard cloud infrastructure.
 
-**Security Measures**
-• Encrypted data transmission (HTTPS/TLS)
-• Secure password hashing and storage
-• Regular security audits and updates
-• Access controls and authentication mechanisms
+- All data in transit is encrypted
+- Passwords are hashed — we can never see them
+- Access to your data is strictly limited to what's needed to run the service
 
-However, no method of transmission or storage is 100% secure. While we strive to protect your data, we cannot guarantee absolute security.`,
+We take security seriously. No system is perfectly invulnerable — if something ever goes wrong, we'll tell you promptly.`,
   },
   {
-    title: 'Data Sharing and Disclosure',
-    content: `**We Do NOT Sell Your Data.** We do not sell, rent, or trade your personal information to third parties for marketing purposes.
+    title: 'Who We Share It With',
+    content: `We do not sell your data. Ever.
 
-We may share your information in the following circumstances:
-• With Other Users: Profile information, posts, and content you choose to share publicly
-• Service Providers: Third-party services like Firebase and Supabase that help us operate the app
-• Legal Requirements: When required by law, court order, or government request
-• Safety & Protection: To protect the rights, property, or safety of our users and the public
-• Business Transfers: In connection with a merger, acquisition, or sale of assets (with notice to users)`,
+Your information only leaves Unigramm in these situations:
+
+- With other users — your profile and posts are visible to other Unigramm users as you'd expect
+- With infrastructure providers — we use trusted third-party services to run the platform. They only process data to provide their services to us, nothing else.
+- When the law requires it — if we receive a valid legal request, we may be required to share certain information
+- To protect safety — if there's a credible threat to someone's safety, we may act on it
+
+No data brokers. No ad networks. No selling to anyone.`,
   },
   {
-    title: 'Your Rights and Choices',
-    content: `**Access and Control**
-• Access Your Data: View and download the information we have about you
-• Edit Your Profile: Update your profile information, academic status, and preferences at any time
-• Delete Content: Remove your posts, comments, and messages
-• Delete Account: Permanently delete your account and associated data through the app settings
+    title: 'Your Rights',
+    content: `You're in control of your data on Unigramm.
 
-**Privacy Settings**
-• Profile Visibility: Control who can see your profile and posts
-• Notifications: Manage notification preferences in Settings
-• Data Collection: Opt out of certain data collection (where applicable)
+- Edit or update your profile anytime from Settings
+- Delete any post, comment, or media you've created
+- Leave any club or group you've joined
+- Manage notification preferences from your device settings
+- Delete your account entirely from Settings → Delete Account
 
-**Data Retention**
-• Active Accounts: We retain your data as long as your account is active
-• Deleted Accounts: When you delete your account, we remove your personal information within 30 days
-• Legal Obligations: Some data may be retained longer if required by law or for legitimate business purposes`,
+When you delete your account, your personal data is permanently removed within 30 days.
+
+Have a question about your data? Email us at manage@unigramm.com — we'll get back to you within 7 days.`,
   },
   {
-    title: "Children's Privacy",
-    content: `UnigrammApp is intended for university students and users 18 years or older. We do not knowingly collect information from children under 13. If we discover that a child under 13 has provided personal information, we will delete it immediately.`,
-  },
-  {
-    title: 'Third-Party Services',
-    content: `Our app integrates with third-party services that have their own privacy policies:
-• Firebase (Google): firebase.google.com/support/privacy
-• Supabase: supabase.com/privacy
-• Expo: expo.dev/privacy
+    title: 'Age Requirement',
+    content: `Unigramm is for university students aged 18 and above.
 
-We are not responsible for the privacy practices of these third-party services.`,
-  },
-  {
-    title: 'International Data Transfers',
-    content: `Your information may be transferred to and processed in countries other than your own. We ensure appropriate safeguards are in place to protect your data in accordance with this Privacy Policy.`,
-  },
-  {
-    title: 'Changes to This Privacy Policy',
-    content: `We may update this Privacy Policy from time to time. We will notify you of significant changes by:
-• Posting the updated policy in the app
-• Sending a notification through the app
-• Updating the "Last Updated" date at the top of this policy
+We don't knowingly collect data from anyone under 18. If we find out a minor has an account, we'll remove it immediately.
 
-Your continued use of UnigrammApp after changes constitutes acceptance of the updated policy.`,
+If you think someone underage is using Unigramm, let us know at manage@unigramm.com.`,
   },
   {
-    title: 'Your California Privacy Rights (CCPA)',
-    content: `If you are a California resident, you have additional rights under the California Consumer Privacy Act:
-• Right to know what personal information is collected
-• Right to know if personal information is sold or disclosed
-• Right to opt-out of the sale of personal information
-• Right to request deletion of personal information
-• Right to non-discrimination for exercising your rights
+    title: 'Indian Data Protection',
+    content: `Unigramm is an India-first product. We comply with applicable Indian data protection laws including the Digital Personal Data Protection Act, 2023 (DPDP Act).
 
-To exercise these rights, please contact us at manage@unigramm.com.`,
+Under the DPDP Act, you have the right to:
+- Know what personal data we hold about you
+- Correct inaccurate data
+- Request erasure of your data
+- Withdraw consent at any time
+
+To exercise any of these rights, contact us at manage@unigramm.com.`,
   },
   {
-    title: 'European Privacy Rights (GDPR)',
-    content: `If you are in the European Economic Area (EEA), you have rights under the General Data Protection Regulation:
-• Right to access your personal data
-• Right to rectification of inaccurate data
-• Right to erasure ("right to be forgotten")
-• Right to restrict processing
-• Right to data portability
-• Right to object to processing
-• Right to withdraw consent
+    title: 'Updates to This Policy',
+    content: `We'll update this policy as Unigramm grows. When we make significant changes, we'll notify you through the app and update the date below.
 
-To exercise these rights, please contact us at manage@unigramm.com.`,
+If you continue using Unigramm after an update, that means you're okay with the changes. If you're not, you can delete your account at any time.`,
   },
 ];
 
 function renderContent(text: string) {
   return text.split('\n').map((line, i) => {
     const trimmed = line.trim();
-    if (!trimmed) return null;
+    if (!trimmed) return <div key={i} className="h-2" />;
     if (trimmed.startsWith('**') && trimmed.endsWith('**')) {
-      return <p key={i} className="font-medium text-white mt-4 first:mt-0">{trimmed.replace(/\*\*/g, '')}</p>;
+      return (
+        <p key={i} className="font-semibold text-white mt-4 first:mt-0">
+          {trimmed.replace(/\*\*/g, '')}
+        </p>
+      );
     }
     if (trimmed.startsWith('**') && trimmed.includes('**')) {
       const parts = trimmed.split('**');
@@ -146,9 +121,17 @@ function renderContent(text: string) {
       );
     }
     if (trimmed.startsWith('•')) {
-      return <p key={i} className="text-sm pl-3 py-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>{trimmed}</p>;
+      return (
+        <p key={i} className="text-sm pl-3 py-0.5" style={{ color: 'rgba(255,255,255,0.5)' }}>
+          {trimmed}
+        </p>
+      );
     }
-    return <p key={i} className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>{trimmed}</p>;
+    return (
+      <p key={i} className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>
+        {trimmed}
+      </p>
+    );
   });
 }
 
@@ -177,7 +160,7 @@ export default function PrivacyPolicy() {
           <h1 style={{ fontFamily: "'Clash Display', sans-serif", fontSize: 'clamp(1.8rem, 5vw, 3rem)', fontWeight: 700, lineHeight: 1.1 }}>
             Privacy Policy
           </h1>
-          <p className="mt-3 text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Last updated: February 5, 2026</p>
+          <p className="mt-3 text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>Last updated: March 18, 2026</p>
         </motion.div>
 
         {/* Quick links */}
@@ -188,7 +171,7 @@ export default function PrivacyPolicy() {
             { icon: ExternalLink, label: 'Website', href: 'https://unigramm.com' },
             { icon: Shield, label: 'Delete Account', href: '/delete-account' },
           ].map((link) => (
-            <a
+            
               key={link.label}
               href={link.href}
               target={link.href.startsWith('http') ? '_blank' : undefined}
@@ -211,11 +194,11 @@ export default function PrivacyPolicy() {
           style={{ background: '#111827', border: '1px solid rgba(79,142,255,0.1)' }}
         >
           <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.5)' }}>
-            Welcome to UnigrammApp ("we," "our," or "us"). We are committed to protecting your privacy and ensuring transparency about how we collect, use, and safeguard your personal information. By using UnigrammApp, you agree to the collection and use of information in accordance with this policy.
+            Unigramm is built for students, by students. We believe your data belongs to you — not to advertisers, not to data brokers, not to us beyond what's needed to run the app. This policy explains what we collect, why we collect it, and what you can do about it. We've written it to be read, not just scrolled past.
           </p>
         </motion.div>
 
-        {/* Accordion sections */}
+        {/* Accordion */}
         <div className="space-y-2 mb-12">
           {sections.map((section, i) => (
             <motion.div
@@ -233,7 +216,10 @@ export default function PrivacyPolicy() {
                 <span className="text-sm font-medium text-white pr-4">{section.title}</span>
                 <ChevronDown
                   className="w-4 h-4 shrink-0 transition-transform"
-                  style={{ color: 'rgba(255,255,255,0.3)', transform: openSection === i ? 'rotate(180deg)' : undefined }}
+                  style={{
+                    color: 'rgba(255,255,255,0.3)',
+                    transform: openSection === i ? 'rotate(180deg)' : undefined,
+                  }}
                 />
               </button>
               <AnimatePresence>
@@ -256,30 +242,60 @@ export default function PrivacyPolicy() {
         </div>
 
         {/* Contact */}
-        <div className="rounded-xl p-5 mb-8" style={{ background: '#111827', border: '1px solid rgba(79,142,255,0.1)' }}>
+        <div
+          className="rounded-xl p-5 mb-8"
+          style={{ background: '#111827', border: '1px solid rgba(79,142,255,0.1)' }}
+        >
           <h3 className="text-sm font-semibold text-white mb-3">Contact Us</h3>
           <div className="space-y-1.5">
-            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>• <span className="text-white font-medium">Email:</span> <a href="mailto:manage@unigramm.com" className="hover:underline" style={{ color: '#4f8eff' }}>manage@unigramm.com</a></p>
-            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>• <span className="text-white font-medium">Website:</span> <a href="https://unigramm.com" target="_blank" rel="noopener" className="hover:underline" style={{ color: '#4f8eff' }}>unigramm.com</a></p>
-            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>• <span className="text-white font-medium">App Support:</span> <a href="/support" className="hover:underline" style={{ color: '#4f8eff' }}>Help & Support</a></p>
+            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
+              • <span className="text-white font-medium">Email:</span>{' '}
+              <a href="mailto:manage@unigramm.com" className="hover:underline" style={{ color: '#4f8eff' }}>
+                manage@unigramm.com
+              </a>
+            </p>
+            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
+              • <span className="text-white font-medium">Website:</span>{' '}
+              <a href="https://unigramm.com" target="_blank" rel="noopener" className="hover:underline" style={{ color: '#4f8eff' }}>
+                unigramm.com
+              </a>
+            </p>
+            <p className="text-sm" style={{ color: 'rgba(255,255,255,0.5)' }}>
+              • <span className="text-white font-medium">Support:</span>{' '}
+              <a href="/support" className="hover:underline" style={{ color: '#4f8eff' }}>
+                Help & Support
+              </a>
+            </p>
           </div>
         </div>
 
         <p className="text-xs text-center" style={{ color: 'rgba(255,255,255,0.25)' }}>
-          By using Unigramm, you acknowledge that you have read and understood this Privacy Policy.
+          By using Unigramm, you agree to this Privacy Policy.
         </p>
       </div>
 
       {/* Footer */}
-      <footer className="border-t" style={{ borderColor: 'rgba(79,142,255,0.08)', padding: 'clamp(1.25rem, 3vw, 1.5rem) clamp(1rem, 4vw, 2rem)' }}>
+      <footer
+        className="border-t"
+        style={{
+          borderColor: 'rgba(79,142,255,0.08)',
+          padding: 'clamp(1.25rem, 3vw, 1.5rem) clamp(1rem, 4vw, 2rem)',
+        }}
+      >
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img src={logoImg} alt="Unigramm" className="h-4" />
-            <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.3)' }}>© {new Date().getFullYear()} Unigramm</span>
+            <span className="text-[11px]" style={{ color: 'rgba(255,255,255,0.3)' }}>
+              © {new Date().getFullYear()} Unigramm
+            </span>
           </div>
           <div className="flex items-center gap-5">
-            <a href="/support" className="text-[11px] transition-colors hover:text-white" style={{ color: 'rgba(255,255,255,0.3)' }}>Support</a>
-            <a href="/" className="text-[11px] transition-colors hover:text-white" style={{ color: 'rgba(255,255,255,0.3)' }}>Home</a>
+            <a href="/support" className="text-[11px] transition-colors hover:text-white" style={{ color: 'rgba(255,255,255,0.3)' }}>
+              Support
+            </a>
+            <a href="/" className="text-[11px] transition-colors hover:text-white" style={{ color: 'rgba(255,255,255,0.3)' }}>
+              Home
+            </a>
           </div>
         </div>
       </footer>
