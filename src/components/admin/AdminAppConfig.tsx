@@ -1,11 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Settings, RefreshCw, Save } from 'lucide-react';
+import { Settings, RefreshCw, Save, Upload, Image } from 'lucide-react';
+import browserImageCompression from 'browser-image-compression';
 
 interface Config {
   id: number;
@@ -19,12 +21,22 @@ interface Props {
   password: string;
 }
 
+const isBooleanValue = (val: string | null) => {
+  return val === 'true' || val === 'false';
+};
+
+const isImageKey = (key: string) => {
+  return key.toLowerCase().includes('image') || key.toLowerCase().includes('logo') || key.toLowerCase().includes('banner');
+};
+
 const AdminAppConfig: React.FC<Props> = ({ password }) => {
   const [configs, setConfigs] = useState<Config[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
   const [editValues, setEditValues] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
+  const [uploading, setUploading] = useState<string | null>(null);
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const fetchConfigs = async () => {
     setLoading(true);
@@ -55,6 +67,49 @@ const AdminAppConfig: React.FC<Props> = ({ password }) => {
       toast.success(`${key} updated`);
     }
     setSaving(null);
+  };
+
+  const handleImageUpload = async (key: string, file: File) => {
+    setUploading(key);
+    try {
+      const compressed = await browserImageCompression(file, {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+      });
+
+      const ext = compressed.type === 'image/png' ? 'png' : 'jpg';
+      const path = `config/${key}_${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('posts')
+        .upload(path, compressed, { upsert: true });
+
+      if (uploadError) {
+        toast.error('Upload failed: ' + uploadError.message);
+        setUploading(null);
+        return;
+      }
+
+      const { data: urlData } = supabase.storage.from('posts').getPublicUrl(path);
+      const url = urlData.publicUrl;
+
+      setEditValues(prev => ({ ...prev, [key]: url }));
+
+      // Auto-save after upload
+      const { data, error } = await supabase.functions.invoke('verify-admin', {
+        body: { password, action: 'update_config', key, value: url },
+      });
+      if (error || !data?.success) {
+        toast.error('Uploaded but failed to save config');
+      } else {
+        setConfigs(prev => prev.map(c => c.key === key ? { ...c, value: url } : c));
+        toast.success(`${key} image updated`);
+      }
+    } catch (err) {
+      toast.error('Upload failed');
+    }
+    setUploading(null);
   };
 
   if (!fetched) {
@@ -90,31 +145,89 @@ const AdminAppConfig: React.FC<Props> = ({ password }) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {configs.map(c => (
-                <TableRow key={c.key}>
-                  <TableCell className="font-mono text-sm">{c.key}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm max-w-[200px] truncate">
-                    {c.description || '—'}
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      value={editValues[c.key] || ''}
-                      onChange={e => setEditValues(prev => ({ ...prev, [c.key]: e.target.value }))}
-                      className="max-w-[300px] h-8"
-                    />
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={saving === c.key || editValues[c.key] === (c.value || '')}
-                      onClick={() => saveConfig(c.key)}
-                    >
-                      {saving === c.key ? 'Saving…' : <><Save className="w-3 h-3 mr-1" /> Save</>}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {configs.map(c => {
+                const currentVal = editValues[c.key] || '';
+                const isBool = isBooleanValue(c.value);
+                const isImg = isImageKey(c.key);
+
+                return (
+                  <TableRow key={c.key}>
+                    <TableCell className="font-mono text-sm">{c.key}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm max-w-[200px] truncate">
+                      {c.description || '—'}
+                    </TableCell>
+                    <TableCell>
+                      {isBool ? (
+                        <Select
+                          value={currentVal}
+                          onValueChange={(val) => setEditValues(prev => ({ ...prev, [c.key]: val }))}
+                        >
+                          <SelectTrigger className="max-w-[140px] h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="true">true</SelectItem>
+                            <SelectItem value="false">false</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : isImg ? (
+                        <div className="flex flex-col gap-2 max-w-[320px]">
+                          {currentVal && (
+                            <img
+                              src={currentVal}
+                              alt={c.key}
+                              className="w-full h-20 object-cover rounded border border-border"
+                            />
+                          )}
+                          <div className="flex gap-2">
+                            <Input
+                              value={currentVal}
+                              onChange={e => setEditValues(prev => ({ ...prev, [c.key]: e.target.value }))}
+                              className="h-8 text-xs"
+                              placeholder="Image URL…"
+                            />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              ref={el => { fileInputRefs.current[c.key] = el; }}
+                              onChange={e => {
+                                const file = e.target.files?.[0];
+                                if (file) handleImageUpload(c.key, file);
+                              }}
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 px-2 shrink-0"
+                              disabled={uploading === c.key}
+                              onClick={() => fileInputRefs.current[c.key]?.click()}
+                            >
+                              {uploading === c.key ? '…' : <Upload className="w-3 h-3" />}
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Input
+                          value={currentVal}
+                          onChange={e => setEditValues(prev => ({ ...prev, [c.key]: e.target.value }))}
+                          className="max-w-[300px] h-8"
+                        />
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={saving === c.key || currentVal === (c.value || '')}
+                        onClick={() => saveConfig(c.key)}
+                      >
+                        {saving === c.key ? 'Saving…' : <><Save className="w-3 h-3 mr-1" /> Save</>}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
               {configs.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
