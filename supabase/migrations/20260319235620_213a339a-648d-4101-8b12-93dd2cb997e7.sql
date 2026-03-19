@@ -1,0 +1,1 @@
+ALTER TABLE public.android_testers ADD COLUMN IF NOT EXISTS signup_email text;
