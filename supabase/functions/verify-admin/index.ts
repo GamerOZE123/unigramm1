@@ -168,17 +168,27 @@ Deno.serve(async (req) => {
       const { user_id } = body;
       if (!user_id) return json({ valid: true, error: 'user_id required' }, 400);
 
-      // Delete profile first (cascades handled by DB)
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
         .delete()
         .eq('user_id', user_id);
       if (profileError) return json({ valid: true, error: profileError.message }, 400);
 
-      // Delete auth user
       const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(user_id);
       if (authError) return json({ valid: true, error: authError.message }, 400);
 
+      return json({ valid: true, success: true });
+    }
+
+    // ── Confirm User Email ───────────────────────────────────
+    if (action === 'confirm_email') {
+      const { user_id } = body;
+      if (!user_id) return json({ valid: true, error: 'user_id required' }, 400);
+
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(user_id, {
+        email_confirm: true,
+      });
+      if (error) return json({ valid: true, error: error.message }, 400);
       return json({ valid: true, success: true });
     }
 
