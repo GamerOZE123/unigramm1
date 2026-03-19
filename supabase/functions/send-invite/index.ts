@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
 
     const greeting = name ? `Hi ${name},` : 'Hi there,'
 
-    const LOGO_URL = 'https://sdqmiwsvplykgsxrthfp.supabase.co/storage/v1/object/public/assets/unigramm-logo.png'
+    const LOGO_URL = 'https://unigramm1.lovable.app/unigramm-logo.png'
 
     const htmlBody = `<!DOCTYPE html>
 <html lang="en">
