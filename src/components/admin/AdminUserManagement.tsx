@@ -74,6 +74,19 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
     setDeleting(null);
   };
 
+  const handleConfirmEmail = async (user_id: string) => {
+    setToggling(user_id);
+    const { data, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password, action: 'confirm_email', user_id },
+    });
+    if (error || !data?.success) {
+      toast.error(data?.error || 'Failed to confirm email');
+    } else {
+      toast.success('Email confirmed for user');
+    }
+    setToggling(null);
+  };
+
   const filtered = users.filter(u => {
     if (!search) return true;
     const q = search.toLowerCase();
