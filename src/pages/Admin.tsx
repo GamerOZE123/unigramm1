@@ -213,6 +213,7 @@ const Admin: React.FC = () => {
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="flags">Feature Flags</TabsTrigger>
             <TabsTrigger value="config">App Config</TabsTrigger>
+            <TabsTrigger value="android"><Smartphone className="w-3 h-3 mr-1" /> Android Testers</TabsTrigger>
           </TabsList>
 
           {/* Pending Accounts Tab */}
