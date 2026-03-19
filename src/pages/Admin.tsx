@@ -6,8 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Check, Lock, Users, Mail, Clock, Shield, ShieldOff, Smartphone, Send, RefreshCw, Bell } from 'lucide-react';
+import { Check, Lock, Users, Mail, Clock, Shield, ShieldOff, Smartphone, Send, Trash2, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminFeatureFlags from '@/components/admin/AdminFeatureFlags';
 import AdminAppConfig from '@/components/admin/AdminAppConfig';
@@ -15,121 +14,6 @@ import AdminUserManagement from '@/components/admin/AdminUserManagement';
 import AdminUniversityFeatures from '@/components/admin/AdminUniversityFeatures';
 import AdminPendingAccounts from '@/components/admin/AdminPendingAccounts';
 import AdminBroadcastNotifications from '@/components/admin/AdminBroadcastNotifications';
-
-interface Tester {
-  id: string;
-  email: string;
-  created_at: string;
-  status: string;
-}
-
-const STATUS_OPTIONS = ['pending', 'added', 'link_sent'] as const;
-
-const AndroidTestersTab: React.FC = () => {
-  const [testers, setTesters] = useState<Tester[]>([]);
-  const [testerLoading, setTesterLoading] = useState(true);
-  const [sending, setSending] = useState<string | null>(null);
-
-  const fetchTesters = async () => {
-    setTesterLoading(true);
-    const { data } = await supabase
-      .from('android_testers' as any)
-      .select('*')
-      .order('created_at', { ascending: false }) as any;
-    setTesters(data || []);
-    setTesterLoading(false);
-  };
-
-  useEffect(() => { fetchTesters(); }, []);
-
-  const updateStatus = async (id: string, status: string) => {
-    await supabase
-      .from('android_testers' as any)
-      .update({ status } as any)
-      .eq('id', id);
-    setTesters((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)));
-  };
-
-  const cycleStatus = (tester: Tester) => {
-    const idx = STATUS_OPTIONS.indexOf(tester.status as any);
-    const next = STATUS_OPTIONS[(idx + 1) % STATUS_OPTIONS.length];
-    updateStatus(tester.id, next);
-  };
-
-  const sendInvite = async (tester: Tester) => {
-    setSending(tester.id);
-    try {
-      const { data, error } = await supabase.functions.invoke('send-android-invite', {
-        body: { email: tester.email },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      await updateStatus(tester.id, 'link_sent');
-      toast.success(`Invite sent to ${tester.email}`);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to send invite');
-    } finally {
-      setSending(null);
-    }
-  };
-
-  const statusColors: Record<string, string> = {
-    pending: 'bg-yellow-500/20 text-yellow-600 border-yellow-500/30',
-    added: 'bg-blue-500/20 text-blue-600 border-blue-500/30',
-    link_sent: 'bg-green-500/20 text-green-600 border-green-500/30',
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Badge variant="secondary"><Smartphone className="w-3 h-3 mr-1" /> {testers.length} submission{testers.length !== 1 ? 's' : ''}</Badge>
-        <Button variant="outline" size="sm" onClick={fetchTesters} disabled={testerLoading}>
-          <RefreshCw className={`w-4 h-4 mr-1 ${testerLoading ? 'animate-spin' : ''}`} /> Refresh
-        </Button>
-      </div>
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead>Submitted At</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {testers.map((t) => (
-                <TableRow key={t.id}>
-                  <TableCell className="font-medium">{t.email}</TableCell>
-                  <TableCell>{new Date(t.created_at).toLocaleString()}</TableCell>
-                  <TableCell>
-                    <button onClick={() => cycleStatus(t)}>
-                      <Badge className={`cursor-pointer border ${statusColors[t.status] || statusColors.pending}`}>
-                        {t.status}
-                      </Badge>
-                    </button>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button size="sm" variant="outline" onClick={() => sendInvite(t)} disabled={sending === t.id}>
-                      <Send className="w-3 h-3 mr-1" />
-                      {sending === t.id ? 'Sending…' : 'Send Link'}
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {testers.length === 0 && !testerLoading && (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No submissions yet</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
 
 interface SignupRow {
   id: string;
@@ -152,12 +36,11 @@ const Admin: React.FC = () => {
   const [inviting, setInviting] = useState<string | null>(null);
   const [storedPassword, setStoredPassword] = useState('');
   const [sendingAndroid, setSendingAndroid] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   // Access control state
   const [restrictedAccess, setRestrictedAccess] = useState<boolean | null>(null);
   const [togglingAccess, setTogglingAccess] = useState(false);
-
-
 
   const fetchAccessConfig = async () => {
     const { data, error } = await supabase
@@ -168,7 +51,6 @@ const Admin: React.FC = () => {
     if (!error && data) {
       setRestrictedAccess(data.value === 'true');
     }
-
   };
 
   const toggleAccess = async () => {
@@ -186,9 +68,6 @@ const Admin: React.FC = () => {
     }
     setTogglingAccess(false);
   };
-
-
-
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -255,9 +134,6 @@ const Admin: React.FC = () => {
     setInviting(null);
   };
 
-  const pendingCount = signups.filter(s => !s.invited).length;
-  const invitedCount = signups.filter(s => s.invited).length;
-
   const handleSendAndroidLink = async (signup: SignupRow) => {
     setSendingAndroid(signup.id);
     try {
@@ -273,6 +149,26 @@ const Admin: React.FC = () => {
     }
     setSendingAndroid(null);
   };
+
+  const handleDeleteWaitlistEntry = async (signup: SignupRow) => {
+    if (!confirm(`Delete ${signup.email} from the waitlist?`)) return;
+    setDeleting(signup.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-admin', {
+        body: { password: storedPassword, action: 'delete_waitlist_entry', id: signup.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setSignups(prev => prev.filter(s => s.id !== signup.id));
+      toast.success(`Deleted ${signup.email} from waitlist`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete');
+    }
+    setDeleting(null);
+  };
+
+  const pendingCount = signups.filter(s => !s.invited).length;
+  const invitedCount = signups.filter(s => s.invited).length;
 
   if (!authenticated) {
     return (
@@ -337,9 +233,7 @@ const Admin: React.FC = () => {
           </Card>
         )}
 
-
-
-        {/* University Features (from university_features table) */}
+        {/* University Features */}
         <AdminUniversityFeatures />
 
         <Tabs defaultValue="pending" className="w-full">
@@ -349,16 +243,13 @@ const Admin: React.FC = () => {
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="flags">Feature Flags</TabsTrigger>
             <TabsTrigger value="config">App Config</TabsTrigger>
-            <TabsTrigger value="android"><Smartphone className="w-3 h-3 mr-1" /> Android Testers</TabsTrigger>
             <TabsTrigger value="broadcast"><Bell className="w-3 h-3 mr-1" /> Broadcast</TabsTrigger>
           </TabsList>
 
-          {/* Pending Accounts Tab */}
           <TabsContent value="pending">
             <AdminPendingAccounts password={storedPassword} />
           </TabsContent>
 
-          {/* Waitlist Tab */}
           <TabsContent value="waitlist" className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex gap-3">
@@ -383,6 +274,7 @@ const Admin: React.FC = () => {
                       <TableHead>Signed Up</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Android</TableHead>
+                      <TableHead className="text-right">Delete</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -422,11 +314,22 @@ const Admin: React.FC = () => {
                             </Button>
                           )}
                         </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteWaitlistEntry(s)}
+                            disabled={deleting === s.id}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                     {signups.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No signups yet</TableCell>
+                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No signups yet</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
@@ -435,27 +338,18 @@ const Admin: React.FC = () => {
             </Card>
           </TabsContent>
 
-          {/* Users Tab */}
           <TabsContent value="users">
             <AdminUserManagement password={storedPassword} />
           </TabsContent>
 
-          {/* Feature Flags Tab */}
           <TabsContent value="flags">
             <AdminFeatureFlags password={storedPassword} />
           </TabsContent>
 
-          {/* App Config Tab */}
           <TabsContent value="config">
             <AdminAppConfig password={storedPassword} />
           </TabsContent>
 
-          {/* Android Testers Tab */}
-          <TabsContent value="android">
-            <AndroidTestersTab />
-          </TabsContent>
-
-          {/* Broadcast Notifications Tab */}
           <TabsContent value="broadcast">
             <AdminBroadcastNotifications password={storedPassword} />
           </TabsContent>
