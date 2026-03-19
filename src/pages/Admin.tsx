@@ -149,6 +149,7 @@ const Admin: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [inviting, setInviting] = useState<string | null>(null);
   const [storedPassword, setStoredPassword] = useState('');
+  const [sendingAndroid, setSendingAndroid] = useState<string | null>(null);
 
   // Access control state
   const [restrictedAccess, setRestrictedAccess] = useState<boolean | null>(null);
