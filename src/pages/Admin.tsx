@@ -139,6 +139,8 @@ interface SignupRow {
   created_at: string | null;
   invited: boolean;
   android_sent?: boolean;
+  android_email?: string | null;
+  android_status?: string | null;
 }
 
 const Admin: React.FC = () => {
@@ -376,6 +378,7 @@ const Admin: React.FC = () => {
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
+                      <TableHead>Android Email</TableHead>
                       <TableHead>University</TableHead>
                       <TableHead>Signed Up</TableHead>
                       <TableHead>Status</TableHead>
@@ -387,6 +390,13 @@ const Admin: React.FC = () => {
                       <TableRow key={s.id}>
                         <TableCell className="font-medium">{s.full_name || '—'}</TableCell>
                         <TableCell>{s.email}</TableCell>
+                        <TableCell>
+                          {s.android_email ? (
+                            <span className="text-sm">{s.android_email}</span>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </TableCell>
                         <TableCell>{s.university || '—'}</TableCell>
                         <TableCell>
                           {s.created_at
@@ -416,7 +426,7 @@ const Admin: React.FC = () => {
                     ))}
                     {signups.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No signups yet</TableCell>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No signups yet</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
