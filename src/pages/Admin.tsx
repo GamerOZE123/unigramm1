@@ -330,6 +330,7 @@ const Admin: React.FC = () => {
             <TabsTrigger value="flags">Feature Flags</TabsTrigger>
             <TabsTrigger value="config">App Config</TabsTrigger>
             <TabsTrigger value="android"><Smartphone className="w-3 h-3 mr-1" /> Android Testers</TabsTrigger>
+            <TabsTrigger value="broadcast"><Bell className="w-3 h-3 mr-1" /> Broadcast</TabsTrigger>
           </TabsList>
 
           {/* Pending Accounts Tab */}
