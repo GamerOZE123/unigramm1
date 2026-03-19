@@ -293,6 +293,11 @@ const Admin: React.FC = () => {
           <TabsContent value="config">
             <AdminAppConfig password={storedPassword} />
           </TabsContent>
+
+          {/* Android Testers Tab */}
+          <TabsContent value="android">
+            <AndroidTestersTab />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
