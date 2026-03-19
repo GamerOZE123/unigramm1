@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, RefreshCw, Search, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { Users, RefreshCw, Search, CheckCircle, XCircle, Trash2, MailCheck } from 'lucide-react';
 
 interface UserRow {
   user_id: string;
