@@ -73,6 +73,19 @@ const AdminPendingAccounts: React.FC<Props> = ({ password }) => {
     setActioning(null);
   };
 
+  const handleConfirmEmail = async (user_id: string) => {
+    setActioning(user_id);
+    const { data, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password, action: 'confirm_email', user_id },
+    });
+    if (error || !data?.success) {
+      toast.error(data?.error || 'Failed to confirm email');
+    } else {
+      toast.success('Email confirmed for user');
+    }
+    setActioning(null);
+  };
+
   const typeIcon = (type: string | null) => {
     if (type === 'business') return <Building2 className="w-3.5 h-3.5" />;
     if (type === 'clubs') return <Users className="w-3.5 h-3.5" />;
