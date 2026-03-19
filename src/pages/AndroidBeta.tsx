@@ -71,7 +71,7 @@ export default function AndroidBeta() {
               className="text-center text-sm sm:text-base mb-8 leading-relaxed"
               style={{ color: 'rgba(255,255,255,0.55)' }}
             >
-              We're in closed beta on the Play Store. Drop your Gmail below — we'll add you manually
+              We're in closed beta on the Play Store. Enter the email address linked to your Play Store account below — we'll add you manually
               and send you the download link within 2 hours.
             </p>
 
