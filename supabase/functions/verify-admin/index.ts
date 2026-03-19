@@ -79,7 +79,23 @@ Deno.serve(async (req) => {
         .select('id, full_name, email, university, created_at, invited')
         .order('created_at', { ascending: false });
       if (error) return json({ valid: true, error: error.message }, 400);
-      return json({ valid: true, signups: data });
+
+      // Cross-reference with android_testers to get Play Store emails
+      const { data: androidData } = await supabaseAdmin
+        .from('android_testers')
+        .select('email, status');
+      const androidMap: Record<string, { android_email: string; android_status: string }> = {};
+      for (const t of (androidData || [])) {
+        androidMap[t.email.toLowerCase()] = { android_email: t.email, android_status: t.status };
+      }
+
+      const enriched = (data || []).map((s: any) => ({
+        ...s,
+        android_email: androidMap[s.email.toLowerCase()]?.android_email || null,
+        android_status: androidMap[s.email.toLowerCase()]?.android_status || null,
+      }));
+
+      return json({ valid: true, signups: enriched });
     }
 
     if (action === 'invite' && id) {

@@ -139,6 +139,8 @@ interface SignupRow {
   created_at: string | null;
   invited: boolean;
   android_sent?: boolean;
+  android_email?: string | null;
+  android_status?: string | null;
 }
 
 const Admin: React.FC = () => {
