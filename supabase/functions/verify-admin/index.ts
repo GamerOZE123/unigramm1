@@ -107,6 +107,16 @@ Deno.serve(async (req) => {
       return json({ valid: true, success: true });
     }
 
+    // ── Delete Waitlist Entry ────────────────────────────────
+    if (action === 'delete_waitlist_entry' && id) {
+      const { error } = await supabaseAdmin
+        .from('early_access_signups')
+        .delete()
+        .eq('id', id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
     // ── Feature Flags ────────────────────────────────────────
     if (action === 'fetch_flags') {
       const { data, error } = await supabaseAdmin
