@@ -159,19 +159,29 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
                       : '—'}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      size="sm"
-                      variant={u.approved ? 'default' : 'outline'}
-                      disabled={toggling === u.user_id}
-                      onClick={() => toggleApproval(u.user_id, u.approved)}
-                      className={u.approved ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
-                    >
-                      {toggling === u.user_id ? '…' : u.approved ? (
-                        <><CheckCircle className="w-3 h-3 mr-1" /> Approved</>
-                      ) : (
-                        <><XCircle className="w-3 h-3 mr-1" /> Approve</>
-                      )}
-                    </Button>
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        size="sm"
+                        variant={u.approved ? 'default' : 'outline'}
+                        disabled={toggling === u.user_id || deleting === u.user_id}
+                        onClick={() => toggleApproval(u.user_id, u.approved)}
+                        className={u.approved ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
+                      >
+                        {toggling === u.user_id ? '…' : u.approved ? (
+                          <><CheckCircle className="w-3 h-3 mr-1" /> Approved</>
+                        ) : (
+                          <><XCircle className="w-3 h-3 mr-1" /> Approve</>
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={toggling === u.user_id || deleting === u.user_id}
+                        onClick={() => handleDeleteUser(u.user_id, u.full_name)}
+                      >
+                        {deleting === u.user_id ? '…' : <><Trash2 className="w-3 h-3 mr-1" /> Delete</>}
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
