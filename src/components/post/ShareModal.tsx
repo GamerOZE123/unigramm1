@@ -14,7 +14,7 @@ interface ShareModalProps {
 }
 
 export default function ShareModal({ open, onOpenChange, postId, postContent }: ShareModalProps) {
-  const shareUrl = `${window.location.origin}/post/${postId}`;
+  const shareUrl = `https://sdqmiwsvplykgsxrthfp.supabase.co/functions/v1/share-post?id=${postId}`;
   const shareText = `Check out this post: ${postContent.slice(0, 100)}${postContent.length > 100 ? '...' : ''}`;
 
   const handleCopyLink = async () => {
