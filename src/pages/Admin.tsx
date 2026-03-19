@@ -14,6 +14,7 @@ import AdminAppConfig from '@/components/admin/AdminAppConfig';
 import AdminUserManagement from '@/components/admin/AdminUserManagement';
 import AdminUniversityFeatures from '@/components/admin/AdminUniversityFeatures';
 import AdminPendingAccounts from '@/components/admin/AdminPendingAccounts';
+import AdminBroadcastNotifications from '@/components/admin/AdminBroadcastNotifications';
 
 interface Tester {
   id: string;
