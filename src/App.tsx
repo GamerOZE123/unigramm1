@@ -43,6 +43,8 @@ import EmailConfirmed from '@/pages/EmailConfirmed';
 import Contribute from '@/pages/Contribute';
 import Admin from '@/pages/Admin';
 import Waitlist from '@/pages/Waitlist';
+import AndroidBeta from '@/pages/AndroidBeta';
+import AdminAndroidTesters from '@/pages/AdminAndroidTesters';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -95,6 +97,8 @@ function App() {
               <Route path="/email-confirmed" element={<EmailConfirmed />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/waitlist" element={<Waitlist />} />
+              <Route path="/android-beta" element={<AndroidBeta />} />
+              <Route path="/admin/android-testers" element={<AdminAndroidTesters />} />
               <Route path="/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
