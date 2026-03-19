@@ -200,8 +200,7 @@ const Admin: React.FC = () => {
           </Card>
         )}
 
-        {/* University Features (from university_features table) */}
-        <AdminUniversityFeatures />
+
 
         {/* University Features (from university_features table) */}
         <AdminUniversityFeatures />
