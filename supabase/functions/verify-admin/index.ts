@@ -138,7 +138,18 @@ Deno.serve(async (req) => {
         .select('user_id, username, full_name, email, university, user_type, approved, created_at')
         .order('created_at', { ascending: false });
       if (error) return json({ valid: true, error: error.message }, 400);
-      return json({ valid: true, users: data });
+
+      // Enrich with email confirmation status from auth
+      const enrichedUsers = [];
+      for (const user of (data || [])) {
+        let email_confirmed = false;
+        try {
+          const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(user.user_id);
+          email_confirmed = !!authUser?.user?.email_confirmed_at;
+        } catch (_) {}
+        enrichedUsers.push({ ...user, email_confirmed });
+      }
+      return json({ valid: true, users: enrichedUsers });
     }
 
     if (action === 'set_approved') {
