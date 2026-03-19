@@ -13,6 +13,7 @@ import AdminFeatureFlags from '@/components/admin/AdminFeatureFlags';
 import AdminAppConfig from '@/components/admin/AdminAppConfig';
 import AdminUserManagement from '@/components/admin/AdminUserManagement';
 import AdminUniversityFeatures from '@/components/admin/AdminUniversityFeatures';
+import AdminPendingAccounts from '@/components/admin/AdminPendingAccounts';
 
 interface SignupRow {
   id: string;
