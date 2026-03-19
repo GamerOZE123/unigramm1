@@ -44,7 +44,6 @@ import Contribute from '@/pages/Contribute';
 import Admin from '@/pages/Admin';
 import Waitlist from '@/pages/Waitlist';
 import AndroidBeta from '@/pages/AndroidBeta';
-import AdminAndroidTesters from '@/pages/AdminAndroidTesters';
 
 const queryClient = new QueryClient({
   defaultOptions: {
