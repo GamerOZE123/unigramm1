@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import AdminFeatureFlags from '@/components/admin/AdminFeatureFlags';
 import AdminAppConfig from '@/components/admin/AdminAppConfig';
 import AdminUserManagement from '@/components/admin/AdminUserManagement';
+import AdminUniversityFeatures from '@/components/admin/AdminUniversityFeatures';
 
 interface SignupRow {
   id: string;
@@ -251,6 +252,9 @@ const Admin: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* University Features (from university_features table) */}
+        <AdminUniversityFeatures />
 
         <Tabs defaultValue="waitlist" className="w-full">
           <TabsList className="w-full justify-start">
