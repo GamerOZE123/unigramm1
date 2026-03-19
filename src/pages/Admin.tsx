@@ -36,17 +36,7 @@ const Admin: React.FC = () => {
   const [restrictedAccess, setRestrictedAccess] = useState<boolean | null>(null);
   const [togglingAccess, setTogglingAccess] = useState(false);
 
-  // University features state
-  const UNIVERSITY_FEATURES = [
-    { key: 'university_feature_clubs', label: 'Clubs & Organizations' },
-    { key: 'university_feature_startups', label: 'Startups & Ideas' },
-    { key: 'university_feature_confessions', label: 'Confessions' },
-    { key: 'university_feature_groups', label: 'Groups' },
-    { key: 'university_feature_events', label: 'Events' },
-    { key: 'university_feature_marketplace', label: 'Marketplace' },
-  ] as const;
-  const [universityFeatures, setUniversityFeatures] = useState<Record<string, boolean>>({});
-  const [togglingFeature, setTogglingFeature] = useState<string | null>(null);
+
 
   const fetchAccessConfig = async () => {
     const { data, error } = await supabase
