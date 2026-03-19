@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Check, Lock, Users, Mail, Clock, Shield, ShieldOff } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminFeatureFlags from '@/components/admin/AdminFeatureFlags';
@@ -34,6 +35,18 @@ const Admin: React.FC = () => {
   const [restrictedAccess, setRestrictedAccess] = useState<boolean | null>(null);
   const [togglingAccess, setTogglingAccess] = useState(false);
 
+  // University features state
+  const UNIVERSITY_FEATURES = [
+    { key: 'university_feature_clubs', label: 'Clubs & Organizations' },
+    { key: 'university_feature_startups', label: 'Startups & Ideas' },
+    { key: 'university_feature_confessions', label: 'Confessions' },
+    { key: 'university_feature_groups', label: 'Groups' },
+    { key: 'university_feature_events', label: 'Events' },
+    { key: 'university_feature_marketplace', label: 'Marketplace' },
+  ] as const;
+  const [universityFeatures, setUniversityFeatures] = useState<Record<string, boolean>>({});
+  const [togglingFeature, setTogglingFeature] = useState<string | null>(null);
+
   const fetchAccessConfig = async () => {
     const { data, error } = await supabase
       .from('app_config')
@@ -42,6 +55,17 @@ const Admin: React.FC = () => {
       .single();
     if (!error && data) {
       setRestrictedAccess(data.value === 'true');
+    }
+
+    // Fetch university features
+    const { data: featureData } = await supabase
+      .from('app_config')
+      .select('key, value')
+      .like('key', 'university_feature_%');
+    if (featureData) {
+      const featureMap: Record<string, boolean> = {};
+      featureData.forEach((f) => { featureMap[f.key] = f.value === 'true'; });
+      setUniversityFeatures(featureMap);
     }
   };
 
@@ -59,6 +83,23 @@ const Admin: React.FC = () => {
       toast.success(newValue ? 'Access restricted to approved users' : 'Access opened to everyone');
     }
     setTogglingAccess(false);
+  };
+
+  const toggleUniversityFeature = async (key: string) => {
+    setTogglingFeature(key);
+    const newValue = !universityFeatures[key];
+    const { error } = await supabase
+      .from('app_config')
+      .update({ value: String(newValue), updated_at: new Date().toISOString() })
+      .eq('key', key);
+    if (error) {
+      toast.error('Failed to update feature');
+    } else {
+      setUniversityFeatures(prev => ({ ...prev, [key]: newValue }));
+      const label = UNIVERSITY_FEATURES.find(f => f.key === key)?.label || key;
+      toast.success(`${label} ${newValue ? 'enabled' : 'disabled'}`);
+    }
+    setTogglingFeature(null);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -191,6 +232,25 @@ const Admin: React.FC = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* University Features Card */}
+        <Card>
+          <CardContent className="pt-6 space-y-4">
+            <p className="font-semibold text-foreground">University Features</p>
+            <div className="space-y-3">
+              {UNIVERSITY_FEATURES.map(({ key, label }) => (
+                <div key={key} className="flex items-center justify-between">
+                  <span className="text-sm text-foreground">{label}</span>
+                  <Switch
+                    checked={!!universityFeatures[key]}
+                    onCheckedChange={() => toggleUniversityFeature(key)}
+                    disabled={togglingFeature === key}
+                  />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
         <Tabs defaultValue="waitlist" className="w-full">
           <TabsList className="w-full justify-start">
