@@ -1,14 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function AndroidBeta() {
-  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
-  const autoSubmitted = useRef(false);
 
   useEffect(() => {
     const prefill = searchParams.get('email');
