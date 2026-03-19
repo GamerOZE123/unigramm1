@@ -52,12 +52,12 @@ export default function AndroidBeta() {
 
       <div className="relative z-10 w-full max-w-md flex flex-col items-center">
         {/* Logo */}
-        <span
-          className="text-2xl font-bold tracking-tight mb-10"
-          style={{ color: '#4f8eff', fontFamily: "'Plus Jakarta Sans', sans-serif" }}
-        >
-          Unigramm
-        </span>
+        <img
+          src="/unigramm-logo.png"
+          alt="Unigramm"
+          className="h-10 mb-10"
+          style={{ display: 'block' }}
+        />
 
         {!submitted ? (
           <>
@@ -68,11 +68,20 @@ export default function AndroidBeta() {
               Get Unigramm on Android
             </h1>
             <p
-              className="text-center text-sm sm:text-base mb-8 leading-relaxed"
+              className="text-center text-sm sm:text-base mb-2 leading-relaxed"
               style={{ color: 'rgba(255,255,255,0.55)' }}
             >
-              We're in closed beta on the Play Store. Enter the email address linked to your Play Store account below — we'll add you manually
-              and send you the download link within 2 hours.
+              We're in closed beta on the Play Store.
+            </p>
+            <p
+              className="text-center text-sm sm:text-base mb-8 leading-relaxed font-semibold px-2 py-3 rounded-xl"
+              style={{
+                color: '#8dcfff',
+                background: 'rgba(79,142,255,0.1)',
+                border: '1px solid rgba(79,142,255,0.2)',
+              }}
+            >
+              ⚠️ Enter the email address linked to your Play Store account below — we'll add you manually and send you the download link within 2 hours.
             </p>
 
             <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">

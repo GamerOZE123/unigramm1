@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
       from: smtpUser,
       to: email,
       subject: "You're in — Welcome to Unigramm 🎓",
-      text: `${greeting}\n\nYour early access to Unigramm has been approved. Welcome to your campus social network.\n\nDownload the app and sign up using this exact email address:\n${email}\n\nDownload on the App Store:\nhttps://apps.apple.com/us/app/unigramm/id6759472658\n\nOn Android? Get early access here:\nhttps://unigramm.com/android-beta\n\nWelcome aboard,\nTeam Unigramm\n\nunigramm.com`,
+      text: `${greeting}\n\nYour early access to Unigramm has been approved. Welcome to your campus social network.\n\nDownload the app and sign up using this exact email address:\n${email}\n\nDownload on the App Store:\nhttps://apps.apple.com/us/app/unigramm/id6759472658\n\nOn Android? Get early access here:\nhttps://unigramm1.lovable.app/android-beta\n\nWelcome aboard,\nTeam Unigramm\n\nunigramm.com`,
       html: htmlBody,
     })
 
