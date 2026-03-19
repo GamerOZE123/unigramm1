@@ -1,11 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function AndroidBeta() {
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const autoSubmitted = useRef(false);
+
+  useEffect(() => {
+    const prefill = searchParams.get('email');
+    if (prefill && !autoSubmitted.current) {
+      autoSubmitted.current = true;
+      const trimmed = prefill.toLowerCase().trim();
+      setEmail(trimmed);
+      // Auto-submit if it's a valid email
+      if (trimmed.includes('@')) {
+        handleAutoSubmit(trimmed);
+      }
+    }
+  }, [searchParams]);
+
+  const handleAutoSubmit = async (emailValue: string) => {
+    setLoading(true);
+    try {
+      const { error: dbError } = await supabase
+        .from('android_testers' as any)
+        .insert({ email: emailValue } as any);
+      if (dbError) {
+        // If duplicate, still show success
+        if (dbError.code === '23505') {
+          setSubmitted(true);
+          return;
+        }
+        throw dbError;
+      }
+      setSubmitted(true);
+    } catch {
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +63,13 @@ export default function AndroidBeta() {
       const { error: dbError } = await supabase
         .from('android_testers' as any)
         .insert({ email: email.toLowerCase().trim() } as any);
-      if (dbError) throw dbError;
+      if (dbError) {
+        if (dbError.code === '23505') {
+          setSubmitted(true);
+          return;
+        }
+        throw dbError;
+      }
       setSubmitted(true);
     } catch {
       setError('Something went wrong. Please try again.');

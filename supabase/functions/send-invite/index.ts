@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
                   <td align="center" style="padding:24px 0 16px;">
                     <a href="https://apps.apple.com/us/app/unigramm/id6759472658" style="display:inline-block;background:#4f8eff;color:#ffffff;font-size:14px;font-weight:700;padding:14px 36px;border-radius:12px;text-decoration:none;letter-spacing:0.3px;">Download on the App Store →</a>
                     <p style="margin:16px 0 0;font-size:13px;color:#888;">On Android?</p>
-                    <a href="https://unigramm.com/android-beta" style="font-size:13px;color:#4f8eff;font-weight:600;text-decoration:none;">Get Early Access on Android →</a>
+                    <a href="https://unigramm.com/android-beta?email=${encodeURIComponent(email)}" style="font-size:13px;color:#4f8eff;font-weight:600;text-decoration:none;">Get Early Access on Android →</a>
                   </td>
                 </tr>
               </table>
