@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { Users, RefreshCw, Search, Trash2, Smartphone, Send } from 'lucide-react';
 
 interface UserRow {
   user_id: string;
@@ -19,6 +19,8 @@ interface UserRow {
   approved: boolean;
   email_confirmed: boolean;
   created_at: string | null;
+  android_tester_email?: string | null;
+  android_tester_status?: string | null;
 }
 
 interface Props {
@@ -30,7 +32,23 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
   const [actioning, setActioning] = useState<string | null>(null);
+  const [sendingAndroid, setSendingAndroid] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [showAndroidOnly, setShowAndroidOnly] = useState(false);
+  const [androidTesters, setAndroidTesters] = useState<Record<string, { email: string; status: string }>>({});
+
+  const fetchAndroidTesters = async () => {
+    const { data } = await supabase
+      .from('android_testers' as any)
+      .select('*') as any;
+    if (data) {
+      const map: Record<string, { email: string; status: string }> = {};
+      data.forEach((t: any) => {
+        map[t.email.toLowerCase()] = { email: t.email, status: t.status };
+      });
+      setAndroidTesters(map);
+    }
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -43,6 +61,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
       setUsers(data.users || []);
       setFetched(true);
     }
+    await fetchAndroidTesters();
     setLoading(false);
   };
 
@@ -61,7 +80,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
   };
 
   const toggleEmailConfirm = async (user_id: string, currentlyConfirmed: boolean) => {
-    if (currentlyConfirmed) return; // Can't un-confirm
+    if (currentlyConfirmed) return;
     setActioning(user_id);
     const { data, error } = await supabase.functions.invoke('verify-admin', {
       body: { password, action: 'confirm_email', user_id },
@@ -90,7 +109,34 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
     setActioning(null);
   };
 
+  const sendAndroidInvite = async (user: UserRow) => {
+    if (!user.email) {
+      toast.error('User has no email');
+      return;
+    }
+    setSendingAndroid(user.user_id);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-android-invite', {
+        body: { email: user.email },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Android download link sent to ${user.email}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send Android invite');
+    } finally {
+      setSendingAndroid(null);
+    }
+  };
+
+  const getAndroidInfo = (user: UserRow) => {
+    if (!user.email) return null;
+    return androidTesters[user.email.toLowerCase()] || null;
+  };
+
   const filtered = users.filter(u => {
+    const androidInfo = getAndroidInfo(u);
+    if (showAndroidOnly && !androidInfo) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -104,6 +150,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
   const approvedCount = users.filter(u => u.approved).length;
   const pendingCount = users.filter(u => !u.approved).length;
   const emailConfirmedCount = users.filter(u => u.email_confirmed).length;
+  const androidTesterCount = users.filter(u => getAndroidInfo(u)).length;
 
   if (!fetched) {
     return (
@@ -127,6 +174,11 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
           <Badge className="bg-green-500/20 text-green-400 border-green-500/30">{approvedCount} approved</Badge>
           <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">{pendingCount} pending</Badge>
           <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">{emailConfirmedCount} email confirmed</Badge>
+          <button onClick={() => setShowAndroidOnly(!showAndroidOnly)}>
+            <Badge className={`cursor-pointer border ${showAndroidOnly ? 'bg-primary/20 text-primary border-primary/30' : 'bg-muted text-muted-foreground border-muted'}`}>
+              <Smartphone className="w-3 h-3 mr-1" /> {androidTesterCount} android testers
+            </Badge>
+          </button>
         </div>
         <div className="flex gap-2">
           <div className="relative">
@@ -151,6 +203,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>Play Store Email</TableHead>
                 <TableHead>University</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Joined</TableHead>
@@ -160,64 +213,90 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map(u => (
-                <TableRow key={u.user_id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{u.full_name || '—'}</p>
-                      <p className="text-xs text-muted-foreground">@{u.username || '—'}</p>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-sm">{u.email || '—'}</TableCell>
-                  <TableCell className="text-sm">{u.university || '—'}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs">{u.user_type || '—'}</Badge>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {u.created_at
-                      ? new Date(u.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-                      : '—'}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <Switch
-                        checked={u.email_confirmed}
-                        disabled={u.email_confirmed || actioning === u.user_id}
-                        onCheckedChange={() => toggleEmailConfirm(u.user_id, u.email_confirmed)}
-                      />
-                      <span className={`text-xs ${u.email_confirmed ? 'text-green-500' : 'text-muted-foreground'}`}>
-                        {u.email_confirmed ? 'Verified' : 'Unverified'}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <Switch
-                        checked={u.approved}
-                        disabled={actioning === u.user_id}
-                        onCheckedChange={() => toggleApproval(u.user_id, u.approved)}
-                      />
-                      <span className={`text-xs ${u.approved ? 'text-green-500' : 'text-muted-foreground'}`}>
-                        {u.approved ? 'Yes' : 'No'}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      disabled={actioning === u.user_id}
-                      onClick={() => handleDeleteUser(u.user_id, u.full_name)}
-                    >
-                      <Trash2 className="w-3 h-3 mr-1" /> Delete
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {filtered.map(u => {
+                const androidInfo = getAndroidInfo(u);
+                return (
+                  <TableRow key={u.user_id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{u.full_name || '—'}</p>
+                        <p className="text-xs text-muted-foreground">@{u.username || '—'}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">{u.email || '—'}</TableCell>
+                    <TableCell className="text-sm">
+                      {androidInfo ? (
+                        <div className="flex flex-col gap-1">
+                          <span>{androidInfo.email}</span>
+                          <Badge variant="outline" className="text-xs w-fit">{androidInfo.status}</Badge>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm">{u.university || '—'}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">{u.user_type || '—'}</Badge>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {u.created_at
+                        ? new Date(u.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                        : '—'}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <Switch
+                          checked={u.email_confirmed}
+                          disabled={u.email_confirmed || actioning === u.user_id}
+                          onCheckedChange={() => toggleEmailConfirm(u.user_id, u.email_confirmed)}
+                        />
+                        <span className={`text-xs ${u.email_confirmed ? 'text-green-500' : 'text-muted-foreground'}`}>
+                          {u.email_confirmed ? 'Verified' : 'Unverified'}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <Switch
+                          checked={u.approved}
+                          disabled={actioning === u.user_id}
+                          onCheckedChange={() => toggleApproval(u.user_id, u.approved)}
+                        />
+                        <span className={`text-xs ${u.approved ? 'text-green-500' : 'text-muted-foreground'}`}>
+                          {u.approved ? 'Yes' : 'No'}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex gap-1 justify-end">
+                        {androidInfo && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={sendingAndroid === u.user_id}
+                            onClick={() => sendAndroidInvite(u)}
+                          >
+                            <Smartphone className="w-3 h-3 mr-1" />
+                            {sendingAndroid === u.user_id ? 'Sending…' : 'Send Android Link'}
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          disabled={actioning === u.user_id}
+                          onClick={() => handleDeleteUser(u.user_id, u.full_name)}
+                        >
+                          <Trash2 className="w-3 h-3 mr-1" /> Delete
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
               {filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                    {search ? 'No users match your search' : 'No users found'}
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    {search ? 'No users match your search' : showAndroidOnly ? 'No android testers found' : 'No users found'}
                   </TableCell>
                 </TableRow>
               )}
