@@ -56,6 +56,17 @@ const Admin: React.FC = () => {
     if (!error && data) {
       setRestrictedAccess(data.value === 'true');
     }
+
+    // Fetch university features
+    const { data: featureData } = await supabase
+      .from('app_config')
+      .select('key, value')
+      .like('key', 'university_feature_%');
+    if (featureData) {
+      const featureMap: Record<string, boolean> = {};
+      featureData.forEach((f) => { featureMap[f.key] = f.value === 'true'; });
+      setUniversityFeatures(featureMap);
+    }
   };
 
   const toggleAccess = async () => {
