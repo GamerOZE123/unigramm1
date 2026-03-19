@@ -415,6 +415,11 @@ const Admin: React.FC = () => {
           <TabsContent value="android">
             <AndroidTestersTab />
           </TabsContent>
+
+          {/* Broadcast Notifications Tab */}
+          <TabsContent value="broadcast">
+            <AdminBroadcastNotifications password={storedPassword} />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
