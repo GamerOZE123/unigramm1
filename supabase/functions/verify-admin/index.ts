@@ -264,6 +264,35 @@ Deno.serve(async (req) => {
       return json({ valid: true, success: true });
     }
 
+    // ── Broadcast Notifications ────────────────────────────────
+    if (action === 'fetch_all_user_ids') {
+      const { data, error } = await supabaseAdmin
+        .from('profiles')
+        .select('user_id')
+        .eq('approved', true);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, user_ids: (data || []).map((u: any) => u.user_id) });
+    }
+
+    if (action === 'broadcast_batch') {
+      const { user_ids, title, message, navigate_to, type } = body;
+      if (!user_ids?.length || !title || !message) {
+        return json({ valid: true, error: 'user_ids, title, and message required' }, 400);
+      }
+
+      const rows = user_ids.map((uid: string) => ({
+        user_id: uid,
+        type: type || 'admin_broadcast',
+        title,
+        message,
+        navigate_to: navigate_to || null,
+      }));
+
+      const { error } = await supabaseAdmin.from('notifications').insert(rows);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true, inserted: user_ids.length });
+    }
+
     // Default: just validate password
     return json({ valid: true });
   } catch {
