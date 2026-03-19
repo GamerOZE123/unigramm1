@@ -105,7 +105,7 @@ export default function MapSection({ indiaMap }: { indiaMap: string }) {
         </div>
 
         {/* Single campus card — no "coming soon" */}
-        <div className="rounded-2xl p-5" style={{ background: "#111827", border: "1px solid rgba(79,142,255,0.1)" }}>
+        <div className="rounded-2xl p-5 max-w-md" style={{ background: "#111827", border: "1px solid rgba(79,142,255,0.1)" }}>
           <div className="flex items-center gap-2 mb-4">
             <div className="w-2 h-2 rounded-full" style={{ background: "#fbbf24" }} />
             <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#fbbf24" }}>
