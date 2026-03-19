@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
                   <td align="center" style="padding:24px 0 16px;">
                     <a href="https://apps.apple.com/us/app/unigramm/id6759472658" style="display:inline-block;background:#4f8eff;color:#ffffff;font-size:14px;font-weight:700;padding:14px 36px;border-radius:12px;text-decoration:none;letter-spacing:0.3px;">Download on the App Store →</a>
                     <p style="margin:16px 0 0;font-size:13px;color:#888;">On Android?</p>
-                    <a href="https://unigramm.com/android-beta" style="font-size:13px;color:#4f8eff;font-weight:600;text-decoration:none;">Get Early Access on Android →</a>
+                    <a href="https://unigramm1.lovable.app/android-beta" style="font-size:13px;color:#4f8eff;font-weight:600;text-decoration:none;">Get Early Access on Android →</a>
                   </td>
                 </tr>
               </table>
@@ -158,7 +158,7 @@ Deno.serve(async (req) => {
       from: smtpUser,
       to: email,
       subject: "You're in — Welcome to Unigramm 🎓",
-      text: `${greeting}\n\nYour early access to Unigramm has been approved. Welcome to your campus social network.\n\nDownload the app and sign up using this exact email address:\n${email}\n\nDownload on the App Store:\nhttps://apps.apple.com/us/app/unigramm/id6759472658\n\nOn Android? Get early access here:\nhttps://unigramm.com/android-beta\n\nWelcome aboard,\nTeam Unigramm\n\nunigramm.com`,
+      text: `${greeting}\n\nYour early access to Unigramm has been approved. Welcome to your campus social network.\n\nDownload the app and sign up using this exact email address:\n${email}\n\nDownload on the App Store:\nhttps://apps.apple.com/us/app/unigramm/id6759472658\n\nOn Android? Get early access here:\nhttps://unigramm1.lovable.app/android-beta\n\nWelcome aboard,\nTeam Unigramm\n\nunigramm.com`,
       html: htmlBody,
     })
 
