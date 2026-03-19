@@ -151,6 +151,37 @@ Deno.serve(async (req) => {
       return json({ valid: true, success: true });
     }
 
+    // ── Pending Accounts (business/clubs) ────────────────────
+    if (action === 'fetch_pending_accounts') {
+      const { data, error } = await supabaseAdmin
+        .from('profiles')
+        .select('user_id, username, full_name, email, university, user_type, approved, created_at')
+        .in('user_type', ['business', 'clubs'])
+        .or('approved.eq.false,approved.is.null')
+        .order('created_at', { ascending: false });
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, accounts: data });
+    }
+
+    // ── Delete User Permanently ──────────────────────────────
+    if (action === 'delete_user') {
+      const { user_id } = body;
+      if (!user_id) return json({ valid: true, error: 'user_id required' }, 400);
+
+      // Delete profile first (cascades handled by DB)
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .delete()
+        .eq('user_id', user_id);
+      if (profileError) return json({ valid: true, error: profileError.message }, 400);
+
+      // Delete auth user
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(user_id);
+      if (authError) return json({ valid: true, error: authError.message }, 400);
+
+      return json({ valid: true, success: true });
+    }
+
     // Default: just validate password
     return json({ valid: true });
   } catch {
