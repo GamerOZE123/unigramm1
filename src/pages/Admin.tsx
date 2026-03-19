@@ -138,6 +138,7 @@ interface SignupRow {
   university: string | null;
   created_at: string | null;
   invited: boolean;
+  android_sent?: boolean;
 }
 
 const Admin: React.FC = () => {
@@ -148,6 +149,7 @@ const Admin: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [inviting, setInviting] = useState<string | null>(null);
   const [storedPassword, setStoredPassword] = useState('');
+  const [sendingAndroid, setSendingAndroid] = useState<string | null>(null);
 
   // Access control state
   const [restrictedAccess, setRestrictedAccess] = useState<boolean | null>(null);
@@ -253,6 +255,22 @@ const Admin: React.FC = () => {
 
   const pendingCount = signups.filter(s => !s.invited).length;
   const invitedCount = signups.filter(s => s.invited).length;
+
+  const handleSendAndroidLink = async (signup: SignupRow) => {
+    setSendingAndroid(signup.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-android-invite', {
+        body: { email: signup.email },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setSignups(prev => prev.map(s => s.id === signup.id ? { ...s, android_sent: true } : s));
+      toast.success(`Android link sent to ${signup.email}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send Android link');
+    }
+    setSendingAndroid(null);
+  };
 
   if (!authenticated) {
     return (
@@ -360,7 +378,8 @@ const Admin: React.FC = () => {
                       <TableHead>Email</TableHead>
                       <TableHead>University</TableHead>
                       <TableHead>Signed Up</TableHead>
-                      <TableHead className="text-right">Status</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Android</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -374,7 +393,7 @@ const Admin: React.FC = () => {
                             ? new Date(s.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
                             : '—'}
                         </TableCell>
-                        <TableCell className="text-right">
+                        <TableCell>
                           {s.invited ? (
                             <Badge variant="secondary" className="gap-1"><Check className="w-3 h-3" /> Invited</Badge>
                           ) : (
@@ -383,11 +402,21 @@ const Admin: React.FC = () => {
                             </Button>
                           )}
                         </TableCell>
+                        <TableCell className="text-right">
+                          {s.android_sent ? (
+                            <Badge variant="secondary" className="gap-1"><Smartphone className="w-3 h-3" /> Sent</Badge>
+                          ) : (
+                            <Button size="sm" variant="outline" onClick={() => handleSendAndroidLink(s)} disabled={sendingAndroid === s.id}>
+                              <Smartphone className="w-3 h-3 mr-1" />
+                              {sendingAndroid === s.id ? 'Sending…' : 'Send'}
+                            </Button>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                     {signups.length === 0 && (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No signups yet</TableCell>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No signups yet</TableCell>
                       </TableRow>
                     )}
                   </TableBody>
