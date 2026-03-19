@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
       },
     })
 
-    const PLAYSTORE_TESTER_LINK = 'PLAYSTORE_TESTER_LINK'
+    const PLAYSTORE_TESTER_LINK = 'https://play.google.com/store/apps/details?id=com.nike11.UnigrammApp'
 
     const htmlBody = `<!DOCTYPE html>
 <html>
