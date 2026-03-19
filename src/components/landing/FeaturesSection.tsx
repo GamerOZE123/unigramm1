@@ -7,7 +7,7 @@ const features = [
   { icon: Users, title: 'Clubs & Orgs', desc: 'Discover and join student organisations.', live: true },
   { icon: Lightbulb, title: 'Ideas & Ventures', desc: 'Showcase and explore student startups.', live: true },
   { icon: Compass, title: 'Explore', desc: 'Trending posts, hashtags and stories.', live: true },
-  { icon: Clock, title: 'Timetable Widget', desc: 'Your class schedule at a glance.', live: true },
+  
   { icon: ShoppingBag, title: 'Marketplace', desc: 'Buy & sell within campus.', live: false },
   { icon: UsersRound, title: 'Groups', desc: 'Private group discussions.', live: false },
   { icon: BarChart3, title: 'Polls & Surveys', desc: 'Create and vote on campus polls.', live: true },
