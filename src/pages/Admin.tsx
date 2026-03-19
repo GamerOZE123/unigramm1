@@ -85,6 +85,23 @@ const Admin: React.FC = () => {
     setTogglingAccess(false);
   };
 
+  const toggleUniversityFeature = async (key: string) => {
+    setTogglingFeature(key);
+    const newValue = !universityFeatures[key];
+    const { error } = await supabase
+      .from('app_config')
+      .update({ value: String(newValue), updated_at: new Date().toISOString() })
+      .eq('key', key);
+    if (error) {
+      toast.error('Failed to update feature');
+    } else {
+      setUniversityFeatures(prev => ({ ...prev, [key]: newValue }));
+      const label = UNIVERSITY_FEATURES.find(f => f.key === key)?.label || key;
+      toast.success(`${label} ${newValue ? 'enabled' : 'disabled'}`);
+    }
+    setTogglingFeature(null);
+  
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setVerifying(true);
