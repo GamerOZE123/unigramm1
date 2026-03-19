@@ -80,13 +80,17 @@ Deno.serve(async (req) => {
         .order('created_at', { ascending: false });
       if (error) return json({ valid: true, error: error.message }, 400);
 
-      // Cross-reference with android_testers to get Play Store emails
+      // Cross-reference with android_testers using signup_email to get Play Store emails
       const { data: androidData } = await supabaseAdmin
         .from('android_testers')
-        .select('email, status');
+        .select('email, signup_email, status');
+      // Map by signup_email (the original early access email) to find the Play Store email
       const androidMap: Record<string, { android_email: string; android_status: string }> = {};
       for (const t of (androidData || [])) {
-        androidMap[t.email.toLowerCase()] = { android_email: t.email, android_status: t.status };
+        const key = (t.signup_email || '').toLowerCase();
+        if (key) {
+          androidMap[key] = { android_email: t.email, android_status: t.status };
+        }
       }
 
       const enriched = (data || []).map((s: any) => ({

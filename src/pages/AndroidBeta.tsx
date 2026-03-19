@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function AndroidBeta() {
+  const [searchParams] = useSearchParams();
+  const signupEmail = searchParams.get('email') || '';
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -22,9 +25,13 @@ export default function AndroidBeta() {
 
     setLoading(true);
     try {
+      const insertData: any = { email: email.toLowerCase().trim() };
+      if (signupEmail) {
+        insertData.signup_email = signupEmail.toLowerCase().trim();
+      }
       const { error: dbError } = await supabase
         .from('android_testers' as any)
-        .insert({ email: email.toLowerCase().trim() } as any);
+        .insert(insertData as any);
       if (dbError) {
         if (dbError.code === '23505') {
           setSubmitted(true);
