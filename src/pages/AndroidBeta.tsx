@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function AndroidBeta() {
+  const [searchParams] = useSearchParams();
+  const signupEmail = searchParams.get('email') || '';
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
