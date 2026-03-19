@@ -13,6 +13,7 @@ import AdminFeatureFlags from '@/components/admin/AdminFeatureFlags';
 import AdminAppConfig from '@/components/admin/AdminAppConfig';
 import AdminUserManagement from '@/components/admin/AdminUserManagement';
 import AdminUniversityFeatures from '@/components/admin/AdminUniversityFeatures';
+import AdminPendingAccounts from '@/components/admin/AdminPendingAccounts';
 
 interface SignupRow {
   id: string;
@@ -205,13 +206,19 @@ const Admin: React.FC = () => {
         {/* University Features (from university_features table) */}
         <AdminUniversityFeatures />
 
-        <Tabs defaultValue="waitlist" className="w-full">
+        <Tabs defaultValue="pending" className="w-full">
           <TabsList className="w-full justify-start">
+            <TabsTrigger value="pending">Pending Accounts</TabsTrigger>
             <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
             <TabsTrigger value="flags">Feature Flags</TabsTrigger>
             <TabsTrigger value="config">App Config</TabsTrigger>
           </TabsList>
+
+          {/* Pending Accounts Tab */}
+          <TabsContent value="pending">
+            <AdminPendingAccounts password={storedPassword} />
+          </TabsContent>
 
           {/* Waitlist Tab */}
           <TabsContent value="waitlist" className="space-y-4">

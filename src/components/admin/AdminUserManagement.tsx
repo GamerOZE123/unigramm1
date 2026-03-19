@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, RefreshCw, Search, CheckCircle, XCircle } from 'lucide-react';
+import { Users, RefreshCw, Search, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 
 interface UserRow {
   user_id: string;
@@ -28,6 +28,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
   const fetchUsers = async () => {
@@ -56,6 +57,21 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
       toast.success(!current ? 'User approved' : 'User approval revoked');
     }
     setToggling(null);
+  };
+
+  const handleDeleteUser = async (user_id: string, name: string | null) => {
+    if (!confirm(`Permanently delete ${name || 'this user'}? This removes their profile and auth account. Cannot be undone.`)) return;
+    setDeleting(user_id);
+    const { data, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password, action: 'delete_user', user_id },
+    });
+    if (error || !data?.success) {
+      toast.error(data?.error || 'Failed to delete user');
+    } else {
+      setUsers(prev => prev.filter(u => u.user_id !== user_id));
+      toast.success('User permanently deleted');
+    }
+    setDeleting(null);
   };
 
   const filtered = users.filter(u => {
@@ -143,19 +159,29 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
                       : '—'}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      size="sm"
-                      variant={u.approved ? 'default' : 'outline'}
-                      disabled={toggling === u.user_id}
-                      onClick={() => toggleApproval(u.user_id, u.approved)}
-                      className={u.approved ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
-                    >
-                      {toggling === u.user_id ? '…' : u.approved ? (
-                        <><CheckCircle className="w-3 h-3 mr-1" /> Approved</>
-                      ) : (
-                        <><XCircle className="w-3 h-3 mr-1" /> Approve</>
-                      )}
-                    </Button>
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        size="sm"
+                        variant={u.approved ? 'default' : 'outline'}
+                        disabled={toggling === u.user_id || deleting === u.user_id}
+                        onClick={() => toggleApproval(u.user_id, u.approved)}
+                        className={u.approved ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
+                      >
+                        {toggling === u.user_id ? '…' : u.approved ? (
+                          <><CheckCircle className="w-3 h-3 mr-1" /> Approved</>
+                        ) : (
+                          <><XCircle className="w-3 h-3 mr-1" /> Approve</>
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        disabled={toggling === u.user_id || deleting === u.user_id}
+                        onClick={() => handleDeleteUser(u.user_id, u.full_name)}
+                      >
+                        {deleting === u.user_id ? '…' : <><Trash2 className="w-3 h-3 mr-1" /> Delete</>}
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
