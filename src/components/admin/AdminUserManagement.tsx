@@ -188,6 +188,14 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
                       </Button>
                       <Button
                         size="sm"
+                        variant="outline"
+                        disabled={toggling === u.user_id || deleting === u.user_id}
+                        onClick={() => handleConfirmEmail(u.user_id)}
+                      >
+                        <MailCheck className="w-3 h-3 mr-1" /> Confirm Email
+                      </Button>
+                      <Button
+                        size="sm"
                         variant="destructive"
                         disabled={toggling === u.user_id || deleting === u.user_id}
                         onClick={() => handleDeleteUser(u.user_id, u.full_name)}

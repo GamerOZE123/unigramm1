@@ -152,6 +152,14 @@ const AdminPendingAccounts: React.FC<Props> = ({ password }) => {
                       </Button>
                       <Button
                         size="sm"
+                        variant="outline"
+                        onClick={() => handleConfirmEmail(a.user_id)}
+                        disabled={actioning === a.user_id}
+                      >
+                        <MailCheck className="w-3 h-3 mr-1" /> Confirm Email
+                      </Button>
+                      <Button
+                        size="sm"
                         variant="destructive"
                         onClick={() => handleDelete(a.user_id, a.full_name)}
                         disabled={actioning === a.user_id}
