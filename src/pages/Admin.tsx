@@ -100,7 +100,7 @@ const Admin: React.FC = () => {
       toast.success(`${label} ${newValue ? 'enabled' : 'disabled'}`);
     }
     setTogglingFeature(null);
-  
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
