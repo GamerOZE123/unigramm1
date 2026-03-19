@@ -59,6 +59,21 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
     setToggling(null);
   };
 
+  const handleDeleteUser = async (user_id: string, name: string | null) => {
+    if (!confirm(`Permanently delete ${name || 'this user'}? This removes their profile and auth account. Cannot be undone.`)) return;
+    setDeleting(user_id);
+    const { data, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password, action: 'delete_user', user_id },
+    });
+    if (error || !data?.success) {
+      toast.error(data?.error || 'Failed to delete user');
+    } else {
+      setUsers(prev => prev.filter(u => u.user_id !== user_id));
+      toast.success('User permanently deleted');
+    }
+    setDeleting(null);
+  };
+
   const filtered = users.filter(u => {
     if (!search) return true;
     const q = search.toLowerCase();
