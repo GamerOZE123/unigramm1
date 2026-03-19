@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, RefreshCw, Search, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { Users, RefreshCw, Search, CheckCircle, XCircle, Trash2, MailCheck } from 'lucide-react';
 
 interface UserRow {
   user_id: string;
@@ -72,6 +72,19 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
       toast.success('User permanently deleted');
     }
     setDeleting(null);
+  };
+
+  const handleConfirmEmail = async (user_id: string) => {
+    setToggling(user_id);
+    const { data, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password, action: 'confirm_email', user_id },
+    });
+    if (error || !data?.success) {
+      toast.error(data?.error || 'Failed to confirm email');
+    } else {
+      toast.success('Email confirmed for user');
+    }
+    setToggling(null);
   };
 
   const filtered = users.filter(u => {
@@ -172,6 +185,14 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
                         ) : (
                           <><XCircle className="w-3 h-3 mr-1" /> Approve</>
                         )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={toggling === u.user_id || deleting === u.user_id}
+                        onClick={() => handleConfirmEmail(u.user_id)}
+                      >
+                        <MailCheck className="w-3 h-3 mr-1" /> Confirm Email
                       </Button>
                       <Button
                         size="sm"

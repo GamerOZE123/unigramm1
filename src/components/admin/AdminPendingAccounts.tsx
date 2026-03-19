@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { CheckCircle, Trash2, RefreshCw, Building2, Users } from 'lucide-react';
+import { CheckCircle, Trash2, RefreshCw, Building2, Users, MailCheck } from 'lucide-react';
 
 interface PendingAccount {
   user_id: string;
@@ -73,6 +73,19 @@ const AdminPendingAccounts: React.FC<Props> = ({ password }) => {
     setActioning(null);
   };
 
+  const handleConfirmEmail = async (user_id: string) => {
+    setActioning(user_id);
+    const { data, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password, action: 'confirm_email', user_id },
+    });
+    if (error || !data?.success) {
+      toast.error(data?.error || 'Failed to confirm email');
+    } else {
+      toast.success('Email confirmed for user');
+    }
+    setActioning(null);
+  };
+
   const typeIcon = (type: string | null) => {
     if (type === 'business') return <Building2 className="w-3.5 h-3.5" />;
     if (type === 'clubs') return <Users className="w-3.5 h-3.5" />;
@@ -136,6 +149,14 @@ const AdminPendingAccounts: React.FC<Props> = ({ password }) => {
                         className="bg-green-600 hover:bg-green-700 text-white"
                       >
                         {actioning === a.user_id ? '…' : <><CheckCircle className="w-3 h-3 mr-1" /> Approve</>}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleConfirmEmail(a.user_id)}
+                        disabled={actioning === a.user_id}
+                      >
+                        <MailCheck className="w-3 h-3 mr-1" /> Confirm Email
                       </Button>
                       <Button
                         size="sm"
