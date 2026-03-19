@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { CheckCircle, Trash2, RefreshCw, Building2, Users } from 'lucide-react';
+import { CheckCircle, Trash2, RefreshCw, Building2, Users, MailCheck } from 'lucide-react';
 
 interface PendingAccount {
   user_id: string;
