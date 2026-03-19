@@ -2534,6 +2534,7 @@ export type Database = {
           id: string
           is_read: boolean
           message: string
+          navigate_to: string | null
           related_comment_id: string | null
           related_post_id: string | null
           related_user_id: string | null
@@ -2547,6 +2548,7 @@ export type Database = {
           id?: string
           is_read?: boolean
           message: string
+          navigate_to?: string | null
           related_comment_id?: string | null
           related_post_id?: string | null
           related_user_id?: string | null
@@ -2560,6 +2562,7 @@ export type Database = {
           id?: string
           is_read?: boolean
           message?: string
+          navigate_to?: string | null
           related_comment_id?: string | null
           related_post_id?: string | null
           related_user_id?: string | null

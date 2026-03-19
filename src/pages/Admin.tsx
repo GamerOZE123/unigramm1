@@ -7,13 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Check, Lock, Users, Mail, Clock, Shield, ShieldOff, Smartphone, Send, RefreshCw } from 'lucide-react';
+import { Check, Lock, Users, Mail, Clock, Shield, ShieldOff, Smartphone, Send, RefreshCw, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminFeatureFlags from '@/components/admin/AdminFeatureFlags';
 import AdminAppConfig from '@/components/admin/AdminAppConfig';
 import AdminUserManagement from '@/components/admin/AdminUserManagement';
 import AdminUniversityFeatures from '@/components/admin/AdminUniversityFeatures';
 import AdminPendingAccounts from '@/components/admin/AdminPendingAccounts';
+import AdminBroadcastNotifications from '@/components/admin/AdminBroadcastNotifications';
 
 interface Tester {
   id: string;
@@ -329,6 +330,7 @@ const Admin: React.FC = () => {
             <TabsTrigger value="flags">Feature Flags</TabsTrigger>
             <TabsTrigger value="config">App Config</TabsTrigger>
             <TabsTrigger value="android"><Smartphone className="w-3 h-3 mr-1" /> Android Testers</TabsTrigger>
+            <TabsTrigger value="broadcast"><Bell className="w-3 h-3 mr-1" /> Broadcast</TabsTrigger>
           </TabsList>
 
           {/* Pending Accounts Tab */}
@@ -412,6 +414,11 @@ const Admin: React.FC = () => {
           {/* Android Testers Tab */}
           <TabsContent value="android">
             <AndroidTestersTab />
+          </TabsContent>
+
+          {/* Broadcast Notifications Tab */}
+          <TabsContent value="broadcast">
+            <AdminBroadcastNotifications password={storedPassword} />
           </TabsContent>
         </Tabs>
       </div>
