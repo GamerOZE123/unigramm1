@@ -233,6 +233,25 @@ const Admin: React.FC = () => {
           </Card>
         )}
 
+        {/* University Features Card */}
+        <Card>
+          <CardContent className="pt-6 space-y-4">
+            <p className="font-semibold text-foreground">University Features</p>
+            <div className="space-y-3">
+              {UNIVERSITY_FEATURES.map(({ key, label }) => (
+                <div key={key} className="flex items-center justify-between">
+                  <span className="text-sm text-foreground">{label}</span>
+                  <Switch
+                    checked={!!universityFeatures[key]}
+                    onCheckedChange={() => toggleUniversityFeature(key)}
+                    disabled={togglingFeature === key}
+                  />
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
         <Tabs defaultValue="waitlist" className="w-full">
           <TabsList className="w-full justify-start">
             <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
