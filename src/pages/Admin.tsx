@@ -256,6 +256,22 @@ const Admin: React.FC = () => {
   const pendingCount = signups.filter(s => !s.invited).length;
   const invitedCount = signups.filter(s => s.invited).length;
 
+  const handleSendAndroidLink = async (signup: SignupRow) => {
+    setSendingAndroid(signup.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-android-invite', {
+        body: { email: signup.email },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      setSignups(prev => prev.map(s => s.id === signup.id ? { ...s, android_sent: true } : s));
+      toast.success(`Android link sent to ${signup.email}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send Android link');
+    }
+    setSendingAndroid(null);
+  };
+
   if (!authenticated) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
