@@ -84,7 +84,7 @@ export default function AndroidBeta() {
               ⚠️ Enter the email address linked to your Play Store account below — we'll add you manually and send you the download link within 2 hours.
             </p>
 
-            <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
+            <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4" noValidate>
               <input
                 type="email"
                 value={email}
