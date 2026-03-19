@@ -97,6 +97,8 @@ function App() {
               <Route path="/email-confirmed" element={<EmailConfirmed />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/waitlist" element={<Waitlist />} />
+              <Route path="/android-beta" element={<AndroidBeta />} />
+              <Route path="/admin/android-testers" element={<AdminAndroidTesters />} />
               <Route path="/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
