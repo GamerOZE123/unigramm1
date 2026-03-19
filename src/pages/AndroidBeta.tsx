@@ -63,7 +63,13 @@ export default function AndroidBeta() {
       const { error: dbError } = await supabase
         .from('android_testers' as any)
         .insert({ email: email.toLowerCase().trim() } as any);
-      if (dbError) throw dbError;
+      if (dbError) {
+        if (dbError.code === '23505') {
+          setSubmitted(true);
+          return;
+        }
+        throw dbError;
+      }
       setSubmitted(true);
     } catch {
       setError('Something went wrong. Please try again.');
