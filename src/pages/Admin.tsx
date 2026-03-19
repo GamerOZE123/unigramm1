@@ -253,6 +253,9 @@ const Admin: React.FC = () => {
           </CardContent>
         </Card>
 
+        {/* University Features (from university_features table) */}
+        <AdminUniversityFeatures />
+
         <Tabs defaultValue="waitlist" className="w-full">
           <TabsList className="w-full justify-start">
             <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
