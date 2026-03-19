@@ -3936,6 +3936,39 @@ export type Database = {
           },
         ]
       }
+      university_features: {
+        Row: {
+          created_at: string | null
+          display_name: string
+          icon: string
+          id: string
+          is_locked: boolean
+          is_visible: boolean
+          key: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string | null
+          display_name: string
+          icon: string
+          id?: string
+          is_locked?: boolean
+          is_visible?: boolean
+          key: string
+          sort_order: number
+        }
+        Update: {
+          created_at?: string | null
+          display_name?: string
+          icon?: string
+          id?: string
+          is_locked?: boolean
+          is_visible?: boolean
+          key?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       university_reviews: {
         Row: {
           created_at: string | null
