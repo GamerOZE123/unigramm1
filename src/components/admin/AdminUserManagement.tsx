@@ -28,6 +28,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
   const [loading, setLoading] = useState(false);
   const [fetched, setFetched] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
   const fetchUsers = async () => {
