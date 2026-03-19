@@ -119,7 +119,7 @@ export default function AndroidBeta() {
               className="text-xs text-center mt-4"
               style={{ color: 'rgba(255,255,255,0.3)' }}
             >
-              Make sure this is the Gmail account logged into your Android phone
+              Make sure this is the email logged into Google Play Store on your Android phone
             </p>
           </>
         ) : (
