@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
       },
     })
 
-    const PLAYSTORE_TESTER_LINK = 'PLAYSTORE_TESTER_LINK'
+    const PLAYSTORE_TESTER_LINK = 'https://play.google.com/store/apps/details?id=com.nike11.UnigrammApp'
 
     const htmlBody = `<!DOCTYPE html>
 <html>
@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
   <!-- Note -->
   <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
     <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.35);line-height:1.6;">
-      Make sure you're signed into Gmail on your Android phone before tapping the link.
+      Make sure you're signed in with the same email on Google Play Store on your Android phone before tapping the link.
     </p>
   </td></tr></table>
 
