@@ -25,9 +25,13 @@ export default function AndroidBeta() {
 
     setLoading(true);
     try {
+      const insertData: any = { email: email.toLowerCase().trim() };
+      if (signupEmail) {
+        insertData.signup_email = signupEmail.toLowerCase().trim();
+      }
       const { error: dbError } = await supabase
         .from('android_testers' as any)
-        .insert({ email: email.toLowerCase().trim() } as any);
+        .insert(insertData as any);
       if (dbError) {
         if (dbError.code === '23505') {
           setSubmitted(true);
