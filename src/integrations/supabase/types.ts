@@ -235,6 +235,27 @@ export type Database = {
           },
         ]
       }
+      android_testers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       anonymous_message_reactions: {
         Row: {
           created_at: string
