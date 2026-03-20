@@ -238,10 +238,11 @@ const Admin: React.FC = () => {
         <AdminUniversityFeatures />
 
         <Tabs defaultValue="pending" className="w-full">
-          <TabsList className="w-full justify-start">
+          <TabsList className="w-full justify-start flex-wrap">
             <TabsTrigger value="pending">Pending Accounts</TabsTrigger>
             <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="auth"><ShieldCheck className="w-3 h-3 mr-1" /> Authenticated</TabsTrigger>
             <TabsTrigger value="flags">Feature Flags</TabsTrigger>
             <TabsTrigger value="config">App Config</TabsTrigger>
             <TabsTrigger value="broadcast"><Bell className="w-3 h-3 mr-1" /> Broadcast</TabsTrigger>
