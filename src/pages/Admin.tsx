@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Check, Lock, Users, Mail, Clock, Shield, ShieldOff, Smartphone, Send, Trash2, Bell } from 'lucide-react';
+import { Check, Lock, Users, Mail, Clock, Shield, ShieldOff, ShieldCheck, Smartphone, Send, Trash2, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminFeatureFlags from '@/components/admin/AdminFeatureFlags';
 import AdminAppConfig from '@/components/admin/AdminAppConfig';
@@ -14,6 +14,7 @@ import AdminUserManagement from '@/components/admin/AdminUserManagement';
 import AdminUniversityFeatures from '@/components/admin/AdminUniversityFeatures';
 import AdminPendingAccounts from '@/components/admin/AdminPendingAccounts';
 import AdminBroadcastNotifications from '@/components/admin/AdminBroadcastNotifications';
+import AdminAuthenticatedUsers from '@/components/admin/AdminAuthenticatedUsers';
 
 interface SignupRow {
   id: string;
@@ -237,10 +238,11 @@ const Admin: React.FC = () => {
         <AdminUniversityFeatures />
 
         <Tabs defaultValue="pending" className="w-full">
-          <TabsList className="w-full justify-start">
+          <TabsList className="w-full justify-start flex-wrap">
             <TabsTrigger value="pending">Pending Accounts</TabsTrigger>
             <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
             <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value="auth"><ShieldCheck className="w-3 h-3 mr-1" /> Authenticated</TabsTrigger>
             <TabsTrigger value="flags">Feature Flags</TabsTrigger>
             <TabsTrigger value="config">App Config</TabsTrigger>
             <TabsTrigger value="broadcast"><Bell className="w-3 h-3 mr-1" /> Broadcast</TabsTrigger>
@@ -340,6 +342,10 @@ const Admin: React.FC = () => {
 
           <TabsContent value="users">
             <AdminUserManagement password={storedPassword} />
+          </TabsContent>
+
+          <TabsContent value="auth">
+            <AdminAuthenticatedUsers password={storedPassword} />
           </TabsContent>
 
           <TabsContent value="flags">

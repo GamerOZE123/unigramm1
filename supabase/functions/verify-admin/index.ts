@@ -323,6 +323,143 @@ Deno.serve(async (req) => {
       return json({ valid: true, success: true, inserted: user_ids.length });
     }
 
+    // ── Authenticated Users (Auth list) ─────────────────────
+    if (action === 'fetch_auth_users') {
+      const allUsers: any[] = [];
+      let page = 1;
+      const perPage = 1000;
+      while (true) {
+        const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+        if (error) return json({ valid: true, error: error.message }, 400);
+        allUsers.push(...users);
+        if (users.length < perPage) break;
+        page++;
+      }
+
+      const authUsers = allUsers.map((u: any) => ({
+        id: u.id,
+        email: u.email || null,
+        phone: u.phone || null,
+        created_at: u.created_at,
+        last_sign_in_at: u.last_sign_in_at || null,
+        email_confirmed_at: u.email_confirmed_at || null,
+        provider: u.app_metadata?.provider || 'email',
+      }));
+
+      return json({ valid: true, auth_users: authUsers });
+    }
+
+    if (action === 'force_delete_auth_user') {
+      const { user_id } = body;
+      if (!user_id) return json({ valid: true, error: 'user_id required' }, 400);
+
+      // Comprehensive table cleanup
+      const tables = [
+        { table: 'posts', col: 'user_id' },
+        { table: 'comments', col: 'user_id' },
+        { table: 'likes', col: 'user_id' },
+        { table: 'post_views', col: 'user_id' },
+        { table: 'post_impressions', col: 'user_id' },
+        { table: 'follows', col: 'follower_id' },
+        { table: 'follows', col: 'following_id' },
+        { table: 'messages', col: 'sender_id' },
+        { table: 'conversation_participants', col: 'user_id' },
+        { table: 'conversations', col: 'user1_id' },
+        { table: 'conversations', col: 'user2_id' },
+        { table: 'notifications', col: 'user_id' },
+        { table: 'confessions', col: 'user_id' },
+        { table: 'confession_comments', col: 'user_id' },
+        { table: 'confession_reactions', col: 'user_id' },
+        { table: 'anonymous_messages', col: 'user_id' },
+        { table: 'anonymous_message_reactions', col: 'user_id' },
+        { table: 'dating_profiles', col: 'user_id' },
+        { table: 'dating_likes', col: 'from_user_id' },
+        { table: 'dating_likes', col: 'to_user_id' },
+        { table: 'dating_passes', col: 'from_user_id' },
+        { table: 'dating_passes', col: 'to_user_id' },
+        { table: 'dating_matches', col: 'user1_id' },
+        { table: 'dating_matches', col: 'user2_id' },
+        { table: 'dating_messages', col: 'sender_id' },
+        { table: 'community_members', col: 'user_id' },
+        { table: 'community_messages', col: 'sender_id' },
+        { table: 'club_memberships', col: 'user_id' },
+        { table: 'club_join_requests', col: 'student_id' },
+        { table: 'club_followers', col: 'user_id' },
+        { table: 'chat_group_members', col: 'user_id' },
+        { table: 'group_messages', col: 'sender_id' },
+        { table: 'recent_chats', col: 'user_id' },
+        { table: 'recent_chats', col: 'other_user_id' },
+        { table: 'blocked_users', col: 'blocker_id' },
+        { table: 'blocked_users', col: 'blocked_id' },
+        { table: 'device_tokens', col: 'user_id' },
+        { table: 'carpool_rides', col: 'driver_id' },
+        { table: 'carpool_ride_requests', col: 'passenger_id' },
+        { table: 'business_profiles', col: 'user_id' },
+        { table: 'clubs_profiles', col: 'user_id' },
+        { table: 'startup_contributors', col: 'user_id' },
+        { table: 'startup_likes', col: 'user_id' },
+        { table: 'startups', col: 'founder_id' },
+        { table: 'marketplace_items', col: 'seller_id' },
+        { table: 'student_store_items', col: 'user_id' },
+        { table: 'auctions', col: 'user_id' },
+        { table: 'auction_bids', col: 'user_id' },
+        { table: 'cleared_chats', col: 'user_id' },
+        { table: 'deleted_chats', col: 'user_id' },
+        { table: 'user_presence', col: 'user_id' },
+        { table: 'typing_status', col: 'user_id' },
+        { table: 'message_status', col: 'user_id' },
+        { table: 'message_notifications', col: 'sender_id' },
+        { table: 'message_notifications', col: 'receiver_id' },
+        { table: 'notification_batches', col: 'receiver_id' },
+        { table: 'notification_batches', col: 'sender_id' },
+        { table: 'conversation_pinned_messages', col: 'pinned_by' },
+        { table: 'advertising_posts', col: 'company_id' },
+        { table: 'advertising_likes', col: 'user_id' },
+        { table: 'advertising_clicks', col: 'user_id' },
+        { table: 'advertising_post_views', col: 'user_id' },
+        { table: 'alumni_verifications', col: 'user_id' },
+        { table: 'challenge_participants', col: 'user_id' },
+        { table: 'challenge_progress', col: 'user_id' },
+        { table: 'workout_sessions', col: 'user_id' },
+        { table: 'scheduled_workouts', col: 'user_id' },
+        { table: 'fitness_challenges', col: 'created_by' },
+        { table: 'job_applications', col: 'student_id' },
+        { table: 'job_swipes', col: 'student_id' },
+        { table: 'jobs', col: 'company_id' },
+        { table: 'student_profiles', col: 'user_id' },
+        { table: 'company_profiles', col: 'user_id' },
+        { table: 'user_subscriptions', col: 'user_id' },
+        { table: 'university_reviews', col: 'user_id' },
+        { table: 'courses', col: 'user_id' },
+        { table: 'timetables', col: 'user_id' },
+        { table: 'account_deletion_requests', col: 'email' },
+      ];
+
+      const errors: string[] = [];
+      for (const { table, col } of tables) {
+        try {
+          // Skip email-based lookups for account_deletion_requests
+          if (col === 'email') continue;
+          await supabaseAdmin.from(table).delete().eq(col, user_id);
+        } catch (e: any) {
+          errors.push(`${table}.${col}: ${e.message}`);
+        }
+      }
+
+      // Delete profile
+      try {
+        await supabaseAdmin.from('profiles').delete().eq('user_id', user_id);
+      } catch (_) {}
+
+      // Delete auth user
+      const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(user_id);
+      if (authError) {
+        return json({ valid: true, error: `Auth deletion failed: ${authError.message}`, partial_errors: errors }, 400);
+      }
+
+      return json({ valid: true, success: true, cleanup_errors: errors });
+    }
+
     // Default: just validate password
     return json({ valid: true });
   } catch {
