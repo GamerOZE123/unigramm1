@@ -14,6 +14,7 @@ import AdminUserManagement from '@/components/admin/AdminUserManagement';
 import AdminUniversityFeatures from '@/components/admin/AdminUniversityFeatures';
 import AdminPendingAccounts from '@/components/admin/AdminPendingAccounts';
 import AdminBroadcastNotifications from '@/components/admin/AdminBroadcastNotifications';
+import AdminAuthenticatedUsers from '@/components/admin/AdminAuthenticatedUsers';
 
 interface SignupRow {
   id: string;
