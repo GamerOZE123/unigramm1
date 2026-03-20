@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Check, Lock, Users, Mail, Clock, Shield, ShieldOff, Smartphone, Send, Trash2, Bell } from 'lucide-react';
+import { Check, Lock, Users, Mail, Clock, Shield, ShieldOff, ShieldCheck, Smartphone, Send, Trash2, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminFeatureFlags from '@/components/admin/AdminFeatureFlags';
 import AdminAppConfig from '@/components/admin/AdminAppConfig';
