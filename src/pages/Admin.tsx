@@ -348,6 +348,7 @@ const Admin: React.FC = () => {
             <AdminAuthenticatedUsers password={storedPassword} />
           </TabsContent>
 
+          <TabsContent value="flags">
             <AdminFeatureFlags password={storedPassword} />
           </TabsContent>
 
