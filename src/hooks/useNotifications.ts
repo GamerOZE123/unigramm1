@@ -99,12 +99,19 @@ export const useNotifications = () => {
             table: 'notifications',
             filter: `user_id=eq.${user.id}`
           },
-          (payload) => {
+          async (payload) => {
             const newNotif = payload.new as Notification;
             // Skip message notifications
             if (newNotif.type === 'message' || newNotif.type === 'group_message') return;
             setNotifications(prev => [newNotif, ...prev]);
-            setUnreadCount(prev => prev + 1);
+            // Recalculate from DB instead of incrementing to avoid compounding
+            const { data } = await supabase
+              .from('notifications')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('is_read', false)
+              .not('type', 'in', '("message","group_message")');
+            setUnreadCount(data?.length || 0);
           }
         )
         .subscribe();
