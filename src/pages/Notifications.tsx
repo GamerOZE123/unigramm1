@@ -17,6 +17,13 @@ export default function Notifications() {
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState("all");
 
+  // Auto-mark all notifications as read when page is visited
+  React.useEffect(() => {
+    if (!loading && notifications.some(n => !n.is_read)) {
+      markAllAsRead();
+    }
+  }, [loading]);
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case "like":
