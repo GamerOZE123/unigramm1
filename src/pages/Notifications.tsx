@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function Notifications() {
   const { notifications, loading, markAsRead, markAllAsRead } = useNotifications();
-  const { createConversation } = useChat();
+  
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState("all");
