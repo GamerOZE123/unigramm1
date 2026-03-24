@@ -95,11 +95,12 @@ export default function Notifications() {
   }
 
   const getFilteredNotifications = () => {
-    if (activeTab === "all") return notifications;
-    if (activeTab === "likes") return notifications.filter(n => n.type === "like");
-    if (activeTab === "messages") return notifications.filter(n => n.type === "message");
-    if (activeTab === "mentions") return notifications.filter(n => n.type === "comment");
-    return notifications;
+    // Message notifications are excluded from the hook, but filter defensively
+    const nonMessageNotifs = notifications.filter(n => n.type !== 'message' && n.type !== 'group_message');
+    if (activeTab === "all") return nonMessageNotifs;
+    if (activeTab === "likes") return nonMessageNotifs.filter(n => n.type === "like");
+    if (activeTab === "mentions") return nonMessageNotifs.filter(n => n.type === "comment");
+    return nonMessageNotifs;
   };
 
   const filteredNotifications = getFilteredNotifications();
