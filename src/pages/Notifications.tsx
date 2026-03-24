@@ -5,14 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useNavigate } from "react-router-dom";
-import { useChat } from "@/hooks/useChat";
+
 import { Heart, MessageCircle, User, Check, CarTaxiFront } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function Notifications() {
   const { notifications, loading, markAsRead, markAllAsRead } = useNotifications();
-  const { createConversation } = useChat();
+  
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState("all");
@@ -50,14 +50,7 @@ export default function Notifications() {
       await markAsRead(notification.id);
     }
 
-    // Handle different notification types
-    if (notification.type === "message" && notification.related_user_id) {
-      // Create conversation and navigate to chat with conversation ID
-      const conversationId = await createConversation(notification.related_user_id);
-      if (conversationId) {
-        navigate(`/chat?conversation=${conversationId}`);
-      }
-    } else if (notification.type === "carpool_request" || notification.type === "carpool_accepted") {
+    if (notification.type === "carpool_request" || notification.type === "carpool_accepted") {
       // Navigate to carpooling page
       navigate("/carpooling");
     } else if (notification.type === "club_accepted") {
@@ -95,11 +88,12 @@ export default function Notifications() {
   }
 
   const getFilteredNotifications = () => {
-    if (activeTab === "all") return notifications;
-    if (activeTab === "likes") return notifications.filter(n => n.type === "like");
-    if (activeTab === "messages") return notifications.filter(n => n.type === "message");
-    if (activeTab === "mentions") return notifications.filter(n => n.type === "comment");
-    return notifications;
+    // Message notifications are excluded from the hook, but filter defensively
+    const nonMessageNotifs = notifications.filter(n => n.type !== 'message' && n.type !== 'group_message');
+    if (activeTab === "all") return nonMessageNotifs;
+    if (activeTab === "likes") return nonMessageNotifs.filter(n => n.type === "like");
+    if (activeTab === "mentions") return nonMessageNotifs.filter(n => n.type === "comment");
+    return nonMessageNotifs;
   };
 
   const filteredNotifications = getFilteredNotifications();
@@ -119,7 +113,6 @@ export default function Notifications() {
         <TabsList className="w-full justify-start">
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="likes">Likes</TabsTrigger>
-          <TabsTrigger value="messages">Messages</TabsTrigger>
           <TabsTrigger value="mentions">Mentions</TabsTrigger>
         </TabsList>
 
