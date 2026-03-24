@@ -100,8 +100,10 @@ export const useNotifications = () => {
             filter: `user_id=eq.${user.id}`
           },
           (payload) => {
-            console.log('New notification:', payload);
-            setNotifications(prev => [payload.new as Notification, ...prev]);
+            const newNotif = payload.new as Notification;
+            // Skip message notifications
+            if (newNotif.type === 'message' || newNotif.type === 'group_message') return;
+            setNotifications(prev => [newNotif, ...prev]);
             setUnreadCount(prev => prev + 1);
           }
         )
