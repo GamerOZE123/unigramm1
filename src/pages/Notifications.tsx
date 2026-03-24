@@ -120,7 +120,6 @@ export default function Notifications() {
         <TabsList className="w-full justify-start">
           <TabsTrigger value="all">All</TabsTrigger>
           <TabsTrigger value="likes">Likes</TabsTrigger>
-          <TabsTrigger value="messages">Messages</TabsTrigger>
           <TabsTrigger value="mentions">Mentions</TabsTrigger>
         </TabsList>
 
