@@ -1802,6 +1802,7 @@ export type Database = {
           id: string
           message_type: string | null
           metadata: Json | null
+          reply_to_message_id: string | null
           sender_id: string | null
         }
         Insert: {
@@ -1811,6 +1812,7 @@ export type Database = {
           id?: string
           message_type?: string | null
           metadata?: Json | null
+          reply_to_message_id?: string | null
           sender_id?: string | null
         }
         Update: {
@@ -1820,6 +1822,7 @@ export type Database = {
           id?: string
           message_type?: string | null
           metadata?: Json | null
+          reply_to_message_id?: string | null
           sender_id?: string | null
         }
         Relationships: [
@@ -1828,6 +1831,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "chat_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_messages_reply_to_message_id_fkey"
+            columns: ["reply_to_message_id"]
+            isOneToOne: false
+            referencedRelation: "group_messages"
             referencedColumns: ["id"]
           },
         ]
