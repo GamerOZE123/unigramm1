@@ -256,6 +256,33 @@ const Admin: React.FC = () => {
           </Card>
         )}
 
+        {/* Maintenance Mode Banner */}
+        {maintenanceMode !== null && (
+          <Card className={maintenanceMode ? 'border-amber-500/50' : 'border-border'}>
+            <CardContent className="pt-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Wrench className={`w-5 h-5 ${maintenanceMode ? 'text-amber-500' : 'text-muted-foreground'}`} />
+                <div>
+                  <p className="font-semibold text-foreground">Maintenance Mode</p>
+                  {maintenanceMode ? (
+                    <Badge className="mt-1 bg-amber-500 hover:bg-amber-600 text-white border-transparent">Enabled — app is under maintenance</Badge>
+                  ) : (
+                    <Badge variant="secondary" className="mt-1">Disabled — app is live</Badge>
+                  )}
+                </div>
+              </div>
+              <Button
+                variant={maintenanceMode ? 'default' : 'destructive'}
+                size="sm"
+                onClick={toggleMaintenance}
+                disabled={togglingMaintenance}
+              >
+                {togglingMaintenance ? 'Updating…' : maintenanceMode ? 'Disable maintenance' : 'Enable maintenance'}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* University Features */}
         <AdminUniversityFeatures />
 
