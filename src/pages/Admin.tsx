@@ -43,14 +43,20 @@ const Admin: React.FC = () => {
   const [restrictedAccess, setRestrictedAccess] = useState<boolean | null>(null);
   const [togglingAccess, setTogglingAccess] = useState(false);
 
+  // Maintenance mode state
+  const [maintenanceMode, setMaintenanceMode] = useState<boolean | null>(null);
+  const [togglingMaintenance, setTogglingMaintenance] = useState(false);
+
   const fetchAccessConfig = async () => {
     const { data, error } = await supabase
       .from('app_config')
-      .select('value')
-      .eq('key', 'restricted_access')
-      .single();
+      .select('key, value')
+      .in('key', ['restricted_access', 'maintenance_mode']);
     if (!error && data) {
-      setRestrictedAccess(data.value === 'true');
+      const restricted = data.find(d => d.key === 'restricted_access');
+      const maintenance = data.find(d => d.key === 'maintenance_mode');
+      if (restricted) setRestrictedAccess(restricted.value === 'true');
+      if (maintenance) setMaintenanceMode(maintenance.value === 'true');
     }
   };
 
@@ -59,7 +65,7 @@ const Admin: React.FC = () => {
     const newValue = !restrictedAccess;
     const { error } = await supabase
       .from('app_config')
-      .update({ value: String(newValue), updated_at: new Date().toISOString() })
+      .update({ value: String(newValue), updated_at: new Date().toISOString() } as any)
       .eq('key', 'restricted_access');
     if (error) {
       toast.error('Failed to update access setting');
@@ -68,6 +74,22 @@ const Admin: React.FC = () => {
       toast.success(newValue ? 'Access restricted to approved users' : 'Access opened to everyone');
     }
     setTogglingAccess(false);
+  };
+
+  const toggleMaintenance = async () => {
+    setTogglingMaintenance(true);
+    const newValue = !maintenanceMode;
+    const { error } = await supabase
+      .from('app_config')
+      .update({ value: String(newValue), updated_at: new Date().toISOString() } as any)
+      .eq('key', 'maintenance_mode');
+    if (error) {
+      toast.error('Failed to update maintenance mode');
+    } else {
+      setMaintenanceMode(newValue);
+      toast.success(newValue ? 'Maintenance mode enabled' : 'Maintenance mode disabled');
+    }
+    setTogglingMaintenance(false);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
