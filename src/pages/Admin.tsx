@@ -465,6 +465,10 @@ const Admin: React.FC = () => {
           <TabsContent value="broadcast">
             <AdminBroadcastNotifications password={storedPassword} />
           </TabsContent>
+
+          <TabsContent value="analytics">
+            <AdminAnalytics password={storedPassword} />
+          </TabsContent>
         </Tabs>
       </div>
     </div>
