@@ -7,9 +7,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
   BarChart3, Clock, Home, Compass, GraduationCap, MessageCircle, User,
-  Search, Download, ChevronUp, ChevronDown, Filter, X, FileText
+  Search, Download, ChevronUp, ChevronDown, Filter, X, FileText, Users,
+  Mail, MapPin, Calendar, Heart, MessageSquare, ShoppingBag, BookOpen
 } from 'lucide-react';
 
 type DateRange = '1' | '7' | '30' | '90' | 'all';
@@ -32,6 +34,30 @@ interface UserRow {
   days: Map<string, { home: number; explore: number; university: number; chat: number; profile: number; total: number }>;
 }
 
+interface SearchedProfile {
+  user_id: string;
+  full_name: string;
+  username: string;
+  avatar_url: string | null;
+  university: string | null;
+  major: string | null;
+  bio: string | null;
+  user_type: string | null;
+  created_at: string;
+  followers_count: number;
+  following_count: number;
+}
+
+interface UserDetailReport {
+  profile: SearchedProfile;
+  postsCount: number;
+  likesReceived: number;
+  commentsCount: number;
+  conversationsCount: number;
+  analytics: UserRow | null;
+  loading: boolean;
+}
+
 interface OverviewData {
   home: number; explore: number; university: number; chat: number; profile: number;
   total: number; activeUsers: number;
@@ -51,6 +77,13 @@ const AdminAnalyticsPage: React.FC<{ password: string }> = ({ password }) => {
   const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
   const [uniFilter, setUniFilter] = useState<string>('all');
   const [minMinutes, setMinMinutes] = useState<string>('');
+
+  // Global user search state
+  const [globalSearch, setGlobalSearch] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchedProfile[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState<SearchedProfile | null>(null);
+  const [detailReport, setDetailReport] = useState<UserDetailReport | null>(null);
 
   const getDateFilter = () => {
     if (range === 'all') return undefined;
@@ -88,7 +121,6 @@ const AdminAnalyticsPage: React.FC<{ password: string }> = ({ password }) => {
       activeUsers: uniqueUsers.size,
     });
 
-    // Per-user aggregation
     const userMap = new Map<string, UserRow>();
     for (const row of raw) {
       let u = userMap.get(row.user_id);
@@ -136,6 +168,76 @@ const AdminAnalyticsPage: React.FC<{ password: string }> = ({ password }) => {
   };
 
   useEffect(() => { fetchData(); }, [range]);
+
+  // Global user search
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (!globalSearch.trim()) {
+        setSearchResults([]);
+        return;
+      }
+      setSearchLoading(true);
+      const q = globalSearch.trim();
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, username, avatar_url, university, major, bio, user_type, created_at, followers_count, following_count')
+        .or(`full_name.ilike.%${q}%,username.ilike.%${q}%`)
+        .limit(15);
+      setSearchResults(data || []);
+      setSearchLoading(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [globalSearch]);
+
+  // Generate full report for selected profile
+  const generateReport = async (profile: SearchedProfile) => {
+    setDetailReport({ profile, postsCount: 0, likesReceived: 0, commentsCount: 0, conversationsCount: 0, analytics: null, loading: true });
+
+    // Fetch all details in parallel
+    const [postsRes, commentsRes, convosRes, analyticsRes] = await Promise.all([
+      supabase.from('posts').select('id, likes_count', { count: 'exact' }).eq('user_id', profile.user_id),
+      supabase.from('comments').select('id', { count: 'exact' }).eq('user_id', profile.user_id),
+      supabase.from('conversations').select('id', { count: 'exact' }).or(`user1_id.eq.${profile.user_id},user2_id.eq.${profile.user_id}`),
+      supabase.from('user_page_analytics').select('user_id, home_sec, explore_sec, university_sec, chat_sec, profile_sec, total_sec, date').eq('user_id', profile.user_id),
+    ]);
+
+    const totalLikes = (postsRes.data || []).reduce((s, p) => s + (p.likes_count || 0), 0);
+
+    // Build analytics UserRow if data exists
+    let analyticsRow: UserRow | null = null;
+    if (analyticsRes.data && analyticsRes.data.length > 0) {
+      analyticsRow = {
+        user_id: profile.user_id, full_name: profile.full_name, username: profile.username,
+        avatar_url: profile.avatar_url, university: profile.university,
+        home_sec: 0, explore_sec: 0, university_sec: 0, chat_sec: 0, profile_sec: 0, total_sec: 0,
+        last_date: '', days: new Map()
+      };
+      for (const row of analyticsRes.data) {
+        analyticsRow.home_sec += row.home_sec || 0;
+        analyticsRow.explore_sec += row.explore_sec || 0;
+        analyticsRow.university_sec += row.university_sec || 0;
+        analyticsRow.chat_sec += row.chat_sec || 0;
+        analyticsRow.profile_sec += row.profile_sec || 0;
+        analyticsRow.total_sec += row.total_sec || 0;
+        if (row.date > analyticsRow.last_date) analyticsRow.last_date = row.date;
+        analyticsRow.days.set(row.date, {
+          home: row.home_sec || 0, explore: row.explore_sec || 0,
+          university: row.university_sec || 0, chat: row.chat_sec || 0,
+          profile: row.profile_sec || 0, total: row.total_sec || 0,
+        });
+      }
+    }
+
+    setDetailReport({
+      profile,
+      postsCount: postsRes.count || 0,
+      likesReceived: totalLikes,
+      commentsCount: commentsRes.count || 0,
+      conversationsCount: convosRes.count || 0,
+      analytics: analyticsRow,
+      loading: false,
+    });
+  };
 
   // Derived data
   const universities = useMemo(() => {
@@ -219,6 +321,63 @@ const AdminAnalyticsPage: React.FC<{ password: string }> = ({ password }) => {
 
   return (
     <div className="space-y-6">
+      {/* Global User Search */}
+      <Card className="border-border/40">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Users className="w-4 h-4" /> Search Any User
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search any user by name or username…"
+              value={globalSearch}
+              onChange={e => setGlobalSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          {searchLoading && <p className="text-xs text-muted-foreground mt-2">Searching…</p>}
+          {searchResults.length > 0 && (
+            <div className="mt-3 space-y-1 max-h-64 overflow-y-auto">
+              {searchResults.map(profile => (
+                <div
+                  key={profile.user_id}
+                  className="flex items-center justify-between p-2.5 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                  onClick={() => {
+                    setSelectedProfile(profile);
+                    generateReport(profile);
+                    setGlobalSearch('');
+                    setSearchResults([]);
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-8 h-8">
+                      {profile.avatar_url && <AvatarImage src={profile.avatar_url} />}
+                      <AvatarFallback className="text-xs">{profile.full_name?.[0] || '?'}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="text-sm font-medium">{profile.full_name}</p>
+                      <p className="text-xs text-muted-foreground">@{profile.username} {profile.university && `• ${profile.university}`}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="text-[10px]">{profile.user_type || 'student'}</Badge>
+                    <Button size="sm" variant="ghost" className="text-xs">
+                      <FileText className="w-3.5 h-3.5 mr-1" /> View Report
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {globalSearch && !searchLoading && searchResults.length === 0 && (
+            <p className="text-xs text-muted-foreground mt-2">No users found.</p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Date Range */}
       <div className="flex items-center gap-2 flex-wrap">
         <span className="text-sm text-muted-foreground mr-1">Range:</span>
@@ -305,7 +464,7 @@ const AdminAnalyticsPage: React.FC<{ password: string }> = ({ password }) => {
                 <div className="relative flex-1 min-w-[200px]">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search by name or username…"
+                    placeholder="Filter analytics users…"
                     value={search}
                     onChange={e => { setSearch(e.target.value); setPage(0); }}
                     className="pl-9"
@@ -336,7 +495,7 @@ const AdminAnalyticsPage: React.FC<{ password: string }> = ({ password }) => {
                   <Download className="w-3.5 h-3.5 mr-1" /> Export CSV
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">{filteredUsers.length} users found</p>
+              <p className="text-xs text-muted-foreground mt-2">{filteredUsers.length} users with analytics data</p>
             </CardContent>
           </Card>
 
@@ -378,21 +537,18 @@ const AdminAnalyticsPage: React.FC<{ password: string }> = ({ password }) => {
                   {paged.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                        No analytics data found.
+                        No analytics data found. Use the search above to find any user and generate a report.
                       </TableCell>
                     </TableRow>
                   ) : (
                     paged.map(u => (
-                      <TableRow key={u.user_id} className="cursor-pointer hover:bg-muted/40">
+                      <TableRow key={u.user_id} className="cursor-pointer hover:bg-muted/40" onClick={() => setSelectedUser(u)}>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            {u.avatar_url ? (
-                              <img src={u.avatar_url} className="w-7 h-7 rounded-full object-cover" alt="" />
-                            ) : (
-                              <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
-                                {u.full_name?.[0] || '?'}
-                              </div>
-                            )}
+                            <Avatar className="w-7 h-7">
+                              {u.avatar_url && <AvatarImage src={u.avatar_url} />}
+                              <AvatarFallback className="text-xs">{u.full_name?.[0] || '?'}</AvatarFallback>
+                            </Avatar>
                             <div>
                               <p className="text-sm font-medium">{u.full_name}</p>
                               <p className="text-xs text-muted-foreground">@{u.username}</p>
@@ -409,7 +565,7 @@ const AdminAnalyticsPage: React.FC<{ password: string }> = ({ password }) => {
                           {u.last_date ? new Date(u.last_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—'}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button size="sm" variant="ghost" onClick={() => setSelectedUser(u)}>
+                          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setSelectedUser(u); }}>
                             <FileText className="w-3.5 h-3.5" />
                           </Button>
                         </TableCell>
@@ -419,12 +575,9 @@ const AdminAnalyticsPage: React.FC<{ password: string }> = ({ password }) => {
                 </TableBody>
               </Table>
 
-              {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-4 py-3 border-t border-border/40">
-                  <p className="text-xs text-muted-foreground">
-                    Page {page + 1} of {totalPages}
-                  </p>
+                  <p className="text-xs text-muted-foreground">Page {page + 1} of {totalPages}</p>
                   <div className="flex gap-1.5">
                     <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Prev</Button>
                     <Button size="sm" variant="outline" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Next</Button>
@@ -436,23 +589,30 @@ const AdminAnalyticsPage: React.FC<{ password: string }> = ({ password }) => {
         </>
       )}
 
-      {/* User Report Modal */}
+      {/* Analytics User Report Modal */}
       <Dialog open={!!selectedUser} onOpenChange={open => !open && setSelectedUser(null)}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          {selectedUser && <UserReportContent user={selectedUser} formatTime={formatTime} pct={pct} />}
+          {selectedUser && <UserAnalyticsReport user={selectedUser} formatTime={formatTime} pct={pct} />}
+        </DialogContent>
+      </Dialog>
+
+      {/* Full User Detail Report Modal */}
+      <Dialog open={!!selectedProfile} onOpenChange={open => { if (!open) { setSelectedProfile(null); setDetailReport(null); } }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          {detailReport && <FullUserReport report={detailReport} formatTime={formatTime} pct={pct} />}
         </DialogContent>
       </Dialog>
     </div>
   );
 };
 
-const UserReportContent: React.FC<{
+/* Analytics-only report (for users in the table) */
+const UserAnalyticsReport: React.FC<{
   user: UserRow;
   formatTime: (s: number) => string;
   pct: (v: number, t: number) => string;
 }> = ({ user, formatTime, pct }) => {
   const sortedDays = Array.from(user.days.entries()).sort((a, b) => b[0].localeCompare(a[0]));
-
   const sections = [
     { label: 'Home', sec: user.home_sec, color: 'bg-blue-500' },
     { label: 'Explore', sec: user.explore_sec, color: 'bg-green-500' },
@@ -465,13 +625,10 @@ const UserReportContent: React.FC<{
     <>
       <DialogHeader>
         <DialogTitle className="flex items-center gap-3">
-          {user.avatar_url ? (
-            <img src={user.avatar_url} className="w-10 h-10 rounded-full object-cover" alt="" />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-bold">
-              {user.full_name?.[0] || '?'}
-            </div>
-          )}
+          <Avatar className="w-10 h-10">
+            {user.avatar_url && <AvatarImage src={user.avatar_url} />}
+            <AvatarFallback>{user.full_name?.[0] || '?'}</AvatarFallback>
+          </Avatar>
           <div>
             <p>{user.full_name}</p>
             <p className="text-sm font-normal text-muted-foreground">@{user.username} {user.university && `• ${user.university}`}</p>
@@ -479,7 +636,6 @@ const UserReportContent: React.FC<{
         </DialogTitle>
       </DialogHeader>
 
-      {/* Summary */}
       <div className="grid grid-cols-3 gap-3 mt-4">
         <div className="text-center p-3 rounded-lg bg-muted/50">
           <p className="text-xs text-muted-foreground">Total Time</p>
@@ -497,17 +653,13 @@ const UserReportContent: React.FC<{
         </div>
       </div>
 
-      {/* Section Breakdown */}
       <div className="space-y-2 mt-4">
         <p className="text-sm font-medium text-foreground">Section Breakdown</p>
         {sections.map(s => (
           <div key={s.label} className="flex items-center gap-3">
             <span className="text-xs text-muted-foreground w-16">{s.label}</span>
             <div className="flex-1 h-5 rounded-full bg-muted overflow-hidden">
-              <div
-                className={`${s.color} h-full rounded-full transition-all`}
-                style={{ width: user.total_sec > 0 ? `${(s.sec / user.total_sec) * 100}%` : '0%' }}
-              />
+              <div className={`${s.color} h-full rounded-full transition-all`} style={{ width: user.total_sec > 0 ? `${(s.sec / user.total_sec) * 100}%` : '0%' }} />
             </div>
             <span className="text-xs font-medium w-14 text-right">{formatTime(s.sec)}</span>
             <span className="text-xs text-muted-foreground w-10 text-right">{pct(s.sec, user.total_sec)}</span>
@@ -515,7 +667,6 @@ const UserReportContent: React.FC<{
         ))}
       </div>
 
-      {/* Day-by-Day Table */}
       <div className="mt-4">
         <p className="text-sm font-medium text-foreground mb-2">Day-by-Day Activity</p>
         <div className="max-h-60 overflow-y-auto rounded-lg border border-border/40">
@@ -534,9 +685,7 @@ const UserReportContent: React.FC<{
             <TableBody>
               {sortedDays.map(([date, d]) => (
                 <TableRow key={date}>
-                  <TableCell className="text-xs">
-                    {new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })}
-                  </TableCell>
+                  <TableCell className="text-xs">{new Date(date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })}</TableCell>
                   <TableCell className="text-right text-xs font-medium">{formatTime(d.total)}</TableCell>
                   <TableCell className="text-right text-xs text-muted-foreground">{formatTime(d.home)}</TableCell>
                   <TableCell className="text-right text-xs text-muted-foreground">{formatTime(d.explore)}</TableCell>
@@ -552,5 +701,133 @@ const UserReportContent: React.FC<{
     </>
   );
 };
+
+/* Full user report (from global search) */
+const FullUserReport: React.FC<{
+  report: UserDetailReport;
+  formatTime: (s: number) => string;
+  pct: (v: number, t: number) => string;
+}> = ({ report, formatTime, pct }) => {
+  const { profile, postsCount, likesReceived, commentsCount, conversationsCount, analytics, loading } = report;
+
+  return (
+    <>
+      <DialogHeader>
+        <DialogTitle className="flex items-center gap-3">
+          <Avatar className="w-12 h-12">
+            {profile.avatar_url && <AvatarImage src={profile.avatar_url} />}
+            <AvatarFallback className="text-sm">{profile.full_name?.[0] || '?'}</AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="text-lg">{profile.full_name}</p>
+            <p className="text-sm font-normal text-muted-foreground">@{profile.username}</p>
+          </div>
+        </DialogTitle>
+      </DialogHeader>
+
+      {loading ? (
+        <div className="text-center py-12 text-muted-foreground">Generating report…</div>
+      ) : (
+        <div className="space-y-5 mt-2">
+          {/* Profile Info */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Profile Details</p>
+            <div className="grid grid-cols-2 gap-2">
+              <InfoRow icon={<User className="w-3.5 h-3.5" />} label="Type" value={profile.user_type || 'student'} />
+              <InfoRow icon={<GraduationCap className="w-3.5 h-3.5" />} label="University" value={profile.university || '—'} />
+              <InfoRow icon={<BookOpen className="w-3.5 h-3.5" />} label="Major" value={profile.major || '—'} />
+              <InfoRow icon={<Calendar className="w-3.5 h-3.5" />} label="Joined" value={new Date(profile.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} />
+            </div>
+            {profile.bio && (
+              <div className="p-2.5 rounded-lg bg-muted/50 text-sm text-muted-foreground mt-1">{profile.bio}</div>
+            )}
+          </div>
+
+          {/* Activity Stats */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Activity Overview</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard icon={<FileText className="w-4 h-4 text-blue-400" />} label="Posts" value={postsCount} />
+              <StatCard icon={<Heart className="w-4 h-4 text-pink-400" />} label="Likes Received" value={likesReceived} />
+              <StatCard icon={<MessageSquare className="w-4 h-4 text-amber-400" />} label="Comments" value={commentsCount} />
+              <StatCard icon={<MessageCircle className="w-4 h-4 text-green-400" />} label="Conversations" value={conversationsCount} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <StatCard icon={<Users className="w-4 h-4 text-purple-400" />} label="Followers" value={profile.followers_count} />
+              <StatCard icon={<Users className="w-4 h-4 text-cyan-400" />} label="Following" value={profile.following_count} />
+            </div>
+          </div>
+
+          {/* Analytics Section */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Screen Time Analytics</p>
+            {analytics ? (
+              <>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-xs text-muted-foreground">Total Time</p>
+                    <p className="text-lg font-bold">{formatTime(analytics.total_sec)}</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-xs text-muted-foreground">Active Days</p>
+                    <p className="text-lg font-bold">{analytics.days.size}</p>
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-muted/50">
+                    <p className="text-xs text-muted-foreground">Last Seen</p>
+                    <p className="text-lg font-bold">
+                      {analytics.last_date ? new Date(analytics.last_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—'}
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-2 mt-2">
+                  {[
+                    { label: 'Home', sec: analytics.home_sec, color: 'bg-blue-500' },
+                    { label: 'Explore', sec: analytics.explore_sec, color: 'bg-green-500' },
+                    { label: 'University', sec: analytics.university_sec, color: 'bg-purple-500' },
+                    { label: 'Chat', sec: analytics.chat_sec, color: 'bg-amber-500' },
+                    { label: 'Profile', sec: analytics.profile_sec, color: 'bg-pink-500' },
+                  ].map(s => (
+                    <div key={s.label} className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground w-16">{s.label}</span>
+                      <div className="flex-1 h-5 rounded-full bg-muted overflow-hidden">
+                        <div className={`${s.color} h-full rounded-full`} style={{ width: analytics.total_sec > 0 ? `${(s.sec / analytics.total_sec) * 100}%` : '0%' }} />
+                      </div>
+                      <span className="text-xs font-medium w-14 text-right">{formatTime(s.sec)}</span>
+                      <span className="text-xs text-muted-foreground w-10 text-right">{pct(s.sec, analytics.total_sec)}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-6 rounded-lg bg-muted/30 border border-border/40">
+                <BarChart3 className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">No screen time analytics recorded yet</p>
+                <p className="text-xs text-muted-foreground mt-1">Data will appear once this user starts using the mobile app</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+const InfoRow: React.FC<{ icon: React.ReactNode; label: string; value: string }> = ({ icon, label, value }) => (
+  <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
+    <span className="text-muted-foreground">{icon}</span>
+    <span className="text-xs text-muted-foreground">{label}:</span>
+    <span className="text-xs font-medium truncate">{value}</span>
+  </div>
+);
+
+const StatCard: React.FC<{ icon: React.ReactNode; label: string; value: number }> = ({ icon, label, value }) => (
+  <div className="p-3 rounded-lg bg-muted/50 flex items-center gap-2.5">
+    {icon}
+    <div>
+      <p className="text-lg font-bold leading-none">{value}</p>
+      <p className="text-[10px] text-muted-foreground mt-0.5">{label}</p>
+    </div>
+  </div>
+);
 
 export default AdminAnalyticsPage;
