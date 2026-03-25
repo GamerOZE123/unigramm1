@@ -241,6 +241,9 @@ const Admin: React.FC = () => {
       <div className="max-w-6xl mx-auto space-y-6">
         <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
 
+        {/* Overview Stats */}
+        <AdminOverviewStats />
+
         {/* Access Control Banner */}
         {restrictedAccess !== null && (
           <Card className={restrictedAccess ? 'border-destructive/50' : 'border-green-500/50'}>
@@ -272,29 +275,66 @@ const Admin: React.FC = () => {
           </Card>
         )}
 
-        {/* Maintenance Mode Banner */}
+        {/* Maintenance Mode Banner — Prominent */}
         {maintenanceMode !== null && (
-          <Card className={maintenanceMode ? 'border-amber-500/50' : 'border-border'}>
-            <CardContent className="pt-6 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Wrench className={`w-5 h-5 ${maintenanceMode ? 'text-amber-500' : 'text-muted-foreground'}`} />
-                <div>
-                  <p className="font-semibold text-foreground">Maintenance Mode</p>
+          <Card className={`${maintenanceMode ? 'border-red-500/60 bg-red-950/20' : 'border-green-500/30'}`}>
+            <CardContent className="pt-6">
+              {maintenanceMode && (
+                <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-2">
+                  <span className="text-lg">⚠️</span>
+                  App is currently in maintenance mode. All users see the maintenance screen.
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Wrench className={`w-6 h-6 ${maintenanceMode ? 'text-red-400' : 'text-green-400'}`} />
+                  <div>
+                    <p className="font-semibold text-lg text-foreground">Maintenance Mode</p>
+                    <p className="text-sm text-muted-foreground">
+                      {maintenanceMode ? 'App is under maintenance' : 'App is live and running'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`text-sm font-medium ${maintenanceMode ? 'text-red-400' : 'text-green-400'}`}>
+                    {maintenanceMode ? 'ON' : 'OFF'}
+                  </span>
                   {maintenanceMode ? (
-                    <Badge className="mt-1 bg-amber-500 hover:bg-amber-600 text-white border-transparent">Enabled — app is under maintenance</Badge>
+                    // Turning OFF — no confirmation needed
+                    <Switch
+                      checked={maintenanceMode}
+                      onCheckedChange={() => toggleMaintenance()}
+                      disabled={togglingMaintenance}
+                      className="data-[state=checked]:bg-red-500 scale-125"
+                    />
                   ) : (
-                    <Badge variant="secondary" className="mt-1">Disabled — app is live</Badge>
+                    // Turning ON — show confirmation dialog
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Switch
+                          checked={maintenanceMode}
+                          disabled={togglingMaintenance}
+                          className="scale-125"
+                        />
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Enable Maintenance Mode?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This will show a maintenance screen to all users. They won't be able to use the app until you disable it.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => toggleMaintenance()} className="bg-red-500 hover:bg-red-600">
+                            Enable Maintenance
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   )}
                 </div>
               </div>
-              <Button
-                variant={maintenanceMode ? 'default' : 'destructive'}
-                size="sm"
-                onClick={toggleMaintenance}
-                disabled={togglingMaintenance}
-              >
-                {togglingMaintenance ? 'Updating…' : maintenanceMode ? 'Disable maintenance' : 'Enable maintenance'}
-              </Button>
             </CardContent>
           </Card>
         )}
