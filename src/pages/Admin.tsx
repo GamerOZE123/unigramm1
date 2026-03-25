@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Check, Lock, Users, Mail, Clock, Shield, ShieldOff, ShieldCheck, Smartphone, Send, Trash2, Bell } from 'lucide-react';
+import { Check, Lock, Users, Mail, Clock, Shield, ShieldOff, ShieldCheck, Smartphone, Send, Trash2, Bell, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminFeatureFlags from '@/components/admin/AdminFeatureFlags';
 import AdminAppConfig from '@/components/admin/AdminAppConfig';
@@ -43,14 +43,20 @@ const Admin: React.FC = () => {
   const [restrictedAccess, setRestrictedAccess] = useState<boolean | null>(null);
   const [togglingAccess, setTogglingAccess] = useState(false);
 
+  // Maintenance mode state
+  const [maintenanceMode, setMaintenanceMode] = useState<boolean | null>(null);
+  const [togglingMaintenance, setTogglingMaintenance] = useState(false);
+
   const fetchAccessConfig = async () => {
     const { data, error } = await supabase
       .from('app_config')
-      .select('value')
-      .eq('key', 'restricted_access')
-      .single();
+      .select('key, value')
+      .in('key', ['restricted_access', 'maintenance_mode']);
     if (!error && data) {
-      setRestrictedAccess(data.value === 'true');
+      const restricted = data.find(d => d.key === 'restricted_access');
+      const maintenance = data.find(d => d.key === 'maintenance_mode');
+      if (restricted) setRestrictedAccess(restricted.value === 'true');
+      if (maintenance) setMaintenanceMode(maintenance.value === 'true');
     }
   };
 
@@ -59,7 +65,7 @@ const Admin: React.FC = () => {
     const newValue = !restrictedAccess;
     const { error } = await supabase
       .from('app_config')
-      .update({ value: String(newValue), updated_at: new Date().toISOString() })
+      .update({ value: String(newValue), updated_at: new Date().toISOString() } as any)
       .eq('key', 'restricted_access');
     if (error) {
       toast.error('Failed to update access setting');
@@ -68,6 +74,22 @@ const Admin: React.FC = () => {
       toast.success(newValue ? 'Access restricted to approved users' : 'Access opened to everyone');
     }
     setTogglingAccess(false);
+  };
+
+  const toggleMaintenance = async () => {
+    setTogglingMaintenance(true);
+    const newValue = !maintenanceMode;
+    const { error } = await supabase
+      .from('app_config')
+      .update({ value: String(newValue), updated_at: new Date().toISOString() } as any)
+      .eq('key', 'maintenance_mode');
+    if (error) {
+      toast.error('Failed to update maintenance mode');
+    } else {
+      setMaintenanceMode(newValue);
+      toast.success(newValue ? 'Maintenance mode enabled' : 'Maintenance mode disabled');
+    }
+    setTogglingMaintenance(false);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -229,6 +251,33 @@ const Admin: React.FC = () => {
                 disabled={togglingAccess}
               >
                 {togglingAccess ? 'Updating…' : restrictedAccess ? 'Open to everyone' : 'Restrict access'}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Maintenance Mode Banner */}
+        {maintenanceMode !== null && (
+          <Card className={maintenanceMode ? 'border-amber-500/50' : 'border-border'}>
+            <CardContent className="pt-6 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Wrench className={`w-5 h-5 ${maintenanceMode ? 'text-amber-500' : 'text-muted-foreground'}`} />
+                <div>
+                  <p className="font-semibold text-foreground">Maintenance Mode</p>
+                  {maintenanceMode ? (
+                    <Badge className="mt-1 bg-amber-500 hover:bg-amber-600 text-white border-transparent">Enabled — app is under maintenance</Badge>
+                  ) : (
+                    <Badge variant="secondary" className="mt-1">Disabled — app is live</Badge>
+                  )}
+                </div>
+              </div>
+              <Button
+                variant={maintenanceMode ? 'default' : 'destructive'}
+                size="sm"
+                onClick={toggleMaintenance}
+                disabled={togglingMaintenance}
+              >
+                {togglingMaintenance ? 'Updating…' : maintenanceMode ? 'Disable maintenance' : 'Enable maintenance'}
               </Button>
             </CardContent>
           </Card>
