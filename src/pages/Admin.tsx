@@ -3,10 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Check, Lock, Users, Mail, Clock, Shield, ShieldOff, ShieldCheck, Smartphone, Send, Trash2, Bell, Wrench, BarChart3 } from 'lucide-react';
+import { Check, Lock, Users, Mail, Clock, Shield, ShieldOff, ShieldCheck, Smartphone, Send, Trash2, Bell, Wrench, Menu, RotateCw } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminFeatureFlags from '@/components/admin/AdminFeatureFlags';
 import AdminAppConfig from '@/components/admin/AdminAppConfig';
@@ -16,7 +15,8 @@ import AdminPendingAccounts from '@/components/admin/AdminPendingAccounts';
 import AdminBroadcastNotifications from '@/components/admin/AdminBroadcastNotifications';
 import AdminAuthenticatedUsers from '@/components/admin/AdminAuthenticatedUsers';
 import AdminOverviewStats from '@/components/admin/AdminOverviewStats';
-import AdminAnalytics from '@/components/admin/AdminAnalytics';
+import AdminAnalyticsPage from '@/components/admin/AdminAnalyticsPage';
+import AdminSidebar, { type AdminSection } from '@/components/admin/AdminSidebar';
 import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
@@ -42,6 +42,10 @@ const Admin: React.FC = () => {
   const [storedPassword, setStoredPassword] = useState('');
   const [sendingAndroid, setSendingAndroid] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [reInviting, setReInviting] = useState<string | null>(null);
+
+  const [section, setSection] = useState<AdminSection>('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Access control state
   const [restrictedAccess, setRestrictedAccess] = useState<boolean | null>(null);
@@ -86,7 +90,6 @@ const Admin: React.FC = () => {
     const valueStr = String(newValue);
     const now = new Date().toISOString();
 
-    // Update both app_config (web) and app_settings (mobile)
     const [configResult, settingsResult] = await Promise.all([
       supabase
         .from('app_config')
@@ -173,6 +176,20 @@ const Admin: React.FC = () => {
     setInviting(null);
   };
 
+  const handleReInvite = async (signup: SignupRow) => {
+    setReInviting(signup.id);
+    try {
+      const { error } = await supabase.functions.invoke('send-invite', {
+        body: { email: signup.email, name: signup.full_name || '' },
+      });
+      if (error) throw error;
+      toast.success(`Re-invite sent to ${signup.email}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to re-send invite');
+    }
+    setReInviting(null);
+  };
+
   const handleSendAndroidLink = async (signup: SignupRow) => {
     setSendingAndroid(signup.id);
     try {
@@ -208,14 +225,18 @@ const Admin: React.FC = () => {
 
   const pendingCount = signups.filter(s => !s.invited).length;
   const invitedCount = signups.filter(s => s.invited).length;
+  const signedUpCount = signups.filter(s => s.invited).length;
 
   if (!authenticated) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-sm">
+        <Card className="w-full max-w-sm border-border/40">
           <CardHeader className="text-center">
-            <Lock className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+            <div className="mx-auto w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-3">
+              <Lock className="w-5 h-5 text-primary" />
+            </div>
             <CardTitle className="text-lg">Admin Access</CardTitle>
+            <p className="text-sm text-muted-foreground">Enter your password to continue</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
@@ -227,7 +248,7 @@ const Admin: React.FC = () => {
                 autoFocus
               />
               <Button type="submit" className="w-full" disabled={verifying}>
-                {verifying ? 'Verifying…' : 'Unlock'}
+                {verifying ? 'Verifying…' : 'Unlock Dashboard'}
               </Button>
             </form>
           </CardContent>
@@ -237,240 +258,245 @@ const Admin: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <h1 className="text-2xl font-bold text-foreground">Admin Dashboard</h1>
+    <div className="min-h-screen bg-background flex">
+      {/* Sidebar */}
+      <AdminSidebar
+        current={section}
+        onChange={setSection}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-        {/* Overview Stats */}
-        <AdminOverviewStats />
+      {/* Main Content */}
+      <main className="flex-1 min-w-0 overflow-y-auto">
+        {/* Top bar */}
+        <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-md border-b border-border/40 px-4 md:px-6 py-3 flex items-center gap-3">
+          <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
+            <Menu className="w-5 h-5" />
+          </Button>
+          <h1 className="text-lg font-bold text-foreground capitalize">
+            {section === 'auth' ? 'Authenticated Users' : section === 'flags' ? 'Feature Flags' : section === 'config' ? 'App Config' : section.replace('_', ' ')}
+          </h1>
+        </div>
 
-        {/* Access Control Banner */}
-        {restrictedAccess !== null && (
-          <Card className={restrictedAccess ? 'border-destructive/50' : 'border-green-500/50'}>
-            <CardContent className="pt-6 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {restrictedAccess ? (
-                  <Shield className="w-5 h-5 text-destructive" />
-                ) : (
-                  <ShieldOff className="w-5 h-5 text-green-500" />
-                )}
-                <div>
-                  <p className="font-semibold text-foreground">Access Control</p>
-                  {restrictedAccess ? (
-                    <Badge variant="destructive" className="mt-1">Restricted — only approved users</Badge>
-                  ) : (
-                    <Badge className="mt-1 bg-green-500 hover:bg-green-600 text-white border-transparent">Open — all users</Badge>
-                  )}
-                </div>
-              </div>
-              <Button
-                variant={restrictedAccess ? 'default' : 'destructive'}
-                size="sm"
-                onClick={toggleAccess}
-                disabled={togglingAccess}
-              >
-                {togglingAccess ? 'Updating…' : restrictedAccess ? 'Open to everyone' : 'Restrict access'}
-              </Button>
-            </CardContent>
-          </Card>
-        )}
+        <div className="p-4 md:p-6 space-y-6 max-w-[1400px]">
+          {/* Overview Section */}
+          {section === 'overview' && (
+            <>
+              <AdminOverviewStats />
 
-        {/* Maintenance Mode Banner — Prominent */}
-        {maintenanceMode !== null && (
-          <Card className={`${maintenanceMode ? 'border-red-500/60 bg-red-950/20' : 'border-green-500/30'}`}>
-            <CardContent className="pt-6">
-              {maintenanceMode && (
-                <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-2">
-                  <span className="text-lg">⚠️</span>
-                  App is currently in maintenance mode. All users see the maintenance screen.
-                </div>
+              {/* Access Control */}
+              {restrictedAccess !== null && (
+                <Card className={`border-border/40 ${restrictedAccess ? 'border-destructive/40' : 'border-green-500/30'}`}>
+                  <CardContent className="pt-6 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {restrictedAccess ? <Shield className="w-5 h-5 text-destructive" /> : <ShieldOff className="w-5 h-5 text-green-500" />}
+                      <div>
+                        <p className="font-semibold text-foreground">Access Control</p>
+                        {restrictedAccess ? (
+                          <Badge variant="destructive" className="mt-1">Restricted — only approved users</Badge>
+                        ) : (
+                          <Badge className="mt-1 bg-green-500 hover:bg-green-600 text-white border-transparent">Open — all users</Badge>
+                        )}
+                      </div>
+                    </div>
+                    <Button variant={restrictedAccess ? 'default' : 'destructive'} size="sm" onClick={toggleAccess} disabled={togglingAccess}>
+                      {togglingAccess ? 'Updating…' : restrictedAccess ? 'Open to everyone' : 'Restrict access'}
+                    </Button>
+                  </CardContent>
+                </Card>
               )}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Wrench className={`w-6 h-6 ${maintenanceMode ? 'text-red-400' : 'text-green-400'}`} />
-                  <div>
-                    <p className="font-semibold text-lg text-foreground">Maintenance Mode</p>
-                    <p className="text-sm text-muted-foreground">
-                      {maintenanceMode ? 'App is under maintenance' : 'App is live and running'}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className={`text-sm font-medium ${maintenanceMode ? 'text-red-400' : 'text-green-400'}`}>
-                    {maintenanceMode ? 'ON' : 'OFF'}
-                  </span>
-                  {maintenanceMode ? (
-                    // Turning OFF — no confirmation needed
-                    <Switch
-                      checked={maintenanceMode}
-                      onCheckedChange={() => toggleMaintenance()}
-                      disabled={togglingMaintenance}
-                      className="data-[state=checked]:bg-red-500 scale-125"
-                    />
-                  ) : (
-                    // Turning ON — show confirmation dialog
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Switch
-                          checked={maintenanceMode}
-                          disabled={togglingMaintenance}
-                          className="scale-125"
-                        />
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Enable Maintenance Mode?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will show a maintenance screen to all users. They won't be able to use the app until you disable it.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => toggleMaintenance()} className="bg-red-500 hover:bg-red-600">
-                            Enable Maintenance
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
-        {/* University Features */}
-        <AdminUniversityFeatures />
-
-        <Tabs defaultValue="pending" className="w-full">
-          <TabsList className="w-full justify-start flex-wrap">
-            <TabsTrigger value="pending">Pending Accounts</TabsTrigger>
-            <TabsTrigger value="waitlist">Waitlist</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="auth"><ShieldCheck className="w-3 h-3 mr-1" /> Authenticated</TabsTrigger>
-            <TabsTrigger value="flags">Feature Flags</TabsTrigger>
-            <TabsTrigger value="config">App Config</TabsTrigger>
-            <TabsTrigger value="broadcast"><Bell className="w-3 h-3 mr-1" /> Broadcast</TabsTrigger>
-            <TabsTrigger value="analytics"><BarChart3 className="w-3 h-3 mr-1" /> Analytics</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="pending">
-            <AdminPendingAccounts password={storedPassword} />
-          </TabsContent>
-
-          <TabsContent value="waitlist" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex gap-3">
-                <Badge variant="secondary"><Users className="w-3 h-3 mr-1" /> {signups.length} total</Badge>
-                <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" /> {pendingCount} pending</Badge>
-                <Badge variant="secondary"><Mail className="w-3 h-3 mr-1" /> {invitedCount} invited</Badge>
-              </div>
-              <Button variant="outline" size="sm" onClick={fetchSignups} disabled={loading}>
-                {loading ? 'Refreshing…' : 'Refresh'}
-              </Button>
-            </div>
-
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Android Email</TableHead>
-                      <TableHead>University</TableHead>
-                      <TableHead>Signed Up</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Android</TableHead>
-                      <TableHead className="text-right">Delete</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {signups.map(s => (
-                      <TableRow key={s.id}>
-                        <TableCell className="font-medium">{s.full_name || '—'}</TableCell>
-                        <TableCell>{s.email}</TableCell>
-                        <TableCell>
-                          {s.android_email ? (
-                            <span className="text-sm">{s.android_email}</span>
-                          ) : (
-                            <span className="text-muted-foreground text-xs">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell>{s.university || '—'}</TableCell>
-                        <TableCell>
-                          {s.created_at
-                            ? new Date(s.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-                            : '—'}
-                        </TableCell>
-                        <TableCell>
-                          {s.invited ? (
-                            <Badge variant="secondary" className="gap-1"><Check className="w-3 h-3" /> Invited</Badge>
-                          ) : (
-                            <Button size="sm" variant="outline" onClick={() => handleInvite(s.id)} disabled={inviting === s.id}>
-                              {inviting === s.id ? 'Inviting…' : 'Invite'}
-                            </Button>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {s.android_sent ? (
-                            <Badge variant="secondary" className="gap-1"><Smartphone className="w-3 h-3" /> Sent</Badge>
-                          ) : (
-                            <Button size="sm" variant="outline" onClick={() => handleSendAndroidLink(s)} disabled={sendingAndroid === s.id}>
-                              <Smartphone className="w-3 h-3 mr-1" />
-                              {sendingAndroid === s.id ? 'Sending…' : 'Send'}
-                            </Button>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => handleDeleteWaitlistEntry(s)}
-                            disabled={deleting === s.id}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {signups.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No signups yet</TableCell>
-                      </TableRow>
+              {/* Maintenance Mode */}
+              {maintenanceMode !== null && (
+                <Card className={`border-border/40 ${maintenanceMode ? 'border-red-500/50 bg-red-950/10' : 'border-green-500/20'}`}>
+                  <CardContent className="pt-6">
+                    {maintenanceMode && (
+                      <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-2">
+                        <span className="text-lg">⚠️</span>
+                        App is currently in maintenance mode. All users see the maintenance screen.
+                      </div>
                     )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Wrench className={`w-6 h-6 ${maintenanceMode ? 'text-red-400' : 'text-green-400'}`} />
+                        <div>
+                          <p className="font-semibold text-lg text-foreground">Maintenance Mode</p>
+                          <p className="text-sm text-muted-foreground">
+                            {maintenanceMode ? 'App is under maintenance' : 'App is live and running'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={`text-sm font-medium ${maintenanceMode ? 'text-red-400' : 'text-green-400'}`}>
+                          {maintenanceMode ? 'ON' : 'OFF'}
+                        </span>
+                        {maintenanceMode ? (
+                          <Switch
+                            checked={maintenanceMode}
+                            onCheckedChange={() => toggleMaintenance()}
+                            disabled={togglingMaintenance}
+                            className="data-[state=checked]:bg-red-500 scale-125"
+                          />
+                        ) : (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Switch checked={maintenanceMode} disabled={togglingMaintenance} className="scale-125" />
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Enable Maintenance Mode?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will show a maintenance screen to all users. They won't be able to use the app until you disable it.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => toggleMaintenance()} className="bg-red-500 hover:bg-red-600">
+                                  Enable Maintenance
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
 
-          <TabsContent value="users">
-            <AdminUserManagement password={storedPassword} />
-          </TabsContent>
+          {/* Pending Accounts */}
+          {section === 'pending' && <AdminPendingAccounts password={storedPassword} />}
 
-          <TabsContent value="auth">
-            <AdminAuthenticatedUsers password={storedPassword} />
-          </TabsContent>
+          {/* Waitlist */}
+          {section === 'waitlist' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex gap-3 flex-wrap">
+                  <Badge variant="secondary"><Users className="w-3 h-3 mr-1" /> {signups.length} total</Badge>
+                  <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" /> {pendingCount} pending</Badge>
+                  <Badge variant="secondary"><Mail className="w-3 h-3 mr-1" /> {invitedCount} invited</Badge>
+                </div>
+                <Button variant="outline" size="sm" onClick={fetchSignups} disabled={loading}>
+                  {loading ? 'Refreshing…' : 'Refresh'}
+                </Button>
+              </div>
 
-          <TabsContent value="flags">
-            <AdminFeatureFlags password={storedPassword} />
-          </TabsContent>
+              <Card className="border-border/40">
+                <CardContent className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Android Email</TableHead>
+                        <TableHead>University</TableHead>
+                        <TableHead>Signed Up</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {signups.map(s => (
+                        <TableRow key={s.id}>
+                          <TableCell className="font-medium">{s.full_name || '—'}</TableCell>
+                          <TableCell className="text-sm">{s.email}</TableCell>
+                          <TableCell>
+                            {s.android_email ? (
+                              <span className="text-sm">{s.android_email}</span>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm">{s.university || '—'}</TableCell>
+                          <TableCell className="text-sm">
+                            {s.created_at
+                              ? new Date(s.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                              : '—'}
+                          </TableCell>
+                          <TableCell>
+                            {s.invited ? (
+                              <Badge variant="secondary" className="gap-1"><Check className="w-3 h-3" /> Invited</Badge>
+                            ) : (
+                              <Button size="sm" variant="outline" onClick={() => handleInvite(s.id)} disabled={inviting === s.id}>
+                                {inviting === s.id ? 'Inviting…' : 'Invite'}
+                              </Button>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex gap-1.5 justify-end">
+                              {/* Re-invite for already invited */}
+                              {s.invited && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleReInvite(s)}
+                                  disabled={reInviting === s.id}
+                                  title="Re-send invitation email"
+                                >
+                                  <RotateCw className={`w-3 h-3 mr-1 ${reInviting === s.id ? 'animate-spin' : ''}`} />
+                                  {reInviting === s.id ? '…' : 'Re-invite'}
+                                </Button>
+                              )}
+                              {/* Android */}
+                              {s.android_sent ? (
+                                <Badge variant="secondary" className="gap-1"><Smartphone className="w-3 h-3" /> Sent</Badge>
+                              ) : (
+                                <Button size="sm" variant="outline" onClick={() => handleSendAndroidLink(s)} disabled={sendingAndroid === s.id}>
+                                  <Smartphone className="w-3 h-3 mr-1" />
+                                  {sendingAndroid === s.id ? '…' : 'Android'}
+                                </Button>
+                              )}
+                              {/* Delete */}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => handleDeleteWaitlistEntry(s)}
+                                disabled={deleting === s.id}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {signups.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No signups yet</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
-          <TabsContent value="config">
-            <AdminAppConfig password={storedPassword} />
-          </TabsContent>
+          {/* Users */}
+          {section === 'users' && <AdminUserManagement password={storedPassword} />}
 
-          <TabsContent value="broadcast">
-            <AdminBroadcastNotifications password={storedPassword} />
-          </TabsContent>
+          {/* Authenticated */}
+          {section === 'auth' && <AdminAuthenticatedUsers password={storedPassword} />}
 
-          <TabsContent value="analytics">
-            <AdminAnalytics password={storedPassword} />
-          </TabsContent>
-        </Tabs>
-      </div>
+          {/* University Features */}
+          {section === 'university' && <AdminUniversityFeatures />}
+
+          {/* Feature Flags */}
+          {section === 'flags' && <AdminFeatureFlags password={storedPassword} />}
+
+          {/* App Config */}
+          {section === 'config' && <AdminAppConfig password={storedPassword} />}
+
+          {/* Broadcast */}
+          {section === 'broadcast' && <AdminBroadcastNotifications password={storedPassword} />}
+
+          {/* Analytics */}
+          {section === 'analytics' && <AdminAnalyticsPage password={storedPassword} />}
+        </div>
+      </main>
     </div>
   );
 };
