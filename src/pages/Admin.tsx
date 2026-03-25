@@ -352,6 +352,7 @@ const Admin: React.FC = () => {
             <TabsTrigger value="config">App Config</TabsTrigger>
             <TabsTrigger value="broadcast"><Bell className="w-3 h-3 mr-1" /> Broadcast</TabsTrigger>
             <TabsTrigger value="analytics"><BarChart3 className="w-3 h-3 mr-1" /> Analytics</TabsTrigger>
+          </TabsList>
 
           <TabsContent value="pending">
             <AdminPendingAccounts password={storedPassword} />
