@@ -706,6 +706,7 @@ export type Database = {
           created_by: string
           description: string | null
           id: string
+          members_can_add: boolean | null
           name: string
           updated_at: string
         }
@@ -715,6 +716,7 @@ export type Database = {
           created_by: string
           description?: string | null
           id?: string
+          members_can_add?: boolean | null
           name: string
           updated_at?: string
         }
@@ -724,6 +726,7 @@ export type Database = {
           created_by?: string
           description?: string | null
           id?: string
+          members_can_add?: boolean | null
           name?: string
           updated_at?: string
         }
