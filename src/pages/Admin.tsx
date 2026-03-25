@@ -79,15 +79,27 @@ const Admin: React.FC = () => {
   const toggleMaintenance = async () => {
     setTogglingMaintenance(true);
     const newValue = !maintenanceMode;
-    const { error } = await supabase
-      .from('app_config')
-      .update({ value: String(newValue), updated_at: new Date().toISOString() } as any)
-      .eq('key', 'maintenance_mode');
-    if (error) {
+    const valueStr = String(newValue);
+    const now = new Date().toISOString();
+
+    // Update both app_config (web) and app_settings (mobile)
+    const [configResult, settingsResult] = await Promise.all([
+      supabase
+        .from('app_config')
+        .update({ value: valueStr, updated_at: now } as any)
+        .eq('key', 'maintenance_mode'),
+      supabase
+        .from('app_settings')
+        .upsert({ key: 'maintenance_mode', value: valueStr, updated_at: now } as any, { onConflict: 'key' }),
+    ]);
+
+    if (configResult.error && settingsResult.error) {
       toast.error('Failed to update maintenance mode');
     } else {
       setMaintenanceMode(newValue);
-      toast.success(newValue ? 'Maintenance mode enabled' : 'Maintenance mode disabled');
+      if (configResult.error) toast.warning('Updated mobile but web config failed');
+      else if (settingsResult.error) toast.warning('Updated web but mobile config failed');
+      else toast.success(newValue ? 'Maintenance mode enabled' : 'Maintenance mode disabled');
     }
     setTogglingMaintenance(false);
   };
