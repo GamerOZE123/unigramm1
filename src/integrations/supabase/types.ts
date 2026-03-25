@@ -4071,6 +4071,53 @@ export type Database = {
           },
         ]
       }
+      user_page_analytics: {
+        Row: {
+          chat_sec: number | null
+          date: string
+          explore_sec: number | null
+          home_sec: number | null
+          id: string
+          profile_sec: number | null
+          synced_at: string | null
+          total_sec: number | null
+          university_sec: number | null
+          user_id: string | null
+        }
+        Insert: {
+          chat_sec?: number | null
+          date: string
+          explore_sec?: number | null
+          home_sec?: number | null
+          id?: string
+          profile_sec?: number | null
+          synced_at?: string | null
+          total_sec?: number | null
+          university_sec?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          chat_sec?: number | null
+          date?: string
+          explore_sec?: number | null
+          home_sec?: number | null
+          id?: string
+          profile_sec?: number | null
+          synced_at?: string | null
+          total_sec?: number | null
+          university_sec?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_page_analytics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_presence: {
         Row: {
           created_at: string
