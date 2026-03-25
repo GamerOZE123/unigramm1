@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Check, Lock, Users, Mail, Clock, Shield, ShieldOff, ShieldCheck, Smartphone, Send, Trash2, Bell, Wrench } from 'lucide-react';
+import { Check, Lock, Users, Mail, Clock, Shield, ShieldOff, ShieldCheck, Smartphone, Send, Trash2, Bell, Wrench, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminFeatureFlags from '@/components/admin/AdminFeatureFlags';
 import AdminAppConfig from '@/components/admin/AdminAppConfig';
@@ -15,6 +15,10 @@ import AdminUniversityFeatures from '@/components/admin/AdminUniversityFeatures'
 import AdminPendingAccounts from '@/components/admin/AdminPendingAccounts';
 import AdminBroadcastNotifications from '@/components/admin/AdminBroadcastNotifications';
 import AdminAuthenticatedUsers from '@/components/admin/AdminAuthenticatedUsers';
+import AdminOverviewStats from '@/components/admin/AdminOverviewStats';
+import AdminAnalytics from '@/components/admin/AdminAnalytics';
+import { Switch } from '@/components/ui/switch';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface SignupRow {
   id: string;
