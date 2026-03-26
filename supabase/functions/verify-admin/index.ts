@@ -312,9 +312,10 @@ Deno.serve(async (req) => {
 
       const rows = user_ids.map((uid: string) => ({
         user_id: uid,
-        type: type || 'admin_broadcast',
+        type: type || 'system',
         title,
         message,
+        navigate_to: navigate_to || null,
       }));
 
       const { error } = await supabaseAdmin.from('notifications').insert(rows);
