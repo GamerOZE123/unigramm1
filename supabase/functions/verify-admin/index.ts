@@ -315,7 +315,6 @@ Deno.serve(async (req) => {
         type: type || 'admin_broadcast',
         title,
         message,
-        navigate_to: navigate_to || null,
       }));
 
       const { error } = await supabaseAdmin.from('notifications').insert(rows);
