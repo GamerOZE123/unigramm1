@@ -352,9 +352,9 @@ const Admin: React.FC = () => {
               {/* Maintenance Mode */}
               {maintenanceMode !== null && (
                 <Card className={`border-border/40 ${maintenanceMode ? 'border-red-500/50 bg-red-950/10' : 'border-green-500/20'}`}>
-                  <CardContent className="pt-6">
+                  <CardContent className="pt-6 space-y-4">
                     {maintenanceMode && (
-                      <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-2">
+                      <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-2">
                         <span className="text-lg">⚠️</span>
                         App is currently in maintenance mode. All users see the maintenance screen.
                       </div>
