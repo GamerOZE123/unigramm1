@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
         android_status: androidMap[s.email.toLowerCase()]?.android_status || null,
       }));
 
-      return json({ valid: true, signups: enriched });
+      return json({ valid: true, signups: enriched, role, allowed_sections: allowedSections });
     }
 
     if (action === 'invite' && id) {
