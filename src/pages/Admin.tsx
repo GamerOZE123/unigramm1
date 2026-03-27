@@ -274,6 +274,7 @@ const Admin: React.FC = () => {
         onChange={setSection}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        allowedSections={allowedSections}
       />
 
       {/* Main Content */}
