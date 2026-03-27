@@ -218,7 +218,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
               {filtered.map(u => {
                 const androidInfo = getAndroidInfo(u);
                 return (
-                  <TableRow key={u.user_id}>
+                  <TableRow key={u.user_id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedUser(u)}>
                     <TableCell>
                       <div>
                         <p className="font-medium">{u.full_name || '—'}</p>
