@@ -37,6 +37,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
   const [search, setSearch] = useState('');
   const [showAndroidOnly, setShowAndroidOnly] = useState(false);
   const [androidTesters, setAndroidTesters] = useState<Record<string, { email: string; status: string }>>({});
+  const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
 
   const fetchAndroidTesters = async () => {
     const { data } = await supabase
