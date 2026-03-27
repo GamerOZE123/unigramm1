@@ -54,12 +54,35 @@ Deno.serve(async (req) => {
     const { password, action, id } = body;
     const adminPassword = Deno.env.get('ADMIN_PASSWORD');
 
-    if (!adminPassword || password !== adminPassword) {
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const isMainAdmin = adminPassword && password === adminPassword;
+    let teamMember: any = null;
+
+    if (!isMainAdmin) {
+      // Check if it's a team member password
+      const { data: members } = await supabaseAdmin
+        .from('admin_team_members')
+        .select('*')
+        .eq('password', password)
+        .eq('is_active', true);
+      if (members && members.length > 0) {
+        teamMember = members[0];
+      }
+    }
+
+    if (!isMainAdmin && !teamMember) {
       return new Response(
         JSON.stringify({ valid: false }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const role = isMainAdmin ? 'admin' : 'team';
+    const allowedSections = isMainAdmin ? null : (teamMember?.allowed_sections || []);
 
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
