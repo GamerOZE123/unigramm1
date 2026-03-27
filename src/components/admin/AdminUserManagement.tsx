@@ -246,6 +246,17 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
         </div>
       </div>
 
+      <div className="flex items-center gap-2 px-1">
+        <Switch
+          id="notify-on-approval"
+          checked={notifyOnApproval}
+          onCheckedChange={setNotifyOnApproval}
+        />
+        <label htmlFor="notify-on-approval" className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1">
+          <Bell className="w-3.5 h-3.5" /> Notify user on approval ("Welcome to Unigramm!")
+        </label>
+      </div>
+
       <Card>
         <CardContent className="p-0">
           <Table>
