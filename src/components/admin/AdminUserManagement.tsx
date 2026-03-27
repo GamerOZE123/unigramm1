@@ -225,7 +225,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
                 <TableHead>Type</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead className="text-center">Email Verified</TableHead>
-                <TableHead className="text-center">Approved</TableHead>
+                <TableHead className="text-center">On Waitlist</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -275,12 +275,12 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
                     <TableCell className="text-center" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-2">
                         <Switch
-                          checked={u.approved}
+                          checked={!u.approved}
                           disabled={actioning === u.user_id}
                           onCheckedChange={() => toggleApproval(u.user_id, u.approved)}
                         />
-                        <span className={`text-xs ${u.approved ? 'text-green-500' : 'text-muted-foreground'}`}>
-                          {u.approved ? 'Yes' : 'No'}
+                        <span className={`text-xs ${!u.approved ? 'text-yellow-500' : 'text-muted-foreground'}`}>
+                          {u.approved ? 'No' : 'Yes'}
                         </span>
                       </div>
                     </TableCell>
