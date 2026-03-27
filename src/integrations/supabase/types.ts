@@ -4517,6 +4517,10 @@ export type Database = {
         }
         Returns: string
       }
+      delete_device_token: {
+        Args: { p_tokens: string[]; p_user_id: string }
+        Returns: undefined
+      }
       extract_hashtags: { Args: { content: string }; Returns: string[] }
       get_available_carpool_rides: {
         Args: never
