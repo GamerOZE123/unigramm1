@@ -54,7 +54,7 @@ interface Props {
 }
 
 const AdminBroadcastNotifications: React.FC<Props> = ({ password }) => {
-  const [audience, setAudience] = useState<'all' | 'select'>('all');
+  const [audience, setAudience] = useState<'all' | 'select' | ''>('');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [deepLink, setDeepLink] = useState('none');
