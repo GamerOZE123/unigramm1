@@ -176,13 +176,26 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
         <div className="flex gap-3 flex-wrap">
           <Badge variant="secondary">{users.length} total</Badge>
           <Badge className="bg-green-500/20 text-green-400 border-green-500/30">{approvedCount} approved</Badge>
-          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">{pendingCount} pending</Badge>
+          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">{pendingCount} waitlisted</Badge>
           <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">{emailConfirmedCount} email confirmed</Badge>
           <button onClick={() => setShowAndroidOnly(!showAndroidOnly)}>
             <Badge className={`cursor-pointer border ${showAndroidOnly ? 'bg-primary/20 text-primary border-primary/30' : 'bg-muted text-muted-foreground border-muted'}`}>
               <Smartphone className="w-3 h-3 mr-1" /> {androidTesterCount} android testers
             </Badge>
           </button>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          {(['all', 'student', 'clubs', 'business'] as const).map(t => (
+            <Button
+              key={t}
+              size="sm"
+              variant={typeFilter === t ? 'default' : 'outline'}
+              onClick={() => setTypeFilter(t)}
+              className="capitalize"
+            >
+              {t === 'all' ? 'All Types' : t}
+            </Button>
+          ))}
         </div>
         <div className="flex gap-2">
           <div className="relative">
