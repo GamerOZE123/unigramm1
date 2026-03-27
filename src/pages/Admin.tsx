@@ -16,6 +16,7 @@ import AdminBroadcastNotifications from '@/components/admin/AdminBroadcastNotifi
 import AdminAuthenticatedUsers from '@/components/admin/AdminAuthenticatedUsers';
 import AdminOverviewStats from '@/components/admin/AdminOverviewStats';
 import AdminAnalyticsPage from '@/components/admin/AdminAnalyticsPage';
+import AdminTeamMembers from '@/components/admin/AdminTeamMembers';
 import AdminSidebar, { type AdminSection } from '@/components/admin/AdminSidebar';
 import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -43,6 +44,9 @@ const Admin: React.FC = () => {
   const [sendingAndroid, setSendingAndroid] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [reInviting, setReInviting] = useState<string | null>(null);
+
+  const [adminRole, setAdminRole] = useState<'admin' | 'team'>('admin');
+  const [allowedSections, setAllowedSections] = useState<string[] | null>(null);
 
   const [section, setSection] = useState<AdminSection>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -124,6 +128,11 @@ const Admin: React.FC = () => {
         setAuthenticated(true);
         setStoredPassword(password);
         setSignups(data.signups || []);
+        setAdminRole(data.role || 'admin');
+        setAllowedSections(data.allowed_sections ?? null);
+        if (data.role === 'team' && data.allowed_sections?.length > 0) {
+          setSection(data.allowed_sections[0] as AdminSection);
+        }
         fetchAccessConfig();
       }
     } catch {
@@ -265,6 +274,7 @@ const Admin: React.FC = () => {
         onChange={setSection}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        allowedSections={allowedSections}
       />
 
       {/* Main Content */}
@@ -495,6 +505,9 @@ const Admin: React.FC = () => {
 
           {/* Analytics */}
           {section === 'analytics' && <AdminAnalyticsPage password={storedPassword} />}
+
+          {/* Team Members (admin only) */}
+          {section === 'team' && adminRole === 'admin' && <AdminTeamMembers password={storedPassword} />}
         </div>
       </main>
     </div>

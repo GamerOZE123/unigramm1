@@ -44,6 +44,39 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_team_members: {
+        Row: {
+          allowed_sections: string[]
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean
+          name: string
+          password: string
+          updated_at: string
+        }
+        Insert: {
+          allowed_sections?: string[]
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          password: string
+          updated_at?: string
+        }
+        Update: {
+          allowed_sections?: string[]
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          password?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       advertising_clicks: {
         Row: {
           advertising_post_id: string
