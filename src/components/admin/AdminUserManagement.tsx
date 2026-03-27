@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, RefreshCw, Search, Trash2, Smartphone, Send } from 'lucide-react';
+import { Users, RefreshCw, Search, Trash2, Smartphone, Send, Bell } from 'lucide-react';
 import UserDetailModal from './UserDetailModal';
 
 interface UserRow {
@@ -39,6 +39,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
   const [typeFilter, setTypeFilter] = useState<'all' | 'student' | 'clubs' | 'business'>('all');
   const [androidTesters, setAndroidTesters] = useState<Record<string, { email: string; status: string }>>({});
   const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
+  const [notifyOnApproval, setNotifyOnApproval] = useState(true);
 
   const fetchAndroidTesters = async () => {
     const { data } = await supabase
@@ -78,6 +79,21 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
     } else {
       setUsers(prev => prev.map(u => u.user_id === user_id ? { ...u, approved: !current } : u));
       if (!current) {
+        // Send welcome notification
+        if (notifyOnApproval) {
+          await supabase.functions.invoke('verify-admin', {
+            body: {
+              password,
+              action: 'notify_user',
+              user_id,
+              notification: {
+                type: 'system',
+                title: 'Welcome to Unigramm! 🎉',
+                message: 'Your account has been approved. Welcome aboard — explore, connect, and make the most of your campus experience!',
+              },
+            },
+          });
+        }
         toast.success('User approved & removed from waitlist');
       } else {
         // Notify user they've been put on waitlist
@@ -228,6 +244,17 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
             <RefreshCw className="w-4 h-4 mr-1" /> Refresh
           </Button>
         </div>
+      </div>
+
+      <div className="flex items-center gap-2 px-1">
+        <Switch
+          id="notify-on-approval"
+          checked={notifyOnApproval}
+          onCheckedChange={setNotifyOnApproval}
+        />
+        <label htmlFor="notify-on-approval" className="text-sm text-muted-foreground cursor-pointer flex items-center gap-1">
+          <Bell className="w-3.5 h-3.5" /> Notify user on approval ("Welcome to Unigramm!")
+        </label>
       </div>
 
       <Card>

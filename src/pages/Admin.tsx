@@ -58,6 +58,7 @@ const Admin: React.FC = () => {
   // Maintenance mode state
   const [maintenanceMode, setMaintenanceMode] = useState<boolean | null>(null);
   const [togglingMaintenance, setTogglingMaintenance] = useState(false);
+  const [notifyOnMaintenanceOff, setNotifyOnMaintenanceOff] = useState(true);
 
   const fetchAccessConfig = async () => {
     const { data, error } = await supabase
@@ -111,6 +112,37 @@ const Admin: React.FC = () => {
       if (configResult.error) toast.warning('Updated mobile but web config failed');
       else if (settingsResult.error) toast.warning('Updated web but mobile config failed');
       else toast.success(newValue ? 'Maintenance mode enabled' : 'Maintenance mode disabled');
+
+      // Send welcome-back notification to all approved users when maintenance is turned OFF
+      if (!newValue && notifyOnMaintenanceOff) {
+        try {
+          const { data: idsData } = await supabase.functions.invoke('verify-admin', {
+            body: { password: storedPassword, action: 'fetch_all_user_ids' },
+          });
+          if (idsData?.user_ids?.length) {
+            const batchSize = 50;
+            for (let i = 0; i < idsData.user_ids.length; i += batchSize) {
+              const batch = idsData.user_ids.slice(i, i + batchSize);
+              await supabase.functions.invoke('verify-admin', {
+                body: {
+                  password: storedPassword,
+                  action: 'broadcast_batch',
+                  user_ids: batch,
+                  title: 'We\'re Back! 🚀',
+                  message: 'Maintenance is complete — Unigramm is back online. Thanks for your patience!',
+                  type: 'system',
+                  log_broadcast: i === 0,
+                  audience_type: 'all',
+                  total_recipients: idsData.user_ids.length,
+                },
+              });
+            }
+            toast.success('Welcome-back notification sent to all users');
+          }
+        } catch {
+          toast.error('Maintenance disabled but failed to send notifications');
+        }
+      }
     }
     setTogglingMaintenance(false);
   };
@@ -320,9 +352,9 @@ const Admin: React.FC = () => {
               {/* Maintenance Mode */}
               {maintenanceMode !== null && (
                 <Card className={`border-border/40 ${maintenanceMode ? 'border-red-500/50 bg-red-950/10' : 'border-green-500/20'}`}>
-                  <CardContent className="pt-6">
+                  <CardContent className="pt-6 space-y-4">
                     {maintenanceMode && (
-                      <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-2">
+                      <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm flex items-center gap-2">
                         <span className="text-lg">⚠️</span>
                         App is currently in maintenance mode. All users see the maintenance screen.
                       </div>
@@ -370,6 +402,16 @@ const Admin: React.FC = () => {
                           </AlertDialog>
                         )}
                       </div>
+                    </div>
+                    <div className="flex items-center gap-2 pt-2 border-t border-border/30">
+                      <Switch
+                        id="notify-maintenance-off"
+                        checked={notifyOnMaintenanceOff}
+                        onCheckedChange={setNotifyOnMaintenanceOff}
+                      />
+                      <label htmlFor="notify-maintenance-off" className="text-sm text-muted-foreground cursor-pointer">
+                        Notify all users when maintenance ends ("We're Back!" notification)
+                      </label>
                     </div>
                   </CardContent>
                 </Card>
