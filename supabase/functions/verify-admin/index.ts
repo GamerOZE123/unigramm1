@@ -84,11 +84,6 @@ Deno.serve(async (req) => {
     const role = isMainAdmin ? 'admin' : 'team';
     const allowedSections = isMainAdmin ? null : (teamMember?.allowed_sections || []);
 
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
-
     const json = (data: unknown, status = 200) =>
       new Response(JSON.stringify(data), {
         status,
