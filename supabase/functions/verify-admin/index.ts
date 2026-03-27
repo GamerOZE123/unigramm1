@@ -478,8 +478,56 @@ Deno.serve(async (req) => {
       return json({ valid: true, success: true, cleanup_errors: errors });
     }
 
+    // ── Team Member Management (admin only) ─────────────────
+    if (action === 'fetch_team_members') {
+      if (!isMainAdmin) return json({ valid: true, error: 'Only main admin can manage team' }, 403);
+      const { data, error } = await supabaseAdmin
+        .from('admin_team_members')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, members: data });
+    }
+
+    if (action === 'add_team_member') {
+      if (!isMainAdmin) return json({ valid: true, error: 'Only main admin can manage team' }, 403);
+      const { name, email: memberEmail, member_password, allowed_sections: sections } = body;
+      if (!name || !member_password) return json({ valid: true, error: 'name and member_password required' }, 400);
+      const { data, error } = await supabaseAdmin
+        .from('admin_team_members')
+        .insert({ name, email: memberEmail || null, password: member_password, allowed_sections: sections || [] })
+        .select()
+        .single();
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true, member: data });
+    }
+
+    if (action === 'update_team_member') {
+      if (!isMainAdmin) return json({ valid: true, error: 'Only main admin can manage team' }, 403);
+      const { member_id, name, email: memberEmail, member_password, allowed_sections: sections, is_active } = body;
+      if (!member_id) return json({ valid: true, error: 'member_id required' }, 400);
+      const updates: any = { updated_at: new Date().toISOString() };
+      if (name !== undefined) updates.name = name;
+      if (memberEmail !== undefined) updates.email = memberEmail;
+      if (member_password) updates.password = member_password;
+      if (sections !== undefined) updates.allowed_sections = sections;
+      if (is_active !== undefined) updates.is_active = is_active;
+      const { error } = await supabaseAdmin.from('admin_team_members').update(updates).eq('id', member_id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
+    if (action === 'delete_team_member') {
+      if (!isMainAdmin) return json({ valid: true, error: 'Only main admin can manage team' }, 403);
+      const { member_id } = body;
+      if (!member_id) return json({ valid: true, error: 'member_id required' }, 400);
+      const { error } = await supabaseAdmin.from('admin_team_members').delete().eq('id', member_id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
     // Default: just validate password
-    return json({ valid: true });
+    return json({ valid: true, role, allowed_sections: allowedSections });
   } catch {
     return new Response(
       JSON.stringify({ error: 'Invalid request' }),
