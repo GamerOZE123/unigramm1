@@ -494,6 +494,42 @@ export type Database = {
         }
         Relationships: []
       }
+      broadcast_logs: {
+        Row: {
+          audience_type: string
+          deep_link: string | null
+          id: string
+          message: string
+          recipient_count: number
+          selected_user_ids: string[] | null
+          sent_at: string
+          sent_by: string
+          title: string
+        }
+        Insert: {
+          audience_type?: string
+          deep_link?: string | null
+          id?: string
+          message: string
+          recipient_count?: number
+          selected_user_ids?: string[] | null
+          sent_at?: string
+          sent_by?: string
+          title: string
+        }
+        Update: {
+          audience_type?: string
+          deep_link?: string | null
+          id?: string
+          message?: string
+          recipient_count?: number
+          selected_user_ids?: string[] | null
+          sent_at?: string
+          sent_by?: string
+          title?: string
+        }
+        Relationships: []
+      }
       business_profiles: {
         Row: {
           analytics_tier: string | null
