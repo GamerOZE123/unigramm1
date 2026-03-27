@@ -128,6 +128,11 @@ const Admin: React.FC = () => {
         setAuthenticated(true);
         setStoredPassword(password);
         setSignups(data.signups || []);
+        setAdminRole(data.role || 'admin');
+        setAllowedSections(data.allowed_sections ?? null);
+        if (data.role === 'team' && data.allowed_sections?.length > 0) {
+          setSection(data.allowed_sections[0] as AdminSection);
+        }
         fetchAccessConfig();
       }
     } catch {
