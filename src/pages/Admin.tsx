@@ -16,6 +16,7 @@ import AdminBroadcastNotifications from '@/components/admin/AdminBroadcastNotifi
 import AdminAuthenticatedUsers from '@/components/admin/AdminAuthenticatedUsers';
 import AdminOverviewStats from '@/components/admin/AdminOverviewStats';
 import AdminAnalyticsPage from '@/components/admin/AdminAnalyticsPage';
+import AdminTeamMembers from '@/components/admin/AdminTeamMembers';
 import AdminSidebar, { type AdminSection } from '@/components/admin/AdminSidebar';
 import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
