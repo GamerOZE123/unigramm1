@@ -45,6 +45,9 @@ const Admin: React.FC = () => {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [reInviting, setReInviting] = useState<string | null>(null);
 
+  const [adminRole, setAdminRole] = useState<'admin' | 'team'>('admin');
+  const [allowedSections, setAllowedSections] = useState<string[] | null>(null);
+
   const [section, setSection] = useState<AdminSection>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
