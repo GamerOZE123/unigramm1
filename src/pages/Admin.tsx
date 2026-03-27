@@ -112,6 +112,37 @@ const Admin: React.FC = () => {
       if (configResult.error) toast.warning('Updated mobile but web config failed');
       else if (settingsResult.error) toast.warning('Updated web but mobile config failed');
       else toast.success(newValue ? 'Maintenance mode enabled' : 'Maintenance mode disabled');
+
+      // Send welcome-back notification to all approved users when maintenance is turned OFF
+      if (!newValue && notifyOnMaintenanceOff) {
+        try {
+          const { data: idsData } = await supabase.functions.invoke('verify-admin', {
+            body: { password: storedPassword, action: 'fetch_all_user_ids' },
+          });
+          if (idsData?.user_ids?.length) {
+            const batchSize = 50;
+            for (let i = 0; i < idsData.user_ids.length; i += batchSize) {
+              const batch = idsData.user_ids.slice(i, i + batchSize);
+              await supabase.functions.invoke('verify-admin', {
+                body: {
+                  password: storedPassword,
+                  action: 'broadcast_batch',
+                  user_ids: batch,
+                  title: 'We\'re Back! 🚀',
+                  message: 'Maintenance is complete — Unigramm is back online. Thanks for your patience!',
+                  type: 'system',
+                  log_broadcast: i === 0,
+                  audience_type: 'all',
+                  total_recipients: idsData.user_ids.length,
+                },
+              });
+            }
+            toast.success('Welcome-back notification sent to all users');
+          }
+        } catch {
+          toast.error('Maintenance disabled but failed to send notifications');
+        }
+      }
     }
     setTogglingMaintenance(false);
   };
