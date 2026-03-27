@@ -505,6 +505,9 @@ const Admin: React.FC = () => {
 
           {/* Analytics */}
           {section === 'analytics' && <AdminAnalyticsPage password={storedPassword} />}
+
+          {/* Team Members (admin only) */}
+          {section === 'team' && adminRole === 'admin' && <AdminTeamMembers password={storedPassword} />}
         </div>
       </main>
     </div>
