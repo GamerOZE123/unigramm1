@@ -300,6 +300,100 @@ Deno.serve(async (req) => {
       return json({ valid: true, success: true });
     }
 
+    // ── Change User Role ────────────────────────────────────
+    if (action === 'change_user_role') {
+      const { user_id, new_role } = body;
+      if (!user_id || !new_role) return json({ valid: true, error: 'user_id and new_role required' }, 400);
+      const validRoles = ['student', 'business', 'clubs'];
+      if (!validRoles.includes(new_role)) return json({ valid: true, error: 'Invalid role' }, 400);
+      const { error } = await supabaseAdmin
+        .from('profiles')
+        .update({ user_type: new_role })
+        .eq('user_id', user_id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
+    // ── Subscription Management ──────────────────────────────
+    if (action === 'fetch_subscriptions') {
+      const { data, error } = await supabaseAdmin
+        .from('subscriptions')
+        .select('*')
+        .order('price_monthly', { ascending: true });
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, subscriptions: data });
+    }
+
+    if (action === 'fetch_user_subscription') {
+      const { user_id } = body;
+      if (!user_id) return json({ valid: true, error: 'user_id required' }, 400);
+      const { data, error } = await supabaseAdmin
+        .from('user_subscriptions')
+        .select('*, subscriptions:subscription_id(*)')
+        .eq('user_id', user_id)
+        .order('created_at', { ascending: false });
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, user_subscriptions: data });
+    }
+
+    if (action === 'set_user_subscription') {
+      const { user_id, subscription_id, status, expires_at } = body;
+      if (!user_id || !subscription_id) return json({ valid: true, error: 'user_id and subscription_id required' }, 400);
+
+      // Deactivate existing subscriptions
+      await supabaseAdmin
+        .from('user_subscriptions')
+        .update({ status: 'expired', updated_at: new Date().toISOString() })
+        .eq('user_id', user_id)
+        .eq('status', 'active');
+
+      // Insert new subscription
+      const { error } = await supabaseAdmin
+        .from('user_subscriptions')
+        .insert({
+          user_id,
+          subscription_id,
+          status: status || 'active',
+          started_at: new Date().toISOString(),
+          expires_at: expires_at || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+          auto_renew: true,
+        });
+      if (error) return json({ valid: true, error: error.message }, 400);
+
+      // Update business_profiles subscription info if applicable
+      const { data: subData } = await supabaseAdmin
+        .from('subscriptions')
+        .select('name, monthly_post_limit, targeting_enabled, analytics_tier')
+        .eq('id', subscription_id)
+        .single();
+      if (subData) {
+        await supabaseAdmin
+          .from('business_profiles')
+          .update({
+            subscription_tier: subData.name?.toLowerCase(),
+            monthly_posts_limit: subData.monthly_post_limit,
+            targeting_enabled: subData.targeting_enabled,
+            analytics_tier: subData.analytics_tier,
+            subscription_expires_at: expires_at || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+          })
+          .eq('user_id', user_id);
+      }
+
+      return json({ valid: true, success: true });
+    }
+
+    if (action === 'cancel_user_subscription') {
+      const { user_id } = body;
+      if (!user_id) return json({ valid: true, error: 'user_id required' }, 400);
+      const { error } = await supabaseAdmin
+        .from('user_subscriptions')
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('user_id', user_id)
+        .eq('status', 'active');
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
     // ── Confirm User Email ───────────────────────────────────
     if (action === 'confirm_email') {
       const { user_id } = body;
