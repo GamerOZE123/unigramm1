@@ -366,6 +366,17 @@ Deno.serve(async (req) => {
       return json({ valid: true, logs: data });
     }
 
+    if (action === 'delete_broadcast_log') {
+      const { id } = body;
+      if (!id) return json({ valid: true, error: 'Missing log id' }, 400);
+      const { error } = await supabaseAdmin
+        .from('broadcast_logs')
+        .delete()
+        .eq('id', id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
     // ── Authenticated Users (Auth list) ─────────────────────
     if (action === 'fetch_auth_users') {
       const allUsers: any[] = [];
