@@ -58,6 +58,7 @@ const Admin: React.FC = () => {
   // Maintenance mode state
   const [maintenanceMode, setMaintenanceMode] = useState<boolean | null>(null);
   const [togglingMaintenance, setTogglingMaintenance] = useState(false);
+  const [notifyOnMaintenanceOff, setNotifyOnMaintenanceOff] = useState(true);
 
   const fetchAccessConfig = async () => {
     const { data, error } = await supabase
