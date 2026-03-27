@@ -306,6 +306,17 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
           </Table>
         </CardContent>
       </Card>
+
+      <UserDetailModal
+        user={selectedUser}
+        open={!!selectedUser}
+        onClose={() => setSelectedUser(null)}
+        password={password}
+        onUserUpdated={(userId, updates) => {
+          setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, ...updates } : u));
+          setSelectedUser(prev => prev && prev.user_id === userId ? { ...prev, ...updates } : prev);
+        }}
+      />
     </div>
   );
 };
