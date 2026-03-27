@@ -140,6 +140,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
   const filtered = users.filter(u => {
     const androidInfo = getAndroidInfo(u);
     if (showAndroidOnly && !androidInfo) return false;
+    if (typeFilter !== 'all' && u.user_type !== typeFilter) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
