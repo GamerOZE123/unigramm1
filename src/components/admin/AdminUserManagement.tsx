@@ -270,7 +270,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex gap-1 justify-end">
+                      <div className="flex gap-1 justify-end" onClick={e => e.stopPropagation()}>
                         {androidInfo && (
                           <Button
                             size="sm"
