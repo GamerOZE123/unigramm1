@@ -245,7 +245,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
                         ? new Date(u.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
                         : '—'}
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-2">
                         <Switch
                           checked={u.email_confirmed}
