@@ -338,7 +338,32 @@ Deno.serve(async (req) => {
 
       const { error } = await supabaseAdmin.from('notifications').insert(rows);
       if (error) return json({ valid: true, error: error.message }, 400);
+
+      // Log this broadcast batch (only log once per broadcast, not per batch)
+      if (body.log_broadcast) {
+        await supabaseAdmin.from('broadcast_logs').insert({
+          sent_by: isMainAdmin ? 'admin' : (teamMember?.name || 'team'),
+          title,
+          message,
+          deep_link: navigate_to || null,
+          audience_type: body.audience_type || 'all',
+          recipient_count: body.total_recipients || user_ids.length,
+          selected_user_ids: body.audience_type === 'select' ? body.all_target_ids : null,
+        });
+      }
+
       return json({ valid: true, success: true, inserted: user_ids.length });
+    }
+
+    // ── Fetch Broadcast Logs ─────────────────────────────────
+    if (action === 'fetch_broadcast_logs') {
+      const { data, error } = await supabaseAdmin
+        .from('broadcast_logs')
+        .select('*')
+        .order('sent_at', { ascending: false })
+        .limit(50);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, logs: data });
     }
 
     // ── Authenticated Users (Auth list) ─────────────────────
