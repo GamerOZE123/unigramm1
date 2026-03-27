@@ -77,7 +77,24 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
       toast.error('Failed to update approval');
     } else {
       setUsers(prev => prev.map(u => u.user_id === user_id ? { ...u, approved: !current } : u));
-      toast.success(!current ? 'User approved' : 'User approval revoked');
+      if (!current) {
+        toast.success('User approved & removed from waitlist');
+      } else {
+        // Notify user they've been put on waitlist
+        await supabase.functions.invoke('verify-admin', {
+          body: {
+            password,
+            action: 'notify_user',
+            user_id,
+            notification: {
+              type: 'system',
+              title: 'Account Update',
+              message: 'Your account has been placed on the waitlist. Please contact support for more information.',
+            },
+          },
+        });
+        toast.success('User placed on waitlist & notified');
+      }
     }
     setActioning(null);
   };
