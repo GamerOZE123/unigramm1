@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { Users, RefreshCw, Search, Trash2, Smartphone, Send } from 'lucide-react';
+import UserDetailModal from './UserDetailModal';
 
 interface UserRow {
   user_id: string;
@@ -36,6 +37,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
   const [search, setSearch] = useState('');
   const [showAndroidOnly, setShowAndroidOnly] = useState(false);
   const [androidTesters, setAndroidTesters] = useState<Record<string, { email: string; status: string }>>({});
+  const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
 
   const fetchAndroidTesters = async () => {
     const { data } = await supabase
@@ -216,7 +218,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
               {filtered.map(u => {
                 const androidInfo = getAndroidInfo(u);
                 return (
-                  <TableRow key={u.user_id}>
+                  <TableRow key={u.user_id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedUser(u)}>
                     <TableCell>
                       <div>
                         <p className="font-medium">{u.full_name || '—'}</p>
@@ -243,7 +245,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
                         ? new Date(u.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
                         : '—'}
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-2">
                         <Switch
                           checked={u.email_confirmed}
@@ -255,7 +257,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-center">
+                    <TableCell className="text-center" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-2">
                         <Switch
                           checked={u.approved}
@@ -268,7 +270,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex gap-1 justify-end">
+                      <div className="flex gap-1 justify-end" onClick={e => e.stopPropagation()}>
                         {androidInfo && (
                           <Button
                             size="sm"
@@ -304,6 +306,17 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
           </Table>
         </CardContent>
       </Card>
+
+      <UserDetailModal
+        user={selectedUser}
+        open={!!selectedUser}
+        onClose={() => setSelectedUser(null)}
+        password={password}
+        onUserUpdated={(userId, updates) => {
+          setUsers(prev => prev.map(u => u.user_id === userId ? { ...u, ...updates } : u));
+          setSelectedUser(prev => prev && prev.user_id === userId ? { ...prev, ...updates } : prev);
+        }}
+      />
     </div>
   );
 };
