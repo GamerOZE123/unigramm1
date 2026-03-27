@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, RefreshCw, Search, Trash2, Smartphone, Send } from 'lucide-react';
+import { Users, RefreshCw, Search, Trash2, Smartphone, Send, Bell } from 'lucide-react';
 import UserDetailModal from './UserDetailModal';
 
 interface UserRow {

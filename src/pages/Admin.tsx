@@ -403,6 +403,16 @@ const Admin: React.FC = () => {
                         )}
                       </div>
                     </div>
+                    <div className="flex items-center gap-2 pt-2 border-t border-border/30">
+                      <Switch
+                        id="notify-maintenance-off"
+                        checked={notifyOnMaintenanceOff}
+                        onCheckedChange={setNotifyOnMaintenanceOff}
+                      />
+                      <label htmlFor="notify-maintenance-off" className="text-sm text-muted-foreground cursor-pointer">
+                        Notify all users when maintenance ends ("We're Back!" notification)
+                      </label>
+                    </div>
                   </CardContent>
                 </Card>
               )}
