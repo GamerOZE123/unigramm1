@@ -36,6 +36,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
   const [sendingAndroid, setSendingAndroid] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [showAndroidOnly, setShowAndroidOnly] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<'all' | 'student' | 'clubs' | 'business'>('all');
   const [androidTesters, setAndroidTesters] = useState<Record<string, { email: string; status: string }>>({});
   const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
 
