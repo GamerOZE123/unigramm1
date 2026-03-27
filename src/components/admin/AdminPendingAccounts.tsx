@@ -52,6 +52,19 @@ const AdminPendingAccounts: React.FC<Props> = ({ password }) => {
     if (error || !data?.success) {
       toast.error('Failed to approve account');
     } else {
+      // Send welcome notification
+      await supabase.functions.invoke('verify-admin', {
+        body: {
+          password,
+          action: 'notify_user',
+          user_id,
+          notification: {
+            type: 'system',
+            title: 'Welcome to Unigramm! 🎉',
+            message: 'Your account has been approved. Welcome aboard — explore, connect, and make the most of your campus experience!',
+          },
+        },
+      });
       setAccounts(prev => prev.filter(a => a.user_id !== user_id));
       toast.success('Account approved — user will be redirected automatically');
     }
