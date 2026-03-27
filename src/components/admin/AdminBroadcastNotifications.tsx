@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Bell, Send, Users, Search, Smartphone, AlertTriangle, History, RefreshCw } from 'lucide-react';
+import { Bell, Send, Users, Search, Smartphone, AlertTriangle, History, RefreshCw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -113,6 +113,20 @@ const AdminBroadcastNotifications: React.FC<Props> = ({ password }) => {
       toast.error('Failed to load broadcast logs');
     }
     setLoadingLogs(false);
+  };
+
+  const handleDeleteLog = async (logId: string) => {
+    if (!confirm('Delete this broadcast log entry?')) return;
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-admin', {
+        body: { password, action: 'delete_broadcast_log', id: logId },
+      });
+      if (error || !data?.success) throw new Error('Failed to delete');
+      setLogs((prev) => prev.filter((l) => l.id !== logId));
+      toast.success('Log entry deleted');
+    } catch {
+      toast.error('Failed to delete log entry');
+    }
   };
 
   const filteredUsers = useMemo(() => {
@@ -409,6 +423,7 @@ const AdminBroadcastNotifications: React.FC<Props> = ({ password }) => {
                       <TableHead>Audience</TableHead>
                       <TableHead className="text-right">Recipients</TableHead>
                       <TableHead>Deep Link</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -430,6 +445,16 @@ const AdminBroadcastNotifications: React.FC<Props> = ({ password }) => {
                         <TableCell className="text-right font-mono">{log.recipient_count}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">
                           {log.deep_link ? DEEP_LINK_OPTIONS.find((o) => o.value === log.deep_link)?.label || log.deep_link : '—'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDeleteLog(log.id)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
