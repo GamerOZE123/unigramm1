@@ -36,6 +36,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
   const [sendingAndroid, setSendingAndroid] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [showAndroidOnly, setShowAndroidOnly] = useState(false);
+  const [typeFilter, setTypeFilter] = useState<'all' | 'student' | 'clubs' | 'business'>('all');
   const [androidTesters, setAndroidTesters] = useState<Record<string, { email: string; status: string }>>({});
   const [selectedUser, setSelectedUser] = useState<UserRow | null>(null);
 
@@ -76,7 +77,24 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
       toast.error('Failed to update approval');
     } else {
       setUsers(prev => prev.map(u => u.user_id === user_id ? { ...u, approved: !current } : u));
-      toast.success(!current ? 'User approved' : 'User approval revoked');
+      if (!current) {
+        toast.success('User approved & removed from waitlist');
+      } else {
+        // Notify user they've been put on waitlist
+        await supabase.functions.invoke('verify-admin', {
+          body: {
+            password,
+            action: 'notify_user',
+            user_id,
+            notification: {
+              type: 'system',
+              title: 'Account Update',
+              message: 'Your account has been placed on the waitlist. Please contact support for more information.',
+            },
+          },
+        });
+        toast.success('User placed on waitlist & notified');
+      }
     }
     setActioning(null);
   };
@@ -139,6 +157,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
   const filtered = users.filter(u => {
     const androidInfo = getAndroidInfo(u);
     if (showAndroidOnly && !androidInfo) return false;
+    if (typeFilter !== 'all' && u.user_type !== typeFilter) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -174,13 +193,26 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
         <div className="flex gap-3 flex-wrap">
           <Badge variant="secondary">{users.length} total</Badge>
           <Badge className="bg-green-500/20 text-green-400 border-green-500/30">{approvedCount} approved</Badge>
-          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">{pendingCount} pending</Badge>
+          <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">{pendingCount} waitlisted</Badge>
           <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30">{emailConfirmedCount} email confirmed</Badge>
           <button onClick={() => setShowAndroidOnly(!showAndroidOnly)}>
             <Badge className={`cursor-pointer border ${showAndroidOnly ? 'bg-primary/20 text-primary border-primary/30' : 'bg-muted text-muted-foreground border-muted'}`}>
               <Smartphone className="w-3 h-3 mr-1" /> {androidTesterCount} android testers
             </Badge>
           </button>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          {(['all', 'student', 'clubs', 'business'] as const).map(t => (
+            <Button
+              key={t}
+              size="sm"
+              variant={typeFilter === t ? 'default' : 'outline'}
+              onClick={() => setTypeFilter(t)}
+              className="capitalize"
+            >
+              {t === 'all' ? 'All Types' : t}
+            </Button>
+          ))}
         </div>
         <div className="flex gap-2">
           <div className="relative">
@@ -210,7 +242,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
                 <TableHead>Type</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead className="text-center">Email Verified</TableHead>
-                <TableHead className="text-center">Approved</TableHead>
+                <TableHead className="text-center">On Waitlist</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -260,12 +292,12 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
                     <TableCell className="text-center" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-2">
                         <Switch
-                          checked={u.approved}
+                          checked={!u.approved}
                           disabled={actioning === u.user_id}
                           onCheckedChange={() => toggleApproval(u.user_id, u.approved)}
                         />
-                        <span className={`text-xs ${u.approved ? 'text-green-500' : 'text-muted-foreground'}`}>
-                          {u.approved ? 'Yes' : 'No'}
+                        <span className={`text-xs ${!u.approved ? 'text-yellow-500' : 'text-muted-foreground'}`}>
+                          {u.approved ? 'No' : 'Yes'}
                         </span>
                       </div>
                     </TableCell>

@@ -656,6 +656,19 @@ Deno.serve(async (req) => {
       return json({ valid: true, success: true });
     }
 
+    if (action === 'notify_user') {
+      const { user_id, notification } = body;
+      if (!user_id || !notification) return json({ valid: true, error: 'user_id and notification required' }, 400);
+      const { error } = await supabaseAdmin.from('notifications').insert({
+        user_id,
+        type: notification.type || 'system',
+        title: notification.title || 'Notification',
+        message: notification.message || '',
+      });
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
     // Default: just validate password
     return json({ valid: true, role, allowed_sections: allowedSections });
   } catch {
