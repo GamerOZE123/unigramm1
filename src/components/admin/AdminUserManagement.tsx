@@ -131,6 +131,21 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
     setActioning(null);
   };
 
+  const toggleProfileCompleted = async (user_id: string, current: boolean) => {
+    setActioning(user_id);
+    const newVal = !current;
+    const { data, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password, action: 'set_profile_completed', user_id, profile_completed: newVal },
+    });
+    if (error || !data?.success) {
+      toast.error('Failed to update profile status');
+    } else {
+      setUsers(prev => prev.map(u => u.user_id === user_id ? { ...u, profile_completed: newVal } : u));
+      toast.success(newVal ? 'Profile marked as approved' : 'Profile marked as incomplete');
+    }
+    setActioning(null);
+  };
+
   const handleDeleteUser = async (user_id: string, name: string | null) => {
     if (!confirm(`Permanently delete ${name || 'this user'}? Cannot be undone.`)) return;
     setActioning(user_id);
