@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, RefreshCw, Search, Trash2, Smartphone, Send, Bell } from 'lucide-react';
+import { Users, RefreshCw, Search, Trash2, Smartphone, Send, Bell, UserCheck } from 'lucide-react';
 import UserDetailModal from './UserDetailModal';
 
 interface UserRow {
@@ -19,6 +19,7 @@ interface UserRow {
   user_type: string | null;
   approved: boolean;
   email_confirmed: boolean;
+  profile_completed: boolean;
   created_at: string | null;
   android_tester_email?: string | null;
   android_tester_status?: string | null;
@@ -126,6 +127,21 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
     } else {
       setUsers(prev => prev.map(u => u.user_id === user_id ? { ...u, email_confirmed: true } : u));
       toast.success('Email confirmed');
+    }
+    setActioning(null);
+  };
+
+  const toggleProfileCompleted = async (user_id: string, current: boolean) => {
+    setActioning(user_id);
+    const newVal = !current;
+    const { data, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password, action: 'set_profile_completed', user_id, profile_completed: newVal },
+    });
+    if (error || !data?.success) {
+      toast.error('Failed to update profile status');
+    } else {
+      setUsers(prev => prev.map(u => u.user_id === user_id ? { ...u, profile_completed: newVal } : u));
+      toast.success(newVal ? 'Profile marked as approved' : 'Profile marked as incomplete');
     }
     setActioning(null);
   };
@@ -269,6 +285,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
                 <TableHead>Type</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead className="text-center">Email Verified</TableHead>
+                <TableHead className="text-center">Profile Approved</TableHead>
                 <TableHead className="text-center">On Waitlist</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -313,6 +330,18 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
                         />
                         <span className={`text-xs ${u.email_confirmed ? 'text-green-500' : 'text-muted-foreground'}`}>
                           {u.email_confirmed ? 'Verified' : 'Unverified'}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-2">
+                        <Switch
+                          checked={u.profile_completed ?? false}
+                          disabled={actioning === u.user_id}
+                          onCheckedChange={() => toggleProfileCompleted(u.user_id, u.profile_completed)}
+                        />
+                        <span className={`text-xs ${u.profile_completed ? 'text-green-500' : 'text-muted-foreground'}`}>
+                          {u.profile_completed ? 'Yes' : 'No'}
                         </span>
                       </div>
                     </TableCell>

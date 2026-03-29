@@ -32,7 +32,7 @@ interface Course {
   universities?: { name: string };
 }
 
-export default function AdminCourses() {
+export function AdminCoursesContent() {
   const isMobile = useIsMobile();
   const [courses, setCourses] = useState<Course[]>([]);
   const [universities, setUniversities] = useState<University[]>([]);
@@ -601,6 +601,13 @@ export default function AdminCourses() {
       </Card>
     </div>
   );
+
+  return content;
+}
+
+export default function AdminCoursesPage() {
+  const isMobile = useIsMobile();
+  const content = <AdminCoursesContent />;
 
   if (isMobile) {
     return <MobileLayout>{content}</MobileLayout>;

@@ -183,7 +183,7 @@ Deno.serve(async (req) => {
     if (action === 'fetch_users') {
       const { data, error } = await supabaseAdmin
         .from('profiles')
-        .select('user_id, username, full_name, email, university, user_type, approved, created_at')
+        .select('user_id, username, full_name, email, university, user_type, approved, profile_completed, created_at')
         .order('created_at', { ascending: false });
       if (error) return json({ valid: true, error: error.message }, 400);
 
@@ -210,7 +210,16 @@ Deno.serve(async (req) => {
       return json({ valid: true, success: true });
     }
 
-    // ── Pending Accounts (business/clubs) ────────────────────
+    if (action === 'set_profile_completed') {
+      const { user_id, profile_completed } = body;
+      const { error } = await supabaseAdmin
+        .from('profiles')
+        .update({ profile_completed })
+        .eq('user_id', user_id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
     if (action === 'fetch_pending_accounts') {
       const { data, error } = await supabaseAdmin
         .from('profiles')
