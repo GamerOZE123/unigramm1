@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, RefreshCw, Search, Trash2, Smartphone, Send, Bell } from 'lucide-react';
+import { Users, RefreshCw, Search, Trash2, Smartphone, Send, Bell, UserCheck } from 'lucide-react';
 import UserDetailModal from './UserDetailModal';
 
 interface UserRow {
@@ -19,6 +19,7 @@ interface UserRow {
   user_type: string | null;
   approved: boolean;
   email_confirmed: boolean;
+  profile_completed: boolean;
   created_at: string | null;
   android_tester_email?: string | null;
   android_tester_status?: string | null;
@@ -317,6 +318,17 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
                         </span>
                       </div>
                     </TableCell>
+                    <TableCell className="text-center" onClick={e => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-2">
+                        <Switch
+                          checked={u.profile_completed ?? false}
+                          disabled={actioning === u.user_id}
+                          onCheckedChange={() => toggleProfileCompleted(u.user_id, u.profile_completed)}
+                        />
+                        <span className={`text-xs ${u.profile_completed ? 'text-green-500' : 'text-muted-foreground'}`}>
+                          {u.profile_completed ? 'Yes' : 'No'}
+                        </span>
+                      </div>
                     <TableCell className="text-center" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-2">
                         <Switch
