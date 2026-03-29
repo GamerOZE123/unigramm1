@@ -424,107 +424,19 @@ const Admin: React.FC = () => {
 
           {/* Waitlist */}
           {section === 'waitlist' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="flex gap-3 flex-wrap">
-                  <Badge variant="secondary"><Users className="w-3 h-3 mr-1" /> {signups.length} total</Badge>
-                  <Badge variant="secondary"><Clock className="w-3 h-3 mr-1" /> {pendingCount} pending</Badge>
-                  <Badge variant="secondary"><Mail className="w-3 h-3 mr-1" /> {invitedCount} invited</Badge>
-                </div>
-                <Button variant="outline" size="sm" onClick={fetchSignups} disabled={loading}>
-                  {loading ? 'Refreshing…' : 'Refresh'}
-                </Button>
-              </div>
-
-              <Card className="border-border/40">
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Android Email</TableHead>
-                        <TableHead>University</TableHead>
-                        <TableHead>Signed Up</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {signups.map(s => (
-                        <TableRow key={s.id}>
-                          <TableCell className="font-medium">{s.full_name || '—'}</TableCell>
-                          <TableCell className="text-sm">{s.email}</TableCell>
-                          <TableCell>
-                            {s.android_email ? (
-                              <span className="text-sm">{s.android_email}</span>
-                            ) : (
-                              <span className="text-muted-foreground text-xs">—</span>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-sm">{s.university || '—'}</TableCell>
-                          <TableCell className="text-sm">
-                            {s.created_at
-                              ? new Date(s.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
-                              : '—'}
-                          </TableCell>
-                          <TableCell>
-                            {s.invited ? (
-                              <Badge variant="secondary" className="gap-1"><Check className="w-3 h-3" /> Invited</Badge>
-                            ) : (
-                              <Button size="sm" variant="outline" onClick={() => handleInvite(s.id)} disabled={inviting === s.id}>
-                                {inviting === s.id ? 'Inviting…' : 'Invite'}
-                              </Button>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex gap-1.5 justify-end">
-                              {/* Re-invite for already invited */}
-                              {s.invited && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleReInvite(s)}
-                                  disabled={reInviting === s.id}
-                                  title="Re-send invitation email"
-                                >
-                                  <RotateCw className={`w-3 h-3 mr-1 ${reInviting === s.id ? 'animate-spin' : ''}`} />
-                                  {reInviting === s.id ? '…' : 'Re-invite'}
-                                </Button>
-                              )}
-                              {/* Android */}
-                              {s.android_sent ? (
-                                <Badge variant="secondary" className="gap-1"><Smartphone className="w-3 h-3" /> Sent</Badge>
-                              ) : (
-                                <Button size="sm" variant="outline" onClick={() => handleSendAndroidLink(s)} disabled={sendingAndroid === s.id}>
-                                  <Smartphone className="w-3 h-3 mr-1" />
-                                  {sendingAndroid === s.id ? '…' : 'Android'}
-                                </Button>
-                              )}
-                              {/* Delete */}
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => handleDeleteWaitlistEntry(s)}
-                                disabled={deleting === s.id}
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {signups.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No signups yet</TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </div>
+            <WaitlistSection
+              signups={signups}
+              loading={loading}
+              inviting={inviting}
+              reInviting={reInviting}
+              sendingAndroid={sendingAndroid}
+              deleting={deleting}
+              onRefresh={fetchSignups}
+              onInvite={handleInvite}
+              onReInvite={handleReInvite}
+              onSendAndroid={handleSendAndroidLink}
+              onDelete={handleDeleteWaitlistEntry}
+            />
           )}
 
           {/* Users */}

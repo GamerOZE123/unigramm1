@@ -269,6 +269,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
                 <TableHead>Type</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead className="text-center">Email Verified</TableHead>
+                <TableHead className="text-center">Profile Approved</TableHead>
                 <TableHead className="text-center">On Waitlist</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>

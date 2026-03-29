@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Users, Clock, ShieldCheck, Flag, Settings,
-  Bell, BarChart3, GraduationCap, UserCheck, X, Users2
+  Bell, BarChart3, GraduationCap, UserCheck, X, Users2, BookOpen
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -15,6 +15,7 @@ export type AdminSection =
   | 'flags'
   | 'config'
   | 'university'
+  | 'courses'
   | 'broadcast'
   | 'analytics'
   | 'team';
@@ -35,6 +36,7 @@ const nav: { key: AdminSection; label: string; icon: React.ElementType; group?: 
   { key: 'users', label: 'User Management', icon: Users, group: 'Users' },
   { key: 'auth', label: 'Authenticated', icon: ShieldCheck, group: 'Users' },
   { key: 'university', label: 'University Features', icon: GraduationCap, group: 'Config' },
+  { key: 'courses', label: 'Course Listing', icon: BookOpen, group: 'Config' },
   { key: 'flags', label: 'Feature Flags', icon: Flag, group: 'Config' },
   { key: 'config', label: 'App Config', icon: Settings, group: 'Config' },
   { key: 'broadcast', label: 'Broadcast', icon: Bell, group: 'Notifications' },
