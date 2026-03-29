@@ -183,7 +183,7 @@ Deno.serve(async (req) => {
     if (action === 'fetch_users') {
       const { data, error } = await supabaseAdmin
         .from('profiles')
-        .select('user_id, username, full_name, email, university, user_type, approved, created_at')
+        .select('user_id, username, full_name, email, university, user_type, approved, profile_completed, created_at')
         .order('created_at', { ascending: false });
       if (error) return json({ valid: true, error: error.message }, 400);
 
