@@ -60,12 +60,17 @@ export default function Auth() {
       const isRecovery = flowType === 'recovery';
       const isSignupConfirmation = flowType === 'signup';
 
+      // Also check for PKCE code param (used in recovery/signup flows)
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasCodeParam = urlParams.has('code');
+
       if (isSignupConfirmation) {
         await redirectToEmailConfirmed();
         return;
       }
 
-      if (!isRecovery) {
+      // Don't redirect if we're in a recovery flow or have a PKCE code to exchange
+      if (!isRecovery && !hasCodeParam) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           navigate('/home');
