@@ -4037,6 +4037,7 @@ export type Database = {
       }
       university_courses: {
         Row: {
+          course_abbreviation: string | null
           course_name: string
           created_at: string
           duration_years: number
@@ -4047,6 +4048,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          course_abbreviation?: string | null
           course_name: string
           created_at?: string
           duration_years?: number
@@ -4057,6 +4059,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          course_abbreviation?: string | null
           course_name?: string
           created_at?: string
           duration_years?: number
