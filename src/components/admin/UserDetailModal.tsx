@@ -234,6 +234,40 @@ const UserDetailModal: React.FC<Props> = ({ user, open, onClose, password, onUse
             </CardContent>
           </Card>
 
+          {/* University Management */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <GraduationCap className="w-4 h-4" /> University
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{user.university || 'Not set'}</Badge>
+                <span className="text-xs text-muted-foreground">Current university</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={user.university || ''}
+                  onValueChange={handleChangeUniversity}
+                  disabled={changingUniversity}
+                >
+                  <SelectTrigger className="w-[200px] h-8">
+                    <SelectValue placeholder="Select university" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {universities.map(u => (
+                      <SelectItem key={u.abbreviation} value={u.abbreviation}>
+                        {u.name} ({u.abbreviation})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {changingUniversity && <Loader2 className="w-4 h-4 animate-spin" />}
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Subscription Management */}
           <Card>
             <CardHeader className="pb-2">
