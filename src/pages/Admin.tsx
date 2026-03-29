@@ -450,6 +450,9 @@ const Admin: React.FC = () => {
           {/* University Features */}
           {section === 'university' && <AdminUniversityFeatures />}
 
+          {/* Course Listing */}
+          {section === 'courses' && <AdminCoursesContent />}
+
           {/* Feature Flags */}
           {section === 'flags' && <AdminFeatureFlags password={storedPassword} />}
 
