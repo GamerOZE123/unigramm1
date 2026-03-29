@@ -323,6 +323,18 @@ Deno.serve(async (req) => {
       return json({ valid: true, success: true });
     }
 
+    // ── Change User University ──────────────────────────────
+    if (action === 'change_university') {
+      const { user_id, new_university } = body;
+      if (!user_id || !new_university) return json({ valid: true, error: 'user_id and new_university required' }, 400);
+      const { error } = await supabaseAdmin
+        .from('profiles')
+        .update({ university: new_university })
+        .eq('user_id', user_id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
     // ── Subscription Management ──────────────────────────────
     if (action === 'fetch_subscriptions') {
       const { data, error } = await supabaseAdmin
