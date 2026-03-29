@@ -426,7 +426,7 @@ const Admin: React.FC = () => {
 
           {/* Waitlist */}
           {section === 'waitlist' && (
-            <WaitlistSection
+            <AdminWaitlistSection
               signups={signups}
               loading={loading}
               inviting={inviting}
