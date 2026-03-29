@@ -1014,6 +1014,7 @@ export type Database = {
       club_memberships: {
         Row: {
           club_id: string
+          display_order: number | null
           id: string
           joined_at: string
           role: string | null
@@ -1022,6 +1023,7 @@ export type Database = {
         }
         Insert: {
           club_id: string
+          display_order?: number | null
           id?: string
           joined_at?: string
           role?: string | null
@@ -1030,6 +1032,7 @@ export type Database = {
         }
         Update: {
           club_id?: string
+          display_order?: number | null
           id?: string
           joined_at?: string
           role?: string | null
@@ -2534,6 +2537,7 @@ export type Database = {
           media_type: string | null
           media_url: string[] | null
           message_type: string | null
+          reply_to_id: string | null
           reply_to_message_id: string | null
           sender_id: string
         }
@@ -2545,6 +2549,7 @@ export type Database = {
           media_type?: string | null
           media_url?: string[] | null
           message_type?: string | null
+          reply_to_id?: string | null
           reply_to_message_id?: string | null
           sender_id: string
         }
@@ -2556,6 +2561,7 @@ export type Database = {
           media_type?: string | null
           media_url?: string[] | null
           message_type?: string | null
+          reply_to_id?: string | null
           reply_to_message_id?: string | null
           sender_id?: string
         }
@@ -2565,6 +2571,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
           {
@@ -4757,6 +4770,7 @@ export type Database = {
           media_type: string | null
           media_url: string[] | null
           message_type: string | null
+          reply_to_id: string | null
           reply_to_message_id: string | null
           sender_id: string
         }[]
@@ -4766,6 +4780,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      transfer_group_admin: {
+        Args: { p_group_id: string; p_new_admin_id: string }
+        Returns: undefined
       }
       update_typing_status: {
         Args: {
