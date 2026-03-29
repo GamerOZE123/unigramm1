@@ -602,6 +602,13 @@ export default function AdminCourses() {
     </div>
   );
 
+  return content;
+}
+
+export default function AdminCoursesPage() {
+  const isMobile = useIsMobile();
+  const content = <AdminCourses />;
+
   if (isMobile) {
     return <MobileLayout>{content}</MobileLayout>;
   }
