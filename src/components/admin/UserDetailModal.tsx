@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Crown, Shield, User, Building2, Users2, Loader2, X } from 'lucide-react';
+import { Crown, Shield, User, Building2, Users2, Loader2, X, GraduationCap } from 'lucide-react';
 
 interface UserRow {
   user_id: string;
@@ -49,6 +49,8 @@ interface Props {
 const UserDetailModal: React.FC<Props> = ({ user, open, onClose, password, onUserUpdated }) => {
   const [loading, setLoading] = useState(false);
   const [changingRole, setChangingRole] = useState(false);
+  const [changingUniversity, setChangingUniversity] = useState(false);
+  const [universities, setUniversities] = useState<{ abbreviation: string; name: string }[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [userSubs, setUserSubs] = useState<UserSubscription[]>([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
@@ -59,8 +61,29 @@ const UserDetailModal: React.FC<Props> = ({ user, open, onClose, password, onUse
     if (open && user) {
       fetchSubscriptions();
       fetchUserSubscription();
+      fetchUniversities();
     }
   }, [open, user?.user_id]);
+
+  const fetchUniversities = async () => {
+    const { data } = await supabase.from('universities').select('abbreviation, name').order('name');
+    if (data) setUniversities(data);
+  };
+
+  const handleChangeUniversity = async (newUniversity: string) => {
+    if (!user) return;
+    setChangingUniversity(true);
+    const { data, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password, action: 'change_university', user_id: user.user_id, new_university: newUniversity },
+    });
+    if (error || !data?.success) {
+      toast.error(data?.error || 'Failed to change university');
+    } else {
+      toast.success(`University changed to ${newUniversity}`);
+      onUserUpdated(user.user_id, { university: newUniversity });
+    }
+    setChangingUniversity(false);
+  };
 
   const fetchSubscriptions = async () => {
     const { data } = await supabase.functions.invoke('verify-admin', {
@@ -207,6 +230,40 @@ const UserDetailModal: React.FC<Props> = ({ user, open, onClose, password, onUse
                   </SelectContent>
                 </Select>
                 {changingRole && <Loader2 className="w-4 h-4 animate-spin" />}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* University Management */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <GraduationCap className="w-4 h-4" /> University
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline">{user.university || 'Not set'}</Badge>
+                <span className="text-xs text-muted-foreground">Current university</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={user.university || ''}
+                  onValueChange={handleChangeUniversity}
+                  disabled={changingUniversity}
+                >
+                  <SelectTrigger className="w-[200px] h-8">
+                    <SelectValue placeholder="Select university" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {universities.map(u => (
+                      <SelectItem key={u.abbreviation} value={u.abbreviation}>
+                        {u.name} ({u.abbreviation})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {changingUniversity && <Loader2 className="w-4 h-4 animate-spin" />}
               </div>
             </CardContent>
           </Card>
