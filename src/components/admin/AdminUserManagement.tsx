@@ -329,6 +329,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
                           {u.profile_completed ? 'Yes' : 'No'}
                         </span>
                       </div>
+                    </TableCell>
                     <TableCell className="text-center" onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-center gap-2">
                         <Switch
