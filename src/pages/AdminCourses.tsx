@@ -607,7 +607,7 @@ export function AdminCoursesContent() {
 
 export default function AdminCoursesPage() {
   const isMobile = useIsMobile();
-  const content = <AdminCourses />;
+  const content = <AdminCoursesContent />;
 
   if (isMobile) {
     return <MobileLayout>{content}</MobileLayout>;
