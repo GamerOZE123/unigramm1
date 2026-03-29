@@ -19,7 +19,7 @@ import AdminAnalyticsPage from '@/components/admin/AdminAnalyticsPage';
 import AdminTeamMembers from '@/components/admin/AdminTeamMembers';
 import AdminSidebar, { type AdminSection } from '@/components/admin/AdminSidebar';
 import AdminWaitlistSection from '@/components/admin/AdminWaitlistSection';
-import AdminCourses from '@/pages/AdminCourses';
+import { AdminCoursesContent } from '@/pages/AdminCourses';
 import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
