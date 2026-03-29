@@ -25,6 +25,7 @@ interface Course {
   id: string;
   university_id: string;
   course_name: string;
+  course_abbreviation: string | null;
   duration_years: number;
   total_semesters: number;
   force_enable_graduation: boolean;
@@ -47,6 +48,7 @@ export function AdminCoursesContent() {
   const [formData, setFormData] = useState({
     university_id: "",
     course_name: "",
+    course_abbreviation: "",
     duration_years: 4,
     total_semesters: 8,
     force_enable_graduation: false,
@@ -156,6 +158,7 @@ export function AdminCoursesContent() {
     setFormData({
       university_id: course.university_id,
       course_name: course.course_name,
+      course_abbreviation: course.course_abbreviation || "",
       duration_years: course.duration_years,
       total_semesters: course.total_semesters,
       force_enable_graduation: course.force_enable_graduation,
@@ -167,6 +170,7 @@ export function AdminCoursesContent() {
     setFormData({
       university_id: "",
       course_name: "",
+      course_abbreviation: "",
       duration_years: 4,
       total_semesters: 8,
       force_enable_graduation: false,
@@ -308,6 +312,17 @@ export function AdminCoursesContent() {
           onChange={(e) => setFormData({ ...formData, course_name: e.target.value })}
           placeholder="e.g., Computer Science"
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="courseAbbreviation">Abbreviation</Label>
+        <Input
+          id="courseAbbreviation"
+          value={formData.course_abbreviation}
+          onChange={(e) => setFormData({ ...formData, course_abbreviation: e.target.value })}
+          placeholder="e.g., CS"
+        />
+        <p className="text-xs text-muted-foreground">Short form displayed on profiles (e.g., Economics → Eco)</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
@@ -510,6 +525,7 @@ export function AdminCoursesContent() {
                   <TableRow>
                     <TableHead>University</TableHead>
                     <TableHead>Course Name</TableHead>
+                    <TableHead>Abbreviation</TableHead>
                     <TableHead className="text-center">Duration (Years)</TableHead>
                     <TableHead className="text-center">Total Semesters</TableHead>
                     <TableHead className="text-center">Force Graduation</TableHead>
@@ -521,6 +537,13 @@ export function AdminCoursesContent() {
                     <TableRow key={course.id}>
                       <TableCell className="font-medium">{course.universities?.name || "Unknown"}</TableCell>
                       <TableCell>{course.course_name}</TableCell>
+                      <TableCell>
+                        {course.course_abbreviation ? (
+                          <Badge variant="outline">{course.course_abbreviation}</Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-xs">—</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-center">{course.duration_years}</TableCell>
                       <TableCell className="text-center">{course.total_semesters}</TableCell>
                       <TableCell className="text-center">
