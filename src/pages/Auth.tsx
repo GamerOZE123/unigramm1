@@ -595,8 +595,16 @@ export default function Auth() {
             </Alert>
           )}
 
+          {resetSuccess ? (
+            <div className="text-center space-y-4 py-6">
+              <div className="text-4xl">✅</div>
+              <h3 className="text-xl font-bold text-foreground">Password Changed!</h3>
+              <p className="text-muted-foreground">
+                Your password has been updated successfully. Return to the app and login with your new password.
+              </p>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
-            {mode === 'signup' && (
               <>
                 <div className="space-y-4">
                   <Label>I am a:</Label>
