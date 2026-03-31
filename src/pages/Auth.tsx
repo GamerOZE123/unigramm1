@@ -692,7 +692,6 @@ export default function Auth() {
                     disabled={mode === 'reset' && !!new URLSearchParams(window.location.search).get('email')}
                     required
                   />
-                  />
                 </div>
               </div>
             )}
