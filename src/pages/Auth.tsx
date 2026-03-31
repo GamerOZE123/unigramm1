@@ -58,10 +58,15 @@ export default function Auth() {
     navigate('/email-confirmed', { replace: true });
   }, [navigate]);
 
-  // Detect reset-password path
+  // Detect reset-password path and pre-fill email from URL
   useEffect(() => {
     if (location.pathname === '/reset-password' || new URLSearchParams(location.search).get('type') === 'recovery') {
       setMode('reset');
+      const urlParams = new URLSearchParams(location.search);
+      const emailParam = urlParams.get('email');
+      if (emailParam) {
+        setFormData(prev => ({ ...prev, email: decodeURIComponent(emailParam) }));
+      }
     }
   }, [location.pathname, location.search]);
 
