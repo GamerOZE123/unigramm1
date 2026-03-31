@@ -6,7 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { GraduationCap, Mail, Lock, User, ArrowLeft, Building2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ProfileCompletionFlow } from '@/components/auth/ProfileCompletionFlow';
 import BusinessOnboardingFlow from '@/components/auth/BusinessOnboardingFlow';
 import ClubOnboardingFlow from '@/components/auth/ClubOnboardingFlow';
@@ -23,7 +23,13 @@ type AuthMode = 'login' | 'signup' | 'forgot' | 'reset';
 type UserType = 'student' | 'business' | 'clubs';
 
 export default function Auth() {
-  const [mode, setMode] = useState<AuthMode>('login');
+  const location = useLocation();
+  const [mode, setMode] = useState<AuthMode>(() => {
+    if (location.pathname === '/reset-password' || new URLSearchParams(location.search).get('type') === 'recovery') {
+      return 'reset';
+    }
+    return 'login';
+  });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -51,6 +57,13 @@ export default function Auth() {
     }
     navigate('/email-confirmed', { replace: true });
   }, [navigate]);
+
+  // Detect reset-password path
+  useEffect(() => {
+    if (location.pathname === '/reset-password' || new URLSearchParams(location.search).get('type') === 'recovery') {
+      setMode('reset');
+    }
+  }, [location.pathname, location.search]);
 
   // Check if user is already logged in (but not in password recovery)
   useEffect(() => {
