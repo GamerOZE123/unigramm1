@@ -23,7 +23,13 @@ type AuthMode = 'login' | 'signup' | 'forgot' | 'reset';
 type UserType = 'student' | 'business' | 'clubs';
 
 export default function Auth() {
-  const [mode, setMode] = useState<AuthMode>('login');
+  const location = useLocation();
+  const [mode, setMode] = useState<AuthMode>(() => {
+    if (location.pathname === '/reset-password' || new URLSearchParams(location.search).get('type') === 'recovery') {
+      return 'reset';
+    }
+    return 'login';
+  });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
