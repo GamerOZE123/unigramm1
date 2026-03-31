@@ -58,6 +58,13 @@ export default function Auth() {
     navigate('/email-confirmed', { replace: true });
   }, [navigate]);
 
+  // Detect reset-password path
+  useEffect(() => {
+    if (location.pathname === '/reset-password' || new URLSearchParams(location.search).get('type') === 'recovery') {
+      setMode('reset');
+    }
+  }, [location.pathname, location.search]);
+
   // Check if user is already logged in (but not in password recovery)
   useEffect(() => {
     const checkUser = async () => {
