@@ -68,6 +68,7 @@ export default function Auth() {
       const emailParam = urlParams.get('email');
       if (emailParam) {
         setFormData(prev => ({ ...prev, email: decodeURIComponent(emailParam) }));
+        setEmailFromUrl(true);
       }
     }
   }, [location.pathname, location.search]);
