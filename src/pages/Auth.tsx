@@ -691,7 +691,7 @@ export default function Auth() {
                     className={`pl-10 bg-surface border-border ${mode === 'reset' && formData.email ? 'opacity-70 cursor-not-allowed' : ''}`}
                     value={formData.email}
                     onChange={handleInputChange}
-                    disabled={mode === 'reset' && !!new URLSearchParams(window.location.search).get('email')}
+                    readOnly={mode === 'reset' && emailFromUrl}
                     required
                   />
                 </div>
