@@ -39,6 +39,7 @@ export default function Auth() {
   const [showBusinessOnboarding, setShowBusinessOnboarding] = useState(false);
   const [showClubOnboarding, setShowClubOnboarding] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
+  const [emailFromUrl, setEmailFromUrl] = useState(false);
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
