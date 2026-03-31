@@ -686,10 +686,12 @@ export default function Auth() {
                     name="email"
                     type={mode === 'login' ? 'text' : 'email'}
                     placeholder={mode === 'reset' ? 'Enter your account email' : mode === 'login' ? 'Enter your email or username' : 'Enter your email'}
-                    className="pl-10 bg-surface border-border"
+                    className={`pl-10 bg-surface border-border ${mode === 'reset' && formData.email ? 'opacity-70 cursor-not-allowed' : ''}`}
                     value={formData.email}
                     onChange={handleInputChange}
+                    disabled={mode === 'reset' && !!new URLSearchParams(window.location.search).get('email')}
                     required
+                  />
                   />
                 </div>
               </div>
