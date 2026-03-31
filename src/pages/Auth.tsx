@@ -58,26 +58,10 @@ export default function Auth() {
     navigate('/email-confirmed', { replace: true });
   }, [navigate]);
 
-  // Detect reset-password path and exchange PKCE code for session
+  // Detect reset-password path
   useEffect(() => {
     if (location.pathname === '/reset-password' || new URLSearchParams(location.search).get('type') === 'recovery') {
       setMode('reset');
-    }
-
-    // Exchange PKCE code for a session so updateUser works
-    const urlParams = new URLSearchParams(location.search);
-    const code = urlParams.get('code');
-    if (code && location.pathname === '/reset-password') {
-      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-        if (error) {
-          console.error('Code exchange error:', error);
-          setError('Reset link is invalid or has expired. Please request a new one.');
-          setMode('forgot');
-        } else {
-          setMode('reset');
-          setMessage('Please enter your new password below.');
-        }
-      });
     }
   }, [location.pathname, location.search]);
 
@@ -344,6 +328,32 @@ export default function Auth() {
         return;
       }
 
+      if (!formData.email) {
+        setError('Please enter your email address');
+        setLoading(false);
+        return;
+      }
+
+      // Get OTP token from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const otpToken = urlParams.get('code');
+
+      if (otpToken) {
+        // Verify OTP to establish a session first
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          email: formData.email,
+          token: otpToken,
+          type: 'recovery',
+        });
+
+        if (verifyError) {
+          setError('Reset link is invalid or has expired. Please request a new one.');
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Now update the password (session is established)
       const { error } = await supabase.auth.updateUser({
         password: validationResult.data.password
       });
@@ -649,7 +659,7 @@ export default function Auth() {
               </>
             )}
 
-            {(mode === 'login' || mode === 'signup' || mode === 'forgot') && (
+            {(mode === 'login' || mode === 'signup' || mode === 'forgot' || mode === 'reset') && (
               <div className="space-y-2">
                 <Label htmlFor="email">{mode === 'login' ? 'Email or Username' : 'Email'}</Label>
                 <div className="relative">
@@ -658,7 +668,7 @@ export default function Auth() {
                     id="email"
                     name="email"
                     type={mode === 'login' ? 'text' : 'email'}
-                    placeholder={mode === 'login' ? 'Enter your email or username' : 'Enter your email'}
+                    placeholder={mode === 'reset' ? 'Enter your account email' : mode === 'login' ? 'Enter your email or username' : 'Enter your email'}
                     className="pl-10 bg-surface border-border"
                     value={formData.email}
                     onChange={handleInputChange}
