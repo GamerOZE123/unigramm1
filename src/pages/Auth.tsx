@@ -328,6 +328,32 @@ export default function Auth() {
         return;
       }
 
+      if (!formData.email) {
+        setError('Please enter your email address');
+        setLoading(false);
+        return;
+      }
+
+      // Get OTP token from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const otpToken = urlParams.get('code');
+
+      if (otpToken) {
+        // Verify OTP to establish a session first
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          email: formData.email,
+          token: otpToken,
+          type: 'recovery',
+        });
+
+        if (verifyError) {
+          setError('Reset link is invalid or has expired. Please request a new one.');
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Now update the password (session is established)
       const { error } = await supabase.auth.updateUser({
         password: validationResult.data.password
       });
