@@ -11,7 +11,7 @@ export default function Index() {
 
     // Detect PKCE code param (password recovery flow)
     if (search && search.includes('code=')) {
-      navigate(`/auth${search}${hash}`, { replace: true });
+      navigate(`/reset-password${search}${hash}`, { replace: true });
       return;
     }
 
