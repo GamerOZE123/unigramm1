@@ -659,7 +659,7 @@ export default function Auth() {
               </>
             )}
 
-            {(mode === 'login' || mode === 'signup' || mode === 'forgot') && (
+            {(mode === 'login' || mode === 'signup' || mode === 'forgot' || mode === 'reset') && (
               <div className="space-y-2">
                 <Label htmlFor="email">{mode === 'login' ? 'Email or Username' : 'Email'}</Label>
                 <div className="relative">
@@ -668,7 +668,7 @@ export default function Auth() {
                     id="email"
                     name="email"
                     type={mode === 'login' ? 'text' : 'email'}
-                    placeholder={mode === 'login' ? 'Enter your email or username' : 'Enter your email'}
+                    placeholder={mode === 'reset' ? 'Enter your account email' : mode === 'login' ? 'Enter your email or username' : 'Enter your email'}
                     className="pl-10 bg-surface border-border"
                     value={formData.email}
                     onChange={handleInputChange}
