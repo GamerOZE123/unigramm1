@@ -476,6 +476,15 @@ export default function Auth() {
         return;
       }
 
+      // If we're on the reset-password page with a code, this SIGNED_IN is from the code exchange — don't redirect
+      const isOnResetPage = window.location.pathname === '/reset-password';
+      const hasCodeParam = new URLSearchParams(window.location.search).has('code');
+      if (isOnResetPage && (hasCodeParam || new URLSearchParams(window.location.search).get('type') === 'recovery')) {
+        isRecoveryFlow = true;
+        setMode('reset');
+        return;
+      }
+
       // Only handle SIGNED_IN if not in password recovery mode
       if (event === 'SIGNED_IN' && session) {
         // Use setTimeout to defer database calls
