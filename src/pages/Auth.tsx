@@ -564,7 +564,7 @@ export default function Auth() {
 
         {/* Auth Form */}
         <div className="post-card">
-          {mode !== 'login' && mode !== 'signup' && (
+          {mode !== 'login' && mode !== 'signup' && !resetSuccess && (
             <button
               onClick={() => setMode('login')}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors"
