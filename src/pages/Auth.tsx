@@ -761,6 +761,7 @@ export default function Auth() {
               {loading ? 'Loading...' : getTitle()}
             </Button>
           </form>
+          )}
 
           {mode === 'login' && (
             <>
