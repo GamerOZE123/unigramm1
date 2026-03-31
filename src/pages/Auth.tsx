@@ -38,6 +38,7 @@ export default function Auth() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showBusinessOnboarding, setShowBusinessOnboarding] = useState(false);
   const [showClubOnboarding, setShowClubOnboarding] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
@@ -58,10 +59,15 @@ export default function Auth() {
     navigate('/email-confirmed', { replace: true });
   }, [navigate]);
 
-  // Detect reset-password path
+  // Detect reset-password path and pre-fill email from URL
   useEffect(() => {
     if (location.pathname === '/reset-password' || new URLSearchParams(location.search).get('type') === 'recovery') {
       setMode('reset');
+      const urlParams = new URLSearchParams(location.search);
+      const emailParam = urlParams.get('email');
+      if (emailParam) {
+        setFormData(prev => ({ ...prev, email: decodeURIComponent(emailParam) }));
+      }
     }
   }, [location.pathname, location.search]);
 
@@ -363,7 +369,9 @@ export default function Auth() {
       // Sign out so user doesn't get auto-redirected to /home
       await supabase.auth.signOut();
       setMessage('Password updated successfully! You can now return to the app and login with your new password.');
-      setMode('login');
+      // Stay on reset mode and show success — don't redirect to login
+      setFormData({ email: '', password: '', confirmPassword: '', name: '', university: '', companyName: '' });
+      setResetSuccess(true);
     } catch (error: any) {
       setError(error.message || 'Failed to reset password. Please try again.');
     } finally {
@@ -556,7 +564,7 @@ export default function Auth() {
 
         {/* Auth Form */}
         <div className="post-card">
-          {mode !== 'login' && mode !== 'signup' && (
+          {mode !== 'login' && mode !== 'signup' && !resetSuccess && (
             <button
               onClick={() => setMode('login')}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-4 transition-colors"
@@ -587,6 +595,15 @@ export default function Auth() {
             </Alert>
           )}
 
+          {resetSuccess ? (
+            <div className="text-center space-y-4 py-6">
+              <div className="text-4xl">✅</div>
+              <h3 className="text-xl font-bold text-foreground">Password Changed!</h3>
+              <p className="text-muted-foreground">
+                Your password has been updated successfully. Return to the app and login with your new password.
+              </p>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
             {mode === 'signup' && (
               <>
@@ -745,6 +762,7 @@ export default function Auth() {
               {loading ? 'Loading...' : getTitle()}
             </Button>
           </form>
+          )}
 
           {mode === 'login' && (
             <>
