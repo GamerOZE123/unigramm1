@@ -39,6 +39,7 @@ export default function Auth() {
   const [showBusinessOnboarding, setShowBusinessOnboarding] = useState(false);
   const [showClubOnboarding, setShowClubOnboarding] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
+  const [emailFromUrl, setEmailFromUrl] = useState(false);
   const navigate = useNavigate();
   
   const [formData, setFormData] = useState({
@@ -67,6 +68,7 @@ export default function Auth() {
       const emailParam = urlParams.get('email');
       if (emailParam) {
         setFormData(prev => ({ ...prev, email: decodeURIComponent(emailParam) }));
+        setEmailFromUrl(true);
       }
     }
   }, [location.pathname, location.search]);
@@ -689,7 +691,7 @@ export default function Auth() {
                     className={`pl-10 bg-surface border-border ${mode === 'reset' && formData.email ? 'opacity-70 cursor-not-allowed' : ''}`}
                     value={formData.email}
                     onChange={handleInputChange}
-                    disabled={mode === 'reset' && !!new URLSearchParams(window.location.search).get('email')}
+                    readOnly={mode === 'reset' && emailFromUrl}
                     required
                   />
                 </div>
