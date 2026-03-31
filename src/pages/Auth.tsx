@@ -58,10 +58,26 @@ export default function Auth() {
     navigate('/email-confirmed', { replace: true });
   }, [navigate]);
 
-  // Detect reset-password path
+  // Detect reset-password path and exchange PKCE code for session
   useEffect(() => {
     if (location.pathname === '/reset-password' || new URLSearchParams(location.search).get('type') === 'recovery') {
       setMode('reset');
+    }
+
+    // Exchange PKCE code for a session so updateUser works
+    const urlParams = new URLSearchParams(location.search);
+    const code = urlParams.get('code');
+    if (code && location.pathname === '/reset-password') {
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (error) {
+          console.error('Code exchange error:', error);
+          setError('Reset link is invalid or has expired. Please request a new one.');
+          setMode('forgot');
+        } else {
+          setMode('reset');
+          setMessage('Please enter your new password below.');
+        }
+      });
     }
   }, [location.pathname, location.search]);
 
