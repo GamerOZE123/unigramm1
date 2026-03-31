@@ -321,7 +321,9 @@ export default function Auth() {
 
       if (error) throw error;
 
-      setMessage('Password updated successfully! You can now login with your new password.');
+      // Sign out so user doesn't get auto-redirected to /home
+      await supabase.auth.signOut();
+      setMessage('Password updated successfully! You can now return to the app and login with your new password.');
       setMode('login');
     } catch (error: any) {
       setError(error.message || 'Failed to reset password. Please try again.');

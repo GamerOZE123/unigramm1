@@ -3390,6 +3390,7 @@ export type Database = {
       }
       startup_contributors: {
         Row: {
+          display_order: number | null
           id: string
           joined_at: string
           role: string | null
@@ -3397,6 +3398,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          display_order?: number | null
           id?: string
           joined_at?: string
           role?: string | null
@@ -3404,6 +3406,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          display_order?: number | null
           id?: string
           joined_at?: string
           role?: string | null
