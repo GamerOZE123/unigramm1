@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Mail, Send, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Mail, Send, Loader2, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -12,27 +12,57 @@ interface EmailTemplate {
   key: string;
   label: string;
   description: string;
-  functionName: string;
-  bodyBuilder: (email: string) => Record<string, any>;
   badge?: string;
+  type: 'edge-function' | 'auth';
+  functionName?: string;
+  bodyBuilder?: (email: string) => Record<string, any>;
+  authAction?: string;
 }
 
 const EMAIL_TEMPLATES: EmailTemplate[] = [
+  // Auth emails
+  {
+    key: 'signup-confirm',
+    label: 'Signup Confirmation',
+    description: 'Email verification sent after user signs up',
+    badge: 'Auth',
+    type: 'auth',
+    authAction: 'signup',
+  },
+  {
+    key: 'password-reset',
+    label: 'Password Reset',
+    description: 'Forgot password / reset link email',
+    badge: 'Auth',
+    type: 'auth',
+    authAction: 'recovery',
+  },
+  {
+    key: 'magic-link',
+    label: 'Magic Link',
+    description: 'Passwordless login via email link',
+    badge: 'Auth',
+    type: 'auth',
+    authAction: 'magiclink',
+  },
+  // Custom edge function emails
   {
     key: 'invite',
     label: 'Invite Email (iOS + Android)',
     description: 'Welcome invite sent when a waitlist user is approved',
+    badge: 'Waitlist',
+    type: 'edge-function',
     functionName: 'send-invite',
     bodyBuilder: (email) => ({ email, name: 'Test User' }),
-    badge: 'Waitlist',
   },
   {
     key: 'android-invite',
     label: 'Android Beta Invite',
     description: 'Android-specific download link email',
+    badge: 'Android',
+    type: 'edge-function',
     functionName: 'send-android-invite',
     bodyBuilder: (email) => ({ email }),
-    badge: 'Android',
   },
 ];
 
@@ -52,12 +82,42 @@ const AdminEmailTemplates: React.FC = () => {
     setFailedKeys(prev => { const n = new Set(prev); n.delete(template.key); return n; });
 
     try {
-      const { data, error } = await supabase.functions.invoke(template.functionName, {
-        body: template.bodyBuilder(testEmail),
-      });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (template.type === 'edge-function' && template.functionName && template.bodyBuilder) {
+        const { data, error } = await supabase.functions.invoke(template.functionName, {
+          body: template.bodyBuilder(testEmail),
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+      } else if (template.type === 'auth') {
+        switch (template.authAction) {
+          case 'signup': {
+            // Sign up with a random password to trigger confirmation email
+            const tempPassword = `TestPass_${Date.now()}!`;
+            const { error } = await supabase.auth.signUp({
+              email: testEmail,
+              password: tempPassword,
+            });
+            if (error) throw error;
+            break;
+          }
+          case 'recovery': {
+            const { error } = await supabase.auth.resetPasswordForEmail(testEmail, {
+              redirectTo: `${window.location.origin}/reset-password`,
+            });
+            if (error) throw error;
+            break;
+          }
+          case 'magiclink': {
+            const { error } = await supabase.auth.signInWithOtp({
+              email: testEmail,
+            });
+            if (error) throw error;
+            break;
+          }
+          default:
+            throw new Error('Unknown auth action');
+        }
+      }
 
       setSentKeys(prev => new Set(prev).add(template.key));
       toast.success(`${template.label} sent to ${testEmail}`);
@@ -120,6 +180,15 @@ const AdminEmailTemplates: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Info note */}
+      <div className="flex items-start gap-2 px-1 text-xs text-muted-foreground">
+        <Info className="w-4 h-4 shrink-0 mt-0.5" />
+        <p>
+          <strong>Auth</strong> emails (Signup, Reset, Magic Link) are sent via Supabase Auth.
+          Signup will create a test account. <strong>Waitlist/Android</strong> emails use custom edge functions.
+        </p>
+      </div>
 
       {/* Email Templates */}
       <div className="grid gap-3">
