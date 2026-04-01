@@ -728,17 +728,17 @@ export function AdminCoursesContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Bulk Add Dialog */}
+      {/* Bulk Add/Edit Dialog */}
       <Dialog open={isBulkAddDialogOpen} onOpenChange={setIsBulkAddDialogOpen}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Bulk Add Courses</DialogTitle>
-            <DialogDescription>Add multiple courses to a university at once</DialogDescription>
+            <DialogTitle>Bulk Manage Courses</DialogTitle>
+            <DialogDescription>Select a university to view, edit, and add courses</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>University *</Label>
-              <Select value={bulkUniversityId} onValueChange={setBulkUniversityId}>
+              <Select value={bulkUniversityId} onValueChange={loadBulkCourses}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select university" />
                 </SelectTrigger>
@@ -750,77 +750,81 @@ export function AdminCoursesContent() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Courses</Label>
-                <Button variant="outline" size="sm" onClick={addBulkRow}>
-                  <Plus className="h-3 w-3 mr-1" /> Add Row
-                </Button>
-              </div>
-              <div className="space-y-2 border rounded-lg p-3">
-                <div className="grid grid-cols-[1fr_80px_60px_60px_40px_32px] gap-2 text-xs font-medium text-muted-foreground px-1">
-                  <span>Course Name</span>
-                  <span>Abbr.</span>
-                  <span>Years</span>
-                  <span>Sem.</span>
-                  <span>Grad</span>
-                  <span></span>
+            {bulkUniversityId && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Courses ({bulkRows.length} total)</Label>
+                  <Button variant="outline" size="sm" onClick={addBulkRow}>
+                    <Plus className="h-3 w-3 mr-1" /> Add New
+                  </Button>
                 </div>
-                {bulkRows.map((row) => (
-                  <div key={row.id} className="grid grid-cols-[1fr_80px_60px_60px_40px_32px] gap-2 items-center">
-                    <Input
-                      value={row.course_name}
-                      onChange={(e) => updateBulkRow(row.id, "course_name", e.target.value)}
-                      placeholder="Course name"
-                      className="h-8 text-sm"
-                      autoComplete="off"
-                    />
-                    <Input
-                      value={row.course_abbreviation}
-                      onChange={(e) => updateBulkRow(row.id, "course_abbreviation", e.target.value)}
-                      placeholder="Abbr"
-                      className="h-8 text-sm"
-                      autoComplete="off"
-                    />
-                    <Input
-                      type="number"
-                      min={1}
-                      max={10}
-                      value={row.duration_years}
-                      onChange={(e) => updateBulkRow(row.id, "duration_years", parseInt(e.target.value) || 4)}
-                      className="h-8 text-sm"
-                    />
-                    <Input
-                      type="number"
-                      min={1}
-                      max={20}
-                      value={row.total_semesters}
-                      onChange={(e) => updateBulkRow(row.id, "total_semesters", parseInt(e.target.value) || 8)}
-                      className="h-8 text-sm"
-                    />
-                    <Switch
-                      checked={row.force_enable_graduation}
-                      onCheckedChange={(v) => updateBulkRow(row.id, "force_enable_graduation", v)}
-                      className="scale-75"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive"
-                      onClick={() => removeBulkRow(row.id)}
-                      disabled={bulkRows.length <= 1}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                <div className="space-y-2 border rounded-lg p-3">
+                  <div className="grid grid-cols-[1fr_80px_60px_60px_40px_32px] gap-2 text-xs font-medium text-muted-foreground px-1">
+                    <span>Course Name</span>
+                    <span>Abbr.</span>
+                    <span>Years</span>
+                    <span>Sem.</span>
+                    <span>Grad</span>
+                    <span></span>
                   </div>
-                ))}
+                  {bulkRows.length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">No courses yet. Click "Add New" to start.</p>
+                  )}
+                  {bulkRows.map((row) => (
+                    <div key={row.id} className="grid grid-cols-[1fr_80px_60px_60px_40px_32px] gap-2 items-center">
+                      <Input
+                        value={row.course_name}
+                        onChange={(e) => updateBulkRow(row.id, "course_name", e.target.value)}
+                        placeholder="Course name"
+                        className="h-8 text-sm"
+                        autoComplete="off"
+                      />
+                      <Input
+                        value={row.course_abbreviation}
+                        onChange={(e) => updateBulkRow(row.id, "course_abbreviation", e.target.value)}
+                        placeholder="Abbr"
+                        className="h-8 text-sm"
+                        autoComplete="off"
+                      />
+                      <Input
+                        type="number"
+                        min={1}
+                        max={10}
+                        value={row.duration_years}
+                        onChange={(e) => updateBulkRow(row.id, "duration_years", parseInt(e.target.value) || 4)}
+                        className="h-8 text-sm"
+                      />
+                      <Input
+                        type="number"
+                        min={1}
+                        max={20}
+                        value={row.total_semesters}
+                        onChange={(e) => updateBulkRow(row.id, "total_semesters", parseInt(e.target.value) || 8)}
+                        className="h-8 text-sm"
+                      />
+                      <Switch
+                        checked={row.force_enable_graduation}
+                        onCheckedChange={(v) => updateBulkRow(row.id, "force_enable_graduation", v)}
+                        className="scale-75"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive"
+                        onClick={() => removeBulkRow(row.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsBulkAddDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleBulkAdd}>
-                Add {bulkRows.filter(r => r.course_name.trim()).length} Course(s)
+              <Button onClick={handleBulkSave} disabled={bulkSaving || !bulkUniversityId}>
+                {bulkSaving ? "Saving..." : `Save All Changes`}
               </Button>
             </DialogFooter>
           </div>
