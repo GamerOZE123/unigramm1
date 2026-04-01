@@ -41,88 +41,85 @@ Deno.serve(async (req) => {
     })
 
     const PLAYSTORE_TESTER_LINK = 'https://play.google.com/store/apps/details?id=com.nike11.UnigrammApp'
+    const LOGO_URL = 'https://unigramm1.lovable.app/unigramm-logo.png'
 
     const htmlBody = `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
-<body style="margin:0;padding:0;background-color:#080c17;font-family:'Plus Jakarta Sans',Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#080c17;padding:40px 20px;">
+<body style="margin:0;padding:0;background-color:#f0f2f5;font-family:'Plus Jakarta Sans',Arial,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f0f2f5;padding:40px 20px;">
 <tr><td align="center">
-<table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
 
 <!-- Logo -->
-<tr><td align="center" style="padding-bottom:32px;">
-  <span style="font-size:22px;font-weight:700;color:#4f8eff;letter-spacing:-0.5px;">Unigramm</span>
-</td></tr>
+<tr>
+  <td align="center" style="padding-bottom:28px;">
+    <img src="${LOGO_URL}" alt="Unigramm" height="40" style="display:block;height:40px;width:auto;" />
+  </td>
+</tr>
 
 <!-- Card -->
-<tr><td style="background:linear-gradient(145deg,rgba(79,142,255,0.08),rgba(141,207,255,0.04));border:1px solid rgba(79,142,255,0.15);border-radius:16px;padding:36px 28px;">
+<tr>
+  <td style="background:#ffffff;border-radius:16px;padding:40px 32px;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
 
-  <!-- Badge -->
-  <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding-bottom:20px;">
-    <span style="display:inline-block;background:rgba(79,142,255,0.15);color:#8dcfff;font-size:11px;font-weight:600;padding:6px 14px;border-radius:20px;letter-spacing:0.5px;">ANDROID BETA ACCESS</span>
-  </td></tr></table>
+    <!-- Badge -->
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td align="center" style="padding-bottom:20px;">
+        <span style="display:inline-block;background:#e8f0fe;color:#4f8eff;font-size:11px;font-weight:700;padding:6px 16px;border-radius:20px;letter-spacing:0.5px;text-transform:uppercase;">Android Beta Access</span>
+      </td></tr>
+    </table>
 
-  <!-- Headline -->
-  <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding-bottom:16px;">
-    <h1 style="margin:0;font-size:24px;font-weight:700;color:#ffffff;line-height:1.3;">Download Unigramm on Android 🤖</h1>
-  </td></tr></table>
+    <!-- Headline -->
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td align="center" style="padding-bottom:16px;">
+        <h1 style="margin:0;font-size:26px;font-weight:800;color:#1a1a2e;line-height:1.3;">Download & Sign Up 🤖</h1>
+      </td></tr>
+    </table>
 
-  <!-- Body -->
-  <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding-bottom:28px;">
-    <p style="margin:0;font-size:14px;color:rgba(255,255,255,0.6);line-height:1.7;">
-      You've been added to our Android beta. Tap the button below to become a tester and install the app.
-    </p>
-  </td></tr></table>
+    <!-- Divider -->
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td style="padding-bottom:24px;">
+        <div style="height:1px;background:#e8e8e8;"></div>
+      </td></tr>
+    </table>
 
-  <!-- CTA Button -->
-  <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding-bottom:24px;">
-    <a href="${PLAYSTORE_TESTER_LINK}" style="display:inline-block;background:linear-gradient(135deg,#4f8eff,#8dcfff);color:#080c17;font-size:14px;font-weight:700;padding:14px 36px;border-radius:12px;text-decoration:none;letter-spacing:0.3px;">
-      Download from Play Store →
-    </a>
-  </td></tr></table>
+    <!-- Body -->
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td align="center" style="padding-bottom:12px;">
+        <p style="margin:0;font-size:14px;font-weight:700;color:#1a1a2e;">You've been added to the Android beta</p>
+        <p style="margin:8px 0 0;font-size:13px;color:#555;line-height:1.6;">Tap the button below to install Unigramm from the Play Store.</p>
+        <p style="margin:12px 0 0;font-size:13px;color:#555;line-height:1.6;">Make sure you're signed in with this email on Google Play:</p>
+        <div style="margin-top:12px;display:inline-block;background:#f5f7fa;border:1px solid #e0e4ea;border-radius:10px;padding:10px 20px;">
+          <span style="font-size:14px;font-weight:600;color:#4f8eff;">${email}</span>
+        </div>
+      </td></tr>
+    </table>
 
-  <!-- Note -->
-  <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-    <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.35);line-height:1.6;">
-      Make sure you're signed in with the same email on Google Play Store on your Android phone before tapping the link.
-    </p>
-  </td></tr></table>
+    <!-- CTA Button -->
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr><td align="center" style="padding:24px 0 16px;">
+        <a href="${PLAYSTORE_TESTER_LINK}" style="display:inline-block;background:#4f8eff;color:#ffffff;font-size:14px;font-weight:700;padding:14px 36px;border-radius:12px;text-decoration:none;letter-spacing:0.3px;">Download from Play Store →</a>
+      </td></tr>
+    </table>
 
-  <!-- Features row -->
-  <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:28px;border-top:1px solid rgba(79,142,255,0.1);padding-top:24px;">
-  <tr>
-    <td align="center" width="33%" style="padding:0 4px;">
-      <div style="font-size:22px;margin-bottom:6px;">💬</div>
-      <div style="font-size:12px;font-weight:600;color:#ffffff;">Campus Chat</div>
-      <div style="font-size:10px;color:rgba(255,255,255,0.4);">DMs & groups</div>
-    </td>
-    <td align="center" width="33%" style="padding:0 4px;">
-      <div style="font-size:22px;margin-bottom:6px;">🚀</div>
-      <div style="font-size:12px;font-weight:600;color:#ffffff;">Startups</div>
-      <div style="font-size:10px;color:rgba(255,255,255,0.4);">Find co-founders</div>
-    </td>
-    <td align="center" width="33%" style="padding:0 4px;">
-      <div style="font-size:22px;margin-bottom:6px;">🤝</div>
-      <div style="font-size:12px;font-weight:600;color:#ffffff;">Clubs</div>
-      <div style="font-size:10px;color:rgba(255,255,255,0.4);">Join your campus</div>
-    </td>
-  </tr>
-  </table>
-
-</td></tr>
+  </td>
+</tr>
 
 <!-- Footer -->
-<tr><td align="center" style="padding-top:28px;">
-  <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.35);">Welcome aboard — Team Unigramm</p>
-  <p style="margin:8px 0 0;font-size:11px;color:rgba(255,255,255,0.2);">
-    © 2026 Unigramm · <a href="https://unigramm.com" style="color:rgba(255,255,255,0.2);text-decoration:none;">unigramm.com</a>
-  </p>
-</td></tr>
+<tr>
+  <td align="center" style="padding-top:28px;">
+    <p style="margin:0;font-size:13px;font-weight:600;color:#2e3f5c;">Welcome aboard — Team Unigramm</p>
+    <p style="margin:8px 0 0;font-size:11px;color:#8c95a6;">
+      <a href="https://unigramm.com" style="color:#2e3f5c;text-decoration:none;">unigramm.com</a>
+       · 
+      © 2026 Unigramm
+    </p>
+  </td>
+</tr>
 
 </table>
 </td></tr>
@@ -134,7 +131,7 @@ Deno.serve(async (req) => {
       from: smtpUser,
       to: email,
       subject: "Your Unigramm Android download link is here 🤖",
-      text: `You've been added to our Android beta!\n\nTap the link to become a tester and install the app:\n${PLAYSTORE_TESTER_LINK}\n\nMake sure you're signed into Gmail on your Android phone before tapping the link.\n\nWelcome aboard,\nTeam Unigramm`,
+      text: `You've been added to our Android beta!\n\nTap the link to become a tester and install the app:\n${PLAYSTORE_TESTER_LINK}\n\nMake sure you're signed into Google Play with the same email before tapping the link.\n\nWelcome aboard,\nTeam Unigramm`,
       html: htmlBody,
     })
 
