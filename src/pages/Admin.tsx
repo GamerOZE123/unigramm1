@@ -471,6 +471,8 @@ const Admin: React.FC = () => {
               onReInvite={handleReInvite}
               onSendAndroid={handleSendAndroidLink}
               onDelete={handleDeleteWaitlistEntry}
+              onAdd={handleAddWaitlistEntry}
+              onEdit={handleEditWaitlistEntry}
             />
           )}
 
