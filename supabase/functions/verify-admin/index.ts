@@ -139,6 +139,36 @@ Deno.serve(async (req) => {
       return json({ valid: true, success: true });
     }
 
+    // ── Add Waitlist Entry ──────────────────────────────────
+    if (action === 'add_waitlist_entry') {
+      const { full_name, email, university } = body;
+      if (!email) return json({ valid: true, error: 'Email is required' }, 400);
+      const { data, error } = await supabaseAdmin
+        .from('early_access_signups')
+        .insert({ full_name: full_name || null, email, university: university || null, invited: false })
+        .select()
+        .single();
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true, entry: data });
+    }
+
+    // ── Update Waitlist Entry ───────────────────────────────
+    if (action === 'update_waitlist_entry' && id) {
+      const { full_name, email, university } = body;
+      const updates: any = {};
+      if (full_name !== undefined) updates.full_name = full_name || null;
+      if (email !== undefined) updates.email = email;
+      if (university !== undefined) updates.university = university || null;
+      const { data, error } = await supabaseAdmin
+        .from('early_access_signups')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true, entry: data });
+    }
+
     // ── Feature Flags ────────────────────────────────────────
     if (action === 'fetch_flags') {
       const { data, error } = await supabaseAdmin
