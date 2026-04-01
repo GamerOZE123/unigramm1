@@ -394,6 +394,10 @@ export function AdminCoursesContent() {
             onChange={handleCSVImport}
             className="hidden"
           />
+          <Button variant="outline" size="sm" onClick={() => { setLoading(true); fetchCourses(); }}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
           <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
             <Upload className="h-4 w-4 mr-2" />
             Import CSV
