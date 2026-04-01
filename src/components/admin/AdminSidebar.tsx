@@ -18,6 +18,7 @@ export type AdminSection =
   | 'courses'
   | 'broadcast'
   | 'analytics'
+  | 'emails'
   | 'team';
 
 interface Props {
