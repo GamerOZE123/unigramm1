@@ -32,7 +32,7 @@ interface Props {
   onSendAndroid: (signup: SignupRow) => void;
   onDelete: (signup: SignupRow) => void;
   onAdd?: (data: { full_name: string; email: string; university: string }) => Promise<void>;
-  onEdit?: (id: string, data: { full_name: string; email: string; university: string }) => Promise<void>;
+  onEdit?: (id: string, data: { full_name: string; email: string; university: string; android_email?: string }) => Promise<void>;
 }
 
 type DateFilter = 'all' | 'today' | '1day';
@@ -46,7 +46,7 @@ const AdminWaitlistSection: React.FC<Props> = ({
   const [addForm, setAddForm] = useState({ full_name: '', email: '', university: '' });
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ full_name: '', email: '', university: '' });
+  const [editForm, setEditForm] = useState({ full_name: '', email: '', university: '', android_email: '' });
   const [saving, setSaving] = useState(false);
 
   const now = new Date();
@@ -76,7 +76,7 @@ const AdminWaitlistSection: React.FC<Props> = ({
 
   const startEdit = (s: SignupRow) => {
     setEditingId(s.id);
-    setEditForm({ full_name: s.full_name || '', email: s.email, university: s.university || '' });
+    setEditForm({ full_name: s.full_name || '', email: s.email, university: s.university || '', android_email: s.android_email || '' });
   };
 
   const handleSaveEdit = async () => {
@@ -169,7 +169,7 @@ const AdminWaitlistSection: React.FC<Props> = ({
                         <Input className="h-8 text-sm" value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} />
                       </TableCell>
                       <TableCell>
-                        <span className="text-muted-foreground text-xs">{s.android_email || '—'}</span>
+                        <Input className="h-8 text-sm" placeholder="Play Store Gmail" value={editForm.android_email} onChange={e => setEditForm(p => ({ ...p, android_email: e.target.value }))} />
                       </TableCell>
                       <TableCell>
                         <Input className="h-8 text-sm" value={editForm.university} onChange={e => setEditForm(p => ({ ...p, university: e.target.value }))} />

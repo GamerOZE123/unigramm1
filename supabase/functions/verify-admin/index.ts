@@ -154,7 +154,7 @@ Deno.serve(async (req) => {
 
     // ── Update Waitlist Entry ───────────────────────────────
     if (action === 'update_waitlist_entry' && id) {
-      const { full_name, email, university } = body;
+      const { full_name, email, university, android_email } = body;
       const updates: any = {};
       if (full_name !== undefined) updates.full_name = full_name || null;
       if (email !== undefined) updates.email = email;
@@ -166,7 +166,38 @@ Deno.serve(async (req) => {
         .select()
         .single();
       if (error) return json({ valid: true, error: error.message }, 400);
-      return json({ valid: true, success: true, entry: data });
+
+      // Handle android_email update via android_testers table
+      if (android_email !== undefined && data?.email) {
+        const signupEmail = data.email.toLowerCase();
+        if (android_email && android_email.trim()) {
+          // Upsert android_testers record
+          const { error: atError } = await supabaseAdmin
+            .from('android_testers')
+            .upsert(
+              { email: android_email.trim(), signup_email: signupEmail, status: 'pending' },
+              { onConflict: 'signup_email' }
+            );
+          if (atError) {
+            // Try insert if upsert fails (no unique on signup_email), update by matching
+            await supabaseAdmin
+              .from('android_testers')
+              .update({ email: android_email.trim() })
+              .eq('signup_email', signupEmail);
+          }
+        }
+      }
+
+      // Return enriched entry with android info
+      let android_email_result = null;
+      const { data: atData } = await supabaseAdmin
+        .from('android_testers')
+        .select('email')
+        .eq('signup_email', data.email.toLowerCase())
+        .maybeSingle();
+      if (atData) android_email_result = atData.email;
+
+      return json({ valid: true, success: true, entry: { ...data, android_email: android_email_result } });
     }
 
     // ── Feature Flags ────────────────────────────────────────
