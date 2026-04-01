@@ -309,8 +309,9 @@ export function AdminCoursesContent() {
         <Input
           id="courseName"
           value={formData.course_name}
-          onChange={(e) => setFormData({ ...formData, course_name: e.target.value })}
+          onChange={(e) => setFormData(prev => ({ ...prev, course_name: e.target.value }))}
           placeholder="e.g., Computer Science"
+          autoComplete="off"
         />
       </div>
 
@@ -319,8 +320,9 @@ export function AdminCoursesContent() {
         <Input
           id="courseAbbreviation"
           value={formData.course_abbreviation}
-          onChange={(e) => setFormData({ ...formData, course_abbreviation: e.target.value })}
+          onChange={(e) => setFormData(prev => ({ ...prev, course_abbreviation: e.target.value }))}
           placeholder="e.g., CS"
+          autoComplete="off"
         />
         <p className="text-xs text-muted-foreground">Short form displayed on profiles (e.g., Economics → Eco)</p>
       </div>
