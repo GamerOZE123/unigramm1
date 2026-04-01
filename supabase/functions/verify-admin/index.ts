@@ -171,19 +171,24 @@ Deno.serve(async (req) => {
       if (android_email !== undefined && data?.email) {
         const signupEmail = data.email.toLowerCase();
         if (android_email && android_email.trim()) {
-          // Upsert android_testers record
-          const { error: atError } = await supabaseAdmin
+          // Check if record exists for this signup_email
+          const { data: existing } = await supabaseAdmin
             .from('android_testers')
-            .upsert(
-              { email: android_email.trim(), signup_email: signupEmail, status: 'pending' },
-              { onConflict: 'signup_email' }
-            );
-          if (atError) {
-            // Try insert if upsert fails (no unique on signup_email), update by matching
+            .select('id')
+            .eq('signup_email', signupEmail)
+            .maybeSingle();
+          
+          if (existing) {
+            // Update existing record
             await supabaseAdmin
               .from('android_testers')
               .update({ email: android_email.trim() })
-              .eq('signup_email', signupEmail);
+              .eq('id', existing.id);
+          } else {
+            // Insert new record
+            await supabaseAdmin
+              .from('android_testers')
+              .insert({ email: android_email.trim(), signup_email: signupEmail, status: 'pending' });
           }
         }
       }
