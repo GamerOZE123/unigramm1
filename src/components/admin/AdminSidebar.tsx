@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Users, Clock, ShieldCheck, Flag, Settings,
-  Bell, BarChart3, GraduationCap, UserCheck, X, Users2, BookOpen
+  Bell, BarChart3, GraduationCap, UserCheck, X, Users2, BookOpen, Mail
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
