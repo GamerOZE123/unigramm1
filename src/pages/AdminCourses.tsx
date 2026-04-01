@@ -245,7 +245,7 @@ export function AdminCoursesContent() {
         updatedCount++;
       }
 
-      // Insert new courses
+      // Insert new courses (upsert to handle duplicates gracefully)
       if (newRows.length > 0) {
         const toInsert = newRows.map(r => ({
           university_id: bulkUniversityId,
@@ -255,7 +255,9 @@ export function AdminCoursesContent() {
           total_semesters: r.total_semesters,
           force_enable_graduation: r.force_enable_graduation,
         }));
-        const { error } = await supabase.from("university_courses").insert(toInsert);
+        const { error } = await supabase
+          .from("university_courses")
+          .upsert(toInsert, { onConflict: "university_id,course_name" });
         if (error) throw error;
         insertedCount = newRows.length;
       }
