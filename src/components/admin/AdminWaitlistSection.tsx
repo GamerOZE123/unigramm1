@@ -46,7 +46,7 @@ const AdminWaitlistSection: React.FC<Props> = ({
   const [addForm, setAddForm] = useState({ full_name: '', email: '', university: '' });
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ full_name: '', email: '', university: '' });
+  const [editForm, setEditForm] = useState({ full_name: '', email: '', university: '', android_email: '' });
   const [saving, setSaving] = useState(false);
 
   const now = new Date();
