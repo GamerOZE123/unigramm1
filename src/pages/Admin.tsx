@@ -254,17 +254,49 @@ const Admin: React.FC = () => {
     if (!confirm(`Delete ${signup.email} from the waitlist?`)) return;
     setDeleting(signup.id);
     try {
-      const { data, error } = await supabase.functions.invoke('verify-admin', {
-        body: { password: storedPassword, action: 'delete_waitlist_entry', id: signup.id },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      setSignups(prev => prev.filter(s => s.id !== signup.id));
-      toast.success(`Deleted ${signup.email} from waitlist`);
+    const { data, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password: storedPassword, action: 'delete_waitlist_entry', id: signup.id },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    setSignups(prev => prev.filter(s => s.id !== signup.id));
+    toast.success(`Deleted ${signup.email} from waitlist`);
     } catch (err: any) {
       toast.error(err.message || 'Failed to delete');
     }
     setDeleting(null);
+  };
+
+  const handleAddWaitlistEntry = async (formData: { full_name: string; email: string; university: string }) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-admin', {
+        body: { password: storedPassword, action: 'add_waitlist_entry', ...formData },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.entry) {
+        setSignups(prev => [data.entry, ...prev]);
+      }
+      toast.success(`Added ${formData.email} to waitlist`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to add');
+    }
+  };
+
+  const handleEditWaitlistEntry = async (id: string, formData: { full_name: string; email: string; university: string }) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-admin', {
+        body: { password: storedPassword, action: 'update_waitlist_entry', id, ...formData },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (data?.entry) {
+        setSignups(prev => prev.map(s => s.id === id ? { ...s, ...data.entry } : s));
+      }
+      toast.success('Waitlist entry updated');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update');
+    }
   };
 
   const pendingCount = signups.filter(s => !s.invited).length;
