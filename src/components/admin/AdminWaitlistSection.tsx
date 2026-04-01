@@ -32,7 +32,7 @@ interface Props {
   onSendAndroid: (signup: SignupRow) => void;
   onDelete: (signup: SignupRow) => void;
   onAdd?: (data: { full_name: string; email: string; university: string }) => Promise<void>;
-  onEdit?: (id: string, data: { full_name: string; email: string; university: string }) => Promise<void>;
+  onEdit?: (id: string, data: { full_name: string; email: string; university: string; android_email?: string }) => Promise<void>;
 }
 
 type DateFilter = 'all' | 'today' | '1day';
