@@ -116,7 +116,7 @@ Deno.serve(async (req) => {
                 </tr>
                 <tr>
                   <td align="center" style="padding:12px 0 16px;">
-                    <a href="https://unigramm.com/android-beta?email=${encodeURIComponent(email)}" style="display:inline-block;background:rgba(255,255,255,0.08);color:#ffffff;font-size:14px;font-weight:700;padding:14px 36px;border-radius:12px;text-decoration:none;letter-spacing:0.3px;border:1px solid rgba(255,255,255,0.15);">Get Early Access on Android →</a>
+                    <a href="https://unigramm.com/android-beta?email=${encodeURIComponent(email)}" style="display:inline-block;background:linear-gradient(135deg,#34d399 0%,#6ee7b7 100%);color:#080c17;font-size:14px;font-weight:700;padding:14px 36px;border-radius:12px;text-decoration:none;letter-spacing:0.3px;">Get Early Access on Android →</a>
                   </td>
                 </tr>
               </table>
