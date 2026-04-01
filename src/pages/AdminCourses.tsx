@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import Layout from "@/components/layout/Layout";
 import MobileLayout from "@/components/layout/MobileLayout";
 import { useIsMobile } from "@/hooks/use-mobile";
