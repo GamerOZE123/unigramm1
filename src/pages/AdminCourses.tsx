@@ -76,11 +76,10 @@ export function AdminCoursesContent() {
 
   const [formData, setFormData] = useState<CourseFormData>({ ...defaultFormData });
 
-  // Bulk add state
+  // Bulk add/edit state
   const [bulkUniversityId, setBulkUniversityId] = useState("");
-  const [bulkRows, setBulkRows] = useState<BulkCourseRow[]>([
-    { id: crypto.randomUUID(), course_name: "", course_abbreviation: "", duration_years: 4, total_semesters: 8, force_enable_graduation: false },
-  ]);
+  const [bulkRows, setBulkRows] = useState<BulkCourseRow[]>([]);
+  const [bulkSaving, setBulkSaving] = useState(false);
 
   // Inline editing state
   const [editingCells, setEditingCells] = useState<Record<string, Partial<Course>>>({});
