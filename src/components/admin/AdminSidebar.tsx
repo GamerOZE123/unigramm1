@@ -41,6 +41,7 @@ const nav: { key: AdminSection; label: string; icon: React.ElementType; group?: 
   { key: 'flags', label: 'Feature Flags', icon: Flag, group: 'Config' },
   { key: 'config', label: 'App Config', icon: Settings, group: 'Config' },
   { key: 'broadcast', label: 'Broadcast', icon: Bell, group: 'Notifications' },
+  { key: 'emails', label: 'Email Templates', icon: Mail, group: 'Notifications' },
   { key: 'team', label: 'Team Members', icon: Users2, group: 'Admin', adminOnly: true },
 ];
 
