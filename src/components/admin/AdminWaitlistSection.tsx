@@ -76,7 +76,7 @@ const AdminWaitlistSection: React.FC<Props> = ({
 
   const startEdit = (s: SignupRow) => {
     setEditingId(s.id);
-    setEditForm({ full_name: s.full_name || '', email: s.email, university: s.university || '' });
+    setEditForm({ full_name: s.full_name || '', email: s.email, university: s.university || '', android_email: s.android_email || '' });
   };
 
   const handleSaveEdit = async () => {
