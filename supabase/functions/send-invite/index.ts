@@ -67,14 +67,6 @@ Deno.serve(async (req) => {
           <tr>
             <td style="background:rgba(255,255,255,0.06);border-radius:16px;padding:40px 32px;border:1px solid rgba(79,142,255,0.15);background-image:radial-gradient(ellipse 80% 50% at 50% 0%, rgba(79,142,255,0.12) 0%, transparent 70%);">
 
-              <!-- Badge -->
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center" style="padding-bottom:20px;">
-                    <span style="display:inline-block;background:rgba(79,142,255,0.15);color:#8dcfff;font-size:11px;font-weight:700;padding:6px 16px;border-radius:20px;letter-spacing:0.5px;text-transform:uppercase;">Early Access Approved</span>
-                  </td>
-                </tr>
-              </table>
 
               <!-- Headline -->
               <table width="100%" cellpadding="0" cellspacing="0">
