@@ -283,7 +283,7 @@ const Admin: React.FC = () => {
     }
   };
 
-  const handleEditWaitlistEntry = async (id: string, formData: { full_name: string; email: string; university: string }) => {
+  const handleEditWaitlistEntry = async (id: string, formData: { full_name: string; email: string; university: string; android_email?: string }) => {
     try {
       const { data, error } = await supabase.functions.invoke('verify-admin', {
         body: { password: storedPassword, action: 'update_waitlist_entry', id, ...formData },
