@@ -174,6 +174,27 @@ export function AdminCoursesContent() {
     setIsEditDialogOpen(true);
   };
 
+  // Load existing courses when university is selected in bulk dialog
+  const loadBulkCourses = async (universityId: string) => {
+    setBulkUniversityId(universityId);
+    if (!universityId) {
+      setBulkRows([]);
+      return;
+    }
+    const existing = courses
+      .filter(c => c.university_id === universityId)
+      .map(c => ({
+        id: c.id,
+        course_name: c.course_name,
+        course_abbreviation: c.course_abbreviation || "",
+        duration_years: c.duration_years,
+        total_semesters: c.total_semesters,
+        force_enable_graduation: c.force_enable_graduation,
+        _isExisting: true,
+      }));
+    setBulkRows(existing as any);
+  };
+
   // Bulk add handlers
   const addBulkRow = () => {
     setBulkRows(prev => [...prev, {
@@ -194,35 +215,63 @@ export function AdminCoursesContent() {
     setBulkRows(prev => prev.length > 1 ? prev.filter(r => r.id !== id) : prev);
   };
 
-  const handleBulkAdd = async () => {
+  const handleBulkSave = async () => {
     if (!bulkUniversityId) {
       toast.error("Please select a university");
       return;
     }
-    const validRows = bulkRows.filter(r => r.course_name.trim());
-    if (validRows.length === 0) {
-      toast.error("Please enter at least one course name");
-      return;
-    }
+    setBulkSaving(true);
     try {
-      const toInsert = validRows.map(r => ({
-        university_id: bulkUniversityId,
-        course_name: r.course_name.trim(),
-        course_abbreviation: r.course_abbreviation.trim() || null,
-        duration_years: r.duration_years,
-        total_semesters: r.total_semesters,
-        force_enable_graduation: r.force_enable_graduation,
-      }));
-      const { error } = await supabase.from("university_courses").insert(toInsert);
-      if (error) throw error;
-      toast.success(`${validRows.length} course(s) added successfully`);
+      // Separate existing (update) from new (insert)
+      const existingRows = bulkRows.filter((r: any) => r._isExisting && r.course_name.trim());
+      const newRows = bulkRows.filter((r: any) => !r._isExisting && r.course_name.trim());
+
+      let updatedCount = 0;
+      let insertedCount = 0;
+
+      // Update existing courses
+      for (const row of existingRows) {
+        const { error } = await supabase
+          .from("university_courses")
+          .update({
+            course_name: row.course_name.trim(),
+            course_abbreviation: row.course_abbreviation.trim() || null,
+            duration_years: row.duration_years,
+            total_semesters: row.total_semesters,
+            force_enable_graduation: row.force_enable_graduation,
+          })
+          .eq("id", row.id);
+        if (error) throw error;
+        updatedCount++;
+      }
+
+      // Insert new courses
+      if (newRows.length > 0) {
+        const toInsert = newRows.map(r => ({
+          university_id: bulkUniversityId,
+          course_name: r.course_name.trim(),
+          course_abbreviation: r.course_abbreviation.trim() || null,
+          duration_years: r.duration_years,
+          total_semesters: r.total_semesters,
+          force_enable_graduation: r.force_enable_graduation,
+        }));
+        const { error } = await supabase.from("university_courses").insert(toInsert);
+        if (error) throw error;
+        insertedCount = newRows.length;
+      }
+
+      const parts = [];
+      if (updatedCount > 0) parts.push(`${updatedCount} updated`);
+      if (insertedCount > 0) parts.push(`${insertedCount} added`);
+      toast.success(`Courses saved: ${parts.join(", ")}`);
       setIsBulkAddDialogOpen(false);
       setBulkUniversityId("");
-      setBulkRows([{ id: crypto.randomUUID(), course_name: "", course_abbreviation: "", duration_years: 4, total_semesters: 8, force_enable_graduation: false }]);
+      setBulkRows([]);
       fetchCourses();
     } catch (error: any) {
-      toast.error(error.message || "Failed to add courses");
+      toast.error(error.message || "Failed to save courses");
     }
+    setBulkSaving(false);
   };
 
   // Inline edit handlers
