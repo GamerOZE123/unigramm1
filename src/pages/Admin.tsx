@@ -20,6 +20,7 @@ import AdminTeamMembers from '@/components/admin/AdminTeamMembers';
 import AdminSidebar, { type AdminSection } from '@/components/admin/AdminSidebar';
 import AdminWaitlistSection from '@/components/admin/AdminWaitlistSection';
 import { AdminCoursesContent } from '@/pages/AdminCourses';
+import AdminEmailTemplates from '@/components/admin/AdminEmailTemplates';
 import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
@@ -461,6 +462,9 @@ const Admin: React.FC = () => {
 
           {/* Broadcast */}
           {section === 'broadcast' && <AdminBroadcastNotifications password={storedPassword} />}
+
+          {/* Email Templates */}
+          {section === 'emails' && <AdminEmailTemplates />}
 
           {/* Analytics */}
           {section === 'analytics' && <AdminAnalyticsPage password={storedPassword} />}
