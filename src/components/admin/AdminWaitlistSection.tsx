@@ -169,7 +169,7 @@ const AdminWaitlistSection: React.FC<Props> = ({
                         <Input className="h-8 text-sm" value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} />
                       </TableCell>
                       <TableCell>
-                        <span className="text-muted-foreground text-xs">{s.android_email || '—'}</span>
+                        <Input className="h-8 text-sm" placeholder="Play Store Gmail" value={editForm.android_email} onChange={e => setEditForm(p => ({ ...p, android_email: e.target.value }))} />
                       </TableCell>
                       <TableCell>
                         <Input className="h-8 text-sm" value={editForm.university} onChange={e => setEditForm(p => ({ ...p, university: e.target.value }))} />
