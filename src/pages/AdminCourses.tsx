@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Upload, Download, GraduationCap, Clock, BookOpen, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Upload, Download, GraduationCap, Clock, BookOpen, Search, RefreshCw } from "lucide-react";
 
 interface University {
   id: string;
@@ -309,8 +309,9 @@ export function AdminCoursesContent() {
         <Input
           id="courseName"
           value={formData.course_name}
-          onChange={(e) => setFormData({ ...formData, course_name: e.target.value })}
+          onChange={(e) => setFormData(prev => ({ ...prev, course_name: e.target.value }))}
           placeholder="e.g., Computer Science"
+          autoComplete="off"
         />
       </div>
 
@@ -319,8 +320,9 @@ export function AdminCoursesContent() {
         <Input
           id="courseAbbreviation"
           value={formData.course_abbreviation}
-          onChange={(e) => setFormData({ ...formData, course_abbreviation: e.target.value })}
+          onChange={(e) => setFormData(prev => ({ ...prev, course_abbreviation: e.target.value }))}
           placeholder="e.g., CS"
+          autoComplete="off"
         />
         <p className="text-xs text-muted-foreground">Short form displayed on profiles (e.g., Economics → Eco)</p>
       </div>
@@ -394,6 +396,10 @@ export function AdminCoursesContent() {
             onChange={handleCSVImport}
             className="hidden"
           />
+          <Button variant="outline" size="sm" onClick={() => { setLoading(true); fetchCourses(); }}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
           <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
             <Upload className="h-4 w-4 mr-2" />
             Import CSV
