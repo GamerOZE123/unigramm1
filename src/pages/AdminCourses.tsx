@@ -448,9 +448,9 @@ export function AdminCoursesContent() {
           </Button>
 
           {/* Bulk Add Button */}
-          <Button variant="outline" size="sm" onClick={() => setIsBulkAddDialogOpen(true)}>
+          <Button variant="outline" size="sm" onClick={() => { setBulkUniversityId(""); setBulkRows([]); setIsBulkAddDialogOpen(true); }}>
             <ListPlus className="h-4 w-4 mr-2" />
-            Bulk Add
+            Bulk Manage
           </Button>
 
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
