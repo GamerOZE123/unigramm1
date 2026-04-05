@@ -1524,6 +1524,72 @@ export type Database = {
         }
         Relationships: []
       }
+      dating_config: {
+        Row: {
+          created_at: string | null
+          enrolled_count: number | null
+          id: string
+          is_enabled: boolean | null
+          is_paused: boolean | null
+          launch_at: string | null
+          show_timer_on_home: boolean | null
+          swipe_visibility: string | null
+          updated_at: string | null
+          waitlist_threshold: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          enrolled_count?: number | null
+          id?: string
+          is_enabled?: boolean | null
+          is_paused?: boolean | null
+          launch_at?: string | null
+          show_timer_on_home?: boolean | null
+          swipe_visibility?: string | null
+          updated_at?: string | null
+          waitlist_threshold?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          enrolled_count?: number | null
+          id?: string
+          is_enabled?: boolean | null
+          is_paused?: boolean | null
+          launch_at?: string | null
+          show_timer_on_home?: boolean | null
+          swipe_visibility?: string | null
+          updated_at?: string | null
+          waitlist_threshold?: number | null
+        }
+        Relationships: []
+      }
+      dating_icebreakers: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          question: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          question: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          question?: string
+        }
+        Relationships: []
+      }
       dating_likes: {
         Row: {
           created_at: string | null
@@ -1701,6 +1767,33 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      dating_prompts: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_active: boolean | null
+          prompt_text: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          prompt_text: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_active?: boolean | null
+          prompt_text?: string
+        }
+        Relationships: []
       }
       deleted_chats: {
         Row: {
@@ -4213,6 +4306,47 @@ export type Database = {
             foreignKeyName: "user_page_analytics_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_preferences: {
+        Row: {
+          id: string
+          interests: Json | null
+          music: Json | null
+          places: Json | null
+          raw_signals: Json | null
+          travel: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          interests?: Json | null
+          music?: Json | null
+          places?: Json | null
+          raw_signals?: Json | null
+          travel?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          id?: string
+          interests?: Json | null
+          music?: Json | null
+          places?: Json | null
+          raw_signals?: Json | null
+          travel?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
