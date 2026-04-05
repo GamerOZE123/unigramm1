@@ -756,6 +756,100 @@ Deno.serve(async (req) => {
       return json({ valid: true, success: true });
     }
 
+    // ======== DATING MODULE ACTIONS ========
+
+    if (action === 'update_dating_config') {
+      const { config_id, updates } = body;
+      if (!config_id) return json({ valid: true, error: 'config_id required' }, 400);
+      const { error } = await supabaseAdmin.from('dating_config').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', config_id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
+    // Icebreakers CRUD
+    if (action === 'add_dating_icebreaker') {
+      const { question, category, display_order } = body;
+      const { error } = await supabaseAdmin.from('dating_icebreakers').insert({ question, category, display_order });
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+    if (action === 'update_dating_icebreaker') {
+      const { id, question, category } = body;
+      const { error } = await supabaseAdmin.from('dating_icebreakers').update({ question, category }).eq('id', id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+    if (action === 'update_dating_icebreaker_order') {
+      const { id, display_order } = body;
+      const { error } = await supabaseAdmin.from('dating_icebreakers').update({ display_order }).eq('id', id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+    if (action === 'toggle_dating_icebreaker') {
+      const { id, is_active } = body;
+      const { error } = await supabaseAdmin.from('dating_icebreakers').update({ is_active }).eq('id', id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+    if (action === 'delete_dating_icebreaker') {
+      const { id } = body;
+      const { error } = await supabaseAdmin.from('dating_icebreakers').delete().eq('id', id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
+    // Prompts CRUD
+    if (action === 'add_dating_prompt') {
+      const { prompt_text, category, display_order } = body;
+      const { error } = await supabaseAdmin.from('dating_prompts').insert({ prompt_text, category, display_order });
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+    if (action === 'update_dating_prompt') {
+      const { id, prompt_text, category } = body;
+      const { error } = await supabaseAdmin.from('dating_prompts').update({ prompt_text, category }).eq('id', id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+    if (action === 'update_dating_prompt_order') {
+      const { id, display_order } = body;
+      const { error } = await supabaseAdmin.from('dating_prompts').update({ display_order }).eq('id', id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+    if (action === 'toggle_dating_prompt') {
+      const { id, is_active } = body;
+      const { error } = await supabaseAdmin.from('dating_prompts').update({ is_active }).eq('id', id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+    if (action === 'delete_dating_prompt') {
+      const { id } = body;
+      const { error } = await supabaseAdmin.from('dating_prompts').delete().eq('id', id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
+    // User preferences viewer
+    if (action === 'fetch_dating_preferences') {
+      const { data: prefs, error: prefsErr } = await supabaseAdmin.from('user_preferences').select('*');
+      if (prefsErr) return json({ valid: true, error: prefsErr.message }, 400);
+      // Enrich with profile info
+      const userIds = (prefs || []).map((p: any) => p.user_id);
+      let profileMap: Record<string, any> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabaseAdmin.from('profiles').select('user_id, username, full_name, university').in('user_id', userIds);
+        for (const p of (profiles || [])) { profileMap[p.user_id] = p; }
+      }
+      const enriched = (prefs || []).map((p: any) => ({
+        ...p,
+        username: profileMap[p.user_id]?.username || null,
+        full_name: profileMap[p.user_id]?.full_name || null,
+        university: profileMap[p.user_id]?.university || null,
+      }));
+      return json({ valid: true, preferences: enriched });
+    }
+
     // Default: just validate password
     return json({ valid: true, role, allowed_sections: allowedSections });
   } catch {
