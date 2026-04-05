@@ -2991,6 +2991,7 @@ export type Database = {
           is_hidden: boolean
           is_pinned: boolean
           likes_count: number | null
+          mux_asset_id: string | null
           poll_ends_at: string | null
           poll_options: Json | null
           poll_question: string | null
@@ -3001,6 +3002,8 @@ export type Database = {
           survey_responses: Json | null
           updated_at: string | null
           user_id: string
+          video_processing: boolean | null
+          video_thumbnail: string | null
           video_url: string | null
           views_count: number
           visibility: string | null
@@ -3021,6 +3024,7 @@ export type Database = {
           is_hidden?: boolean
           is_pinned?: boolean
           likes_count?: number | null
+          mux_asset_id?: string | null
           poll_ends_at?: string | null
           poll_options?: Json | null
           poll_question?: string | null
@@ -3031,6 +3035,8 @@ export type Database = {
           survey_responses?: Json | null
           updated_at?: string | null
           user_id: string
+          video_processing?: boolean | null
+          video_thumbnail?: string | null
           video_url?: string | null
           views_count?: number
           visibility?: string | null
@@ -3051,6 +3057,7 @@ export type Database = {
           is_hidden?: boolean
           is_pinned?: boolean
           likes_count?: number | null
+          mux_asset_id?: string | null
           poll_ends_at?: string | null
           poll_options?: Json | null
           poll_question?: string | null
@@ -3061,6 +3068,8 @@ export type Database = {
           survey_responses?: Json | null
           updated_at?: string | null
           user_id?: string
+          video_processing?: boolean | null
+          video_thumbnail?: string | null
           video_url?: string | null
           views_count?: number
           visibility?: string | null
@@ -3631,6 +3640,7 @@ export type Database = {
       }
       student_startups: {
         Row: {
+          banner_url: string | null
           category: string
           contact_email: string | null
           created_at: string | null
@@ -3646,6 +3656,7 @@ export type Database = {
           website_url: string | null
         }
         Insert: {
+          banner_url?: string | null
           category: string
           contact_email?: string | null
           created_at?: string | null
@@ -3661,6 +3672,7 @@ export type Database = {
           website_url?: string | null
         }
         Update: {
+          banner_url?: string | null
           category?: string
           contact_email?: string | null
           created_at?: string | null
