@@ -1,30 +1,55 @@
 
 
-## Plan: Handle Password Reset from Mobile App on Website
+## SEO Fixes for Unigramm
 
-### Problem
-When a user clicks "Forgot Password" in the mobile app, the reset email is sent. Clicking the reset link opens the website (unigramm.com), but instead of showing a password reset form, it shows an "open app" prompt. The app can't handle this deep link, so nothing happens.
+### Current Issues
+1. **Poor meta tags** — title is just "Unigramm", description is "Its the app", author is "Lovable"
+2. **OG image** points to a generic Lovable preview screenshot, not branded
+3. **Twitter site** is `@lovable_dev` instead of Unigramm's handle
+4. **No sitemap.xml** — search engines can't discover pages
+5. **No canonical URL** or `og:url` set properly
+6. **No favicon** properly set (no `<link rel="icon">`)
+7. **No react-helmet** — SPA pages all share the same generic meta tags; no per-page SEO
+8. **robots.txt** has no sitemap reference
 
-### Solution
-Make the website properly handle the password reset flow end-to-end, and after success, prompt the user to return to the app.
+### Plan
 
-### Changes
+#### 1. Fix `index.html` meta tags
+- Title: "Unigramm — Your Campus, Supercharged"
+- Description: proper marketing copy about the platform
+- Update `og:title`, `og:description`, `twitter:title`, `twitter:description`
+- Change `twitter:site` from `@lovable_dev` to Unigramm's Twitter handle (or remove)
+- Remove `meta author Lovable`
+- Add canonical URL `<link rel="canonical" href="https://unigramm1.lovable.app/" />`
+- Add `og:url`
+- Add proper favicon link if an icon exists in assets
+- Add keywords meta tag
 
-**1. `src/pages/Auth.tsx`**
-- After successful password reset (line 324), change the success message to: "Password updated successfully! You can now return to the app and login with your new password."
-- Sign out the user after password reset so they don't get auto-redirected to `/home` (they need to log in from the app instead).
+#### 2. Add `react-helmet-async` for per-page SEO
+- Install `react-helmet-async`
+- Wrap App in `HelmetProvider`
+- Add `<Helmet>` to key public pages:
+  - Landing/Index: main marketing SEO
+  - `/support`, `/privacy-policy`, `/child-safety`, `/contribute`, `/delete-account` — proper titles
+  - `/post/:postId` — dynamic title (already handled by share-post edge function for crawlers, but good for in-app)
 
-**2. `src/pages/Index.tsx`** (Landing page — already partially handled)
-- The existing code already redirects auth hash fragments from `/` to `/auth`. Verify this covers all recovery scenarios (PKCE `code` param in addition to hash fragments).
-- Add detection for `?code=` query parameter and redirect to `/auth?code=...` so PKCE recovery flows also work on the landing page.
+#### 3. Create `public/sitemap.xml`
+- List all public routes: `/`, `/login`, `/signup`, `/contribute`, `/support`, `/privacy-policy`, `/child-safety`, `/delete-account`, `/waitlist`, `/android-beta`
+- Set lastmod, priority values
 
-**3. Ensure `redirectTo` consistency**
-- In `handleForgotPassword`, the `redirectTo` currently uses `window.location.origin`. When called from the mobile app, this may produce a Capacitor URL that isn't whitelisted. However, since the mobile app can't be changed, we need to ensure the **Supabase redirect URL whitelist** includes `https://unigramm.com/auth`.
-- No code change needed here — this is a Supabase dashboard configuration step.
+#### 4. Update `robots.txt`
+- Add `Sitemap: https://unigramm1.lovable.app/sitemap.xml`
 
 ### Technical Details
 
-- **Auth.tsx reset success flow**: After `updateUser({ password })` succeeds, call `supabase.auth.signOut()` to clear the session, then show the "return to app" message. This prevents the `onAuthStateChange` listener from redirecting to `/home`.
-- **Index.tsx**: Add `window.location.search` check for `code` param alongside existing hash fragment checks, redirecting to `/auth` with preserved query string.
-- **Supabase Dashboard**: Ensure `https://unigramm.com/auth` is in the Redirect URLs list under Authentication → URL Configuration.
+**Files to create:**
+- `public/sitemap.xml`
+
+**Files to modify:**
+- `index.html` — rewrite meta tags
+- `public/robots.txt` — add sitemap reference
+- `package.json` — add `react-helmet-async`
+- `src/App.tsx` — wrap with `HelmetProvider`
+- `src/pages/Landing.tsx` (or `Index.tsx`) — add `<Helmet>` with landing page SEO
+- Key public pages — add `<Helmet>` with appropriate titles/descriptions
 
