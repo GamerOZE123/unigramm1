@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -19,8 +20,11 @@ import FooterSection from '@/components/landing/FooterSection';
 export default function Landing() {
   return (
     <div className="min-h-screen text-white overflow-x-hidden" style={{ background: '#080c17', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+      <Helmet>
+        <title>Unigramm — Your Campus, Supercharged</title>
+        <meta name="description" content="Unigramm is the all-in-one campus app for Indian university students — connect, collaborate, date, trade, and thrive with your college community." />
+      </Helmet>
       <NavSection logo={logoImg} />
-      <HeroSection indiaMap={indiaMapImg} screenshots={[screenshotExplore, screenshotHome, screenshotUniversity]} />
       <FeaturesSection />
       <MapSection indiaMap={indiaMapImg} />
       <CtaSection />
