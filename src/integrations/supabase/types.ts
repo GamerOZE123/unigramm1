@@ -3097,6 +3097,7 @@ export type Database = {
           user_id: string
           video_processing: boolean | null
           video_thumbnail: string | null
+          video_uid: string | null
           video_url: string | null
           views_count: number
           visibility: string | null
@@ -3130,6 +3131,7 @@ export type Database = {
           user_id: string
           video_processing?: boolean | null
           video_thumbnail?: string | null
+          video_uid?: string | null
           video_url?: string | null
           views_count?: number
           visibility?: string | null
@@ -3163,6 +3165,7 @@ export type Database = {
           user_id?: string
           video_processing?: boolean | null
           video_thumbnail?: string | null
+          video_uid?: string | null
           video_url?: string | null
           views_count?: number
           visibility?: string | null
