@@ -1,47 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://unigramm1.lovable.app/</loc>
+    <loc>https://unigramm.com/</loc>
     <priority>1.0</priority>
     <changefreq>weekly</changefreq>
   </url>
   <url>
-    <loc>https://unigramm1.lovable.app/login</loc>
+    <loc>https://unigramm.com/login</loc>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
-    <loc>https://unigramm1.lovable.app/signup</loc>
+    <loc>https://unigramm.com/signup</loc>
     <priority>0.8</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
-    <loc>https://unigramm1.lovable.app/contribute</loc>
+    <loc>https://unigramm.com/contribute</loc>
     <priority>0.6</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
-    <loc>https://unigramm1.lovable.app/support</loc>
+    <loc>https://unigramm.com/support</loc>
     <priority>0.5</priority>
     <changefreq>monthly</changefreq>
   </url>
   <url>
-    <loc>https://unigramm1.lovable.app/privacy-policy</loc>
+    <loc>https://unigramm.com/privacy-policy</loc>
     <priority>0.4</priority>
     <changefreq>yearly</changefreq>
   </url>
   <url>
-    <loc>https://unigramm1.lovable.app/child-safety</loc>
+    <loc>https://unigramm.com/child-safety</loc>
     <priority>0.4</priority>
     <changefreq>yearly</changefreq>
   </url>
   <url>
-    <loc>https://unigramm1.lovable.app/delete-account</loc>
+    <loc>https://unigramm.com/delete-account</loc>
     <priority>0.3</priority>
     <changefreq>yearly</changefreq>
   </url>
   <url>
-    <loc>https://unigramm1.lovable.app/android-beta</loc>
+    <loc>https://unigramm.com/android-beta</loc>
     <priority>0.5</priority>
     <changefreq>monthly</changefreq>
   </url>

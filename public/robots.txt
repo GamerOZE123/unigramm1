@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://unigramm1.lovable.app/sitemap.xml
+Sitemap: https://unigramm.com/sitemap.xml
