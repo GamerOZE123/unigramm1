@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
@@ -56,6 +57,7 @@ const queryClient = new QueryClient({
 
 function App() {
   return (
+    <HelmetProvider>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeProvider>
@@ -107,6 +109,7 @@ function App() {
         </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>
+    </HelmetProvider>
   );
 }
 
