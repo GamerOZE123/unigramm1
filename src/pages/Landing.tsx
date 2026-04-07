@@ -25,6 +25,7 @@ export default function Landing() {
         <meta name="description" content="Unigramm is the all-in-one campus app for Indian university students — connect, collaborate, date, trade, and thrive with your college community." />
       </Helmet>
       <NavSection logo={logoImg} />
+      <HeroSection indiaMap={indiaMapImg} screenshots={[screenshotExplore, screenshotHome, screenshotUniversity]} />
       <FeaturesSection />
       <MapSection indiaMap={indiaMapImg} />
       <CtaSection />
