@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Helmet } from 'react-helmet-async';
 import {
   ArrowLeft, ArrowRight, CheckCircle, Loader2,
   Code, Palette, Megaphone, Sparkles, User, Rocket, Upload, X, FileText
@@ -207,6 +208,10 @@ export default function Contribute() {
 
   return (
     <div className="min-h-screen text-white" style={{ background: '#080c17', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+      <Helmet>
+        <title>Contribute — Unigramm</title>
+        <meta name="description" content="Join the Unigramm team — contribute as a developer, designer, marketer, or campus ambassador." />
+      </Helmet>
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b" style={{ background: 'rgba(8,12,23,0.8)', borderColor: 'rgba(79,142,255,0.08)' }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between" style={{ padding: 'clamp(0.75rem, 2vw, 1rem) clamp(1rem, 4vw, 2rem)' }}>

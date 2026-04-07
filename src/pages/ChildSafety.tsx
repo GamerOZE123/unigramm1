@@ -1,4 +1,5 @@
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, Shield, AlertTriangle, Ban, Mail, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,10 @@ export default function ChildSafety() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Child Safety Standards — Unigramm</title>
+        <meta name="description" content="Unigramm's child safety standards and zero-tolerance policy toward CSAE content." />
+      </Helmet>
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="max-w-2xl mx-auto flex items-center gap-3 px-4 h-14">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>

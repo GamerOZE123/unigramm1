@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Mail, MessageCircle, FileText, ChevronDown, ExternalLink, HelpCircle, Shield, Bug, Lightbulb, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -40,6 +41,10 @@ export default function Support() {
 
   return (
     <div className="min-h-screen text-white" style={{ background: '#080c17', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+      <Helmet>
+        <title>Support — Unigramm</title>
+        <meta name="description" content="Get help with Unigramm — FAQs, contact support, and report issues." />
+      </Helmet>
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b" style={{ background: 'rgba(8,12,23,0.8)', borderColor: 'rgba(79,142,255,0.08)' }}>
         <div className="max-w-3xl mx-auto flex items-center gap-3" style={{ padding: 'clamp(0.75rem, 2vw, 1rem) clamp(1rem, 4vw, 2rem)' }}>
