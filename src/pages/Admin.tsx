@@ -355,7 +355,7 @@ const Admin: React.FC = () => {
             <Menu className="w-5 h-5" />
           </Button>
           <h1 className="text-lg font-bold text-foreground capitalize">
-            {section === 'auth' ? 'Authenticated Users' : section === 'flags' ? 'Feature Flags' : section === 'config' ? 'App Config' : section.replace('_', ' ')}
+            {section === 'auth' ? 'Authenticated Users' : section === 'flags' ? 'Feature Flags' : section === 'config' ? 'App Config' : section === 'overflow' ? 'Overflow' : section.replace('_', ' ')}
           </h1>
         </div>
 
