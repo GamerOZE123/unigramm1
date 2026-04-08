@@ -57,20 +57,23 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
 
   const fetchAll = async () => {
     setLoading(true);
-    // Fetch waitlist signups
-    const { data: signupData } = await supabase
-      .from('early_access_signups' as any)
-      .select('*')
-      .order('created_at', { ascending: false }) as any;
-    if (signupData) setSignups(signupData);
+    // Fetch waitlist signups via edge function (service_role bypasses RLS)
+    const [waitlistRes, profileRes] = await Promise.all([
+      supabase.functions.invoke('verify-admin', {
+        body: { password, action: 'fetch' },
+      }),
+      supabase.functions.invoke('verify-admin', {
+        body: { password, action: 'fetch_users' },
+      }),
+    ]);
 
-    // Fetch profiles for toggle data
-    const { data: profileData } = await supabase.functions.invoke('verify-admin', {
-      body: { password, action: 'fetch_users' },
-    });
-    if (profileData?.users) {
+    if (waitlistRes.data?.signups) {
+      setSignups(waitlistRes.data.signups);
+    }
+
+    if (profileRes.data?.users) {
       const map: Record<string, ProfileInfo> = {};
-      profileData.users.forEach((u: any) => {
+      profileRes.data.users.forEach((u: any) => {
         if (u.email) {
           map[u.email.toLowerCase()] = {
             user_id: u.user_id,
