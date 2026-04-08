@@ -47,6 +47,7 @@ const nav: { key: AdminSection; label: string; icon: React.ElementType; group?: 
   { key: 'announcements', label: 'Announcements', icon: Megaphone, group: 'Features' },
   { key: 'broadcast', label: 'Broadcast', icon: Bell, group: 'Notifications' },
   { key: 'emails', label: 'Email Templates', icon: Mail, group: 'Notifications' },
+  { key: 'overflow', label: 'Overflow', icon: Layers, group: 'Admin' },
   { key: 'team', label: 'Team Members', icon: Users2, group: 'Admin', adminOnly: true },
 ];
 
