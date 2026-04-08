@@ -339,11 +339,49 @@ const AdminAnnouncements: React.FC = () => {
                 {showButtonTarget && (
                   <div className="space-y-1.5 md:col-span-2">
                     <Label>Button Target</Label>
-                    <Input
-                      value={buttonTarget}
-                      onChange={e => setButtonTarget(e.target.value)}
-                      placeholder={buttonAction === 'navigate' ? 'e.g. Home, DatingDiscover, SettingsScreen' : 'playstore or appstore'}
-                    />
+                    <Select value={buttonTarget} onValueChange={setButtonTarget}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={buttonAction === 'navigate' ? 'Select screen...' : 'Select store...'} />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60">
+                        {buttonAction === 'navigate' ? (
+                          <>
+                            <SelectItem value="Home">Home</SelectItem>
+                            <SelectItem value="Explore">Explore</SelectItem>
+                            <SelectItem value="University">University</SelectItem>
+                            <SelectItem value="Chat">Chat</SelectItem>
+                            <SelectItem value="Profile">Profile</SelectItem>
+                            <SelectItem value="SettingsScreen">Settings</SelectItem>
+                            <SelectItem value="NotificationsScreen">Notifications</SelectItem>
+                            <SelectItem value="DatingDiscover">Dating Discover</SelectItem>
+                            <SelectItem value="DatingWelcome">Dating Welcome</SelectItem>
+                            <SelectItem value="DatingProfileSetup">Dating Profile Setup</SelectItem>
+                            <SelectItem value="DatingMyProfile">Dating My Profile</SelectItem>
+                            <SelectItem value="DatingSettings">Dating Settings</SelectItem>
+                            <SelectItem value="DatingMatches">Dating Matches</SelectItem>
+                            <SelectItem value="DatingChat">Dating Chat</SelectItem>
+                            <SelectItem value="CarpoolScreen">Carpool</SelectItem>
+                            <SelectItem value="CreateRideScreen">Create Ride</SelectItem>
+                            <SelectItem value="ClubsScreen">Clubs</SelectItem>
+                            <SelectItem value="StartupScreen">Startups</SelectItem>
+                            <SelectItem value="AdvertisingScreen">Advertising</SelectItem>
+                            <SelectItem value="AcademicSettingsScreen">Academic Settings</SelectItem>
+                            <SelectItem value="Timetable">Timetable</SelectItem>
+                            <SelectItem value="CreatePost">Create Post</SelectItem>
+                            <SelectItem value="PrivacyPolicy">Privacy Policy</SelectItem>
+                            <SelectItem value="ChangePasswordScreen">Change Password</SelectItem>
+                            <SelectItem value="DevicesScreen">Devices</SelectItem>
+                            <SelectItem value="AdminNotifications">Admin Notifications</SelectItem>
+                            <SelectItem value="Waitlist">Waitlist</SelectItem>
+                          </>
+                        ) : (
+                          <>
+                            <SelectItem value="playstore">Google Play Store</SelectItem>
+                            <SelectItem value="appstore">Apple App Store</SelectItem>
+                          </>
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
                 )}
 
