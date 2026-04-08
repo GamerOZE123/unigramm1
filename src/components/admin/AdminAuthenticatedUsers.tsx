@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -73,15 +73,16 @@ const AdminAuthenticatedUsers: React.FC<Props> = ({ password }) => {
     );
   });
 
-  if (!fetched) {
+  useEffect(() => {
+    if (!fetched) fetchAuthUsers();
+  }, []);
+
+  if (!fetched && loading) {
     return (
       <Card>
         <CardContent className="pt-6 flex flex-col items-center gap-3">
-          <ShieldCheck className="w-8 h-8 text-muted-foreground" />
-          <p className="text-muted-foreground">Load all authenticated users from Supabase Auth</p>
-          <Button onClick={fetchAuthUsers} disabled={loading}>
-            {loading ? 'Loading…' : 'Load Auth Users'}
-          </Button>
+          <ShieldCheck className="w-8 h-8 text-muted-foreground animate-pulse" />
+          <p className="text-muted-foreground">Loading auth users…</p>
         </CardContent>
       </Card>
     );

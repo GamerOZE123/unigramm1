@@ -205,15 +205,16 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
   const emailConfirmedCount = users.filter(u => u.email_confirmed).length;
   const androidTesterCount = users.filter(u => getAndroidInfo(u)).length;
 
-  if (!fetched) {
+  useEffect(() => {
+    if (!fetched) fetchUsers();
+  }, []);
+
+  if (!fetched && loading) {
     return (
       <Card>
         <CardContent className="pt-6 flex flex-col items-center gap-3">
-          <Users className="w-8 h-8 text-muted-foreground" />
-          <p className="text-muted-foreground">Load registered users from database</p>
-          <Button onClick={fetchUsers} disabled={loading}>
-            {loading ? 'Loading…' : 'Load Users'}
-          </Button>
+          <Users className="w-8 h-8 text-muted-foreground animate-pulse" />
+          <p className="text-muted-foreground">Loading users…</p>
         </CardContent>
       </Card>
     );
