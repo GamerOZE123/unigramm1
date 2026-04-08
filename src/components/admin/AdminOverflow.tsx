@@ -154,11 +154,10 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
   const handleInvite = async (s: SignupRow) => {
     setInviting(s.id);
     try {
-      const { error } = await supabase
-        .from('early_access_signups' as any)
-        .update({ invited: true } as any)
-        .eq('id', s.id);
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke('verify-admin', {
+        body: { password, action: 'invite', id: s.id },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
       const { error: fnErr } = await supabase.functions.invoke('send-invite', {
         body: { email: s.email, name: s.full_name || '' },
       });
