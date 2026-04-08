@@ -23,6 +23,7 @@ import { AdminCoursesContent } from '@/pages/AdminCourses';
 import AdminEmailTemplates from '@/components/admin/AdminEmailTemplates';
 import AdminDatingModule from '@/components/admin/AdminDatingModule';
 import AdminAnnouncements from '@/components/admin/AdminAnnouncements';
+import AdminOverflow from '@/components/admin/AdminOverflow';
 import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
@@ -354,7 +355,7 @@ const Admin: React.FC = () => {
             <Menu className="w-5 h-5" />
           </Button>
           <h1 className="text-lg font-bold text-foreground capitalize">
-            {section === 'auth' ? 'Authenticated Users' : section === 'flags' ? 'Feature Flags' : section === 'config' ? 'App Config' : section.replace('_', ' ')}
+            {section === 'auth' ? 'Authenticated Users' : section === 'flags' ? 'Feature Flags' : section === 'config' ? 'App Config' : section === 'overflow' ? 'Overflow' : section.replace('_', ' ')}
           </h1>
         </div>
 
@@ -510,6 +511,9 @@ const Admin: React.FC = () => {
 
           {/* Analytics */}
           {section === 'analytics' && <AdminAnalyticsPage password={storedPassword} />}
+
+          {/* Overflow */}
+          {section === 'overflow' && <AdminOverflow password={storedPassword} />}
 
           {/* Team Members (admin only) */}
           {section === 'team' && adminRole === 'admin' && <AdminTeamMembers password={storedPassword} />}
