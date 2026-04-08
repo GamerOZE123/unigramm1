@@ -202,11 +202,10 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
   const handleDelete = async (s: SignupRow) => {
     setDeleting(s.id);
     try {
-      const { error } = await supabase
-        .from('early_access_signups' as any)
-        .delete()
-        .eq('id', s.id);
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke('verify-admin', {
+        body: { password, action: 'delete_waitlist_entry', id: s.id },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
       setSignups(prev => prev.filter(x => x.id !== s.id));
       toast.success('Deleted');
     } catch (err: any) {
