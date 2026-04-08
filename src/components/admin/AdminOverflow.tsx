@@ -115,7 +115,7 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
     }
   };
 
-
+  const fetchUsers = async () => {
     setLoading(true);
     const { data, error } = await supabase.functions.invoke('verify-admin', {
       body: { password, action: 'fetch_users' },
@@ -127,6 +127,7 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
       setFetched(true);
     }
     await fetchAndroidTesters();
+    await fetchWaitlistSignups();
     setLoading(false);
   };
 
