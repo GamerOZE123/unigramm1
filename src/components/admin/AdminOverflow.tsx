@@ -138,11 +138,10 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
     if (!editingId || !editForm.email.trim()) return;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('early_access_signups' as any)
-        .update(editForm as any)
-        .eq('id', editingId);
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke('verify-admin', {
+        body: { password, action: 'update_waitlist_entry', id: editingId, ...editForm },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
       setSignups(prev => prev.map(s => s.id === editingId ? { ...s, ...editForm } : s));
       setEditingId(null);
       toast.success('Updated');
