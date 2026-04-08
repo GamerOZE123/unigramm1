@@ -225,15 +225,16 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
     );
   });
 
-  if (!fetched) {
+  useEffect(() => {
+    if (!fetched) fetchUsers();
+  }, []);
+
+  if (!fetched && loading) {
     return (
       <Card>
         <CardContent className="pt-6 flex flex-col items-center gap-3">
-          <Layers className="w-8 h-8 text-muted-foreground" />
-          <p className="text-muted-foreground">Load all user data for the Overflow view</p>
-          <Button onClick={fetchUsers} disabled={loading}>
-            {loading ? 'Loading…' : 'Load Overflow Data'}
-          </Button>
+          <Layers className="w-8 h-8 text-muted-foreground animate-pulse" />
+          <p className="text-muted-foreground">Loading overflow data…</p>
         </CardContent>
       </Card>
     );
@@ -391,16 +392,19 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
                     const wInfo = getWaitlistInfo(u);
                     if (wInfo && wInfo.invited) {
                       return (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex-1 text-xs h-8"
-                          disabled={reInviting === u.user_id}
-                          onClick={() => handleReInvite(u)}
-                        >
-                          <RotateCw className={`w-3 h-3 mr-1 ${reInviting === u.user_id ? 'animate-spin' : ''}`} />
-                          {reInviting === u.user_id ? '…' : 'Re-invite'}
-                        </Button>
+                        <>
+                          <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs self-center">Invited</Badge>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 text-xs h-8"
+                            disabled={reInviting === u.user_id}
+                            onClick={() => handleReInvite(u)}
+                          >
+                            <RotateCw className={`w-3 h-3 mr-1 ${reInviting === u.user_id ? 'animate-spin' : ''}`} />
+                            {reInviting === u.user_id ? '…' : 'Re-invite'}
+                          </Button>
+                        </>
                       );
                     } else if (wInfo) {
                       return (
@@ -547,15 +551,18 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
                         )}
                       </TableCell>
                       <TableCell className="text-center">
-                        <div className="flex gap-1.5 justify-center">
+                        <div className="flex gap-1.5 justify-center items-center">
                           {(() => {
                             const wInfo = getWaitlistInfo(u);
                             if (wInfo && wInfo.invited) {
                               return (
-                                <Button size="sm" variant="outline" disabled={reInviting === u.user_id} onClick={() => handleReInvite(u)}>
-                                  <RotateCw className={`w-3 h-3 mr-1 ${reInviting === u.user_id ? 'animate-spin' : ''}`} />
-                                  {reInviting === u.user_id ? '…' : 'Re-invite'}
-                                </Button>
+                                <>
+                                  <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">Invited</Badge>
+                                  <Button size="sm" variant="outline" disabled={reInviting === u.user_id} onClick={() => handleReInvite(u)}>
+                                    <RotateCw className={`w-3 h-3 mr-1 ${reInviting === u.user_id ? 'animate-spin' : ''}`} />
+                                    {reInviting === u.user_id ? '…' : 'Re-invite'}
+                                  </Button>
+                                </>
                               );
                             } else if (wInfo) {
                               return (

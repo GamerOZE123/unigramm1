@@ -30,6 +30,7 @@ const ALL_SECTIONS: { key: AdminSection; label: string }[] = [
   { key: 'waitlist', label: 'Waitlist' },
   { key: 'users', label: 'User Management' },
   { key: 'auth', label: 'Authenticated Users' },
+  { key: 'overflow', label: 'Overflow' },
   { key: 'university', label: 'University Features' },
   { key: 'flags', label: 'Feature Flags' },
   { key: 'config', label: 'App Config' },
