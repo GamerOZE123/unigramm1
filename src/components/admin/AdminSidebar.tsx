@@ -22,6 +22,7 @@ export type AdminSection =
   | 'dating'
   | 'announcements'
   | 'overflow'
+  | 'officials'
   | 'team';
 
 interface Props {
