@@ -3803,6 +3803,7 @@ export type Database = {
           title: string
           updated_at: string | null
           user_id: string
+          username: string | null
           website_url: string | null
         }
         Insert: {
@@ -3819,6 +3820,7 @@ export type Database = {
           title: string
           updated_at?: string | null
           user_id: string
+          username?: string | null
           website_url?: string | null
         }
         Update: {
@@ -3835,6 +3837,7 @@ export type Database = {
           title?: string
           updated_at?: string | null
           user_id?: string
+          username?: string | null
           website_url?: string | null
         }
         Relationships: []
