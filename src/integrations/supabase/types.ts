@@ -348,6 +348,54 @@ export type Database = {
         }
         Relationships: []
       }
+      app_announcements: {
+        Row: {
+          button_action: string | null
+          button_label: string | null
+          button_target: string | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          message: string | null
+          min_version_code: number | null
+          show_once: boolean | null
+          target_audience: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          button_action?: string | null
+          button_label?: string | null
+          button_target?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message?: string | null
+          min_version_code?: number | null
+          show_once?: boolean | null
+          target_audience?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          button_action?: string | null
+          button_label?: string | null
+          button_target?: string | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          message?: string | null
+          min_version_code?: number | null
+          show_once?: boolean | null
+          target_audience?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
       app_config: {
         Row: {
           created_at: string | null
