@@ -22,6 +22,7 @@ import AdminWaitlistSection from '@/components/admin/AdminWaitlistSection';
 import { AdminCoursesContent } from '@/pages/AdminCourses';
 import AdminEmailTemplates from '@/components/admin/AdminEmailTemplates';
 import AdminDatingModule from '@/components/admin/AdminDatingModule';
+import AdminAnnouncements from '@/components/admin/AdminAnnouncements';
 import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
@@ -503,6 +504,9 @@ const Admin: React.FC = () => {
 
           {/* Dating Module */}
           {section === 'dating' && <AdminDatingModule password={storedPassword} />}
+
+          {/* Announcements */}
+          {section === 'announcements' && <AdminAnnouncements />}
 
           {/* Analytics */}
           {section === 'analytics' && <AdminAnalyticsPage password={storedPassword} />}
