@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Users, Clock, ShieldCheck, Flag, Settings,
-  Bell, BarChart3, GraduationCap, UserCheck, X, Users2, BookOpen, Mail, Heart, Megaphone
+  Bell, BarChart3, GraduationCap, UserCheck, X, Users2, BookOpen, Mail, Heart, Megaphone, Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -21,6 +21,7 @@ export type AdminSection =
   | 'emails'
   | 'dating'
   | 'announcements'
+  | 'overflow'
   | 'team';
 
 interface Props {
