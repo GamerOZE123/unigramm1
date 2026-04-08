@@ -26,6 +26,7 @@ interface Announcement {
   show_once: boolean | null;
   is_active: boolean | null;
   expires_at: string | null;
+  target_user_id: string | null;
   created_at: string | null;
 }
 
@@ -75,6 +76,7 @@ const AdminAnnouncements: React.FC = () => {
   const [showOnce, setShowOnce] = useState(true);
   const [isActive, setIsActive] = useState(true);
   const [expiresAt, setExpiresAt] = useState('');
+  const [targetUserId, setTargetUserId] = useState('');
 
   const fetchAnnouncements = async () => {
     setLoading(true);
@@ -101,6 +103,7 @@ const AdminAnnouncements: React.FC = () => {
     setShowOnce(true);
     setIsActive(true);
     setExpiresAt('');
+    setTargetUserId('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
