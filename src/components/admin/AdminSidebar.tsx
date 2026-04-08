@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Users, Clock, ShieldCheck, Flag, Settings,
-  Bell, BarChart3, GraduationCap, UserCheck, X, Users2, BookOpen, Mail, Heart
+  Bell, BarChart3, GraduationCap, UserCheck, X, Users2, BookOpen, Mail, Heart, Megaphone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -20,6 +20,7 @@ export type AdminSection =
   | 'analytics'
   | 'emails'
   | 'dating'
+  | 'announcements'
   | 'team';
 
 interface Props {
@@ -42,6 +43,7 @@ const nav: { key: AdminSection; label: string; icon: React.ElementType; group?: 
   { key: 'flags', label: 'Feature Flags', icon: Flag, group: 'Config' },
   { key: 'config', label: 'App Config', icon: Settings, group: 'Config' },
   { key: 'dating', label: 'Dating Module', icon: Heart, group: 'Features' },
+  { key: 'announcements', label: 'Announcements', icon: Megaphone, group: 'Features' },
   { key: 'broadcast', label: 'Broadcast', icon: Bell, group: 'Notifications' },
   { key: 'emails', label: 'Email Templates', icon: Mail, group: 'Notifications' },
   { key: 'team', label: 'Team Members', icon: Users2, group: 'Admin', adminOnly: true },
