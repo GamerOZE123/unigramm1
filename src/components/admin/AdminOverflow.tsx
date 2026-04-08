@@ -115,10 +115,10 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
     if (!addForm.email.trim()) return;
     setAdding(true);
     try {
-      const { error } = await supabase
-        .from('early_access_signups' as any)
-        .insert([addForm] as any);
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke('verify-admin', {
+        body: { password, action: 'add_waitlist_entry', ...addForm },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
       toast.success('User added to waitlist');
       setAddForm({ full_name: '', email: '', university: '' });
       setAddOpen(false);
