@@ -3260,6 +3260,7 @@ export type Database = {
           id: string
           instagram_url: string | null
           interests: string[] | null
+          is_admin: boolean | null
           linkedin_url: string | null
           major: string | null
           personal_email: string | null
@@ -3309,6 +3310,7 @@ export type Database = {
           id?: string
           instagram_url?: string | null
           interests?: string[] | null
+          is_admin?: boolean | null
           linkedin_url?: string | null
           major?: string | null
           personal_email?: string | null
@@ -3358,6 +3360,7 @@ export type Database = {
           id?: string
           instagram_url?: string | null
           interests?: string[] | null
+          is_admin?: boolean | null
           linkedin_url?: string | null
           major?: string | null
           personal_email?: string | null
@@ -4812,6 +4815,7 @@ export type Database = {
           id: string
           instagram_url: string | null
           interests: string[] | null
+          is_admin: boolean | null
           linkedin_url: string | null
           major: string | null
           personal_email: string | null

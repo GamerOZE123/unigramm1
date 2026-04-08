@@ -342,7 +342,7 @@ const AdminAnnouncements: React.FC = () => {
                     <Input
                       value={buttonTarget}
                       onChange={e => setButtonTarget(e.target.value)}
-                      placeholder={buttonAction === 'navigate' ? 'Screen name (e.g. Settings)' : 'playstore or appstore'}
+                      placeholder={buttonAction === 'navigate' ? 'e.g. Home, DatingDiscover, SettingsScreen' : 'playstore or appstore'}
                     />
                   </div>
                 )}
