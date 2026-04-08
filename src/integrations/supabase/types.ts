@@ -361,6 +361,7 @@ export type Database = {
           min_version_code: number | null
           show_once: boolean | null
           target_audience: string | null
+          target_user_id: string | null
           title: string
           type: string
         }
@@ -376,6 +377,7 @@ export type Database = {
           min_version_code?: number | null
           show_once?: boolean | null
           target_audience?: string | null
+          target_user_id?: string | null
           title: string
           type: string
         }
@@ -391,6 +393,7 @@ export type Database = {
           min_version_code?: number | null
           show_once?: boolean | null
           target_audience?: string | null
+          target_user_id?: string | null
           title?: string
           type?: string
         }

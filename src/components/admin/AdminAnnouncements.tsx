@@ -120,6 +120,7 @@ const AdminAnnouncements: React.FC = () => {
       show_once: showOnce,
       is_active: isActive,
       expires_at: expiresAt || null,
+      target_user_id: targetUserId.trim() || null,
     };
 
     const { error } = await supabase.from('app_announcements').insert(payload);
@@ -254,6 +255,11 @@ const AdminAnnouncements: React.FC = () => {
                 <Input type="datetime-local" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} />
               </div>
 
+              <div className="space-y-1.5">
+                <Label>Target Specific User (UUID, optional)</Label>
+                <Input value={targetUserId} onChange={e => setTargetUserId(e.target.value)} placeholder="Leave blank for all users" />
+              </div>
+
               <div className="flex items-center gap-6 md:col-span-2">
                 <div className="flex items-center gap-2">
                   <Switch checked={showOnce} onCheckedChange={setShowOnce} id="show-once" />
@@ -304,7 +310,10 @@ const AdminAnnouncements: React.FC = () => {
                   </TableCell>
                   <TableCell className="font-medium max-w-[200px] truncate">{a.title}</TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="text-xs capitalize">{a.target_audience || 'all'}</Badge>
+                    <div className="flex items-center gap-1">
+                      <Badge variant="outline" className="text-xs capitalize">{a.target_audience || 'all'}</Badge>
+                      {a.target_user_id && <Badge className="text-xs bg-purple-600">Targeted</Badge>}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Switch
