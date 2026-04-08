@@ -57,20 +57,23 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
 
   const fetchAll = async () => {
     setLoading(true);
-    // Fetch waitlist signups
-    const { data: signupData } = await supabase
-      .from('early_access_signups' as any)
-      .select('*')
-      .order('created_at', { ascending: false }) as any;
-    if (signupData) setSignups(signupData);
+    // Fetch waitlist signups via edge function (service_role bypasses RLS)
+    const [waitlistRes, profileRes] = await Promise.all([
+      supabase.functions.invoke('verify-admin', {
+        body: { password, action: 'fetch' },
+      }),
+      supabase.functions.invoke('verify-admin', {
+        body: { password, action: 'fetch_users' },
+      }),
+    ]);
 
-    // Fetch profiles for toggle data
-    const { data: profileData } = await supabase.functions.invoke('verify-admin', {
-      body: { password, action: 'fetch_users' },
-    });
-    if (profileData?.users) {
+    if (waitlistRes.data?.signups) {
+      setSignups(waitlistRes.data.signups);
+    }
+
+    if (profileRes.data?.users) {
       const map: Record<string, ProfileInfo> = {};
-      profileData.users.forEach((u: any) => {
+      profileRes.data.users.forEach((u: any) => {
         if (u.email) {
           map[u.email.toLowerCase()] = {
             user_id: u.user_id,
@@ -112,10 +115,10 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
     if (!addForm.email.trim()) return;
     setAdding(true);
     try {
-      const { error } = await supabase
-        .from('early_access_signups' as any)
-        .insert([addForm] as any);
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke('verify-admin', {
+        body: { password, action: 'add_waitlist_entry', ...addForm },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
       toast.success('User added to waitlist');
       setAddForm({ full_name: '', email: '', university: '' });
       setAddOpen(false);
@@ -135,11 +138,10 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
     if (!editingId || !editForm.email.trim()) return;
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('early_access_signups' as any)
-        .update(editForm as any)
-        .eq('id', editingId);
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke('verify-admin', {
+        body: { password, action: 'update_waitlist_entry', id: editingId, ...editForm },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
       setSignups(prev => prev.map(s => s.id === editingId ? { ...s, ...editForm } : s));
       setEditingId(null);
       toast.success('Updated');
@@ -152,11 +154,10 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
   const handleInvite = async (s: SignupRow) => {
     setInviting(s.id);
     try {
-      const { error } = await supabase
-        .from('early_access_signups' as any)
-        .update({ invited: true } as any)
-        .eq('id', s.id);
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke('verify-admin', {
+        body: { password, action: 'invite', id: s.id },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
       const { error: fnErr } = await supabase.functions.invoke('send-invite', {
         body: { email: s.email, name: s.full_name || '' },
       });
@@ -201,11 +202,10 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
   const handleDelete = async (s: SignupRow) => {
     setDeleting(s.id);
     try {
-      const { error } = await supabase
-        .from('early_access_signups' as any)
-        .delete()
-        .eq('id', s.id);
-      if (error) throw error;
+      const { data, error } = await supabase.functions.invoke('verify-admin', {
+        body: { password, action: 'delete_waitlist_entry', id: s.id },
+      });
+      if (error || data?.error) throw new Error(data?.error || error?.message);
       setSignups(prev => prev.filter(x => x.id !== s.id));
       toast.success('Deleted');
     } catch (err: any) {
