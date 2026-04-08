@@ -547,15 +547,31 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
                         )}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={sendingAndroid === u.user_id}
-                          onClick={() => sendAndroidInvite(u)}
-                        >
-                          <Smartphone className="w-3 h-3 mr-1" />
-                          {sendingAndroid === u.user_id ? '…' : 'Android'}
-                        </Button>
+                        <div className="flex gap-1.5 justify-center">
+                          {(() => {
+                            const wInfo = getWaitlistInfo(u);
+                            if (wInfo && wInfo.invited) {
+                              return (
+                                <Button size="sm" variant="outline" disabled={reInviting === u.user_id} onClick={() => handleReInvite(u)}>
+                                  <RotateCw className={`w-3 h-3 mr-1 ${reInviting === u.user_id ? 'animate-spin' : ''}`} />
+                                  {reInviting === u.user_id ? '…' : 'Re-invite'}
+                                </Button>
+                              );
+                            } else if (wInfo) {
+                              return (
+                                <Button size="sm" variant="outline" disabled={inviting === u.user_id} onClick={() => handleInvite(u)}>
+                                  <Mail className="w-3 h-3 mr-1" />
+                                  {inviting === u.user_id ? '…' : 'Invite'}
+                                </Button>
+                              );
+                            }
+                            return null;
+                          })()}
+                          <Button size="sm" variant="outline" disabled={sendingAndroid === u.user_id} onClick={() => sendAndroidInvite(u)}>
+                            <Smartphone className="w-3 h-3 mr-1" />
+                            {sendingAndroid === u.user_id ? '…' : 'Android'}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
