@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, RefreshCw, Search, Smartphone, Send, Bell, Layers } from 'lucide-react';
+import { Users, RefreshCw, Search, Smartphone, Send, Bell, Layers, Mail, RotateCw } from 'lucide-react';
 
 interface OverflowUser {
   user_id: string;
