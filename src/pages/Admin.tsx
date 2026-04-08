@@ -513,7 +513,24 @@ const Admin: React.FC = () => {
           {section === 'analytics' && <AdminAnalyticsPage password={storedPassword} />}
 
           {/* Overflow */}
-          {section === 'overflow' && <AdminOverflow password={storedPassword} />}
+          {section === 'overflow' && (
+            <AdminOverflow
+              password={storedPassword}
+              signups={signups}
+              loading={loading}
+              inviting={inviting}
+              reInviting={reInviting}
+              sendingAndroid={sendingAndroid}
+              deleting={deleting}
+              onRefresh={fetchSignups}
+              onInvite={handleInvite}
+              onReInvite={handleReInvite}
+              onSendAndroid={handleSendAndroidLink}
+              onDelete={handleDeleteWaitlistEntry}
+              onAdd={handleAddWaitlistEntry}
+              onEdit={handleEditWaitlistEntry}
+            />
+          )}
 
           {/* Team Members (admin only) */}
           {section === 'team' && adminRole === 'admin' && <AdminTeamMembers password={storedPassword} />}
