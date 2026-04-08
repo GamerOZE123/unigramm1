@@ -55,7 +55,67 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchWaitlistSignups = async () => {
+    const { data } = await supabase
+      .from('early_access_signups' as any)
+      .select('id, email, invited') as any;
+    if (data) {
+      const map: Record<string, { id: string; invited: boolean }> = {};
+      data.forEach((s: any) => {
+        map[s.email.toLowerCase()] = { id: s.id, invited: s.invited };
+      });
+      setWaitlistSignups(map);
+    }
+  };
+
+  const getWaitlistInfo = (user: OverflowUser) => {
+    if (!user.email) return null;
+    return waitlistSignups[user.email.toLowerCase()] || null;
+  };
+
+  const handleInvite = async (user: OverflowUser) => {
+    const info = getWaitlistInfo(user);
+    if (!info) { toast.error('User not found on waitlist'); return; }
+    setInviting(user.user_id);
+    try {
+      const { error } = await supabase
+        .from('early_access_signups' as any)
+        .update({ invited: true } as any)
+        .eq('id', info.id);
+      if (error) throw error;
+      const { error: fnErr } = await supabase.functions.invoke('send-invite', {
+        body: { email: user.email, name: user.full_name || '' },
+      });
+      if (fnErr) throw fnErr;
+      setWaitlistSignups(prev => ({
+        ...prev,
+        [user.email!.toLowerCase()]: { ...info, invited: true },
+      }));
+      toast.success(`Invitation sent to ${user.email}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send invite');
+    } finally {
+      setInviting(null);
+    }
+  };
+
+  const handleReInvite = async (user: OverflowUser) => {
+    if (!user.email) return;
+    setReInviting(user.user_id);
+    try {
+      const { error } = await supabase.functions.invoke('send-invite', {
+        body: { email: user.email, name: user.full_name || '' },
+      });
+      if (error) throw error;
+      toast.success(`Re-invitation sent to ${user.email}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to re-invite');
+    } finally {
+      setReInviting(null);
+    }
+  };
+
+
     setLoading(true);
     const { data, error } = await supabase.functions.invoke('verify-admin', {
       body: { password, action: 'fetch_users' },
