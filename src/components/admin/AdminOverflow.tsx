@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, RefreshCw, Search, Smartphone, Send, Bell, Layers } from 'lucide-react';
+import { Users, RefreshCw, Search, Smartphone, Send, Bell, Layers, Mail, RotateCw } from 'lucide-react';
 
 interface OverflowUser {
   user_id: string;
@@ -38,6 +38,9 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
   const [sendingAndroid, setSendingAndroid] = useState<string | null>(null);
   const [editingUniversity, setEditingUniversity] = useState<string | null>(null);
   const [universityDraft, setUniversityDraft] = useState('');
+  const [inviting, setInviting] = useState<string | null>(null);
+  const [reInviting, setReInviting] = useState<string | null>(null);
+  const [waitlistSignups, setWaitlistSignups] = useState<Record<string, { id: string; invited: boolean }>>({});
 
   const fetchAndroidTesters = async () => {
     const { data } = await supabase
@@ -49,6 +52,66 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
         map[t.email.toLowerCase()] = { email: t.email, status: t.status };
       });
       setAndroidTesters(map);
+    }
+  };
+
+  const fetchWaitlistSignups = async () => {
+    const { data } = await supabase
+      .from('early_access_signups' as any)
+      .select('id, email, invited') as any;
+    if (data) {
+      const map: Record<string, { id: string; invited: boolean }> = {};
+      data.forEach((s: any) => {
+        map[s.email.toLowerCase()] = { id: s.id, invited: s.invited };
+      });
+      setWaitlistSignups(map);
+    }
+  };
+
+  const getWaitlistInfo = (user: OverflowUser) => {
+    if (!user.email) return null;
+    return waitlistSignups[user.email.toLowerCase()] || null;
+  };
+
+  const handleInvite = async (user: OverflowUser) => {
+    const info = getWaitlistInfo(user);
+    if (!info) { toast.error('User not found on waitlist'); return; }
+    setInviting(user.user_id);
+    try {
+      const { error } = await supabase
+        .from('early_access_signups' as any)
+        .update({ invited: true } as any)
+        .eq('id', info.id);
+      if (error) throw error;
+      const { error: fnErr } = await supabase.functions.invoke('send-invite', {
+        body: { email: user.email, name: user.full_name || '' },
+      });
+      if (fnErr) throw fnErr;
+      setWaitlistSignups(prev => ({
+        ...prev,
+        [user.email!.toLowerCase()]: { ...info, invited: true },
+      }));
+      toast.success(`Invitation sent to ${user.email}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send invite');
+    } finally {
+      setInviting(null);
+    }
+  };
+
+  const handleReInvite = async (user: OverflowUser) => {
+    if (!user.email) return;
+    setReInviting(user.user_id);
+    try {
+      const { error } = await supabase.functions.invoke('send-invite', {
+        body: { email: user.email, name: user.full_name || '' },
+      });
+      if (error) throw error;
+      toast.success(`Re-invitation sent to ${user.email}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to re-invite');
+    } finally {
+      setReInviting(null);
     }
   };
 
@@ -64,6 +127,7 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
       setFetched(true);
     }
     await fetchAndroidTesters();
+    await fetchWaitlistSignups();
     setLoading(false);
   };
 
@@ -322,7 +386,38 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
                   </div>
                 )}
 
-                <div className="flex gap-2 pt-1">
+                <div className="flex gap-2 pt-1 flex-wrap">
+                  {(() => {
+                    const wInfo = getWaitlistInfo(u);
+                    if (wInfo && wInfo.invited) {
+                      return (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-xs h-8"
+                          disabled={reInviting === u.user_id}
+                          onClick={() => handleReInvite(u)}
+                        >
+                          <RotateCw className={`w-3 h-3 mr-1 ${reInviting === u.user_id ? 'animate-spin' : ''}`} />
+                          {reInviting === u.user_id ? '…' : 'Re-invite'}
+                        </Button>
+                      );
+                    } else if (wInfo) {
+                      return (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1 text-xs h-8"
+                          disabled={inviting === u.user_id}
+                          onClick={() => handleInvite(u)}
+                        >
+                          <Mail className="w-3 h-3 mr-1" />
+                          {inviting === u.user_id ? 'Inviting…' : 'Invite'}
+                        </Button>
+                      );
+                    }
+                    return null;
+                  })()}
                   <Button
                     size="sm"
                     variant="outline"
@@ -452,15 +547,31 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
                         )}
                       </TableCell>
                       <TableCell className="text-center">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={sendingAndroid === u.user_id}
-                          onClick={() => sendAndroidInvite(u)}
-                        >
-                          <Smartphone className="w-3 h-3 mr-1" />
-                          {sendingAndroid === u.user_id ? '…' : 'Android'}
-                        </Button>
+                        <div className="flex gap-1.5 justify-center">
+                          {(() => {
+                            const wInfo = getWaitlistInfo(u);
+                            if (wInfo && wInfo.invited) {
+                              return (
+                                <Button size="sm" variant="outline" disabled={reInviting === u.user_id} onClick={() => handleReInvite(u)}>
+                                  <RotateCw className={`w-3 h-3 mr-1 ${reInviting === u.user_id ? 'animate-spin' : ''}`} />
+                                  {reInviting === u.user_id ? '…' : 'Re-invite'}
+                                </Button>
+                              );
+                            } else if (wInfo) {
+                              return (
+                                <Button size="sm" variant="outline" disabled={inviting === u.user_id} onClick={() => handleInvite(u)}>
+                                  <Mail className="w-3 h-3 mr-1" />
+                                  {inviting === u.user_id ? '…' : 'Invite'}
+                                </Button>
+                              );
+                            }
+                            return null;
+                          })()}
+                          <Button size="sm" variant="outline" disabled={sendingAndroid === u.user_id} onClick={() => sendAndroidInvite(u)}>
+                            <Smartphone className="w-3 h-3 mr-1" />
+                            {sendingAndroid === u.user_id ? '…' : 'Android'}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
