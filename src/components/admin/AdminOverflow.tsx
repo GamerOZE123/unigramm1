@@ -38,6 +38,9 @@ const AdminOverflow: React.FC<Props> = ({ password }) => {
   const [sendingAndroid, setSendingAndroid] = useState<string | null>(null);
   const [editingUniversity, setEditingUniversity] = useState<string | null>(null);
   const [universityDraft, setUniversityDraft] = useState('');
+  const [inviting, setInviting] = useState<string | null>(null);
+  const [reInviting, setReInviting] = useState<string | null>(null);
+  const [waitlistSignups, setWaitlistSignups] = useState<Record<string, { id: string; invited: boolean }>>({});
 
   const fetchAndroidTesters = async () => {
     const { data } = await supabase
