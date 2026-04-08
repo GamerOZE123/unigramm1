@@ -850,6 +850,81 @@ Deno.serve(async (req) => {
       return json({ valid: true, preferences: enriched });
     }
 
+    // ── Clear User Data (keep account, wipe content) ────────
+    if (action === 'clear_user_data') {
+      const { email } = body;
+      if (!email) return json({ valid: true, error: 'email required' }, 400);
+
+      // Find user by email
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('user_id')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (!profile) return json({ valid: true, error: 'User not found with that email' }, 400);
+      const uid = profile.user_id;
+
+      const tablesToClear = [
+        { table: 'posts', col: 'user_id' },
+        { table: 'comments', col: 'user_id' },
+        { table: 'likes', col: 'user_id' },
+        { table: 'post_views', col: 'user_id' },
+        { table: 'post_impressions', col: 'user_id' },
+        { table: 'followers', col: 'follower_id' },
+        { table: 'followers', col: 'following_id' },
+        { table: 'messages', col: 'sender_id' },
+        { table: 'conversation_participants', col: 'user_id' },
+        { table: 'notifications', col: 'user_id' },
+        { table: 'confessions', col: 'user_id' },
+        { table: 'confession_comments', col: 'user_id' },
+        { table: 'confession_reactions', col: 'user_id' },
+        { table: 'anonymous_messages', col: 'user_id' },
+        { table: 'anonymous_message_reactions', col: 'user_id' },
+        { table: 'dating_profiles', col: 'user_id' },
+        { table: 'dating_likes', col: 'from_user_id' },
+        { table: 'dating_likes', col: 'to_user_id' },
+        { table: 'dating_passes', col: 'from_user_id' },
+        { table: 'dating_passes', col: 'to_user_id' },
+        { table: 'dating_matches', col: 'user1_id' },
+        { table: 'dating_matches', col: 'user2_id' },
+        { table: 'community_members', col: 'user_id' },
+        { table: 'community_messages', col: 'sender_id' },
+        { table: 'club_memberships', col: 'user_id' },
+        { table: 'club_join_requests', col: 'student_id' },
+        { table: 'club_followers', col: 'user_id' },
+        { table: 'chat_group_members', col: 'user_id' },
+        { table: 'recent_chats', col: 'user_id' },
+        { table: 'recent_chats', col: 'other_user_id' },
+        { table: 'blocked_users', col: 'blocker_id' },
+        { table: 'blocked_users', col: 'blocked_id' },
+        { table: 'cleared_chats', col: 'user_id' },
+        { table: 'deleted_chats', col: 'user_id' },
+        { table: 'carpool_rides', col: 'driver_id' },
+        { table: 'marketplace_items', col: 'seller_id' },
+        { table: 'student_store_items', col: 'user_id' },
+        { table: 'auctions', col: 'user_id' },
+        { table: 'startup_contributors', col: 'user_id' },
+        { table: 'startup_likes', col: 'user_id' },
+      ];
+
+      let cleared = 0;
+      for (const { table, col } of tablesToClear) {
+        try {
+          await supabaseAdmin.from(table).delete().eq(col, uid);
+          cleared++;
+        } catch (_) {}
+      }
+
+      // Reset profile counters
+      await supabaseAdmin.from('profiles').update({
+        followers_count: 0,
+        following_count: 0,
+      }).eq('user_id', uid);
+
+      return json({ valid: true, success: true, tables_cleared: cleared });
+    }
+
     // Default: just validate password
     return json({ valid: true, role, allowed_sections: allowedSections });
   } catch {
