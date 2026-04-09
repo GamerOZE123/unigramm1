@@ -197,6 +197,13 @@ const Admin: React.FC = () => {
     setLoading(false);
   };
 
+  // Auto-fetch signups when authenticated and on waitlist/overflow sections
+  useEffect(() => {
+    if (authenticated && storedPassword && (section === 'waitlist' || section === 'overflow')) {
+      fetchSignups();
+    }
+  }, [authenticated, storedPassword, section]);
+
   const handleInvite = async (id: string) => {
     setInviting(id);
     const signup = signups.find(s => s.id === id);
