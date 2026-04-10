@@ -130,7 +130,7 @@ export default function CtaSection() {
               <button type="submit" disabled={loading}
                 className="w-full h-11 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 transition-all hover:brightness-110"
                 style={{ background: 'linear-gradient(135deg, #4f8eff, #38bdf8)', color: '#080c17' }}>
-                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Join waitlist <ArrowRight className="w-3.5 h-3.5" /></>}
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Get access <ArrowRight className="w-3.5 h-3.5" /></>}
               </button>
               <p className="text-[11px]" style={{ color: 'rgba(255,255,255,0.25)' }}>
                 Only .edu, .edu.in, and .ac.in emails accepted
