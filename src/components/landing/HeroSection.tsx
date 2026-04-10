@@ -130,7 +130,7 @@ export default function HeroSection({ indiaMap, screenshots }: { indiaMap: strin
               className="h-11 px-6 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all hover:brightness-110"
               style={{ background: 'linear-gradient(135deg, #4f8eff, #38bdf8)', color: '#080c17' }}
             >
-              Join waitlist <ArrowRight className="w-3.5 h-3.5" />
+              Get access <ArrowRight className="w-3.5 h-3.5" />
             </button>
             <a
               href="/contribute"
