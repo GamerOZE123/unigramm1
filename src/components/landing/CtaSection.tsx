@@ -67,10 +67,16 @@ export default function CtaSection() {
           <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-80 h-40 rounded-full blur-3xl pointer-events-none" style={{ background: 'rgba(79,142,255,0.08)' }} />
 
           <h2 className="relative z-10 mb-2" style={{ fontFamily: "'Clash Display', sans-serif", fontSize: 'clamp(1.4rem, 3.5vw, 2rem)', fontWeight: 700 }}>
-            Get early access
+            Get access
           </h2>
+          {userCount > 0 && (
+            <div className="relative z-10 inline-flex items-center gap-1.5 px-3 py-1 rounded-full mb-3" style={{ background: 'rgba(79,142,255,0.08)', border: '1px solid rgba(79,142,255,0.15)' }}>
+              <Users className="w-3 h-3" style={{ color: '#4f8eff' }} />
+              <span className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.6)' }}>{userCount} students already joined</span>
+            </div>
+          )}
           <p className="relative z-10 text-sm mb-6" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            Join the waitlist with your college email and be the first to know when we launch at your campus.
+            Join with your college email and be the first to know when we launch at your campus.
           </p>
 
           {submitted ? (
