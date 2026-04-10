@@ -87,7 +87,7 @@ function PhoneMockup({ src, rotate, delay }: { src: string; rotate: number; dela
 }
 
 export default function HeroSection({ indiaMap, screenshots }: { indiaMap: string; screenshots: string[] }) {
-  const [userCount, setUserCount] = useState(240);
+  const [userCount, setUserCount] = useState(0);
   const [startupCount, setStartupCount] = useState(15);
 
   useEffect(() => {
