@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, ArrowRight, CheckCircle } from 'lucide-react';
+import { Loader2, ArrowRight, CheckCircle, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -9,6 +9,15 @@ export default function CtaSection() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [emailError, setEmailError] = useState('');
+  const [userCount, setUserCount] = useState(0);
+
+  useEffect(() => {
+    const fetchCount = async () => {
+      const { count } = await supabase.from('profiles').select('id', { count: 'exact', head: true });
+      if (count && count > 0) setUserCount(count);
+    };
+    fetchCount();
+  }, []);
 
   const validateEduEmail = (email: string) => {
     const trimmed = email.trim().toLowerCase();
