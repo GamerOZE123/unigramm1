@@ -37,9 +37,11 @@ function AnimatedCounter({ target, suffix, label }: { target: number; suffix: st
   const started = useRef(false);
 
   useEffect(() => {
+    if (target === 0) return;
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !started.current) {
+      if (entry.isIntersecting) {
         started.current = true;
+        observer.disconnect();
         let start = 0;
         const duration = 1800;
         const step = (ts: number) => {
@@ -51,7 +53,20 @@ function AnimatedCounter({ target, suffix, label }: { target: number; suffix: st
         requestAnimationFrame(step);
       }
     }, { threshold: 0.5 });
-    if (ref.current) observer.observe(ref.current);
+    if (started.current) {
+      // Target updated after already visible — just animate directly
+      let start = 0;
+      const duration = 1800;
+      const step = (ts: number) => {
+        if (!start) start = ts;
+        const progress = Math.min((ts - start) / duration, 1);
+        setCount(Math.floor(progress * target));
+        if (progress < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    } else if (ref.current) {
+      observer.observe(ref.current);
+    }
     return () => observer.disconnect();
   }, [target]);
 
