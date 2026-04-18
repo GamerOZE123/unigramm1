@@ -544,6 +544,9 @@ const Admin: React.FC = () => {
           {/* Officials */}
           {section === 'officials' && <AdminOfficials password={storedPassword} />}
 
+          {/* Points & Rewards */}
+          {section === 'points' && <AdminPointsManagement password={storedPassword} />}
+
           {/* Team Members (admin only) */}
           {section === 'team' && adminRole === 'admin' && <AdminTeamMembers password={storedPassword} />}
         </div>
