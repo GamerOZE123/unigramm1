@@ -2953,6 +2953,8 @@ export type Database = {
           id: string
           metadata: Json | null
           points: number
+          post_id: string | null
+          reversed: boolean | null
           user_id: string | null
         }
         Insert: {
@@ -2961,6 +2963,8 @@ export type Database = {
           id?: string
           metadata?: Json | null
           points: number
+          post_id?: string | null
+          reversed?: boolean | null
           user_id?: string | null
         }
         Update: {
@@ -2969,9 +2973,25 @@ export type Database = {
           id?: string
           metadata?: Json | null
           points?: number
+          post_id?: string | null
+          reversed?: boolean | null
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "points_ledger_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "points_ledger_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "ranked_posts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "points_ledger_user_id_fkey"
             columns: ["user_id"]
