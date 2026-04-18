@@ -25,6 +25,7 @@ import AdminDatingModule from '@/components/admin/AdminDatingModule';
 import AdminAnnouncements from '@/components/admin/AdminAnnouncements';
 import AdminOverflow from '@/components/admin/AdminOverflow';
 import AdminOfficials from '@/components/admin/AdminOfficials';
+import AdminPointsManagement from '@/components/admin/AdminPointsManagement';
 import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
