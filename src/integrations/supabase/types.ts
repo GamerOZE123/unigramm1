@@ -2914,6 +2914,73 @@ export type Database = {
           },
         ]
       }
+      points_daily_caps: {
+        Row: {
+          action_type: string
+          count: number | null
+          date: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          count?: number | null
+          date?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          count?: number | null
+          date?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "points_daily_caps_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      points_ledger: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          points: number
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          points: number
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          points?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "points_ledger_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       poll_votes: {
         Row: {
           created_at: string | null
@@ -3399,6 +3466,95 @@ export type Database = {
           },
         ]
       }
+      quest_enrollments: {
+        Row: {
+          completed_at: string | null
+          enrolled_at: string | null
+          id: string
+          quest_id: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          enrolled_at?: string | null
+          id?: string
+          quest_id?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          enrolled_at?: string | null
+          id?: string
+          quest_id?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_enrollments_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_enrollments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      quests: {
+        Row: {
+          created_at: string | null
+          creator_id: string | null
+          description: string | null
+          enrollment_count: number | null
+          id: string
+          is_active: boolean | null
+          is_validated: boolean | null
+          max_participants: number | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          creator_id?: string | null
+          description?: string | null
+          enrollment_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_validated?: boolean | null
+          max_participants?: number | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          creator_id?: string | null
+          description?: string | null
+          enrollment_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          is_validated?: boolean | null
+          max_participants?: number | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quests_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       recent_chats: {
         Row: {
           created_at: string
@@ -3484,6 +3640,81 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      reward_redemptions: {
+        Row: {
+          id: string
+          redeemed_at: string | null
+          reward_id: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          id?: string
+          redeemed_at?: string | null
+          reward_id?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          id?: string
+          redeemed_at?: string | null
+          reward_id?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reward_redemptions_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "rewards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reward_redemptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      rewards: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          points_required: number
+          reward_type: string | null
+          stock: number | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          points_required: number
+          reward_type?: string | null
+          stock?: number | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          points_required?: number
+          reward_type?: string | null
+          stock?: number | null
+          title?: string
+        }
+        Relationships: []
       }
       scheduled_workouts: {
         Row: {
@@ -4366,6 +4597,44 @@ export type Database = {
             foreignKeyName: "user_page_analytics_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      user_points: {
+        Row: {
+          created_at: string | null
+          id: string
+          level_name: string | null
+          level_tier: number | null
+          total_points: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          level_name?: string | null
+          level_tier?: number | null
+          total_points?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          level_name?: string | null
+          level_tier?: number | null
+          total_points?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_points_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
