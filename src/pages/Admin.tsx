@@ -375,7 +375,9 @@ const Admin: React.FC = () => {
             <>
               <AdminOverviewStats />
 
-              {/* Access Control */}
+              <AdminNotes password={storedPassword} />
+
+
               {restrictedAccess !== null && (
                 <Card className={`border-border/40 ${restrictedAccess ? 'border-destructive/40' : 'border-green-500/30'}`}>
                   <CardContent className="pt-6 flex items-center justify-between">
