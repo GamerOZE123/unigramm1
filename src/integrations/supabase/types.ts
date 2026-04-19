@@ -44,6 +44,33 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_notes: {
+        Row: {
+          author_name: string
+          content: string
+          created_at: string
+          id: string
+          pinned: boolean
+          updated_at: string
+        }
+        Insert: {
+          author_name?: string
+          content: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          updated_at?: string
+        }
+        Update: {
+          author_name?: string
+          content?: string
+          created_at?: string
+          id?: string
+          pinned?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_team_members: {
         Row: {
           allowed_sections: string[]

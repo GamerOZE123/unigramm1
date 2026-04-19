@@ -15,6 +15,7 @@ import AdminPendingAccounts from '@/components/admin/AdminPendingAccounts';
 import AdminBroadcastNotifications from '@/components/admin/AdminBroadcastNotifications';
 import AdminAuthenticatedUsers from '@/components/admin/AdminAuthenticatedUsers';
 import AdminOverviewStats from '@/components/admin/AdminOverviewStats';
+import AdminNotes from '@/components/admin/AdminNotes';
 import AdminAnalyticsPage from '@/components/admin/AdminAnalyticsPage';
 import AdminTeamMembers from '@/components/admin/AdminTeamMembers';
 import AdminSidebar, { type AdminSection } from '@/components/admin/AdminSidebar';
@@ -374,7 +375,9 @@ const Admin: React.FC = () => {
             <>
               <AdminOverviewStats />
 
-              {/* Access Control */}
+              <AdminNotes password={storedPassword} />
+
+
               {restrictedAccess !== null && (
                 <Card className={`border-border/40 ${restrictedAccess ? 'border-destructive/40' : 'border-green-500/30'}`}>
                   <CardContent className="pt-6 flex items-center justify-between">
