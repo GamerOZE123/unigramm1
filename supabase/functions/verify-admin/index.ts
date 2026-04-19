@@ -968,6 +968,38 @@ Deno.serve(async (req) => {
       return json({ valid: true, success: true });
     }
 
+    // ── Rewards ──────────────────────────────────────────────
+    if (action === 'create_reward') {
+      const { reward } = body;
+      if (!reward?.title || !reward?.points_required) return json({ valid: true, error: 'Title and points required' }, 400);
+      const { data, error } = await supabaseAdmin
+        .from('rewards')
+        .insert(reward)
+        .select()
+        .single();
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, reward: data });
+    }
+
+    if (action === 'toggle_reward_active' && id) {
+      const { is_active } = body;
+      const { error } = await supabaseAdmin
+        .from('rewards')
+        .update({ is_active: !!is_active })
+        .eq('id', id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
+    if (action === 'delete_reward' && id) {
+      const { error } = await supabaseAdmin
+        .from('rewards')
+        .delete()
+        .eq('id', id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
     // Default: just validate password
     return json({ valid: true, role, allowed_sections: allowedSections });
   } catch {

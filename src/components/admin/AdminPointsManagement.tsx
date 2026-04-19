@@ -60,7 +60,7 @@ interface UserSearchResult {
   avatar_url: string | null;
 }
 
-const AdminPointsManagement: React.FC<Props> = () => {
+const AdminPointsManagement: React.FC<Props> = ({ password }) => {
   // Show points toggle
   const [showPoints, setShowPoints] = useState<boolean | null>(null);
   const [togglingShow, setTogglingShow] = useState(false);
@@ -176,9 +176,13 @@ const AdminPointsManagement: React.FC<Props> = () => {
     setLoadingRewards(false);
   };
 
+  const getPwd = () => password;
+
   const toggleRewardActive = async (id: string, current: boolean) => {
-    const { error } = await supabase.from('rewards').update({ is_active: !current } as any).eq('id', id);
-    if (error) toast.error('Failed to toggle');
+    const { data, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password: getPwd(), action: 'toggle_reward_active', id, is_active: !current },
+    });
+    if (error || (data as any)?.error) toast.error('Failed to toggle');
     else {
       setRewards(prev => prev.map(r => r.id === id ? { ...r, is_active: !current } : r));
       toast.success(!current ? 'Reward activated' : 'Reward deactivated');
@@ -190,16 +194,23 @@ const AdminPointsManagement: React.FC<Props> = () => {
       toast.error('Title and points required must be set'); return;
     }
     setCreatingReward(true);
-    const { error } = await supabase.from('rewards').insert({
-      title: newReward.title,
-      description: newReward.description || null,
-      points_required: newReward.points_required,
-      reward_type: newReward.reward_type,
-      image_url: newReward.image_url || null,
-      stock: newReward.stock,
-      is_active: true,
-    } as any);
-    if (error) toast.error(error.message);
+    const { data, error } = await supabase.functions.invoke('verify-admin', {
+      body: {
+        password: getPwd(),
+        action: 'create_reward',
+        reward: {
+          title: newReward.title,
+          description: newReward.description || null,
+          points_required: newReward.points_required,
+          reward_type: newReward.reward_type,
+          image_url: newReward.image_url || null,
+          stock: newReward.stock,
+          is_active: true,
+        },
+      },
+    });
+    const errMsg = (error as any)?.message || (data as any)?.error;
+    if (errMsg) toast.error(errMsg);
     else {
       toast.success('Reward created');
       setShowRewardModal(false);
