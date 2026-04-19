@@ -15,6 +15,7 @@ import AdminPendingAccounts from '@/components/admin/AdminPendingAccounts';
 import AdminBroadcastNotifications from '@/components/admin/AdminBroadcastNotifications';
 import AdminAuthenticatedUsers from '@/components/admin/AdminAuthenticatedUsers';
 import AdminOverviewStats from '@/components/admin/AdminOverviewStats';
+import AdminNotes from '@/components/admin/AdminNotes';
 import AdminAnalyticsPage from '@/components/admin/AdminAnalyticsPage';
 import AdminTeamMembers from '@/components/admin/AdminTeamMembers';
 import AdminSidebar, { type AdminSection } from '@/components/admin/AdminSidebar';
