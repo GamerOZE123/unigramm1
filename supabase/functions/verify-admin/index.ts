@@ -925,6 +925,49 @@ Deno.serve(async (req) => {
       return json({ valid: true, success: true, tables_cleared: cleared });
     }
 
+    // ── Admin Notes ───────────────────────────────────────────
+    if (action === 'fetch_admin_notes') {
+      const { data, error } = await supabaseAdmin
+        .from('admin_notes')
+        .select('*')
+        .order('pinned', { ascending: false })
+        .order('created_at', { ascending: false });
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, notes: data });
+    }
+
+    if (action === 'create_admin_note') {
+      const { content, author_name } = body;
+      if (!content || !content.trim()) return json({ valid: true, error: 'Content required' }, 400);
+      const author = author_name || (teamMember?.name) || 'Admin';
+      const { data, error } = await supabaseAdmin
+        .from('admin_notes')
+        .insert({ content: content.trim(), author_name: author })
+        .select()
+        .single();
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, note: data });
+    }
+
+    if (action === 'toggle_pin_admin_note' && id) {
+      const { pinned } = body;
+      const { error } = await supabaseAdmin
+        .from('admin_notes')
+        .update({ pinned: !!pinned })
+        .eq('id', id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
+    if (action === 'delete_admin_note' && id) {
+      const { error } = await supabaseAdmin
+        .from('admin_notes')
+        .delete()
+        .eq('id', id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
     // Default: just validate password
     return json({ valid: true, role, allowed_sections: allowedSections });
   } catch {
