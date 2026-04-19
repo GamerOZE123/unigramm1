@@ -60,7 +60,7 @@ interface UserSearchResult {
   avatar_url: string | null;
 }
 
-const AdminPointsManagement: React.FC<Props> = () => {
+const AdminPointsManagement: React.FC<Props> = ({ password }) => {
   // Show points toggle
   const [showPoints, setShowPoints] = useState<boolean | null>(null);
   const [togglingShow, setTogglingShow] = useState(false);
@@ -176,7 +176,7 @@ const AdminPointsManagement: React.FC<Props> = () => {
     setLoadingRewards(false);
   };
 
-  const getPwd = () => (typeof window !== 'undefined' ? sessionStorage.getItem('admin_password') || localStorage.getItem('admin_password') || '' : '');
+  const getPwd = () => password;
 
   const toggleRewardActive = async (id: string, current: boolean) => {
     const { data, error } = await supabase.functions.invoke('verify-admin', {
