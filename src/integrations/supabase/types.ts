@@ -1911,6 +1911,73 @@ export type Database = {
           },
         ]
       }
+      discount_banners: {
+        Row: {
+          business_id: string | null
+          created_at: string | null
+          id: string
+          image_url: string
+          is_active: boolean | null
+          sort_order: number | null
+          tap_url: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          created_at?: string | null
+          id?: string
+          image_url: string
+          is_active?: boolean | null
+          sort_order?: number | null
+          tap_url?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          created_at?: string | null
+          id?: string
+          image_url?: string
+          is_active?: boolean | null
+          sort_order?: number | null
+          tap_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_banners_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discount_redemptions: {
+        Row: {
+          discount_id: string | null
+          id: string
+          redeemed_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          discount_id?: string | null
+          id?: string
+          redeemed_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          discount_id?: string | null
+          id?: string
+          redeemed_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_redemptions_discount_id_fkey"
+            columns: ["discount_id"]
+            isOneToOne: false
+            referencedRelation: "student_discounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       early_access_signups: {
         Row: {
           created_at: string | null
@@ -3530,38 +3597,59 @@ export type Database = {
       }
       quests: {
         Row: {
+          completion_type: string | null
           created_at: string | null
           creator_id: string | null
           description: string | null
+          end_date: string | null
           enrollment_count: number | null
+          group_chat_id: string | null
           id: string
           is_active: boolean | null
+          is_public: boolean | null
           is_validated: boolean | null
           max_participants: number | null
+          min_points_required: number | null
+          start_date: string | null
+          status: string | null
           title: string
           updated_at: string | null
         }
         Insert: {
+          completion_type?: string | null
           created_at?: string | null
           creator_id?: string | null
           description?: string | null
+          end_date?: string | null
           enrollment_count?: number | null
+          group_chat_id?: string | null
           id?: string
           is_active?: boolean | null
+          is_public?: boolean | null
           is_validated?: boolean | null
           max_participants?: number | null
+          min_points_required?: number | null
+          start_date?: string | null
+          status?: string | null
           title: string
           updated_at?: string | null
         }
         Update: {
+          completion_type?: string | null
           created_at?: string | null
           creator_id?: string | null
           description?: string | null
+          end_date?: string | null
           enrollment_count?: number | null
+          group_chat_id?: string | null
           id?: string
           is_active?: boolean | null
+          is_public?: boolean | null
           is_validated?: boolean | null
           max_participants?: number | null
+          min_points_required?: number | null
+          start_date?: string | null
+          status?: string | null
           title?: string
           updated_at?: string | null
         }
@@ -3572,6 +3660,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "quests_group_chat_id_fkey"
+            columns: ["group_chat_id"]
+            isOneToOne: false
+            referencedRelation: "chat_groups"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -3973,6 +4068,56 @@ export type Database = {
             columns: ["startup_id"]
             isOneToOne: false
             referencedRelation: "student_startups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_discounts: {
+        Row: {
+          business_id: string | null
+          category: string | null
+          created_at: string | null
+          description: string | null
+          discount_code: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          min_points_required: number | null
+          redemption_count: number | null
+          title: string
+        }
+        Insert: {
+          business_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          discount_code?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          min_points_required?: number | null
+          redemption_count?: number | null
+          title: string
+        }
+        Update: {
+          business_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          discount_code?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          min_points_required?: number | null
+          redemption_count?: number | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_discounts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
             referencedColumns: ["id"]
           },
         ]
