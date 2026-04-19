@@ -3558,6 +3558,10 @@ export type Database = {
           completed_at: string | null
           enrolled_at: string | null
           id: string
+          is_removed: boolean | null
+          last_active_at: string | null
+          proof_photo_url: string | null
+          proof_submitted_at: string | null
           quest_id: string | null
           status: string | null
           user_id: string | null
@@ -3566,6 +3570,10 @@ export type Database = {
           completed_at?: string | null
           enrolled_at?: string | null
           id?: string
+          is_removed?: boolean | null
+          last_active_at?: string | null
+          proof_photo_url?: string | null
+          proof_submitted_at?: string | null
           quest_id?: string | null
           status?: string | null
           user_id?: string | null
@@ -3574,6 +3582,10 @@ export type Database = {
           completed_at?: string | null
           enrolled_at?: string | null
           id?: string
+          is_removed?: boolean | null
+          last_active_at?: string | null
+          proof_photo_url?: string | null
+          proof_submitted_at?: string | null
           quest_id?: string | null
           status?: string | null
           user_id?: string | null
@@ -3595,8 +3607,108 @@ export type Database = {
           },
         ]
       }
+      quest_invites: {
+        Row: {
+          created_at: string | null
+          id: string
+          invitee_id: string | null
+          inviter_id: string | null
+          quest_id: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          invitee_id?: string | null
+          inviter_id?: string | null
+          quest_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          invitee_id?: string | null
+          inviter_id?: string | null
+          quest_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_invites_invitee_id_fkey"
+            columns: ["invitee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_invites_inviter_id_fkey"
+            columns: ["inviter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_invites_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quest_proof_votes: {
+        Row: {
+          created_at: string | null
+          enrollment_id: string | null
+          id: string
+          quest_id: string | null
+          vote: string
+          voter_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          enrollment_id?: string | null
+          id?: string
+          quest_id?: string | null
+          vote: string
+          voter_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          enrollment_id?: string | null
+          id?: string
+          quest_id?: string | null
+          vote?: string
+          voter_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_proof_votes_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "quest_enrollments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_proof_votes_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quest_proof_votes_voter_id_fkey"
+            columns: ["voter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quests: {
         Row: {
+          auto_remove_inactive: boolean | null
+          completion_rule: string | null
           completion_type: string | null
           created_at: string | null
           creator_id: string | null
@@ -3614,8 +3726,11 @@ export type Database = {
           status: string | null
           title: string
           updated_at: string | null
+          vote_threshold: number | null
         }
         Insert: {
+          auto_remove_inactive?: boolean | null
+          completion_rule?: string | null
           completion_type?: string | null
           created_at?: string | null
           creator_id?: string | null
@@ -3633,8 +3748,11 @@ export type Database = {
           status?: string | null
           title: string
           updated_at?: string | null
+          vote_threshold?: number | null
         }
         Update: {
+          auto_remove_inactive?: boolean | null
+          completion_rule?: string | null
           completion_type?: string | null
           created_at?: string | null
           creator_id?: string | null
@@ -3652,6 +3770,7 @@ export type Database = {
           status?: string | null
           title?: string
           updated_at?: string | null
+          vote_threshold?: number | null
         }
         Relationships: [
           {
@@ -5427,6 +5546,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      toggle_like_points: {
+        Args: { p_action: string; p_post_id: string; p_user_id: string }
+        Returns: Json
       }
       transfer_group_admin: {
         Args: { p_group_id: string; p_new_admin_id: string }
