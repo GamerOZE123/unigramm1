@@ -38,11 +38,11 @@ interface Props {
 const nav: { key: AdminSection; label: string; icon: React.ElementType; group?: string; adminOnly?: boolean }[] = [
   { key: 'overview', label: 'Overview', icon: LayoutDashboard, group: 'General' },
   { key: 'analytics', label: 'Analytics', icon: BarChart3, group: 'General' },
+  { key: 'applicants', label: 'Applicants', icon: Sparkles, group: 'General' },
   { key: 'pending', label: 'Pending Accounts', icon: UserCheck, group: 'Users' },
   { key: 'waitlist', label: 'Waitlist', icon: Clock, group: 'Users' },
   { key: 'users', label: 'User Management', icon: Users, group: 'Users' },
   { key: 'auth', label: 'Authenticated', icon: ShieldCheck, group: 'Users' },
-  { key: 'applicants', label: 'Applicants', icon: Sparkles, group: 'Users' },
   { key: 'university', label: 'University Features', icon: GraduationCap, group: 'Config' },
   { key: 'courses', label: 'Course Listing', icon: BookOpen, group: 'Config' },
   { key: 'flags', label: 'Feature Flags', icon: Flag, group: 'Config' },
