@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Users, Clock, ShieldCheck, Flag, Settings,
-  Bell, BarChart3, GraduationCap, UserCheck, X, Users2, BookOpen, Mail, Heart, Megaphone, Layers, BadgeCheck, Coins
+  Bell, BarChart3, GraduationCap, UserCheck, X, Users2, BookOpen, Mail, Heart, Megaphone, Layers, BadgeCheck, Coins, Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -24,6 +24,7 @@ export type AdminSection =
   | 'overflow'
   | 'officials'
   | 'points'
+  | 'applicants'
   | 'team';
 
 interface Props {
@@ -41,6 +42,7 @@ const nav: { key: AdminSection; label: string; icon: React.ElementType; group?: 
   { key: 'waitlist', label: 'Waitlist', icon: Clock, group: 'Users' },
   { key: 'users', label: 'User Management', icon: Users, group: 'Users' },
   { key: 'auth', label: 'Authenticated', icon: ShieldCheck, group: 'Users' },
+  { key: 'applicants', label: 'Applicants', icon: Sparkles, group: 'Users' },
   { key: 'university', label: 'University Features', icon: GraduationCap, group: 'Config' },
   { key: 'courses', label: 'Course Listing', icon: BookOpen, group: 'Config' },
   { key: 'flags', label: 'Feature Flags', icon: Flag, group: 'Config' },

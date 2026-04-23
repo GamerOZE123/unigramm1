@@ -1000,6 +1000,24 @@ Deno.serve(async (req) => {
       return json({ valid: true, success: true });
     }
 
+    if (action === 'fetch_contributor_applications') {
+      const { data, error } = await supabaseAdmin
+        .from('contributor_applications')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, applications: data ?? [] });
+    }
+
+    if (action === 'delete_contributor_application' && id) {
+      const { error } = await supabaseAdmin
+        .from('contributor_applications')
+        .delete()
+        .eq('id', id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
     // Default: just validate password
     return json({ valid: true, role, allowed_sections: allowedSections });
   } catch {
