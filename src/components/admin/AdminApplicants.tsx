@@ -155,7 +155,7 @@ const AdminApplicants: React.FC<Props> = ({ password }) => {
             </Badge>
           )}
           {isWaitlisted && (
-            <Badge className="text-xs gap-1 bg-amber-500/15 text-amber-600 border-amber-500/30 hover:bg-amber-500/20">
+            <Badge variant="secondary" className="text-xs gap-1">
               <Hourglass className="w-3 h-3" /> Waitlisted
             </Badge>
           )}
