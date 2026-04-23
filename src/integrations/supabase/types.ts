@@ -1691,18 +1691,24 @@ export type Database = {
       }
       dating_matches: {
         Row: {
+          context_label: string | null
+          context_type: string | null
           created_at: string | null
           id: string
           user1_id: string
           user2_id: string
         }
         Insert: {
+          context_label?: string | null
+          context_type?: string | null
           created_at?: string | null
           id?: string
           user1_id: string
           user2_id: string
         }
         Update: {
+          context_label?: string | null
+          context_type?: string | null
           created_at?: string | null
           id?: string
           user1_id?: string
@@ -1783,8 +1789,10 @@ export type Database = {
           is_active: boolean | null
           last_active: string | null
           looking_for: string | null
+          places_visited: string[] | null
           prompts_json: Json | null
           smoke: string | null
+          subscription_tier: string | null
           updated_at: string | null
           user_id: string
           visibility_json: Json | null
@@ -1806,8 +1814,10 @@ export type Database = {
           is_active?: boolean | null
           last_active?: string | null
           looking_for?: string | null
+          places_visited?: string[] | null
           prompts_json?: Json | null
           smoke?: string | null
+          subscription_tier?: string | null
           updated_at?: string | null
           user_id: string
           visibility_json?: Json | null
@@ -1829,8 +1839,10 @@ export type Database = {
           is_active?: boolean | null
           last_active?: string | null
           looking_for?: string | null
+          places_visited?: string[] | null
           prompts_json?: Json | null
           smoke?: string | null
+          subscription_tier?: string | null
           updated_at?: string | null
           user_id?: string
           visibility_json?: Json | null
@@ -1872,6 +1884,38 @@ export type Database = {
           prompt_text?: string
         }
         Relationships: []
+      }
+      dating_subscriptions: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          tier: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          tier?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          tier?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dating_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       deleted_chats: {
         Row: {
