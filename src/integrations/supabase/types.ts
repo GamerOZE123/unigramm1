@@ -3747,6 +3747,7 @@ export type Database = {
           is_active: boolean | null
           is_public: boolean | null
           is_validated: boolean | null
+          mark_layout: string | null
           max_participants: number | null
           min_points_required: number | null
           start_date: string | null
@@ -3769,6 +3770,7 @@ export type Database = {
           is_active?: boolean | null
           is_public?: boolean | null
           is_validated?: boolean | null
+          mark_layout?: string | null
           max_participants?: number | null
           min_points_required?: number | null
           start_date?: string | null
@@ -3791,6 +3793,7 @@ export type Database = {
           is_active?: boolean | null
           is_public?: boolean | null
           is_validated?: boolean | null
+          mark_layout?: string | null
           max_participants?: number | null
           min_points_required?: number | null
           start_date?: string | null
@@ -3813,6 +3816,120 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "chat_groups"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      recap_albums: {
+        Row: {
+          club_id: string | null
+          cover_url: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          event_date: string | null
+          expires_at: string | null
+          id: string
+          invited_users: string[] | null
+          is_locked: boolean | null
+          media_count: number | null
+          show_in_profile: boolean | null
+          title: string
+          upload_access: string | null
+          visibility: string | null
+        }
+        Insert: {
+          club_id?: string | null
+          cover_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          event_date?: string | null
+          expires_at?: string | null
+          id?: string
+          invited_users?: string[] | null
+          is_locked?: boolean | null
+          media_count?: number | null
+          show_in_profile?: boolean | null
+          title: string
+          upload_access?: string | null
+          visibility?: string | null
+        }
+        Update: {
+          club_id?: string | null
+          cover_url?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          event_date?: string | null
+          expires_at?: string | null
+          id?: string
+          invited_users?: string[] | null
+          is_locked?: boolean | null
+          media_count?: number | null
+          show_in_profile?: boolean | null
+          title?: string
+          upload_access?: string | null
+          visibility?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recap_albums_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recap_albums_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      recap_media: {
+        Row: {
+          album_id: string
+          caption: string | null
+          created_at: string
+          id: string
+          media_type: string
+          media_url: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          album_id: string
+          caption?: string | null
+          created_at?: string
+          id?: string
+          media_type?: string
+          media_url: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          album_id?: string
+          caption?: string | null
+          created_at?: string
+          id?: string
+          media_type?: string
+          media_url?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recap_media_album_id_fkey"
+            columns: ["album_id"]
+            isOneToOne: false
+            referencedRelation: "recap_albums"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recap_media_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -5523,6 +5640,10 @@ export type Database = {
       }
       increment_post_views: {
         Args: { post_id_input: string }
+        Returns: undefined
+      }
+      increment_recap_media_count: {
+        Args: { album_id_input: string }
         Returns: undefined
       }
       is_community_member: {
