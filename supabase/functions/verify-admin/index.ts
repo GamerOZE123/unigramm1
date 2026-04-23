@@ -1018,6 +1018,60 @@ Deno.serve(async (req) => {
       return json({ valid: true, success: true });
     }
 
+    if (action === 'set_application_status' && id) {
+      const newStatus = body?.status === 'waitlisted' ? 'waitlisted' : 'pending';
+      const notify = !!body?.notify;
+
+      const { data: updated, error } = await supabaseAdmin
+        .from('contributor_applications')
+        .update({ status: newStatus })
+        .eq('id', id)
+        .select('email, full_name')
+        .maybeSingle();
+      if (error) return json({ valid: true, error: error.message }, 400);
+
+      let notified = false;
+      let notifyError: string | null = null;
+      if (notify && updated?.email) {
+        try {
+          const subject = newStatus === 'waitlisted'
+            ? "You're on the Unigramm contributor waitlist"
+            : 'Update on your Unigramm contributor application';
+          const heading = newStatus === 'waitlisted'
+            ? "You're on the waitlist!"
+            : 'Application update';
+          const body1 = newStatus === 'waitlisted'
+            ? `Hi ${updated.full_name || 'there'}, thanks for applying to contribute to Unigramm. You've been added to our contributor waitlist — we'll reach out as soon as a spot opens up.`
+            : `Hi ${updated.full_name || 'there'}, your contributor application has been moved back to pending review. We'll be in touch soon.`;
+
+          const html = `
+            <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:24px;color:#111;">
+              <h2 style="margin:0 0 16px;">${heading}</h2>
+              <p style="line-height:1.5;font-size:15px;">${body1}</p>
+              <p style="line-height:1.5;font-size:15px;margin-top:24px;">— The Unigramm Team</p>
+            </div>`;
+
+          const inviteResp = await supabaseAdmin.functions.invoke('send-invite', {
+            body: {
+              to: updated.email,
+              subject,
+              html,
+              fullName: updated.full_name || '',
+            },
+          });
+          if ((inviteResp as any)?.error) {
+            notifyError = (inviteResp as any).error?.message || 'Notify failed';
+          } else {
+            notified = true;
+          }
+        } catch (e: any) {
+          notifyError = e?.message || 'Notify failed';
+        }
+      }
+
+      return json({ valid: true, success: true, status: newStatus, notified, notifyError });
+    }
+
     // Default: just validate password
     return json({ valid: true, role, allowed_sections: allowedSections });
   } catch {
