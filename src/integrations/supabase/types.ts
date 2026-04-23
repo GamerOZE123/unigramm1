@@ -1441,6 +1441,7 @@ export type Database = {
           portfolio_url: string | null
           role: string | null
           skills: string | null
+          status: string
           university: string | null
           year_of_study: string | null
         }
@@ -1457,6 +1458,7 @@ export type Database = {
           portfolio_url?: string | null
           role?: string | null
           skills?: string | null
+          status?: string
           university?: string | null
           year_of_study?: string | null
         }
@@ -1473,6 +1475,7 @@ export type Database = {
           portfolio_url?: string | null
           role?: string | null
           skills?: string | null
+          status?: string
           university?: string | null
           year_of_study?: string | null
         }
