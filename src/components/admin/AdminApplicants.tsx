@@ -6,8 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
   ChevronLeft, ChevronRight, Mail, GraduationCap, Calendar, Briefcase,
-  Link as LinkIcon, FileText, Sparkles, Trash2, RefreshCw, User, Globe, Clock
+  Link as LinkIcon, FileText, Sparkles, Trash2, RefreshCw, User, Globe, Clock,
+  Hourglass, RotateCcw
 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
@@ -28,6 +30,7 @@ interface Application {
   availability: string | null;
   message: string | null;
   created_at: string | null;
+  status?: string | null;
 }
 
 interface Props {
@@ -39,6 +42,8 @@ const AdminApplicants: React.FC<Props> = ({ password }) => {
   const [loading, setLoading] = useState(true);
   const [index, setIndex] = useState(0);
   const [deleting, setDeleting] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [notify, setNotify] = useState(true);
 
   const fetchApps = async () => {
     setLoading(true);
@@ -79,6 +84,36 @@ const AdminApplicants: React.FC<Props> = ({ password }) => {
     setDeleting(false);
   };
 
+  const handleToggleWaitlist = async () => {
+    const current = apps[index];
+    if (!current) return;
+    const newStatus = current.status === 'waitlisted' ? 'pending' : 'waitlisted';
+    setUpdatingStatus(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-admin', {
+        body: {
+          password,
+          action: 'set_application_status',
+          id: current.id,
+          status: newStatus,
+          notify,
+        },
+      });
+      if (error || data?.error) throw new Error(data?.error || 'Failed');
+      setApps(prev => prev.map(a => a.id === current.id ? { ...a, status: newStatus } : a));
+      const baseMsg = newStatus === 'waitlisted' ? 'Added to waitlist' : 'Removed from waitlist';
+      if (notify) {
+        if (data?.notified) toast.success(`${baseMsg} • Applicant notified`);
+        else toast.warning(`${baseMsg} • Notify failed: ${data?.notifyError || 'unknown error'}`);
+      } else {
+        toast.success(baseMsg);
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update status');
+    }
+    setUpdatingStatus(false);
+  };
+
   if (loading) {
     return (
       <Card className="border-border/40">
@@ -103,6 +138,7 @@ const AdminApplicants: React.FC<Props> = ({ password }) => {
 
   const app = apps[index];
   const displayRole = app.role === 'other' && app.custom_role ? app.custom_role : app.role;
+  const isWaitlisted = app.status === 'waitlisted';
 
   return (
     <div className="space-y-4">
@@ -118,8 +154,33 @@ const AdminApplicants: React.FC<Props> = ({ password }) => {
               {new Date(app.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
             </Badge>
           )}
+          {isWaitlisted && (
+            <Badge variant="secondary" className="text-xs gap-1">
+              <Hourglass className="w-3 h-3" /> Waitlisted
+            </Badge>
+          )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <label className="flex items-center gap-2 text-xs text-muted-foreground select-none cursor-pointer px-2 py-1.5 rounded-md border border-border/40 bg-muted/30">
+            <Checkbox
+              checked={notify}
+              onCheckedChange={(v) => setNotify(v === true)}
+              className="h-3.5 w-3.5"
+            />
+            Notify applicant by email
+          </label>
+          <Button
+            variant={isWaitlisted ? 'outline' : 'default'}
+            size="sm"
+            onClick={handleToggleWaitlist}
+            disabled={updatingStatus}
+          >
+            {isWaitlisted ? (
+              <><RotateCcw className="w-4 h-4 mr-1" /> {updatingStatus ? 'Updating…' : 'Remove from waitlist'}</>
+            ) : (
+              <><Hourglass className="w-4 h-4 mr-1" /> {updatingStatus ? 'Updating…' : 'Add to waitlist'}</>
+            )}
+          </Button>
           <Button variant="outline" size="sm" onClick={fetchApps}>
             <RefreshCw className="w-4 h-4" />
           </Button>

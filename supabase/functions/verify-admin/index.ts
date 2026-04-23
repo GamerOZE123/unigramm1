@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import nodemailer from 'npm:nodemailer@6.9.16'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -1016,6 +1017,77 @@ Deno.serve(async (req) => {
         .eq('id', id);
       if (error) return json({ valid: true, error: error.message }, 400);
       return json({ valid: true, success: true });
+    }
+
+    if (action === 'set_application_status' && id) {
+      const newStatus = body?.status === 'waitlisted' ? 'waitlisted' : 'pending';
+      const notify = !!body?.notify;
+
+      const { data: updated, error } = await supabaseAdmin
+        .from('contributor_applications')
+        .update({ status: newStatus })
+        .eq('id', id)
+        .select('email, full_name')
+        .maybeSingle();
+      if (error) return json({ valid: true, error: error.message }, 400);
+
+      let notified = false;
+      let notifyError: string | null = null;
+      if (notify && updated?.email) {
+        try {
+          const smtpHost = Deno.env.get('SMTP_HOST');
+          const smtpPort = parseInt(Deno.env.get('SMTP_PORT') || '587');
+          const smtpUser = Deno.env.get('SMTP_USER');
+          const smtpPass = Deno.env.get('SMTP_PASS');
+          if (!smtpHost || !smtpUser || !smtpPass) {
+            throw new Error('SMTP credentials not configured');
+          }
+          const subject = newStatus === 'waitlisted'
+            ? "You're on the Unigramm contributor waitlist"
+            : 'Update on your Unigramm contributor application';
+          const heading = newStatus === 'waitlisted'
+            ? "You're on the waitlist 🎉"
+            : 'Application update';
+          const message = newStatus === 'waitlisted'
+            ? `Hi ${updated.full_name || 'there'}, thanks for applying to contribute to Unigramm. You've been added to our contributor waitlist — we'll reach out as soon as a spot opens up.`
+            : `Hi ${updated.full_name || 'there'}, your contributor application has been moved back to pending review. We'll be in touch soon.`;
+
+          const LOGO_URL = 'https://unigramm1.lovable.app/unigramm-logo.png';
+          const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#080c17;font-family:'Plus Jakarta Sans',Arial,sans-serif;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#080c17;padding:40px 20px;">
+              <tr><td align="center">
+                <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
+                  <tr><td align="center" style="padding-bottom:28px;"><img src="${LOGO_URL}" alt="Unigramm" height="40" style="height:40px;width:auto;"/></td></tr>
+                  <tr><td style="background:rgba(255,255,255,0.06);border-radius:16px;padding:40px 32px;border:1px solid rgba(79,142,255,0.15);">
+                    <h1 style="margin:0 0 16px;font-size:24px;font-weight:800;color:#fff;text-align:center;">${heading}</h1>
+                    <p style="margin:0;color:#cdd5e0;font-size:15px;line-height:1.6;text-align:center;">${message}</p>
+                    <p style="margin:28px 0 0;color:#8a93a3;font-size:13px;text-align:center;">— The Unigramm Team</p>
+                  </td></tr>
+                </table>
+              </td></tr>
+            </table>
+          </body></html>`;
+
+          const transport = nodemailer.createTransport({
+            host: smtpHost,
+            port: smtpPort,
+            secure: smtpPort === 465,
+            requireTLS: smtpPort !== 465,
+            auth: { user: smtpUser, pass: smtpPass },
+          });
+          await transport.sendMail({
+            from: `"Unigramm" <${smtpUser}>`,
+            to: updated.email,
+            subject,
+            html,
+          });
+          notified = true;
+        } catch (e: any) {
+          notifyError = e?.message || 'Notify failed';
+        }
+      }
+
+      return json({ valid: true, success: true, status: newStatus, notified, notifyError });
     }
 
     // Default: just validate password
