@@ -1,89 +1,3 @@
-    // Fetch full details for a user (profile + dating profile + preferences)
-    if (action === 'fetch_user_full_details') {
-      const { user_id } = body;
-      if (!user_id) return json({ valid: true, error: 'user_id required' }, 400);
-      const [{ data: profile }, { data: dating }, { data: pref }] = await Promise.all([
-        supabaseAdmin.from('profiles').select('*').eq('user_id', user_id).maybeSingle(),
-        supabaseAdmin.from('dating_profiles').select('*').eq('user_id', user_id).maybeSingle(),
-        supabaseAdmin.from('user_preferences').select('*').eq('user_id', user_id).maybeSingle(),
-      ]);
-      return json({ valid: true, profile, dating, preference: pref });
-    }
-
-    // Update arbitrary profile fields (whitelist)
-    if (action === 'update_profile_fields') {
-      const { user_id, updates } = body;
-      if (!user_id || !updates || typeof updates !== 'object') {
-        return json({ valid: true, error: 'user_id and updates required' }, 400);
-      }
-      const allowed = [
-        'username','full_name','bio','avatar_url','university','major','country','state','area',
-        'campus_year','status_message','linkedin_url','instagram_url','twitter_url','website_url',
-        'age','gender','academic_year','degree_level','personal_email','approved'
-      ];
-      const clean: any = {};
-      for (const k of allowed) if (k in updates) clean[k] = updates[k];
-      clean.updated_at = new Date().toISOString();
-      const { data, error } = await supabaseAdmin
-        .from('profiles')
-        .update(clean)
-        .eq('user_id', user_id)
-        .select()
-        .maybeSingle();
-      if (error) return json({ valid: true, error: error.message }, 400);
-      return json({ valid: true, success: true, profile: data });
-    }
-
-    // Upsert a dating profile
-    if (action === 'upsert_dating_profile') {
-      const { user_id, fields } = body;
-      if (!user_id || !fields || typeof fields !== 'object') {
-        return json({ valid: true, error: 'user_id and fields required' }, 400);
-      }
-      const allowed = [
-        'gender','interested_in','looking_for','bio','hometown','height','zodiac','smoke','drink',
-        'fav_song','fav_artist','hobbies','places_visited','images_json','prompts_json',
-        'is_active','subscription_tier'
-      ];
-      const payload: any = { user_id, updated_at: new Date().toISOString() };
-      for (const k of allowed) if (k in fields) payload[k] = fields[k];
-      const { data, error } = await supabaseAdmin
-        .from('dating_profiles')
-        .upsert(payload, { onConflict: 'user_id' })
-        .select()
-        .single();
-      if (error) return json({ valid: true, error: error.message }, 400);
-      return json({ valid: true, success: true, dating: data });
-    }
-
-    // Create a synthetic profile (no auth user)
-    if (action === 'create_synthetic_profile') {
-      const { username, full_name, university, age, gender, bio, avatar_url } = body;
-      if (!username || !String(username).trim()) {
-        return json({ valid: true, error: 'username required' }, 400);
-      }
-      // Generate a fresh UUID for the synthetic user
-      const newUserId = crypto.randomUUID();
-      const { data, error } = await supabaseAdmin
-        .from('profiles')
-        .insert({
-          user_id: newUserId,
-          username: String(username).trim(),
-          full_name: full_name || null,
-          university: university || null,
-          age: age ?? null,
-          gender: gender || null,
-          bio: bio || null,
-          avatar_url: avatar_url || null,
-          approved: true,
-          profile_completed: true,
-          user_type: 'student',
-        })
-        .select()
-        .single();
-      if (error) return json({ valid: true, error: error.message }, 400);
-      return json({ valid: true, success: true, profile: data, user_id: newUserId });
-    }
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import nodemailer from 'npm:nodemailer@6.9.16'
 
@@ -999,6 +913,93 @@ Deno.serve(async (req) => {
         .eq('user_id', user_id);
       if (error) return json({ valid: true, error: error.message }, 400);
       return json({ valid: true, success: true });
+    }
+
+    // Fetch full details for a user (profile + dating profile + preferences)
+    if (action === 'fetch_user_full_details') {
+      const { user_id } = body;
+      if (!user_id) return json({ valid: true, error: 'user_id required' }, 400);
+      const [{ data: profile }, { data: dating }, { data: pref }] = await Promise.all([
+        supabaseAdmin.from('profiles').select('*').eq('user_id', user_id).maybeSingle(),
+        supabaseAdmin.from('dating_profiles').select('*').eq('user_id', user_id).maybeSingle(),
+        supabaseAdmin.from('user_preferences').select('*').eq('user_id', user_id).maybeSingle(),
+      ]);
+      return json({ valid: true, profile, dating, preference: pref });
+    }
+
+    // Update arbitrary profile fields (whitelist)
+    if (action === 'update_profile_fields') {
+      const { user_id, updates } = body;
+      if (!user_id || !updates || typeof updates !== 'object') {
+        return json({ valid: true, error: 'user_id and updates required' }, 400);
+      }
+      const allowed = [
+        'username','full_name','bio','avatar_url','university','major','country','state','area',
+        'campus_year','status_message','linkedin_url','instagram_url','twitter_url','website_url',
+        'age','gender','academic_year','degree_level','personal_email','approved'
+      ];
+      const clean: any = {};
+      for (const k of allowed) if (k in updates) clean[k] = updates[k];
+      clean.updated_at = new Date().toISOString();
+      const { data, error } = await supabaseAdmin
+        .from('profiles')
+        .update(clean)
+        .eq('user_id', user_id)
+        .select()
+        .maybeSingle();
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true, profile: data });
+    }
+
+    // Upsert a dating profile
+    if (action === 'upsert_dating_profile') {
+      const { user_id, fields } = body;
+      if (!user_id || !fields || typeof fields !== 'object') {
+        return json({ valid: true, error: 'user_id and fields required' }, 400);
+      }
+      const allowed = [
+        'gender','interested_in','looking_for','bio','hometown','height','zodiac','smoke','drink',
+        'fav_song','fav_artist','hobbies','places_visited','images_json','prompts_json',
+        'is_active','subscription_tier'
+      ];
+      const payload: any = { user_id, updated_at: new Date().toISOString() };
+      for (const k of allowed) if (k in fields) payload[k] = fields[k];
+      const { data, error } = await supabaseAdmin
+        .from('dating_profiles')
+        .upsert(payload, { onConflict: 'user_id' })
+        .select()
+        .single();
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true, dating: data });
+    }
+
+    // Create a synthetic profile (no auth user)
+    if (action === 'create_synthetic_profile') {
+      const { username, full_name, university, age, gender, bio, avatar_url } = body;
+      if (!username || !String(username).trim()) {
+        return json({ valid: true, error: 'username required' }, 400);
+      }
+      // Generate a fresh UUID for the synthetic user
+      const newUserId = crypto.randomUUID();
+      const { data, error } = await supabaseAdmin
+        .from('profiles')
+        .insert({
+          user_id: newUserId,
+          username: String(username).trim(),
+          full_name: full_name || null,
+          university: university || null,
+          age: age ?? null,
+          gender: gender || null,
+          bio: bio || null,
+          avatar_url: avatar_url || null,
+          approved: true,
+          profile_completed: true,
+          user_type: 'student',
+        })
+        .select()
+        .single();
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true, profile: data, user_id: newUserId });
     }
 
     // ── Clear User Data (keep account, wipe content) ────────
