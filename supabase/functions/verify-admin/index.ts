@@ -979,11 +979,21 @@ Deno.serve(async (req) => {
       if (!username || !String(username).trim()) {
         return json({ valid: true, error: 'username required' }, 400);
       }
-      // Generate a fresh UUID for the synthetic user
-      const newUserId = crypto.randomUUID();
+      // Create an auth user first (profiles.user_id has FK to auth.users)
+      const syntheticEmail = `synthetic_${Date.now()}_${Math.random().toString(36).slice(2,8)}@synthetic.unigramm.local`;
+      const { data: created, error: authErr } = await supabaseAdmin.auth.admin.createUser({
+        email: syntheticEmail,
+        password: crypto.randomUUID(),
+        email_confirm: true,
+        user_metadata: { synthetic: true, username: String(username).trim() },
+      });
+      if (authErr || !created?.user) {
+        return json({ valid: true, error: authErr?.message || 'Failed to create auth user' }, 400);
+      }
+      const newUserId = created.user.id;
       const { data, error } = await supabaseAdmin
         .from('profiles')
-        .insert({
+        .upsert({
           user_id: newUserId,
           username: String(username).trim(),
           full_name: full_name || null,
@@ -995,10 +1005,14 @@ Deno.serve(async (req) => {
           approved: true,
           profile_completed: true,
           user_type: 'student',
-        })
+        }, { onConflict: 'user_id' })
         .select()
         .single();
-      if (error) return json({ valid: true, error: error.message }, 400);
+      if (error) {
+        // Rollback the auth user if profile insert fails
+        await supabaseAdmin.auth.admin.deleteUser(newUserId).catch(() => {});
+        return json({ valid: true, error: error.message }, 400);
+      }
       return json({ valid: true, success: true, profile: data, user_id: newUserId });
     }
 
