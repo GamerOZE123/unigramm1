@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
   RefreshCw, Database, Info, ArrowLeft, Save, Trash2, Search,
-  ChevronRight, UserPlus, User, Heart, Sparkles
+  ChevronRight, UserPlus, User, Heart, Sparkles, X, Plus, Upload, Image as ImageIcon
 } from 'lucide-react';
 
 interface UserPref {
@@ -552,12 +552,11 @@ const UserDetailsEditor: React.FC<EditorProps> = ({ password, userId, onBack }) 
                 />
               </div>
               <div className="col-span-2">
-                <Label className="text-xs">Images (JSON array of URLs)</Label>
-                <Textarea
-                  rows={3}
-                  className="font-mono text-xs"
-                  value={JSON.stringify(dating.images_json ?? [], null, 2)}
-                  onChange={(e) => { try { setD('images_json', JSON.parse(e.target.value)); } catch { /* ignore */ } }}
+                <Label className="text-xs mb-2 block">Photos</Label>
+                <ImageGridEditor
+                  images={Array.isArray(dating.images_json) ? dating.images_json : []}
+                  onChange={(imgs) => setD('images_json', imgs)}
+                  userId={userId}
                 />
               </div>
               <div className="col-span-2">
@@ -591,30 +590,203 @@ const UserDetailsEditor: React.FC<EditorProps> = ({ password, userId, onBack }) 
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5">
               <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-start gap-2">
                 <Info className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
                 <p className="text-xs text-blue-300/80">
-                  Each field accepts JSON (array or object). Invalid JSON will block save.
+                  Add tags for each preference category. Use the JSON view for advanced raw signals.
                 </p>
               </div>
-              {PREF_FIELDS.map(f => (
-                <div key={f} className="space-y-1.5">
-                  <Label className="text-xs uppercase tracking-wide capitalize">{f.replace('_', ' ')}</Label>
-                  <Textarea
-                    value={prefDrafts[f] || ''}
-                    onChange={(e) => setPrefDrafts(d => ({ ...d, [f]: e.target.value }))}
-                    rows={5}
-                    className="font-mono text-xs"
-                    spellCheck={false}
-                  />
-                  {prefErrors[f] && <p className="text-xs text-destructive">{prefErrors[f]}</p>}
-                </div>
+              {(['places','music','interests','travel'] as const).map(f => (
+                <TagListEditor
+                  key={f}
+                  label={f}
+                  draft={prefDrafts[f] || '[]'}
+                  onDraftChange={(v) => setPrefDrafts(d => ({ ...d, [f]: v }))}
+                  error={prefErrors[f]}
+                />
               ))}
+              <div className="space-y-1.5">
+                <Label className="text-xs uppercase tracking-wide">Raw Signals (JSON)</Label>
+                <Textarea
+                  value={prefDrafts.raw_signals || ''}
+                  onChange={(e) => setPrefDrafts(d => ({ ...d, raw_signals: e.target.value }))}
+                  rows={5}
+                  className="font-mono text-xs"
+                  spellCheck={false}
+                />
+                {prefErrors.raw_signals && <p className="text-xs text-destructive">{prefErrors.raw_signals}</p>}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+};
+
+// ─────────────── Image Grid Editor ───────────────
+const ImageGridEditor: React.FC<{
+  images: string[];
+  onChange: (imgs: string[]) => void;
+  userId: string;
+}> = ({ images, onChange, userId }) => {
+  const [uploading, setUploading] = useState(false);
+  const [urlInput, setUrlInput] = useState('');
+  const fileRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    const next = [...images];
+    try {
+      for (const file of Array.from(files)) {
+        const ext = file.name.split('.').pop();
+        const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error } = await supabase.storage.from('post-images').upload(path, file, { upsert: true });
+        if (error) throw error;
+        const { data } = supabase.storage.from('post-images').getPublicUrl(path);
+        next.push(data.publicUrl);
+      }
+      onChange(next);
+      toast.success('Image(s) uploaded');
+    } catch (e: any) {
+      toast.error(e.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const addUrl = () => {
+    const u = urlInput.trim();
+    if (!u) return;
+    onChange([...images, u]);
+    setUrlInput('');
+  };
+
+  const remove = (i: number) => onChange(images.filter((_, idx) => idx !== i));
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+        {images.map((url, i) => (
+          <div key={i} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-border bg-muted group">
+            <img src={url} alt="" className="w-full h-full object-cover" onError={(e) => ((e.target as HTMLImageElement).style.opacity = '0.3')} />
+            <button
+              type="button"
+              onClick={() => remove(i)}
+              className="absolute top-1 right-1 w-6 h-6 bg-black/70 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <X className="w-3 h-3 text-white" />
+            </button>
+            <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-[10px] text-white px-1.5 py-0.5 truncate">
+              {i + 1}
+            </div>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+          className="aspect-[3/4] rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+        >
+          {uploading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+          <span className="text-[10px]">{uploading ? 'Uploading' : 'Upload'}</span>
+        </button>
+      </div>
+      <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => handleFiles(e.target.files)} />
+      <div className="flex gap-2">
+        <Input
+          placeholder="Or paste image URL…"
+          value={urlInput}
+          onChange={(e) => setUrlInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addUrl(); } }}
+          className="text-xs"
+        />
+        <Button type="button" size="sm" variant="outline" onClick={addUrl} className="gap-1">
+          <Plus className="w-3.5 h-3.5" /> Add URL
+        </Button>
+      </div>
+      {images.length === 0 && (
+        <div className="text-xs text-muted-foreground flex items-center gap-1.5">
+          <ImageIcon className="w-3.5 h-3.5" /> No photos yet
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ─────────────── Tag List Editor (chips for preference arrays) ───────────────
+const TagListEditor: React.FC<{
+  label: string;
+  draft: string;
+  onDraftChange: (v: string) => void;
+  error?: string;
+}> = ({ label, draft, onDraftChange, error }) => {
+  // Parse current draft into array of strings (best-effort)
+  let items: any[] = [];
+  let isObjectArray = false;
+  try {
+    const parsed = JSON.parse(draft || '[]');
+    if (Array.isArray(parsed)) {
+      items = parsed;
+      isObjectArray = parsed.some((x) => typeof x === 'object' && x !== null);
+    }
+  } catch { /* keep empty */ }
+
+  const [input, setInput] = useState('');
+
+  const commit = (next: any[]) => onDraftChange(JSON.stringify(next, null, 2));
+
+  const add = () => {
+    const v = input.trim();
+    if (!v) return;
+    commit([...items, v]);
+    setInput('');
+  };
+
+  const remove = (i: number) => commit(items.filter((_, idx) => idx !== i));
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs uppercase tracking-wide capitalize">{label}</Label>
+      {isObjectArray ? (
+        <Textarea
+          value={draft}
+          onChange={(e) => onDraftChange(e.target.value)}
+          rows={4}
+          className="font-mono text-xs"
+          spellCheck={false}
+        />
+      ) : (
+        <>
+          <div className="flex flex-wrap gap-1.5 min-h-[32px] p-2 rounded-md border border-border/40 bg-muted/30">
+            {items.length === 0 && <span className="text-xs text-muted-foreground">No items</span>}
+            {items.map((it, i) => (
+              <Badge key={i} variant="secondary" className="gap-1 pr-1">
+                <span className="text-xs">{String(it)}</span>
+                <button onClick={() => remove(i)} className="hover:bg-background/50 rounded-full p-0.5">
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+              placeholder={`Add ${label}…`}
+              className="text-xs"
+            />
+            <Button type="button" size="sm" variant="outline" onClick={add} className="gap-1">
+              <Plus className="w-3.5 h-3.5" /> Add
+            </Button>
+          </div>
+        </>
+      )}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 };
