@@ -529,7 +529,7 @@ async function getGoogleAccessToken(serviceAccount: {
 }
 
 async function markNotificationsDelivered(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   notifications: PendingNotification[]
 ) {
   const ids = notifications.map(n => n.id)
@@ -540,7 +540,7 @@ async function markNotificationsDelivered(
 }
 
 async function markNotificationsFailed(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   notifications: PendingNotification[],
   errorMessage: string
 ) {
@@ -555,7 +555,7 @@ async function markNotificationsFailed(
 }
 
 async function incrementAttempts(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   notifications: PendingNotification[]
 ) {
   for (const notification of notifications) {
