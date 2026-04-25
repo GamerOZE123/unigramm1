@@ -851,6 +851,70 @@ Deno.serve(async (req) => {
       return json({ valid: true, preferences: enriched });
     }
 
+    // Search profiles to attach a dating preference row to
+    if (action === 'search_profiles_for_dating_prefs') {
+      const { query } = body;
+      let q = supabaseAdmin
+        .from('profiles')
+        .select('user_id, username, full_name, university, avatar_url')
+        .limit(20);
+      if (query && String(query).trim()) {
+        const term = `%${String(query).trim()}%`;
+        q = q.or(`username.ilike.${term},full_name.ilike.${term},email.ilike.${term}`);
+      }
+      const { data, error } = await q;
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, profiles: data });
+    }
+
+    // Fetch a single user preference (with profile)
+    if (action === 'fetch_dating_preference_one') {
+      const { user_id } = body;
+      if (!user_id) return json({ valid: true, error: 'user_id required' }, 400);
+      const { data: pref } = await supabaseAdmin
+        .from('user_preferences')
+        .select('*')
+        .eq('user_id', user_id)
+        .maybeSingle();
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('user_id, username, full_name, university, avatar_url')
+        .eq('user_id', user_id)
+        .maybeSingle();
+      return json({ valid: true, preference: pref, profile });
+    }
+
+    // Upsert (create or update) a dating preference row for a user
+    if (action === 'upsert_dating_preference') {
+      const { user_id, places, music, interests, travel, raw_signals } = body;
+      if (!user_id) return json({ valid: true, error: 'user_id required' }, 400);
+      const payload: any = { user_id, updated_at: new Date().toISOString() };
+      if (places !== undefined) payload.places = places;
+      if (music !== undefined) payload.music = music;
+      if (interests !== undefined) payload.interests = interests;
+      if (travel !== undefined) payload.travel = travel;
+      if (raw_signals !== undefined) payload.raw_signals = raw_signals;
+      const { data, error } = await supabaseAdmin
+        .from('user_preferences')
+        .upsert(payload, { onConflict: 'user_id' })
+        .select()
+        .single();
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true, preference: data });
+    }
+
+    // Delete a user preference row
+    if (action === 'delete_dating_preference') {
+      const { user_id } = body;
+      if (!user_id) return json({ valid: true, error: 'user_id required' }, 400);
+      const { error } = await supabaseAdmin
+        .from('user_preferences')
+        .delete()
+        .eq('user_id', user_id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
     // ── Clear User Data (keep account, wipe content) ────────
     if (action === 'clear_user_data') {
       const { email } = body;
