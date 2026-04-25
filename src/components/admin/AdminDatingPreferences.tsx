@@ -552,12 +552,11 @@ const UserDetailsEditor: React.FC<EditorProps> = ({ password, userId, onBack }) 
                 />
               </div>
               <div className="col-span-2">
-                <Label className="text-xs">Images (JSON array of URLs)</Label>
-                <Textarea
-                  rows={3}
-                  className="font-mono text-xs"
-                  value={JSON.stringify(dating.images_json ?? [], null, 2)}
-                  onChange={(e) => { try { setD('images_json', JSON.parse(e.target.value)); } catch { /* ignore */ } }}
+                <Label className="text-xs mb-2 block">Photos</Label>
+                <ImageGridEditor
+                  images={Array.isArray(dating.images_json) ? dating.images_json : []}
+                  onChange={(imgs) => setD('images_json', imgs)}
+                  userId={userId}
                 />
               </div>
               <div className="col-span-2">
