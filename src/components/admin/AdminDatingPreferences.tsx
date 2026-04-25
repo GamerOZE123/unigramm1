@@ -590,26 +590,33 @@ const UserDetailsEditor: React.FC<EditorProps> = ({ password, userId, onBack }) 
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5">
               <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-start gap-2">
                 <Info className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
                 <p className="text-xs text-blue-300/80">
-                  Each field accepts JSON (array or object). Invalid JSON will block save.
+                  Add tags for each preference category. Use the JSON view for advanced raw signals.
                 </p>
               </div>
-              {PREF_FIELDS.map(f => (
-                <div key={f} className="space-y-1.5">
-                  <Label className="text-xs uppercase tracking-wide capitalize">{f.replace('_', ' ')}</Label>
-                  <Textarea
-                    value={prefDrafts[f] || ''}
-                    onChange={(e) => setPrefDrafts(d => ({ ...d, [f]: e.target.value }))}
-                    rows={5}
-                    className="font-mono text-xs"
-                    spellCheck={false}
-                  />
-                  {prefErrors[f] && <p className="text-xs text-destructive">{prefErrors[f]}</p>}
-                </div>
+              {(['places','music','interests','travel'] as const).map(f => (
+                <TagListEditor
+                  key={f}
+                  label={f}
+                  draft={prefDrafts[f] || '[]'}
+                  onDraftChange={(v) => setPrefDrafts(d => ({ ...d, [f]: v }))}
+                  error={prefErrors[f]}
+                />
               ))}
+              <div className="space-y-1.5">
+                <Label className="text-xs uppercase tracking-wide">Raw Signals (JSON)</Label>
+                <Textarea
+                  value={prefDrafts.raw_signals || ''}
+                  onChange={(e) => setPrefDrafts(d => ({ ...d, raw_signals: e.target.value }))}
+                  rows={5}
+                  className="font-mono text-xs"
+                  spellCheck={false}
+                />
+                {prefErrors.raw_signals && <p className="text-xs text-destructive">{prefErrors.raw_signals}</p>}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
