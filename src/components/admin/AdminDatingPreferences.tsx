@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
-  RefreshCw, Database, Info, ArrowLeft, Save, Trash2, Search,
+  RefreshCw, Database, Info, ArrowLeft, Save, Trash2,
   ChevronRight, UserPlus, User, Heart, Sparkles, X, Plus, Upload, Image as ImageIcon
 } from 'lucide-react';
 
