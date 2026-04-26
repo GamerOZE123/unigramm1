@@ -975,7 +975,7 @@ Deno.serve(async (req) => {
 
     // Create a synthetic profile (no auth user)
     if (action === 'create_synthetic_profile') {
-      const { username, full_name, university, age, gender, bio, avatar_url } = body;
+      const { username, full_name, university, age, avatar_url, dating } = body;
       if (!username || !String(username).trim()) {
         return json({ valid: true, error: 'username required' }, 400);
       }
@@ -999,8 +999,8 @@ Deno.serve(async (req) => {
           full_name: full_name || null,
           university: university || null,
           age: age ?? null,
-          gender: gender || null,
-          bio: bio || null,
+          gender: dating?.gender || null,
+          bio: dating?.bio || null,
           avatar_url: avatar_url || null,
           approved: true,
           profile_completed: true,
@@ -1012,6 +1012,28 @@ Deno.serve(async (req) => {
         // Rollback the auth user if profile insert fails
         await supabaseAdmin.auth.admin.deleteUser(newUserId).catch(() => {});
         return json({ valid: true, error: error.message }, 400);
+      }
+      // Create the dating_profiles row
+      const { error: dpErr } = await supabaseAdmin
+        .from('dating_profiles')
+        .upsert({
+          user_id: newUserId,
+          gender: dating?.gender || null,
+          interested_in: dating?.interested_in || null,
+          looking_for: dating?.looking_for || null,
+          bio: dating?.bio || null,
+          hometown: dating?.hometown || null,
+          height: dating?.height || null,
+          zodiac: dating?.zodiac || null,
+          smoke: dating?.smoke || null,
+          drink: dating?.drink || null,
+          fav_song: dating?.fav_song || null,
+          fav_artist: dating?.fav_artist || null,
+          is_active: true,
+          images_json: [],
+        }, { onConflict: 'user_id' });
+      if (dpErr) {
+        return json({ valid: true, success: true, profile: data, user_id: newUserId, dating_warning: dpErr.message });
       }
       return json({ valid: true, success: true, profile: data, user_id: newUserId });
     }
