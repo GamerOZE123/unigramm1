@@ -12,7 +12,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
   RefreshCw, Database, Info, ArrowLeft, Save, Trash2,
-  ChevronRight, UserPlus, User, Heart, Sparkles, X, Plus, Upload, Image as ImageIcon
+  ChevronRight, UserPlus, User, Heart, Sparkles, X, Plus, Upload, Image as ImageIcon,
+  MessageSquareX, RotateCcw, Smartphone
 } from 'lucide-react';
 
 interface UserPref {
@@ -569,6 +570,35 @@ const UserDetailsEditor: React.FC<EditorProps> = ({ password, userId, onBack }) 
     setPrefDrafts({ ...prefDrafts });
   };
 
+  const clearChats = async () => {
+    if (!confirm('Clear all dating matches & chats for this user? Likes/passes are kept.')) return;
+    const { data, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password, action: 'clear_dating_user_chats', user_id: userId },
+    });
+    if (error || !data?.valid || data.error) { toast.error(data?.error || 'Failed'); return; }
+    toast.success(`Cleared ${data.cleared_matches || 0} match(es) & their chats`);
+  };
+
+  const resetSwipes = async () => {
+    if (!confirm('Reset all swipes for this user? Removes likes, passes, matches & chats.')) return;
+    const { data, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password, action: 'reset_dating_user', user_id: userId },
+    });
+    if (error || !data?.valid || data.error) { toast.error(data?.error || 'Failed'); return; }
+    toast.success('Swipes & matches reset');
+  };
+
+  const deleteDatingProfile = async () => {
+    if (!confirm('Permanently delete this user\'s dating profile? Cannot be undone.')) return;
+    const { data, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password, action: 'delete_dating_profile', user_id: userId },
+    });
+    if (error || !data?.valid || data.error) { toast.error(data?.error || 'Failed'); return; }
+    toast.success('Dating profile deleted');
+    setDating({ user_id: userId });
+    setHasDating(false);
+  };
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -605,6 +635,8 @@ const UserDetailsEditor: React.FC<EditorProps> = ({ password, userId, onBack }) 
           <TabsTrigger value="profile" className="gap-1.5"><User className="w-3.5 h-3.5" /> Profile</TabsTrigger>
           <TabsTrigger value="dating" className="gap-1.5"><Heart className="w-3.5 h-3.5" /> Dating Profile</TabsTrigger>
           <TabsTrigger value="prefs" className="gap-1.5"><Sparkles className="w-3.5 h-3.5" /> Preferences</TabsTrigger>
+          <TabsTrigger value="preview" className="gap-1.5"><Smartphone className="w-3.5 h-3.5" /> Card Preview</TabsTrigger>
+          <TabsTrigger value="reset" className="gap-1.5"><RotateCcw className="w-3.5 h-3.5" /> Reset</TabsTrigger>
         </TabsList>
 
         {/* PROFILE TAB */}
