@@ -79,7 +79,7 @@ const AdminDatingPreferences: React.FC<Props> = ({ password }) => {
             </CardTitle>
             <div className="flex items-center gap-2">
               <Button size="sm" onClick={() => setAddOpen(true)} className="gap-1.5">
-                <UserPlus className="w-3.5 h-3.5" /> Add User
+                <UserPlus className="w-3.5 h-3.5" /> Create Profile
               </Button>
               <Button variant="ghost" size="icon" onClick={fetchPrefs}>
                 <RefreshCw className="w-4 h-4" />
@@ -169,11 +169,6 @@ interface AddUserProps {
 }
 
 const AddUserDialog: React.FC<AddUserProps> = ({ open, onOpenChange, password, onPick }) => {
-  const [tab, setTab] = useState<'search' | 'create'>('search');
-  // search
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<any[]>([]);
-  const [searching, setSearching] = useState(false);
   // create
   const [form, setForm] = useState({
     username: '', full_name: '', university: '', age: '', avatar_url: '',
@@ -182,22 +177,6 @@ const AddUserDialog: React.FC<AddUserProps> = ({ open, onOpenChange, password, o
     fav_song: '', fav_artist: '',
   });
   const [creating, setCreating] = useState(false);
-
-  const search = async (q: string) => {
-    setSearching(true);
-    const { data, error } = await supabase.functions.invoke('verify-admin', {
-      body: { password, action: 'search_profiles_for_dating_prefs', query: q },
-    });
-    if (error || !data?.valid) toast.error('Search failed');
-    else setResults(data.profiles || []);
-    setSearching(false);
-  };
-
-  useEffect(() => {
-    if (!open || tab !== 'search') return;
-    const t = setTimeout(() => search(query), 250);
-    return () => clearTimeout(t);
-  }, [query, open, tab]);
 
   const create = async () => {
     if (!form.username.trim()) { toast.error('Username is required'); return; }
@@ -245,53 +224,10 @@ const AddUserDialog: React.FC<AddUserProps> = ({ open, onOpenChange, password, o
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="text-base flex items-center gap-2">
-            <UserPlus className="w-4 h-4" /> Add User
+            <UserPlus className="w-4 h-4" /> Create Profile
           </DialogTitle>
         </DialogHeader>
-        <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
-          <TabsList className="grid grid-cols-2 w-full">
-            <TabsTrigger value="search">Existing User</TabsTrigger>
-            <TabsTrigger value="create">Create New</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="search" className="space-y-3 mt-3">
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search by username, name or email…"
-                className="pl-9"
-                autoFocus
-              />
-            </div>
-            <ScrollArea className="max-h-[45vh]">
-              <div className="space-y-1">
-                {searching && <p className="text-xs text-muted-foreground text-center py-3">Searching…</p>}
-                {!searching && results.length === 0 && (
-                  <p className="text-xs text-muted-foreground text-center py-3">No users found</p>
-                )}
-                {results.map(u => (
-                  <button
-                    key={u.user_id}
-                    onClick={() => onPick(u.user_id)}
-                    className="w-full flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted text-left transition-colors"
-                  >
-                    <div className="w-8 h-8 rounded-full bg-muted overflow-hidden shrink-0">
-                      {u.avatar_url && <img src={u.avatar_url} alt="" className="w-full h-full object-cover" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{u.full_name || u.username || u.user_id.slice(0,8)}</p>
-                      <p className="text-xs text-muted-foreground truncate">@{u.username || '—'} · {u.university || '—'}</p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                  </button>
-                ))}
-              </div>
-            </ScrollArea>
-          </TabsContent>
-
-          <TabsContent value="create" className="space-y-3 mt-3">
+        <div className="space-y-3 mt-1">
             <p className="text-xs text-muted-foreground">
               Creates a synthetic dating profile. You'll be taken to the editor next.
             </p>
@@ -370,8 +306,7 @@ const AddUserDialog: React.FC<AddUserProps> = ({ open, onOpenChange, password, o
             <Button onClick={create} disabled={creating} className="w-full gap-1.5">
               <UserPlus className="w-4 h-4" /> {creating ? 'Creating…' : 'Create & Edit'}
             </Button>
-          </TabsContent>
-        </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );
