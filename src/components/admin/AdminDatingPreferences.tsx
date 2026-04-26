@@ -12,7 +12,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
   RefreshCw, Database, Info, ArrowLeft, Save, Trash2,
-  ChevronRight, UserPlus, User, Heart, Sparkles, X, Plus, Upload, Image as ImageIcon
+  ChevronRight, UserPlus, User, Heart, Sparkles, X, Plus, Upload, Image as ImageIcon,
+  MessageSquareX, RotateCcw, Smartphone
 } from 'lucide-react';
 
 interface UserPref {
@@ -569,6 +570,35 @@ const UserDetailsEditor: React.FC<EditorProps> = ({ password, userId, onBack }) 
     setPrefDrafts({ ...prefDrafts });
   };
 
+  const clearChats = async () => {
+    if (!confirm('Clear all dating matches & chats for this user? Likes/passes are kept.')) return;
+    const { data, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password, action: 'clear_dating_user_chats', user_id: userId },
+    });
+    if (error || !data?.valid || data.error) { toast.error(data?.error || 'Failed'); return; }
+    toast.success(`Cleared ${data.cleared_matches || 0} match(es) & their chats`);
+  };
+
+  const resetSwipes = async () => {
+    if (!confirm('Reset all swipes for this user? Removes likes, passes, matches & chats.')) return;
+    const { data, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password, action: 'reset_dating_user', user_id: userId },
+    });
+    if (error || !data?.valid || data.error) { toast.error(data?.error || 'Failed'); return; }
+    toast.success('Swipes & matches reset');
+  };
+
+  const deleteDatingProfile = async () => {
+    if (!confirm('Permanently delete this user\'s dating profile? Cannot be undone.')) return;
+    const { data, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password, action: 'delete_dating_profile', user_id: userId },
+    });
+    if (error || !data?.valid || data.error) { toast.error(data?.error || 'Failed'); return; }
+    toast.success('Dating profile deleted');
+    setDating({ user_id: userId });
+    setHasDating(false);
+  };
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -605,6 +635,8 @@ const UserDetailsEditor: React.FC<EditorProps> = ({ password, userId, onBack }) 
           <TabsTrigger value="profile" className="gap-1.5"><User className="w-3.5 h-3.5" /> Profile</TabsTrigger>
           <TabsTrigger value="dating" className="gap-1.5"><Heart className="w-3.5 h-3.5" /> Dating Profile</TabsTrigger>
           <TabsTrigger value="prefs" className="gap-1.5"><Sparkles className="w-3.5 h-3.5" /> Preferences</TabsTrigger>
+          <TabsTrigger value="preview" className="gap-1.5"><Smartphone className="w-3.5 h-3.5" /> Card Preview</TabsTrigger>
+          <TabsTrigger value="reset" className="gap-1.5"><RotateCcw className="w-3.5 h-3.5" /> Reset</TabsTrigger>
         </TabsList>
 
         {/* PROFILE TAB */}
@@ -757,10 +789,283 @@ const UserDetailsEditor: React.FC<EditorProps> = ({ password, userId, onBack }) 
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* PREVIEW TAB — Dating card in phone mockup */}
+        <TabsContent value="preview">
+          <Card className="border-border/40">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Smartphone className="w-3.5 h-3.5" /> Dating Card Preview
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DatingCardPhonePreview profile={profile} dating={dating} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* RESET TAB — destructive testing controls */}
+        <TabsContent value="reset">
+          <Card className="border-border/40 border-destructive/30">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-destructive">
+                <RotateCcw className="w-3.5 h-3.5" /> Reset & Cleanup (Testing)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <ResetRow
+                title="Clear matches & chats"
+                description="Removes all matches and their messages. Likes/passes are kept so swipe history remains."
+                icon={<MessageSquareX className="w-4 h-4" />}
+                onClick={clearChats}
+              />
+              <ResetRow
+                title="Reset all swipes"
+                description="Wipes likes, passes, matches and chats — like the user just signed up."
+                icon={<RotateCcw className="w-4 h-4" />}
+                onClick={resetSwipes}
+                destructive
+              />
+              <ResetRow
+                title="Delete dating profile"
+                description="Removes the dating profile entirely (also clears interactions). Main account is kept."
+                icon={<Trash2 className="w-4 h-4" />}
+                onClick={deleteDatingProfile}
+                destructive
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
 };
+
+// ─────────────── Reset Row ───────────────
+const ResetRow: React.FC<{
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  onClick: () => void;
+  destructive?: boolean;
+}> = ({ title, description, icon, onClick, destructive }) => (
+  <div className="flex items-start justify-between gap-4 p-3 rounded-lg border border-border/40 bg-muted/20">
+    <div className="flex items-start gap-3">
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${destructive ? 'bg-destructive/10 text-destructive' : 'bg-amber-500/10 text-amber-500'}`}>
+        {icon}
+      </div>
+      <div>
+        <p className="text-sm font-medium">{title}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+      </div>
+    </div>
+    <Button size="sm" variant={destructive ? 'destructive' : 'outline'} onClick={onClick} className="shrink-0">
+      Run
+    </Button>
+  </div>
+);
+
+// ─────────────── Dating Card Phone Preview ───────────────
+const DatingCardPhonePreview: React.FC<{ profile: any; dating: any }> = ({ profile, dating }) => {
+  const images: string[] = Array.isArray(dating?.images_json) ? dating.images_json : [];
+  const hobbies: string[] = Array.isArray(dating?.hobbies)
+    ? dating.hobbies
+    : (typeof dating?.hobbies === 'string' ? dating.hobbies.split(',').map((s: string) => s.trim()).filter(Boolean) : []);
+  const places: string[] = Array.isArray(dating?.places_visited)
+    ? dating.places_visited
+    : (typeof dating?.places_visited === 'string' ? dating.places_visited.split(',').map((s: string) => s.trim()).filter(Boolean) : []);
+  const prompts: any[] = Array.isArray(dating?.prompts_json) ? dating.prompts_json : [];
+  const topArtists: any[] = Array.isArray(dating?.top_artists) ? dating.top_artists : [];
+  const heroImage = images[0] || profile?.avatar_url || null;
+  const name = profile?.full_name || profile?.username || 'Unnamed';
+  const age = profile?.age;
+
+  return (
+    <div className="flex justify-center py-4">
+      {/* Phone frame */}
+      <div
+        className="relative rounded-[42px] p-3 shadow-2xl"
+        style={{
+          width: 360,
+          background: 'linear-gradient(160deg, #1a1a24 0%, #0a0a10 100%)',
+          border: '1px solid rgba(255,255,255,0.08)',
+        }}
+      >
+        {/* Notch */}
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-28 h-6 rounded-full" style={{ background: '#050508' }} />
+        <div
+          className="rounded-[34px] overflow-hidden"
+          style={{ background: '#050508', height: 720 }}
+        >
+          <div className="h-full overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+            {/* Hero image */}
+            <div className="relative w-full" style={{ aspectRatio: '4/5', background: '#0F0F16' }}>
+              {heroImage ? (
+                <img src={heroImage} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-[#4A4860] text-xs">
+                  No photo
+                </div>
+              )}
+              <div
+                className="absolute inset-x-0 bottom-0 px-5 pb-5 pt-16"
+                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)' }}
+              >
+                <p className="text-white text-3xl font-bold leading-none">
+                  {name}{age ? <span className="font-light">, {age}</span> : null}
+                </p>
+                {profile?.university && (
+                  <p className="text-white/80 text-xs mt-2 tracking-wider uppercase">{profile.university}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="px-5 py-5 space-y-5">
+              {/* About */}
+              {dating?.bio && (
+                <Section label="ABOUT ME">
+                  <p className="text-[#FFFFFF] text-sm leading-relaxed">{dating.bio}</p>
+                </Section>
+              )}
+
+              {/* Quick facts chips */}
+              {(dating?.hometown || dating?.height || dating?.zodiac || dating?.smoke || dating?.drink) && (
+                <Section label="BASICS">
+                  <div className="flex flex-wrap gap-2">
+                    {dating?.hometown && <Chip icon="📍" text={dating.hometown} />}
+                    {dating?.height && <Chip icon="📏" text={dating.height} />}
+                    {dating?.zodiac && <Chip icon="✨" text={dating.zodiac} />}
+                    {dating?.smoke && <Chip icon="🚬" text={dating.smoke} />}
+                    {dating?.drink && <Chip icon="🍷" text={dating.drink} />}
+                    {dating?.looking_for && <Chip icon="💞" text={dating.looking_for} />}
+                  </div>
+                </Section>
+              )}
+
+              {/* Photo 2 */}
+              {images[1] && (
+                <div className="rounded-2xl overflow-hidden" style={{ aspectRatio: '4/5', background: '#0F0F16' }}>
+                  <img src={images[1]} alt="" className="w-full h-full object-cover" />
+                </div>
+              )}
+
+              {/* Prompts */}
+              {prompts.length > 0 && (
+                <Section label="PROMPTS">
+                  <div className="space-y-3">
+                    {prompts.map((p, i) => (
+                      <div key={i} className="rounded-2xl p-4 border" style={{ background: '#161622', borderColor: 'rgba(255,255,255,0.06)' }}>
+                        <p className="text-white text-[13px] font-bold">{p.question || p.prompt || 'Prompt'}</p>
+                        {p.answer && <p className="text-[#7C6FF7] text-[15px] font-semibold mt-2">{p.answer}</p>}
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* Interests */}
+              {hobbies.length > 0 && (
+                <Section label="INTERESTS">
+                  <div className="flex flex-wrap gap-2">
+                    {hobbies.map((h, i) => (
+                      <span
+                        key={i}
+                        className="px-3 py-2 rounded-full text-[13px] font-semibold border"
+                        style={{ background: 'rgba(124,111,247,0.15)', color: '#fff', borderColor: '#7C6FF7' }}
+                      >
+                        {h}
+                      </span>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* Music DNA */}
+              {topArtists.length > 0 && (
+                <Section label="MUSIC DNA">
+                  <div className="rounded-2xl p-4 border space-y-2" style={{ background: '#0F0F16', borderColor: 'rgba(255,255,255,0.06)' }}>
+                    {topArtists.slice(0, 5).map((a: any, i: number) => (
+                      <div key={i} className="flex items-center gap-3 p-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                        {a.avatar ? (
+                          <img src={a.avatar} alt="" className="w-9 h-9 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-9 h-9 rounded-full" style={{ background: '#161622' }} />
+                        )}
+                        <p className="flex-1 text-white text-[13px] font-semibold truncate">{a.name}</p>
+                        <span style={{ color: '#1DB954' }} className="text-xs font-bold">♫</span>
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+              )}
+
+              {/* Photo 3 */}
+              {images[2] && (
+                <div className="rounded-2xl overflow-hidden" style={{ aspectRatio: '4/5', background: '#0F0F16' }}>
+                  <img src={images[2]} alt="" className="w-full h-full object-cover" />
+                </div>
+              )}
+
+              {/* Travel */}
+              {places.length > 0 && (
+                <Section label="TRAVEL STORY">
+                  <div className="rounded-2xl p-4 border flex items-center gap-3" style={{ background: '#0F0F16', borderColor: 'rgba(255,255,255,0.06)' }}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(124,111,247,0.1)' }}>
+                      <span style={{ color: '#7C6FF7' }}>🌍</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-bold">{places.length} Places Pinned</p>
+                      <p className="text-[#A0A0B8] text-xs truncate">{places.join(' · ')}</p>
+                    </div>
+                  </div>
+                </Section>
+              )}
+
+              {/* Remaining photos */}
+              {images.slice(3).map((img, i) => (
+                <div key={i} className="rounded-2xl overflow-hidden" style={{ aspectRatio: '4/5', background: '#0F0F16' }}>
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </div>
+              ))}
+
+              {/* Verified */}
+              <Section label="VERIFIED INFO">
+                <div className="rounded-2xl p-4 border space-y-3" style={{ background: '#0F0F16', borderColor: 'rgba(255,255,255,0.06)' }}>
+                  <div className="flex items-center gap-3">
+                    <span style={{ color: '#4A4860' }}>🎓</span>
+                    <p className="text-[#A0A0B8] text-sm font-semibold">{profile?.university || 'University verified'}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span style={{ color: '#4A4860' }}>📖</span>
+                    <p className="text-[#A0A0B8] text-sm font-semibold">{profile?.major || 'Major verified'}</p>
+                  </div>
+                </div>
+              </Section>
+
+              <div className="h-6" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Section: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <div>
+    <p className="text-[11px] font-extrabold tracking-[2px] mb-3" style={{ color: '#4A4860' }}>{label}</p>
+    {children}
+  </div>
+);
+
+const Chip: React.FC<{ icon: string; text: string }> = ({ icon, text }) => (
+  <span
+    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold border"
+    style={{ background: '#0F0F16', borderColor: 'rgba(255,255,255,0.06)', color: '#A0A0B8' }}
+  >
+    <span>{icon}</span>{text}
+  </span>
+);
 
 // ─────────────── Image Grid Editor ───────────────
 const ImageGridEditor: React.FC<{

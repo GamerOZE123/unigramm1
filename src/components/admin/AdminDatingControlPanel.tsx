@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Heart, Play, Pause, Users, Timer, Eye, Clock, RefreshCw, Save, X } from 'lucide-react';
+import { Heart, Play, Pause, Users, Timer, Eye, Clock, RefreshCw, Save, X, RotateCw } from 'lucide-react';
 
 interface DatingConfig {
   id: string;
@@ -32,6 +32,7 @@ const AdminDatingControlPanel: React.FC<Props> = ({ password }) => {
   const [enrolledCount, setEnrolledCount] = useState(0);
   const [threshold, setThreshold] = useState('50');
   const [launchAt, setLaunchAt] = useState('');
+  const [syncing, setSyncing] = useState(false);
 
   const fetchConfig = async () => {
     setLoading(true);
@@ -55,6 +56,18 @@ const AdminDatingControlPanel: React.FC<Props> = ({ password }) => {
       .eq('is_active', true);
     setEnrolledCount(count || 0);
     setLoading(false);
+  };
+
+  const syncEnrolled = async () => {
+    setSyncing(true);
+    const { data, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password, action: 'sync_dating_enrolled_count' },
+    });
+    setSyncing(false);
+    if (error || !data?.valid) { toast.error('Sync failed'); return; }
+    setEnrolledCount(data.enrolled_count || 0);
+    toast.success(`Enrolled count synced: ${data.enrolled_count || 0}`);
+    fetchConfig();
   };
 
   useEffect(() => { fetchConfig(); }, []);
@@ -123,6 +136,9 @@ const AdminDatingControlPanel: React.FC<Props> = ({ password }) => {
                   <p className="text-xs text-muted-foreground">Enrolled</p>
                 </div>
               </div>
+              <Button variant="outline" size="sm" onClick={syncEnrolled} disabled={syncing} className="gap-1.5">
+                <RotateCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} /> Sync
+              </Button>
               <Button variant="ghost" size="icon" onClick={fetchConfig}>
                 <RefreshCw className="w-4 h-4" />
               </Button>
