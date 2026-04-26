@@ -1,0 +1,2 @@
+CREATE POLICY "Update Dating Images" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'dating-photos') WITH CHECK (bucket_id = 'dating-photos');
+CREATE POLICY "Delete Dating Images" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'dating-photos');
