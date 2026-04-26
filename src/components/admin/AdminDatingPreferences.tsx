@@ -175,7 +175,12 @@ const AddUserDialog: React.FC<AddUserProps> = ({ open, onOpenChange, password, o
   const [results, setResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   // create
-  const [form, setForm] = useState({ username: '', full_name: '', university: '', age: '', gender: '', bio: '', avatar_url: '' });
+  const [form, setForm] = useState({
+    username: '', full_name: '', university: '', age: '', avatar_url: '',
+    gender: '', interested_in: '', looking_for: '', bio: '',
+    hometown: '', height: '', zodiac: '', smoke: '', drink: '',
+    fav_song: '', fav_artist: '',
+  });
   const [creating, setCreating] = useState(false);
 
   const search = async (q: string) => {
@@ -204,9 +209,20 @@ const AddUserDialog: React.FC<AddUserProps> = ({ open, onOpenChange, password, o
         full_name: form.full_name || null,
         university: form.university || null,
         age: form.age ? parseInt(form.age, 10) : null,
-        gender: form.gender || null,
-        bio: form.bio || null,
         avatar_url: form.avatar_url || null,
+        dating: {
+          gender: form.gender || null,
+          interested_in: form.interested_in || null,
+          looking_for: form.looking_for || null,
+          bio: form.bio || null,
+          hometown: form.hometown || null,
+          height: form.height || null,
+          zodiac: form.zodiac || null,
+          smoke: form.smoke || null,
+          drink: form.drink || null,
+          fav_song: form.fav_song || null,
+          fav_artist: form.fav_artist || null,
+        },
       },
     });
     setCreating(false);
@@ -214,8 +230,13 @@ const AddUserDialog: React.FC<AddUserProps> = ({ open, onOpenChange, password, o
       toast.error(data?.error || 'Failed to create profile');
       return;
     }
-    toast.success('Profile created');
-    setForm({ username: '', full_name: '', university: '', age: '', gender: '', bio: '', avatar_url: '' });
+    toast.success('Dating profile created');
+    setForm({
+      username: '', full_name: '', university: '', age: '', avatar_url: '',
+      gender: '', interested_in: '', looking_for: '', bio: '',
+      hometown: '', height: '', zodiac: '', smoke: '', drink: '',
+      fav_song: '', fav_artist: '',
+    });
     onPick(data.user_id);
   };
 
@@ -272,38 +293,80 @@ const AddUserDialog: React.FC<AddUserProps> = ({ open, onOpenChange, password, o
 
           <TabsContent value="create" className="space-y-3 mt-3">
             <p className="text-xs text-muted-foreground">
-              Creates a synthetic profile (no auth account). You'll be taken to the editor next.
+              Creates a synthetic dating profile. You'll be taken to the editor next.
             </p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <Label className="text-xs">Username *</Label>
-                <Input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="e.g. jane_doe" />
+            <ScrollArea className="max-h-[55vh] pr-2">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <Label className="text-xs">Username *</Label>
+                  <Input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="e.g. jane_doe" />
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-xs">Full Name</Label>
+                  <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">University</Label>
+                  <Input value={form.university} onChange={(e) => setForm({ ...form, university: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Age</Label>
+                  <Input type="number" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} />
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-xs">Avatar URL</Label>
+                  <Input value={form.avatar_url} onChange={(e) => setForm({ ...form, avatar_url: e.target.value })} />
+                </div>
+
+                <div className="col-span-2 pt-2 border-t border-border/40">
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Dating Profile</p>
+                </div>
+                <div>
+                  <Label className="text-xs">Gender</Label>
+                  <Input value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} placeholder="Male / Female / Non-binary" />
+                </div>
+                <div>
+                  <Label className="text-xs">Interested In</Label>
+                  <Input value={form.interested_in} onChange={(e) => setForm({ ...form, interested_in: e.target.value })} placeholder="Male / Female / Everyone" />
+                </div>
+                <div>
+                  <Label className="text-xs">Looking For</Label>
+                  <Input value={form.looking_for} onChange={(e) => setForm({ ...form, looking_for: e.target.value })} placeholder="Relationship / Casual / Friendship" />
+                </div>
+                <div>
+                  <Label className="text-xs">Hometown</Label>
+                  <Input value={form.hometown} onChange={(e) => setForm({ ...form, hometown: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Height</Label>
+                  <Input value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })} placeholder='e.g. 5&apos;9"' />
+                </div>
+                <div>
+                  <Label className="text-xs">Zodiac</Label>
+                  <Input value={form.zodiac} onChange={(e) => setForm({ ...form, zodiac: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Smoke</Label>
+                  <Input value={form.smoke} onChange={(e) => setForm({ ...form, smoke: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Drink</Label>
+                  <Input value={form.drink} onChange={(e) => setForm({ ...form, drink: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Favorite Song</Label>
+                  <Input value={form.fav_song} onChange={(e) => setForm({ ...form, fav_song: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="text-xs">Favorite Artist</Label>
+                  <Input value={form.fav_artist} onChange={(e) => setForm({ ...form, fav_artist: e.target.value })} />
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-xs">Bio</Label>
+                  <Textarea rows={2} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
+                </div>
               </div>
-              <div className="col-span-2">
-                <Label className="text-xs">Full Name</Label>
-                <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
-              </div>
-              <div>
-                <Label className="text-xs">University</Label>
-                <Input value={form.university} onChange={(e) => setForm({ ...form, university: e.target.value })} />
-              </div>
-              <div>
-                <Label className="text-xs">Age</Label>
-                <Input type="number" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} />
-              </div>
-              <div>
-                <Label className="text-xs">Gender</Label>
-                <Input value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} />
-              </div>
-              <div>
-                <Label className="text-xs">Avatar URL</Label>
-                <Input value={form.avatar_url} onChange={(e) => setForm({ ...form, avatar_url: e.target.value })} />
-              </div>
-              <div className="col-span-2">
-                <Label className="text-xs">Bio</Label>
-                <Textarea rows={2} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
-              </div>
-            </div>
+            </ScrollArea>
             <Button onClick={create} disabled={creating} className="w-full gap-1.5">
               <UserPlus className="w-4 h-4" /> {creating ? 'Creating…' : 'Create & Edit'}
             </Button>
