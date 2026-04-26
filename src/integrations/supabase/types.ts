@@ -1796,6 +1796,8 @@ export type Database = {
           prompts_json: Json | null
           smoke: string | null
           subscription_tier: string | null
+          top_artists: Json | null
+          top_track: Json | null
           updated_at: string | null
           user_id: string
           visibility_json: Json | null
@@ -1821,6 +1823,8 @@ export type Database = {
           prompts_json?: Json | null
           smoke?: string | null
           subscription_tier?: string | null
+          top_artists?: Json | null
+          top_track?: Json | null
           updated_at?: string | null
           user_id: string
           visibility_json?: Json | null
@@ -1846,6 +1850,8 @@ export type Database = {
           prompts_json?: Json | null
           smoke?: string | null
           subscription_tier?: string | null
+          top_artists?: Json | null
+          top_track?: Json | null
           updated_at?: string | null
           user_id?: string
           visibility_json?: Json | null
