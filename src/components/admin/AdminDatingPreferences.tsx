@@ -366,9 +366,9 @@ const DragDropImageGrid: React.FC<{
         if (!file.type.startsWith('image/')) continue;
         const ext = file.name.split('.').pop();
         const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error } = await supabase.storage.from('post-images').upload(path, file, { upsert: true });
+        const { error } = await supabase.storage.from('dating-photos').upload(path, file, { upsert: true });
         if (error) throw error;
-        const { data } = supabase.storage.from('post-images').getPublicUrl(path);
+        const { data } = supabase.storage.from('dating-photos').getPublicUrl(path);
         next.push(data.publicUrl);
       }
       onChange(next);
@@ -1085,9 +1085,9 @@ const ImageGridEditor: React.FC<{
       for (const file of Array.from(files)) {
         const ext = file.name.split('.').pop();
         const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error } = await supabase.storage.from('post-images').upload(path, file, { upsert: true });
+        const { error } = await supabase.storage.from('dating-photos').upload(path, file, { upsert: true });
         if (error) throw error;
-        const { data } = supabase.storage.from('post-images').getPublicUrl(path);
+        const { data } = supabase.storage.from('dating-photos').getPublicUrl(path);
         next.push(data.publicUrl);
       }
       onChange(next);
