@@ -1030,12 +1030,88 @@ Deno.serve(async (req) => {
           fav_song: dating?.fav_song || null,
           fav_artist: dating?.fav_artist || null,
           is_active: true,
-          images_json: [],
+          images_json: Array.isArray(dating?.images_json) ? dating!.images_json : [],
         }, { onConflict: 'user_id' });
       if (dpErr) {
         return json({ valid: true, success: true, profile: data, user_id: newUserId, dating_warning: dpErr.message });
       }
       return json({ valid: true, success: true, profile: data, user_id: newUserId });
+    }
+
+    // ── Dating: clear matches & messages (keep profiles & likes) ────────
+    if (action === 'clear_dating_user_chats') {
+      const { user_id } = body;
+      if (!user_id) return json({ valid: true, error: 'user_id required' }, 400);
+      // Find all matches involving this user
+      const { data: matches } = await supabaseAdmin
+        .from('dating_matches')
+        .select('id')
+        .or(`user1_id.eq.${user_id},user2_id.eq.${user_id}`);
+      const matchIds = (matches || []).map((m: any) => m.id);
+      if (matchIds.length) {
+        await supabaseAdmin.from('dating_messages').delete().in('match_id', matchIds);
+        await supabaseAdmin.from('dating_matches').delete().in('id', matchIds);
+      }
+      return json({ valid: true, success: true, cleared_matches: matchIds.length });
+    }
+
+    // ── Dating: full reset for one user (likes, passes, matches, messages) ────────
+    if (action === 'reset_dating_user') {
+      const { user_id } = body;
+      if (!user_id) return json({ valid: true, error: 'user_id required' }, 400);
+      const { data: matches } = await supabaseAdmin
+        .from('dating_matches')
+        .select('id')
+        .or(`user1_id.eq.${user_id},user2_id.eq.${user_id}`);
+      const matchIds = (matches || []).map((m: any) => m.id);
+      if (matchIds.length) {
+        await supabaseAdmin.from('dating_messages').delete().in('match_id', matchIds);
+        await supabaseAdmin.from('dating_matches').delete().in('id', matchIds);
+      }
+      await supabaseAdmin.from('dating_likes').delete().or(`from_user_id.eq.${user_id},to_user_id.eq.${user_id}`);
+      await supabaseAdmin.from('dating_passes').delete().or(`from_user_id.eq.${user_id},to_user_id.eq.${user_id}`);
+      return json({ valid: true, success: true, cleared_matches: matchIds.length });
+    }
+
+    // ── Dating: delete the dating profile entirely ────────
+    if (action === 'delete_dating_profile') {
+      const { user_id } = body;
+      if (!user_id) return json({ valid: true, error: 'user_id required' }, 400);
+      // First wipe interactions to satisfy any FKs
+      const { data: matches } = await supabaseAdmin
+        .from('dating_matches')
+        .select('id')
+        .or(`user1_id.eq.${user_id},user2_id.eq.${user_id}`);
+      const matchIds = (matches || []).map((m: any) => m.id);
+      if (matchIds.length) {
+        await supabaseAdmin.from('dating_messages').delete().in('match_id', matchIds);
+        await supabaseAdmin.from('dating_matches').delete().in('id', matchIds);
+      }
+      await supabaseAdmin.from('dating_likes').delete().or(`from_user_id.eq.${user_id},to_user_id.eq.${user_id}`);
+      await supabaseAdmin.from('dating_passes').delete().or(`from_user_id.eq.${user_id},to_user_id.eq.${user_id}`);
+      const { error } = await supabaseAdmin.from('dating_profiles').delete().eq('user_id', user_id);
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
+    // ── Dating: sync enrolled count on dating_config ────────
+    if (action === 'sync_dating_enrolled_count') {
+      const { count } = await supabaseAdmin
+        .from('dating_profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true);
+      const { data: cfg } = await supabaseAdmin
+        .from('dating_config')
+        .select('id')
+        .limit(1)
+        .maybeSingle();
+      if (cfg?.id) {
+        await supabaseAdmin
+          .from('dating_config')
+          .update({ enrolled_count: count || 0 })
+          .eq('id', cfg.id);
+      }
+      return json({ valid: true, success: true, enrolled_count: count || 0 });
     }
 
     // ── Clear User Data (keep account, wipe content) ────────
