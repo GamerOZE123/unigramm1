@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -38,7 +39,7 @@ const AdminDatingPreferences: React.FC<Props> = ({ password }) => {
   const [prefs, setPrefs] = useState<UserPref[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
-  const [addOpen, setAddOpen] = useState(false);
+  const [creatingNew, setCreatingNew] = useState(false);
 
   const fetchPrefs = async () => {
     setLoading(true);
@@ -68,6 +69,16 @@ const AdminDatingPreferences: React.FC<Props> = ({ password }) => {
     );
   }
 
+  if (creatingNew) {
+    return (
+      <CreateProfilePage
+        password={password}
+        onBack={() => setCreatingNew(false)}
+        onCreated={(uid) => { setCreatingNew(false); setEditingUserId(uid); }}
+      />
+    );
+  }
+
   return (
     <div className="space-y-4">
       <Card className="border-border/40">
@@ -78,7 +89,7 @@ const AdminDatingPreferences: React.FC<Props> = ({ password }) => {
               <Badge variant="secondary" className="ml-2">{prefs.length}</Badge>
             </CardTitle>
             <div className="flex items-center gap-2">
-              <Button size="sm" onClick={() => setAddOpen(true)} className="gap-1.5">
+              <Button size="sm" onClick={() => setCreatingNew(true)} className="gap-1.5">
                 <UserPlus className="w-3.5 h-3.5" /> Create Profile
               </Button>
               <Button variant="ghost" size="icon" onClick={fetchPrefs}>
@@ -147,36 +158,40 @@ const AdminDatingPreferences: React.FC<Props> = ({ password }) => {
           )}
         </CardContent>
       </Card>
-
-      <AddUserDialog
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        password={password}
-        onPick={(uid) => { setAddOpen(false); setEditingUserId(uid); }}
-      />
     </div>
   );
 };
 
 export default AdminDatingPreferences;
 
-// ─────────────── Add User Dialog (search OR create synthetic) ───────────────
-interface AddUserProps {
-  open: boolean;
-  onOpenChange: (v: boolean) => void;
+// ─────────────── Dedicated Create Profile Page ───────────────
+interface CreateProfilePageProps {
   password: string;
-  onPick: (userId: string) => void;
+  onBack: () => void;
+  onCreated: (userId: string) => void;
 }
 
-const AddUserDialog: React.FC<AddUserProps> = ({ open, onOpenChange, password, onPick }) => {
-  // create
+const GENDER_OPTS = ['Male', 'Female', 'Non-binary', 'Other'];
+const INTERESTED_OPTS = ['Male', 'Female', 'Everyone'];
+const LOOKING_OPTS = ['Relationship', 'Casual', 'Friendship', 'Not Sure'];
+const SMOKE_OPTS = ['Never', 'Socially', 'Regularly', 'Trying to Quit'];
+const DRINK_OPTS = ['Never', 'Socially', 'Regularly'];
+const ZODIAC_OPTS = [
+  'Aries','Taurus','Gemini','Cancer','Leo','Virgo',
+  'Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'
+];
+
+const CreateProfilePage: React.FC<CreateProfilePageProps> = ({ password, onBack, onCreated }) => {
   const [form, setForm] = useState({
     username: '', full_name: '', university: '', age: '', avatar_url: '',
     gender: '', interested_in: '', looking_for: '', bio: '',
     hometown: '', height: '', zodiac: '', smoke: '', drink: '',
     fav_song: '', fav_artist: '',
   });
+  const [images, setImages] = useState<string[]>([]);
   const [creating, setCreating] = useState(false);
+
+  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   const create = async () => {
     if (!form.username.trim()) { toast.error('Username is required'); return; }
@@ -188,7 +203,7 @@ const AddUserDialog: React.FC<AddUserProps> = ({ open, onOpenChange, password, o
         full_name: form.full_name || null,
         university: form.university || null,
         age: form.age ? parseInt(form.age, 10) : null,
-        avatar_url: form.avatar_url || null,
+        avatar_url: form.avatar_url || images[0] || null,
         dating: {
           gender: form.gender || null,
           interested_in: form.interested_in || null,
@@ -201,6 +216,7 @@ const AddUserDialog: React.FC<AddUserProps> = ({ open, onOpenChange, password, o
           drink: form.drink || null,
           fav_song: form.fav_song || null,
           fav_artist: form.fav_artist || null,
+          images_json: images,
         },
       },
     });
@@ -210,105 +226,230 @@ const AddUserDialog: React.FC<AddUserProps> = ({ open, onOpenChange, password, o
       return;
     }
     toast.success('Dating profile created');
-    setForm({
-      username: '', full_name: '', university: '', age: '', avatar_url: '',
-      gender: '', interested_in: '', looking_for: '', bio: '',
-      hometown: '', height: '', zodiac: '', smoke: '', drink: '',
-      fav_song: '', fav_artist: '',
-    });
-    onPick(data.user_id);
+    onCreated(data.user_id);
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-base flex items-center gap-2">
-            <UserPlus className="w-4 h-4" /> Create Profile
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3 mt-1">
-            <p className="text-xs text-muted-foreground">
-              Creates a synthetic dating profile. You'll be taken to the editor next.
-            </p>
-            <ScrollArea className="max-h-[55vh] pr-2">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
-                  <Label className="text-xs">Username *</Label>
-                  <Input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} placeholder="e.g. jane_doe" />
-                </div>
-                <div className="col-span-2">
-                  <Label className="text-xs">Full Name</Label>
-                  <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
-                </div>
-                <div>
-                  <Label className="text-xs">University</Label>
-                  <Input value={form.university} onChange={(e) => setForm({ ...form, university: e.target.value })} />
-                </div>
-                <div>
-                  <Label className="text-xs">Age</Label>
-                  <Input type="number" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} />
-                </div>
-                <div className="col-span-2">
-                  <Label className="text-xs">Avatar URL</Label>
-                  <Input value={form.avatar_url} onChange={(e) => setForm({ ...form, avatar_url: e.target.value })} />
-                </div>
+  // Temp upload bucket path uses a synthetic id (final move handled by storage RLS for admin)
+  const tempId = React.useMemo(() => `admin-create-${Date.now()}`, []);
 
-                <div className="col-span-2 pt-2 border-t border-border/40">
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Dating Profile</p>
-                </div>
-                <div>
-                  <Label className="text-xs">Gender</Label>
-                  <Input value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} placeholder="Male / Female / Non-binary" />
-                </div>
-                <div>
-                  <Label className="text-xs">Interested In</Label>
-                  <Input value={form.interested_in} onChange={(e) => setForm({ ...form, interested_in: e.target.value })} placeholder="Male / Female / Everyone" />
-                </div>
-                <div>
-                  <Label className="text-xs">Looking For</Label>
-                  <Input value={form.looking_for} onChange={(e) => setForm({ ...form, looking_for: e.target.value })} placeholder="Relationship / Casual / Friendship" />
-                </div>
-                <div>
-                  <Label className="text-xs">Hometown</Label>
-                  <Input value={form.hometown} onChange={(e) => setForm({ ...form, hometown: e.target.value })} />
-                </div>
-                <div>
-                  <Label className="text-xs">Height</Label>
-                  <Input value={form.height} onChange={(e) => setForm({ ...form, height: e.target.value })} placeholder='e.g. 5&apos;9"' />
-                </div>
-                <div>
-                  <Label className="text-xs">Zodiac</Label>
-                  <Input value={form.zodiac} onChange={(e) => setForm({ ...form, zodiac: e.target.value })} />
-                </div>
-                <div>
-                  <Label className="text-xs">Smoke</Label>
-                  <Input value={form.smoke} onChange={(e) => setForm({ ...form, smoke: e.target.value })} />
-                </div>
-                <div>
-                  <Label className="text-xs">Drink</Label>
-                  <Input value={form.drink} onChange={(e) => setForm({ ...form, drink: e.target.value })} />
-                </div>
-                <div>
-                  <Label className="text-xs">Favorite Song</Label>
-                  <Input value={form.fav_song} onChange={(e) => setForm({ ...form, fav_song: e.target.value })} />
-                </div>
-                <div>
-                  <Label className="text-xs">Favorite Artist</Label>
-                  <Input value={form.fav_artist} onChange={(e) => setForm({ ...form, fav_artist: e.target.value })} />
-                </div>
-                <div className="col-span-2">
-                  <Label className="text-xs">Bio</Label>
-                  <Textarea rows={2} value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} />
-                </div>
+  const SelectField = ({ label, value, onChange, options, placeholder }: {
+    label: string; value: string; onChange: (v: string) => void; options: string[]; placeholder?: string;
+  }) => (
+    <div>
+      <Label className="text-xs">{label}</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger><SelectValue placeholder={placeholder || `Select ${label.toLowerCase()}`} /></SelectTrigger>
+        <SelectContent>
+          {options.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <Button variant="ghost" size="sm" onClick={onBack} className="gap-1.5">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </Button>
+        <Button onClick={create} disabled={creating} className="gap-1.5">
+          <UserPlus className="w-4 h-4" /> {creating ? 'Creating…' : 'Create & Edit'}
+        </Button>
+      </div>
+
+      <Card className="border-border/40">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <UserPlus className="w-4 h-4 text-pink-500" /> Create Dating Profile
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Photos */}
+          <div>
+            <Label className="text-xs uppercase tracking-wide mb-2 block">Photos</Label>
+            <DragDropImageGrid
+              images={images}
+              onChange={setImages}
+              userId={tempId}
+            />
+          </div>
+
+          {/* Basic info */}
+          <div className="space-y-2">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Account</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <Label className="text-xs">Username *</Label>
+                <Input value={form.username} onChange={e => set('username', e.target.value)} placeholder="e.g. jane_doe" />
               </div>
-            </ScrollArea>
-            <Button onClick={create} disabled={creating} className="w-full gap-1.5">
+              <div className="col-span-2">
+                <Label className="text-xs">Full Name</Label>
+                <Input value={form.full_name} onChange={e => set('full_name', e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">University</Label>
+                <Input value={form.university} onChange={e => set('university', e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Age</Label>
+                <Input type="number" value={form.age} onChange={e => set('age', e.target.value)} />
+              </div>
+              <div className="col-span-2">
+                <Label className="text-xs">Avatar URL (optional — first photo used if blank)</Label>
+                <Input value={form.avatar_url} onChange={e => set('avatar_url', e.target.value)} />
+              </div>
+            </div>
+          </div>
+
+          {/* Dating fields */}
+          <div className="space-y-2 pt-2 border-t border-border/40">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">Dating Profile</p>
+            <div className="grid grid-cols-2 gap-3">
+              <SelectField label="Gender" value={form.gender} onChange={v => set('gender', v)} options={GENDER_OPTS} />
+              <SelectField label="Interested In" value={form.interested_in} onChange={v => set('interested_in', v)} options={INTERESTED_OPTS} />
+              <SelectField label="Looking For" value={form.looking_for} onChange={v => set('looking_for', v)} options={LOOKING_OPTS} />
+              <SelectField label="Zodiac" value={form.zodiac} onChange={v => set('zodiac', v)} options={ZODIAC_OPTS} />
+              <SelectField label="Smoke" value={form.smoke} onChange={v => set('smoke', v)} options={SMOKE_OPTS} />
+              <SelectField label="Drink" value={form.drink} onChange={v => set('drink', v)} options={DRINK_OPTS} />
+              <div>
+                <Label className="text-xs">Hometown</Label>
+                <Input value={form.hometown} onChange={e => set('hometown', e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Height</Label>
+                <Input value={form.height} onChange={e => set('height', e.target.value)} placeholder={`e.g. 5'9"`} />
+              </div>
+              <div>
+                <Label className="text-xs">Favorite Song</Label>
+                <Input value={form.fav_song} onChange={e => set('fav_song', e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Favorite Artist</Label>
+                <Input value={form.fav_artist} onChange={e => set('fav_artist', e.target.value)} />
+              </div>
+              <div className="col-span-2">
+                <Label className="text-xs">Bio</Label>
+                <Textarea rows={3} value={form.bio} onChange={e => set('bio', e.target.value)} placeholder="Tell people about this profile…" />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button onClick={create} disabled={creating} className="gap-1.5">
               <UserPlus className="w-4 h-4" /> {creating ? 'Creating…' : 'Create & Edit'}
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// ─────────────── Drag & Drop Image Grid (for create page) ───────────────
+const DragDropImageGrid: React.FC<{
+  images: string[];
+  onChange: (imgs: string[]) => void;
+  userId: string;
+}> = ({ images, onChange, userId }) => {
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [urlInput, setUrlInput] = useState('');
+  const fileRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFiles = async (files: FileList | File[] | null) => {
+    if (!files) return;
+    const arr = Array.from(files);
+    if (arr.length === 0) return;
+    setUploading(true);
+    const next = [...images];
+    try {
+      for (const file of arr) {
+        if (!file.type.startsWith('image/')) continue;
+        const ext = file.name.split('.').pop();
+        const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error } = await supabase.storage.from('post-images').upload(path, file, { upsert: true });
+        if (error) throw error;
+        const { data } = supabase.storage.from('post-images').getPublicUrl(path);
+        next.push(data.publicUrl);
+      }
+      onChange(next);
+      toast.success(`${arr.length} image(s) uploaded`);
+    } catch (e: any) {
+      toast.error(e.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
+  const addUrl = () => {
+    const u = urlInput.trim();
+    if (!u) return;
+    onChange([...images, u]);
+    setUrlInput('');
+  };
+
+  const remove = (i: number) => onChange(images.filter((_, idx) => idx !== i));
+
+  return (
+    <div className="space-y-3">
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          handleFiles(e.dataTransfer.files);
+        }}
+        className={`rounded-xl border-2 border-dashed transition-colors p-4 ${
+          dragOver ? 'border-primary bg-primary/5' : 'border-border bg-muted/20'
+        }`}
+      >
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+          {images.map((url, i) => (
+            <div key={i} className="relative aspect-[3/4] rounded-lg overflow-hidden border border-border bg-muted group">
+              <img src={url} alt="" className="w-full h-full object-cover" onError={(e) => ((e.target as HTMLImageElement).style.opacity = '0.3')} />
+              <button
+                type="button"
+                onClick={() => remove(i)}
+                className="absolute top-1 right-1 w-6 h-6 bg-black/70 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="w-3 h-3 text-white" />
+              </button>
+              <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-[10px] text-white px-1.5 py-0.5">
+                {i + 1}
+              </div>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            className="aspect-[3/4] rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+          >
+            {uploading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+            <span className="text-[10px]">{uploading ? 'Uploading' : 'Add'}</span>
+          </button>
         </div>
-      </DialogContent>
-    </Dialog>
+        <p className="text-xs text-muted-foreground text-center mt-3 flex items-center justify-center gap-1.5">
+          <ImageIcon className="w-3.5 h-3.5" />
+          {dragOver ? 'Drop images to upload' : 'Drag & drop images here, or click "Add"'}
+        </p>
+      </div>
+      <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => handleFiles(e.target.files)} />
+      <div className="flex gap-2">
+        <Input
+          placeholder="Or paste image URL…"
+          value={urlInput}
+          onChange={(e) => setUrlInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addUrl(); } }}
+          className="text-xs"
+        />
+        <Button type="button" size="sm" variant="outline" onClick={addUrl} className="gap-1">
+          <Plus className="w-3.5 h-3.5" /> Add URL
+        </Button>
+      </div>
+    </div>
   );
 };
 
