@@ -474,6 +474,8 @@ const Admin: React.FC = () => {
           {/* Pending Accounts */}
           {section === 'pending' && <AdminPendingAccounts password={storedPassword} />}
 
+          {section === 'map' && <AdminUniversityMap />}
+
           {/* Waitlist */}
           {section === 'waitlist' && (
             <AdminWaitlistSection
