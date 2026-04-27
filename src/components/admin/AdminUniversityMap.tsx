@@ -3,11 +3,19 @@ import maplibregl, { Map as MLMap, Popup } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { STATE_COORDS, STATE_RADIUS } from '@/data/indianStateCoords';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, MapPin, GraduationCap, Sparkles, Globe2, Search, Maximize2, Minimize2, X, Settings2, Eye, EyeOff, Type, Hexagon, Star } from 'lucide-react';
+import { Loader2, MapPin, GraduationCap, Sparkles, Globe2, Search, Maximize2, Minimize2, X, Settings2, Type, Hexagon, Star, Users, Building2, ChevronRight, ArrowLeft, ChevronLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 type UniMap = Record<string, string[]>;
-type Univ = { name: string; state: string; lng: number; lat: number; enrolled: number };
+type Univ = { name: string; state: string; lng: number; lat: number; enrolled: number; abbr: string | null };
+
+type ClubLite = { id: string; club_name: string; category: string | null; member_count: number | null; logo_url: string | null };
+
+// Extract an abbreviation in parentheses, e.g. "Shiv Nadar University (SNU)" -> "SNU"
+function extractAbbr(name: string): string | null {
+  const m = name.match(/\(([A-Z][A-Z0-9&.\- ]{1,15})\)\s*$/);
+  return m ? m[1].trim() : null;
+}
 
 function seeded(i: number) {
   const x = Math.sin(i * 9301 + 49297) * 233280;
@@ -23,7 +31,10 @@ const AdminUniversityMap: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ states: 0, universities: 0 });
   const [enrolledByUniv, setEnrolledByUniv] = useState<Record<string, number>>({});
-  const [selected, setSelected] = useState<{ name: string; state: string; enrolled: number } | null>(null);
+  const [selected, setSelected] = useState<{ name: string; state: string; enrolled: number; abbr: string | null } | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [clubs, setClubs] = useState<ClubLite[]>([]);
+  const [studentCount, setStudentCount] = useState<number>(0);
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
@@ -84,12 +95,14 @@ const AdminUniversityMap: React.FC = () => {
           const lng = center.lng + Math.cos(angle) * dist;
           const lat = center.lat + Math.sin(angle) * dist * 0.85;
           counter++; total++;
-          const enrolled = enrolledMap[name] || 0;
-          flat.push({ name, state, lng, lat, enrolled });
+          const abbr = extractAbbr(name);
+          // Hook to existing DB: try abbreviation first (e.g. "SNU"), then full name
+          const enrolled = (abbr && enrolledMap[abbr]) || enrolledMap[name] || 0;
+          flat.push({ name, state, lng, lat, enrolled, abbr });
           features.push({
             type: 'Feature',
             geometry: { type: 'Point', coordinates: [lng, lat] },
-            properties: { name, state, idx: counter, enrolled },
+            properties: { name, state, idx: counter, enrolled, abbr: abbr || '' },
           });
         });
       });
@@ -238,6 +251,7 @@ const AdminUniversityMap: React.FC = () => {
             name: f.properties.name,
             state: f.properties.state,
             enrolled: Number(f.properties.enrolled || 0),
+            abbr: f.properties.abbr || null,
             lng: f.geometry.coordinates[0],
             lat: f.geometry.coordinates[1],
           });
@@ -254,22 +268,36 @@ const AdminUniversityMap: React.FC = () => {
     };
   }, []);
 
-  const openUni = (u: { name: string; state: string; enrolled: number; lng: number; lat: number }) => {
+  const openUni = async (u: { name: string; state: string; enrolled: number; abbr: string | null; lng: number; lat: number }) => {
     const map = mapRef.current;
     if (!map) return;
-    setSelected({ name: u.name, state: u.state, enrolled: u.enrolled });
+    setSelected({ name: u.name, state: u.state, enrolled: u.enrolled, abbr: u.abbr });
+    setClubs([]);
+    setStudentCount(u.enrolled);
+    setDetailLoading(true);
     if (popupRef.current) popupRef.current.remove();
-    popupRef.current = new maplibregl.Popup({ closeButton: false, offset: 14, className: 'sci-fi-popup' })
-      .setLngLat([u.lng, u.lat])
-      .setHTML(`
-        <div style="background:linear-gradient(135deg,#1a0024 0%,#3b0764 100%);border:1px solid #e879f988;padding:10px 12px;border-radius:8px;color:#fce7f3;font-family:system-ui;min-width:220px;box-shadow:0 0 30px #d946ef55;">
-          <div style="font-size:10px;letter-spacing:1.5px;color:#f0abfc;text-transform:uppercase;margin-bottom:4px;">${u.state}</div>
-          <div style="font-size:13px;font-weight:700;line-height:1.3;margin-bottom:6px;">${u.name}</div>
-          <div style="font-size:11px;color:#fbcfe8;">👥 ${u.enrolled} enrolled · 🏛️ 0 clubs</div>
-        </div>
-      `)
-      .addTo(map);
     map.flyTo({ center: [u.lng, u.lat], zoom: Math.max(map.getZoom(), 9), duration: 900 });
+
+    // Fetch live data from DB — try abbreviation first, then full name
+    const candidates = [u.abbr, u.name].filter(Boolean) as string[];
+    try {
+      const { count: sCount } = await supabase
+        .from('profiles')
+        .select('user_id', { count: 'exact', head: true })
+        .in('university', candidates);
+      const { data: clubRows } = await supabase
+        .from('clubs_profiles')
+        .select('id, club_name, category, member_count, logo_url')
+        .in('university', candidates)
+        .order('member_count', { ascending: false })
+        .limit(50);
+      setStudentCount(sCount || 0);
+      setClubs((clubRows as ClubLite[]) || []);
+    } catch (e) {
+      console.error('Uni detail fetch failed', e);
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   const toggleFullscreen = async () => {
@@ -423,52 +451,184 @@ const AdminUniversityMap: React.FC = () => {
         </button>
       </div>
 
-      {/* Right-side transparent control panel */}
-      <div
-        className={`absolute top-20 right-3 z-20 w-64 rounded-xl bg-[#0c0118]/55 backdrop-blur-xl border border-fuchsia-400/30 shadow-[0_0_40px_rgba(217,70,239,0.18)] transition-all duration-300 ${panelOpen ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-6 pointer-events-none'}`}
+      {/* Right-side full-height gradient sidebar */}
+      <aside
+        className={`absolute top-0 right-0 z-20 h-full w-[340px] flex flex-col transition-transform duration-300 ${panelOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        style={{
+          background: 'linear-gradient(180deg, rgba(20,3,40,0.92) 0%, rgba(40,7,80,0.85) 35%, rgba(15,2,30,0.92) 100%)',
+          backdropFilter: 'blur(18px)',
+          borderLeft: '1px solid rgba(217,70,239,0.35)',
+          boxShadow: '-20px 0 60px rgba(217,70,239,0.18)',
+        }}
       >
-        <div className="px-4 pt-3 pb-2 border-b border-fuchsia-400/20 flex items-center justify-between">
-          <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-fuchsia-300">Grid Controls</p>
-          <div className="w-1.5 h-1.5 rounded-full bg-fuchsia-400 animate-pulse" />
-        </div>
-        <div className="px-2 py-2 flex flex-col gap-0.5">
-          <ToggleRow icon={<MapPin className="w-3.5 h-3.5" />} label="University dots" on={showDots} onChange={setShowDots} />
-          <ToggleRow icon={<Hexagon className="w-3.5 h-3.5" />} label="Clusters" on={showClusters} onChange={setShowClusters} />
-          <ToggleRow icon={<Type className="w-3.5 h-3.5" />} label="Place labels" on={showLabels} onChange={setShowLabels} />
-          <ToggleRow icon={<Globe2 className="w-3.5 h-3.5" />} label="State borders" on={showBorders} onChange={setShowBorders} />
-          <ToggleRow icon={<Star className="w-3.5 h-3.5" />} label="Active campuses only" on={activeOnly} onChange={setActiveOnly} accent />
-        </div>
-        <div className="px-4 py-2 border-t border-fuchsia-400/20 flex items-center justify-between text-[10px] font-mono text-fuchsia-300/70">
-          <span>LEGEND</span>
-        </div>
-        <div className="px-4 pb-3 flex flex-col gap-1.5 text-[11px] text-fuchsia-100/80">
-          <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-yellow-300 shadow-[0_0_8px_#fde047]" />Active (has students)</div>
-          <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-fuchsia-300/70 shadow-[0_0_6px_#e879f9]" />Listed university</div>
-          <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-fuchsia-500" />Cluster (zoom in)</div>
-        </div>
-      </div>
+        {/* Pulse line on left edge */}
+        <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-fuchsia-400/80 to-transparent" />
 
-      {/* Bottom-left: selected info panel */}
-      {selected && (
-        <div className="absolute bottom-4 left-4 z-20 max-w-sm p-4 rounded-lg bg-[#0c0118]/85 border border-fuchsia-400/40 backdrop-blur-md shadow-[0_0_30px_rgba(217,70,239,0.25)]">
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <Badge variant="outline" className="border-fuchsia-400/40 text-fuchsia-300 text-[10px]">{selected.state}</Badge>
-            <button onClick={() => { setSelected(null); popupRef.current?.remove(); }} className="text-fuchsia-400/60 hover:text-fuchsia-200">
-              <X className="w-3.5 h-3.5" />
-            </button>
+        {/* Header */}
+        <div className="px-5 pt-4 pb-3 border-b border-fuchsia-400/20 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2">
+            {selected && (
+              <button onClick={() => { setSelected(null); popupRef.current?.remove(); }} className="text-fuchsia-300/70 hover:text-fuchsia-100 transition-colors">
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            )}
+            <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-fuchsia-300">
+              {selected ? 'Campus Intel' : 'Grid Controls'}
+            </p>
+            <div className="w-1.5 h-1.5 rounded-full bg-fuchsia-400 animate-pulse" />
           </div>
-          <p className="text-sm font-bold text-fuchsia-100 mb-2 leading-tight">{selected.name}</p>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="p-2 rounded bg-fuchsia-500/10 border border-fuchsia-500/20">
-              <p className="text-[10px] uppercase tracking-wider text-fuchsia-300/70">Enrolled</p>
-              <p className="text-yellow-300 font-bold">{selected.enrolled}</p>
-            </div>
-            <div className="p-2 rounded bg-fuchsia-500/10 border border-fuchsia-500/20">
-              <p className="text-[10px] uppercase tracking-wider text-fuchsia-300/70">Clubs</p>
-              <p className="text-fuchsia-100 font-bold">0</p>
-            </div>
-          </div>
+          <button
+            onClick={() => setPanelOpen(false)}
+            title="Collapse"
+            className="text-fuchsia-300/60 hover:text-fuchsia-100"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto sci-fi-scroll">
+          {!selected ? (
+            <div className="flex flex-col">
+              {/* Search */}
+              <div className="px-4 pt-4">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/40 border border-fuchsia-400/30 focus-within:border-fuchsia-400/70 transition-colors">
+                  <Search className="w-4 h-4 text-fuchsia-300 shrink-0" />
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search university or state…"
+                    className="bg-transparent outline-none text-xs text-fuchsia-100 placeholder:text-fuchsia-300/40 flex-1"
+                  />
+                  {search && (
+                    <button onClick={() => setSearch('')} className="text-fuchsia-300/60 hover:text-fuchsia-200">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+                {results.length > 0 && (
+                  <div className="mt-2 max-h-60 overflow-y-auto rounded-lg bg-black/30 border border-fuchsia-400/20">
+                    {results.map((u, i) => (
+                      <button
+                        key={i}
+                        onClick={() => openUni(u)}
+                        className="w-full text-left px-3 py-2 hover:bg-fuchsia-500/10 border-b border-fuchsia-500/10 last:border-0 transition-colors"
+                      >
+                        <p className="text-[10px] uppercase tracking-widest text-fuchsia-300/70">{u.state}</p>
+                        <p className="text-xs text-fuchsia-100 font-medium leading-tight">{u.name}</p>
+                        {u.enrolled > 0 && <p className="text-[10px] text-yellow-300 mt-0.5">👥 {u.enrolled} enrolled</p>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Layer toggles */}
+              <div className="px-4 pt-4 pb-2">
+                <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-fuchsia-300/70 mb-2">Layers</p>
+                <div className="flex flex-col gap-1">
+                  <ToggleRow icon={<MapPin className="w-3.5 h-3.5" />} label="University dots" on={showDots} onChange={setShowDots} />
+                  <ToggleRow icon={<Hexagon className="w-3.5 h-3.5" />} label="Clusters" on={showClusters} onChange={setShowClusters} />
+                  <ToggleRow icon={<Type className="w-3.5 h-3.5" />} label="Place labels" on={showLabels} onChange={setShowLabels} />
+                  <ToggleRow icon={<Globe2 className="w-3.5 h-3.5" />} label="State borders" on={showBorders} onChange={setShowBorders} />
+                  <ToggleRow icon={<Star className="w-3.5 h-3.5" />} label="Active campuses only" on={activeOnly} onChange={setActiveOnly} accent />
+                </div>
+              </div>
+
+              {/* Legend */}
+              <div className="px-4 pt-3 pb-4 border-t border-fuchsia-400/15 mt-2">
+                <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-fuchsia-300/70 mb-2">Legend</p>
+                <div className="flex flex-col gap-1.5 text-[11px] text-fuchsia-100/80">
+                  <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-yellow-300 shadow-[0_0_8px_#fde047]" />Active (has students)</div>
+                  <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-fuchsia-300/70 shadow-[0_0_6px_#e879f9]" />Listed university</div>
+                  <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-fuchsia-500" />Cluster (zoom in)</div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col">
+              {/* Hero */}
+              <div className="px-5 pt-5 pb-4 border-b border-fuchsia-400/20 relative overflow-hidden">
+                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-fuchsia-500/20 blur-3xl pointer-events-none" />
+                <Badge variant="outline" className="border-fuchsia-400/40 text-fuchsia-200 text-[10px] mb-2">{selected.state}</Badge>
+                <h2 className="text-base font-bold text-fuchsia-50 leading-tight">{selected.name}</h2>
+                {selected.abbr && (
+                  <p className="text-[10px] uppercase tracking-[0.25em] text-fuchsia-300/70 font-mono mt-1">ID · {selected.abbr}</p>
+                )}
+
+                {/* Stat tiles */}
+                <div className="grid grid-cols-2 gap-2 mt-4">
+                  <div className="p-2.5 rounded-lg bg-gradient-to-br from-yellow-500/15 to-yellow-500/5 border border-yellow-400/30">
+                    <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-yellow-300/80">
+                      <Users className="w-3 h-3" /> Students
+                    </div>
+                    <p className="text-lg font-bold text-yellow-200 font-mono mt-0.5">{studentCount}</p>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-gradient-to-br from-fuchsia-500/15 to-fuchsia-500/5 border border-fuchsia-400/30">
+                    <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-fuchsia-300/80">
+                      <Building2 className="w-3 h-3" /> Clubs
+                    </div>
+                    <p className="text-lg font-bold text-fuchsia-100 font-mono mt-0.5">{clubs.length}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Clubs list */}
+              <div className="px-5 pt-4 pb-2">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-fuchsia-300/70">Registered Clubs</p>
+                  {detailLoading && <Loader2 className="w-3 h-3 animate-spin text-fuchsia-300" />}
+                </div>
+                {!detailLoading && clubs.length === 0 && (
+                  <div className="text-center py-8 px-3 rounded-lg border border-dashed border-fuchsia-400/20 text-[11px] text-fuchsia-300/50">
+                    No clubs registered yet for this campus.
+                  </div>
+                )}
+                <div className="flex flex-col gap-2">
+                  {clubs.map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex items-center gap-3 p-2.5 rounded-lg bg-black/30 border border-fuchsia-400/15 hover:border-fuchsia-400/40 hover:bg-fuchsia-500/5 transition-colors"
+                    >
+                      <div className="w-9 h-9 rounded-md bg-gradient-to-br from-fuchsia-500/30 to-purple-700/30 border border-fuchsia-400/30 flex items-center justify-center overflow-hidden shrink-0">
+                        {c.logo_url ? (
+                          <img src={c.logo_url} alt="" className="w-full h-full object-cover" onError={(e) => ((e.target as HTMLImageElement).src = '/default-avatar.png')} />
+                        ) : (
+                          <Building2 className="w-4 h-4 text-fuchsia-200" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold text-fuchsia-50 truncate">{c.club_name}</p>
+                        <p className="text-[10px] text-fuchsia-300/70 truncate">
+                          {c.category || 'General'} · {c.member_count || 0} members
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer ribbon */}
+        <div className="px-5 py-2.5 border-t border-fuchsia-400/20 flex items-center justify-between text-[9px] font-mono text-fuchsia-300/60 shrink-0">
+          <span>UNIGRAMM · LIVE</span>
+          <span className="flex items-center gap-1">
+            <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" /> SYNCED
+          </span>
+        </div>
+      </aside>
+
+      {/* Collapsed re-open tab */}
+      {!panelOpen && (
+        <button
+          onClick={() => setPanelOpen(true)}
+          className="absolute top-1/2 right-0 -translate-y-1/2 z-20 h-16 w-7 rounded-l-lg bg-fuchsia-500/20 backdrop-blur-md border border-r-0 border-fuchsia-400/40 flex items-center justify-center text-fuchsia-200 hover:bg-fuchsia-500/30 transition-colors"
+          title="Open panel"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </button>
       )}
 
       {/* Loading overlay */}
@@ -498,6 +658,10 @@ const AdminUniversityMap: React.FC = () => {
         .maplibregl-ctrl-group { background: rgba(12,1,24,0.7) !important; border: 1px solid rgba(217,70,239,0.4) !important; backdrop-filter: blur(8px); }
         .maplibregl-ctrl-group button { background: transparent !important; }
         .maplibregl-ctrl-group button span { filter: invert(1) hue-rotate(270deg) brightness(1.5); }
+        .sci-fi-scroll::-webkit-scrollbar { width: 6px; }
+        .sci-fi-scroll::-webkit-scrollbar-track { background: transparent; }
+        .sci-fi-scroll::-webkit-scrollbar-thumb { background: rgba(217,70,239,0.3); border-radius: 3px; }
+        .sci-fi-scroll::-webkit-scrollbar-thumb:hover { background: rgba(217,70,239,0.5); }
       `}</style>
     </div>
   );
