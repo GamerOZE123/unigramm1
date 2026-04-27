@@ -3,7 +3,7 @@ import maplibregl, { Map as MLMap, Popup } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { STATE_COORDS, STATE_RADIUS } from '@/data/indianStateCoords';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, MapPin, GraduationCap, Sparkles, Globe2, Search, Maximize2, Minimize2, X } from 'lucide-react';
+import { Loader2, MapPin, GraduationCap, Sparkles, Globe2, Search, Maximize2, Minimize2, X, Settings2, Eye, EyeOff, Type, Hexagon, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 type UniMap = Record<string, string[]>;
@@ -27,6 +27,12 @@ const AdminUniversityMap: React.FC = () => {
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(true);
+  const [showDots, setShowDots] = useState(true);
+  const [showClusters, setShowClusters] = useState(true);
+  const [showLabels, setShowLabels] = useState(true);
+  const [showBorders, setShowBorders] = useState(true);
+  const [activeOnly, setActiveOnly] = useState(false);
 
   // Search results (top 8)
   const results = useMemo(() => {
@@ -113,11 +119,21 @@ const AdminUniversityMap: React.FC = () => {
               tiles: ['https://a.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}@2x.png'],
               tileSize: 256,
             },
+            'carto-lines': {
+              type: 'raster',
+              tiles: [
+                'https://a.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png',
+                'https://b.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png',
+              ],
+              tileSize: 256,
+            },
           },
           layers: [
             { id: 'bg', type: 'background', paint: { 'background-color': '#080014' } },
-            { id: 'carto-dark', type: 'raster', source: 'carto-dark', paint: { 'raster-opacity': 0.5, 'raster-saturation': -0.5, 'raster-contrast': 0.2, 'raster-hue-rotate': 250 } },
-            { id: 'carto-labels', type: 'raster', source: 'carto-labels', paint: { 'raster-opacity': 0.55 } },
+            { id: 'carto-dark', type: 'raster', source: 'carto-dark', paint: { 'raster-opacity': 0.55, 'raster-saturation': -0.4, 'raster-contrast': 0.35, 'raster-hue-rotate': 250 } },
+            // Boundary emphasis: re-overlay base layer with high contrast & low opacity to lift admin lines
+            { id: 'carto-borders', type: 'raster', source: 'carto-lines', paint: { 'raster-opacity': 0.45, 'raster-contrast': 0.9, 'raster-brightness-min': 0.15, 'raster-brightness-max': 1, 'raster-saturation': -1, 'raster-hue-rotate': 290 } },
+            { id: 'carto-labels', type: 'raster', source: 'carto-labels', paint: { 'raster-opacity': 0.95, 'raster-contrast': 0.4, 'raster-brightness-min': 0.3 } },
           ],
         },
         center: [82.5, 22.5],
@@ -180,18 +196,22 @@ const AdminUniversityMap: React.FC = () => {
           id: 'unis-glow', type: 'circle', source: 'unis',
           filter: ['!', ['has', 'point_count']],
           paint: {
-            'circle-radius': 8, 'circle-color': '#e879f9', 'circle-opacity': 0.2, 'circle-blur': 0.8,
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 5, 8, 9, 12, 14, 16, 20],
+            'circle-color': ['case', ['>', ['get', 'enrolled'], 0], '#fde047', '#e879f9'],
+            'circle-opacity': 0.12,
+            'circle-blur': 1,
           },
         });
         map.addLayer({
           id: 'unis-core', type: 'circle', source: 'unis',
           filter: ['!', ['has', 'point_count']],
           paint: {
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 1.5, 8, 3, 12, 5, 16, 8],
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 1.6, 8, 3, 12, 5, 16, 8],
             'circle-color': ['case', ['>', ['get', 'enrolled'], 0], '#fde047', '#f0abfc'],
-            'circle-stroke-color': '#ffffff',
-            'circle-stroke-width': 0.4,
-            'circle-stroke-opacity': 0.6,
+            'circle-opacity': ['case', ['>', ['get', 'enrolled'], 0], 0.95, 0.55],
+            'circle-stroke-color': ['case', ['>', ['get', 'enrolled'], 0], '#fffbeb', '#fdf4ff'],
+            'circle-stroke-width': 0.6,
+            'circle-stroke-opacity': 0.5,
           },
         });
 
@@ -282,6 +302,38 @@ const AdminUniversityMap: React.FC = () => {
     return () => { window.removeEventListener('resize', onResize); clearTimeout(t); };
   }, []);
 
+  // Layer visibility toggles
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || loading) return;
+    const set = (id: string, vis: boolean) => {
+      if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis ? 'visible' : 'none');
+    };
+    set('unis-core', showDots);
+    set('unis-glow', showDots);
+    set('clusters', showClusters);
+    set('clusters-glow', showClusters);
+    set('cluster-count', showClusters);
+    set('carto-labels', showLabels);
+    set('carto-borders', showBorders);
+  }, [showDots, showClusters, showLabels, showBorders, loading]);
+
+  // Active-only filter
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || loading) return;
+    if (map.getLayer('unis-core')) {
+      map.setFilter('unis-core', activeOnly
+        ? ['all', ['!', ['has', 'point_count']], ['>', ['get', 'enrolled'], 0]]
+        : ['!', ['has', 'point_count']]);
+    }
+    if (map.getLayer('unis-glow')) {
+      map.setFilter('unis-glow', activeOnly
+        ? ['all', ['!', ['has', 'point_count']], ['>', ['get', 'enrolled'], 0]]
+        : ['!', ['has', 'point_count']]);
+    }
+  }, [activeOnly, loading]);
+
   return (
     <div
       ref={wrapperRef}
@@ -362,6 +414,38 @@ const AdminUniversityMap: React.FC = () => {
         >
           {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
         </button>
+        <button
+          onClick={() => setPanelOpen(v => !v)}
+          title="Controls"
+          className={`w-10 h-10 rounded-full backdrop-blur-md border flex items-center justify-center transition-colors ${panelOpen ? 'bg-fuchsia-500/20 border-fuchsia-400/60 text-fuchsia-100' : 'bg-black/40 border-fuchsia-400/30 text-fuchsia-300 hover:border-fuchsia-400/60'}`}
+        >
+          <Settings2 className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Right-side transparent control panel */}
+      <div
+        className={`absolute top-20 right-3 z-20 w-64 rounded-xl bg-[#0c0118]/55 backdrop-blur-xl border border-fuchsia-400/30 shadow-[0_0_40px_rgba(217,70,239,0.18)] transition-all duration-300 ${panelOpen ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-6 pointer-events-none'}`}
+      >
+        <div className="px-4 pt-3 pb-2 border-b border-fuchsia-400/20 flex items-center justify-between">
+          <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-fuchsia-300">Grid Controls</p>
+          <div className="w-1.5 h-1.5 rounded-full bg-fuchsia-400 animate-pulse" />
+        </div>
+        <div className="px-2 py-2 flex flex-col gap-0.5">
+          <ToggleRow icon={<MapPin className="w-3.5 h-3.5" />} label="University dots" on={showDots} onChange={setShowDots} />
+          <ToggleRow icon={<Hexagon className="w-3.5 h-3.5" />} label="Clusters" on={showClusters} onChange={setShowClusters} />
+          <ToggleRow icon={<Type className="w-3.5 h-3.5" />} label="Place labels" on={showLabels} onChange={setShowLabels} />
+          <ToggleRow icon={<Globe2 className="w-3.5 h-3.5" />} label="State borders" on={showBorders} onChange={setShowBorders} />
+          <ToggleRow icon={<Star className="w-3.5 h-3.5" />} label="Active campuses only" on={activeOnly} onChange={setActiveOnly} accent />
+        </div>
+        <div className="px-4 py-2 border-t border-fuchsia-400/20 flex items-center justify-between text-[10px] font-mono text-fuchsia-300/70">
+          <span>LEGEND</span>
+        </div>
+        <div className="px-4 pb-3 flex flex-col gap-1.5 text-[11px] text-fuchsia-100/80">
+          <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-yellow-300 shadow-[0_0_8px_#fde047]" />Active (has students)</div>
+          <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-fuchsia-300/70 shadow-[0_0_6px_#e879f9]" />Listed university</div>
+          <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-fuchsia-500" />Cluster (zoom in)</div>
+        </div>
       </div>
 
       {/* Bottom-left: selected info panel */}
@@ -427,6 +511,21 @@ const StatTile: React.FC<{ icon: React.ReactNode; label: string; value: string; 
       <p className={`text-xs font-bold font-mono ${accent ? 'text-yellow-100' : 'text-fuchsia-100'}`}>{value}</p>
     </div>
   </div>
+);
+
+const ToggleRow: React.FC<{ icon: React.ReactNode; label: string; on: boolean; onChange: (v: boolean) => void; accent?: boolean }> = ({ icon, label, on, onChange, accent }) => (
+  <button
+    onClick={() => onChange(!on)}
+    className={`group w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border transition-all ${on ? (accent ? 'bg-yellow-500/10 border-yellow-400/40' : 'bg-fuchsia-500/10 border-fuchsia-400/40') : 'bg-transparent border-transparent hover:bg-fuchsia-500/5 hover:border-fuchsia-400/20'}`}
+  >
+    <div className="flex items-center gap-2 min-w-0">
+      <span className={on ? (accent ? 'text-yellow-300' : 'text-fuchsia-200') : 'text-fuchsia-300/50'}>{icon}</span>
+      <span className={`text-xs truncate ${on ? (accent ? 'text-yellow-100' : 'text-fuchsia-100') : 'text-fuchsia-300/60'}`}>{label}</span>
+    </div>
+    <span className={`relative w-8 h-4 rounded-full transition-colors ${on ? (accent ? 'bg-yellow-400/70' : 'bg-fuchsia-400/70') : 'bg-fuchsia-300/15'}`}>
+      <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all shadow-[0_0_8px_rgba(255,255,255,0.5)] ${on ? 'left-[18px]' : 'left-0.5'}`} />
+    </span>
+  </button>
 );
 
 export default AdminUniversityMap;
