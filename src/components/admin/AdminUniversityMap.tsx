@@ -513,4 +513,19 @@ const StatTile: React.FC<{ icon: React.ReactNode; label: string; value: string; 
   </div>
 );
 
+const ToggleRow: React.FC<{ icon: React.ReactNode; label: string; on: boolean; onChange: (v: boolean) => void; accent?: boolean }> = ({ icon, label, on, onChange, accent }) => (
+  <button
+    onClick={() => onChange(!on)}
+    className={`group w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border transition-all ${on ? (accent ? 'bg-yellow-500/10 border-yellow-400/40' : 'bg-fuchsia-500/10 border-fuchsia-400/40') : 'bg-transparent border-transparent hover:bg-fuchsia-500/5 hover:border-fuchsia-400/20'}`}
+  >
+    <div className="flex items-center gap-2 min-w-0">
+      <span className={on ? (accent ? 'text-yellow-300' : 'text-fuchsia-200') : 'text-fuchsia-300/50'}>{icon}</span>
+      <span className={`text-xs truncate ${on ? (accent ? 'text-yellow-100' : 'text-fuchsia-100') : 'text-fuchsia-300/60'}`}>{label}</span>
+    </div>
+    <span className={`relative w-8 h-4 rounded-full transition-colors ${on ? (accent ? 'bg-yellow-400/70' : 'bg-fuchsia-400/70') : 'bg-fuchsia-300/15'}`}>
+      <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all shadow-[0_0_8px_rgba(255,255,255,0.5)] ${on ? 'left-[18px]' : 'left-0.5'}`} />
+    </span>
+  </button>
+);
+
 export default AdminUniversityMap;
