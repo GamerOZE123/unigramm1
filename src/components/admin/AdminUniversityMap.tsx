@@ -528,6 +528,32 @@ const AdminUniversityMap: React.FC = () => {
             )}
           </div>
 
+          {/* Filter */}
+          <div className="px-4 pt-3">
+            <p className="hud-mono text-[10px] text-[#7fb6c8] tracking-[0.2em] mb-1.5 flex items-center gap-1.5">
+              <Filter className="w-3 h-3 text-[#00c8ff]" /> // FILTER
+            </p>
+            <div className="flex items-center gap-2 p-2 bg-black/30 border border-[#00c8ff]/25" style={{ borderRadius: 3 }}>
+              <button
+                onClick={() => setTier1Only(true)}
+                className={`flex-1 hud-mono text-[10px] px-2 py-1.5 tracking-[0.15em] transition-colors ${tier1Only ? 'bg-[#f5c518]/15 text-[#f5c518] border border-[#f5c518]/60' : 'text-[#7fb6c8] border border-[#00c8ff]/20 hover:border-[#00c8ff]/50'}`}
+                style={{ borderRadius: 2 }}
+              >
+                TIER-1 ONLY
+              </button>
+              <button
+                onClick={() => setTier1Only(false)}
+                className={`flex-1 hud-mono text-[10px] px-2 py-1.5 tracking-[0.15em] transition-colors ${!tier1Only ? 'bg-[#00c8ff]/15 text-[#00c8ff] border border-[#00c8ff]/60' : 'text-[#7fb6c8] border border-[#00c8ff]/20 hover:border-[#00c8ff]/50'}`}
+                style={{ borderRadius: 2 }}
+              >
+                ALL UNIVS
+              </button>
+            </div>
+            <p className="hud-mono text-[9px] text-[#7fb6c8] mt-1.5">
+              SHOWING <span className="text-[#f5c518]">{visibleCount.toLocaleString()}</span> / {stats.universities.toLocaleString()}
+            </p>
+          </div>
+
           {/* Stats */}
           <div className="px-4 pt-4 flex flex-col gap-2">
             <StatRow icon={<Database className="w-3 h-3" />} label="UNIVERSITIES PINNED" value={counter.toLocaleString()} />
