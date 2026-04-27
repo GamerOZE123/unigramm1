@@ -391,6 +391,30 @@ const AdminUniversityMap: React.FC = () => {
       map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
       map.addControl(new maplibregl.AttributionControl({ compact: true }));
 
+      // Compute college counts per state from loaded data (for popups)
+      const collegeCountByState: Record<string, number> = {};
+      const tier1CountByState: Record<string, number> = {};
+      flat.forEach((u) => {
+        collegeCountByState[u.state] = (collegeCountByState[u.state] || 0) + 1;
+        if (isTier1(u.name)) tier1CountByState[u.state] = (tier1CountByState[u.state] || 0) + 1;
+      });
+
+      // Normalize state name for matching with GeoJSON ST_NM property
+      const normState = (s: string) =>
+        s
+          .toLowerCase()
+          .replace(/&/g, "and")
+          .replace(/[^a-z]+/g, "")
+          .trim();
+      const countsByNorm: Record<string, { total: number; tier1: number; raw: string }> = {};
+      Object.keys(collegeCountByState).forEach((s) => {
+        countsByNorm[normState(s)] = {
+          total: collegeCountByState[s],
+          tier1: tier1CountByState[s] || 0,
+          raw: s,
+        };
+      });
+
       // Holographic hexagon marker
       const buildHex = (size = 80, color = "#00ffe7", selected = false) => {
         const outerR = selected ? 24 : 14;
@@ -425,6 +449,126 @@ const AdminUniversityMap: React.FC = () => {
 
       map.on("load", async () => {
         if (!map) return;
+
+        // ---- INDIA STATE BOUNDARIES (lines + click-for-info) ----
+        try {
+          const statesUrl =
+            "https://raw.githubusercontent.com/geohacker/india/master/state/india_telengana.geojson";
+          const res = await fetch(statesUrl);
+          if (res.ok) {
+            const geo = await res.json();
+            // Annotate each feature with college count for fill-step coloring
+            (geo.features || []).forEach((f: any) => {
+              const nm: string = f.properties?.NAME_1 || f.properties?.ST_NM || f.properties?.name || "";
+              const c = countsByNorm[normState(nm)];
+              f.properties.__college_count = c?.total || 0;
+              f.properties.__tier1_count = c?.tier1 || 0;
+              f.properties.__display_name = nm;
+            });
+
+            map.addSource("india-states", { type: "geojson", data: geo });
+
+            // Subtle fill — shaded by college density, used for click hit-testing
+            map.addLayer(
+              {
+                id: "india-states-fill",
+                type: "fill",
+                source: "india-states",
+                paint: {
+                  "fill-color": [
+                    "interpolate",
+                    ["linear"],
+                    ["coalesce", ["get", "__college_count"], 0],
+                    0, "rgba(0,255,231,0.02)",
+                    20, "rgba(0,255,231,0.06)",
+                    100, "rgba(0,255,231,0.12)",
+                    400, "rgba(245,197,24,0.18)",
+                  ],
+                  "fill-opacity": 0.85,
+                },
+              },
+              "unis-dots"
+            );
+
+            // Hover highlight
+            map.addLayer(
+              {
+                id: "india-states-fill-hover",
+                type: "fill",
+                source: "india-states",
+                filter: ["==", ["get", "__display_name"], ""],
+                paint: { "fill-color": "rgba(0,255,231,0.18)", "fill-opacity": 0.9 },
+              },
+              "unis-dots"
+            );
+
+            // White-ish glowing borders
+            map.addLayer(
+              {
+                id: "india-states-line",
+                type: "line",
+                source: "india-states",
+                paint: {
+                  "line-color": "rgba(255,255,255,0.85)",
+                  "line-width": ["interpolate", ["linear"], ["zoom"], 3, 0.6, 6, 1.1, 10, 1.6],
+                  "line-opacity": 0.75,
+                },
+              },
+              "unis-dots"
+            );
+
+            // Click on state -> popup with counts
+            const statePopup = new maplibregl.Popup({
+              closeButton: true,
+              closeOnClick: true,
+              offset: 8,
+              className: "holo-popup",
+            });
+
+            map.on("mousemove", "india-states-fill", (e) => {
+              const f = e.features?.[0] as any;
+              if (!f) return;
+              map!.getCanvas().style.cursor = "pointer";
+              map!.setFilter("india-states-fill-hover", [
+                "==",
+                ["get", "__display_name"],
+                f.properties.__display_name,
+              ]);
+            });
+            map.on("mouseleave", "india-states-fill", () => {
+              map!.getCanvas().style.cursor = "";
+              map!.setFilter("india-states-fill-hover", ["==", ["get", "__display_name"], ""]);
+            });
+
+            map.on("click", "india-states-fill", (e) => {
+              // Skip if a pin was clicked instead
+              const pinHits = map!.queryRenderedFeatures(e.point, { layers: ["unis-pins"] });
+              if (pinHits.length) return;
+              const f = e.features?.[0] as any;
+              if (!f) return;
+              const name: string = f.properties.__display_name || "STATE";
+              const total = Number(f.properties.__college_count || 0);
+              const tier1 = Number(f.properties.__tier1_count || 0);
+              const html = `
+                <div class="holo-card">
+                  <div class="holo-card-header">
+                    <span class="holo-tag">REGION</span>
+                    <span class="holo-live">◉ SCAN</span>
+                  </div>
+                  <div class="holo-card-name">${escapeHtml(name)}</div>
+                  <div class="holo-card-sub">INDIA · STATE SECTOR</div>
+                  <div class="holo-card-footer">
+                    <span>COLLEGES <b>${total}</b></span>
+                    <span>TIER-1 <b>${tier1}</b></span>
+                  </div>
+                </div>`;
+              statePopup.setLngLat(e.lngLat).setHTML(html).addTo(map!);
+            });
+          }
+        } catch (err) {
+          console.warn("Failed to load India state boundaries", err);
+        }
+        // ---- END STATE BOUNDARIES ----
 
         const loadImg = (name: string, src: string, w = 80, h = 80) =>
           new Promise<void>((res) => {
