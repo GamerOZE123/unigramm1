@@ -4,7 +4,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { STATE_COORDS, STATE_RADIUS } from '@/data/indianStateCoords';
 import {
   Loader2, Search, Maximize2, Minimize2, X, ChevronRight, ChevronLeft,
-  ArrowLeft, Users, Building2, Crosshair, Radio, Activity, Database, Layers,
+  ArrowLeft, Users, Building2, Crosshair, Radio, Activity, Database, Layers, Filter,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -26,6 +26,33 @@ function fmtCoord(lat: number, lng: number) {
   return `${Math.abs(lat).toFixed(3)}°${ns}  ${Math.abs(lng).toFixed(3)}°${ew}`;
 }
 
+// Whitelist of "Tier 1" / major private + flagship universities to highlight.
+// Matched as case-insensitive substrings against the university name.
+const TIER1_KEYWORDS: string[] = [
+  'shiv nadar', 'amity', 'jindal', 'o.p. jindal', 'op jindal',
+  'ashoka', 'krea', 'plaksha', 'flame',
+  'manipal', 'srm', 'vit', 'vellore institute', 'symbiosis',
+  'bits ', 'birla institute of technology and science',
+  'iit ', 'indian institute of technology',
+  'iim ', 'indian institute of management',
+  'iiit', 'indian institute of information technology',
+  'nit ', 'national institute of technology',
+  'iisc', 'indian institute of science',
+  'iiser', 'aiims',
+  'thapar', 'lpu', 'lovely professional', 'chandigarh university',
+  'christ university', 'xavier', 'xlri', 'mdi', 'iift', 'isb',
+  'snu', 'pes university', 'reva', 'nmims', 'mit-wpu', 'mit world peace',
+  'bennett', 'bml munjal', 'galgotias', 'sharda', 'ansal',
+  'jamia millia', 'jawaharlal nehru university', 'bhu', 'banaras hindu',
+  'delhi university', 'university of delhi', 'du ',
+  'icfai', 'great lakes', 'spjain', 's.p. jain', 'iim-',
+];
+
+function isTier1(name: string): boolean {
+  const n = name.toLowerCase();
+  return TIER1_KEYWORDS.some((k) => n.includes(k));
+}
+
 const AdminUniversityMap: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -44,6 +71,7 @@ const AdminUniversityMap: React.FC = () => {
   const [intelOpen, setIntelOpen] = useState(true);
   const [detailOpen, setDetailOpen] = useState(false);
   const [now, setNow] = useState(() => new Date());
+  const [tier1Only, setTier1Only] = useState(true);
 
   // animated counter for "uniques pinned"
   const [counter, setCounter] = useState(0);
@@ -73,13 +101,14 @@ const AdminUniversityMap: React.FC = () => {
     if (!q || q.length < 2) return [] as Univ[];
     const out: Univ[] = [];
     for (const u of allUniv.current) {
+      if (tier1Only && !isTier1(u.name)) continue;
       if (u.name.toLowerCase().includes(q) || u.state.toLowerCase().includes(q)) {
         out.push(u);
         if (out.length >= 12) break;
       }
     }
     return out;
-  }, [search]);
+  }, [search, tier1Only]);
 
   useEffect(() => {
     let mounted = true;
