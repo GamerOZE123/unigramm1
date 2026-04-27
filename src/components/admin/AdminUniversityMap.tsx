@@ -216,6 +216,28 @@ const AdminUniversityMap: React.FC = () => {
           clusterRadius: 45,
         });
 
+        // Pulsing glow halo behind every pin (animated via paint updates)
+        map.addLayer({
+          id: 'unis-pulse', type: 'circle', source: 'unis',
+          filter: ['!', ['has', 'point_count']],
+          paint: {
+            'circle-radius': 14,
+            'circle-color': '#f5c518',
+            'circle-opacity': 0.0,
+            'circle-blur': 0.9,
+          },
+        });
+        map.addLayer({
+          id: 'unis-glow', type: 'circle', source: 'unis',
+          filter: ['!', ['has', 'point_count']],
+          paint: {
+            'circle-radius': 9,
+            'circle-color': '#f5c518',
+            'circle-opacity': 0.18,
+            'circle-blur': 0.6,
+          },
+        });
+
         // Cluster halo (cyan)
         map.addLayer({
           id: 'clusters-glow', type: 'circle', source: 'unis',
@@ -265,12 +287,42 @@ const AdminUniversityMap: React.FC = () => {
           },
         });
 
+        // Animate the pulse ring (radius + opacity sine)
+        let pulseRaf = 0;
+        const startPulse = (t0: number) => {
+          const tick = (t: number) => {
+            const p = ((t - t0) % 1800) / 1800; // 1.8s loop
+            const r = 10 + p * 26;
+            const o = 0.45 * (1 - p);
+            if (map && map.getLayer('unis-pulse')) {
+              map.setPaintProperty('unis-pulse', 'circle-radius', r);
+              map.setPaintProperty('unis-pulse', 'circle-opacity', o);
+            }
+            pulseRaf = requestAnimationFrame(tick);
+          };
+          pulseRaf = requestAnimationFrame(tick);
+        };
+        startPulse(performance.now());
+        (map as any).__pulseRaf = () => cancelAnimationFrame(pulseRaf);
+
         const setPointer = () => (map!.getCanvas().style.cursor = 'crosshair');
         const resetPointer = () => (map!.getCanvas().style.cursor = '');
         map.on('mouseenter', 'clusters', setPointer);
         map.on('mouseleave', 'clusters', resetPointer);
-        map.on('mouseenter', 'unis-pins', setPointer);
-        map.on('mouseleave', 'unis-pins', resetPointer);
+        map.on('mouseenter', 'unis-pins', () => {
+          setPointer();
+          if (map!.getLayer('unis-glow')) {
+            map!.setPaintProperty('unis-glow', 'circle-radius', 14);
+            map!.setPaintProperty('unis-glow', 'circle-opacity', 0.32);
+          }
+        });
+        map.on('mouseleave', 'unis-pins', () => {
+          resetPointer();
+          if (map!.getLayer('unis-glow')) {
+            map!.setPaintProperty('unis-glow', 'circle-radius', 9);
+            map!.setPaintProperty('unis-glow', 'circle-opacity', 0.18);
+          }
+        });
 
         // Hover HUD card
         const hoverPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 16, className: 'hud-popup' });
@@ -307,13 +359,32 @@ const AdminUniversityMap: React.FC = () => {
 
         map.on('click', 'unis-pins', (e) => {
           const f = e.features?.[0] as any; if (!f) return;
+          const [lng, lat] = f.geometry.coordinates;
+          const html = `
+            <div class="hud-card hud-card-anchored">
+              <div class="hud-card-bracket tl"></div><div class="hud-card-bracket tr"></div>
+              <div class="hud-card-bracket bl"></div><div class="hud-card-bracket br"></div>
+              <div class="hud-card-row">
+                <span class="hud-card-label">// LOCKED</span>
+                <span class="hud-card-status">● STATUS: ACTIVE</span>
+              </div>
+              <div class="hud-card-name">${escapeHtml(f.properties.name)}</div>
+              <div class="hud-card-meta">${escapeHtml(f.properties.state)}${f.properties.abbr ? ' · ID ' + escapeHtml(f.properties.abbr) : ''}</div>
+              <div class="hud-card-coord">${fmtCoord(lat, lng)}</div>
+              <div class="hud-card-row">
+                <span class="hud-card-stat">ENROLL <b>${f.properties.enrolled || 0}</b></span>
+                <span class="hud-card-stat">SECTOR <b>IND-01</b></span>
+              </div>
+            </div>`;
+          if (popupRef.current) popupRef.current.remove();
+          popupRef.current = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 18, className: 'hud-popup' })
+            .setLngLat([lng, lat]).setHTML(html).addTo(map!);
           openUni({
             name: f.properties.name,
             state: f.properties.state,
             enrolled: Number(f.properties.enrolled || 0),
             abbr: f.properties.abbr || null,
-            lng: f.geometry.coordinates[0],
-            lat: f.geometry.coordinates[1],
+            lng, lat,
           });
         });
 
@@ -324,7 +395,7 @@ const AdminUniversityMap: React.FC = () => {
     return () => {
       mounted = false;
       if (popupRef.current) popupRef.current.remove();
-      if (map) map.remove();
+      if (map) { try { (map as any).__pulseRaf?.(); } catch {} map.remove(); }
     };
   }, []);
 
@@ -416,6 +487,33 @@ const AdminUniversityMap: React.FC = () => {
       <div ref={containerRef} className="absolute inset-0" style={{ top: 44 }} />
 
       {/* Overlays */}
+      <div className="pointer-events-none absolute inset-0 z-[5] hud-globe" style={{ top: 44 }} aria-hidden="true">
+        <svg viewBox="-200 -200 400 400" preserveAspectRatio="xMidYMid meet" className="w-full h-full opacity-60">
+          <defs>
+            <radialGradient id="globeFade" cx="50%" cy="50%" r="50%">
+              <stop offset="55%" stopColor="rgba(0,200,255,0.35)" />
+              <stop offset="100%" stopColor="rgba(0,200,255,0)" />
+            </radialGradient>
+            <mask id="globeMask"><circle cx="0" cy="0" r="180" fill="url(#globeFade)" /></mask>
+          </defs>
+          <g mask="url(#globeMask)" fill="none" stroke="#00c8ff" strokeWidth="0.5" opacity="0.55">
+            <circle cx="0" cy="0" r="180" />
+            {/* Latitude lines (ellipses) */}
+            {[-150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150].map((y) => (
+              <line key={'lat'+y} x1="-180" y1={y} x2="180" y2={y} />
+            ))}
+            {/* Longitude lines (vertical ellipses) */}
+            {[20, 50, 80, 110, 140, 170].map((rx) => (
+              <g key={'lng'+rx}>
+                <ellipse cx="0" cy="0" rx={rx} ry="180" />
+              </g>
+            ))}
+            {/* Equator emphasis */}
+            <line x1="-180" y1="0" x2="180" y2="0" stroke="#00c8ff" strokeWidth="0.8" opacity="0.7" />
+            <ellipse cx="0" cy="0" rx="180" ry="180" stroke="#00c8ff" strokeWidth="0.8" opacity="0.7" />
+          </g>
+        </svg>
+      </div>
       <div className="pointer-events-none absolute inset-0 z-10 hud-grid" style={{ top: 44 }} />
       <div className="pointer-events-none fixed inset-0 z-[60] hud-crt" />
 
@@ -668,6 +766,7 @@ const AdminUniversityMap: React.FC = () => {
           background: transparent !important; padding: 0 !important; box-shadow: none !important;
         }
         .maplibregl-popup.hud-popup .maplibregl-popup-tip { display: none !important; }
+        .hud-globe { mix-blend-mode: screen; }
         .hud-card {
           position: relative;
           min-width: 220px;
@@ -677,12 +776,13 @@ const AdminUniversityMap: React.FC = () => {
           padding: 10px 12px;
           color: #c8d8e8;
           border-radius: 3px;
-          animation: hudFlick 200ms steps(3) both;
+          animation: hudFlick 80ms steps(4) both;
         }
         @keyframes hudFlick {
-          0% { opacity: 0; }
-          33% { opacity: 0.4; }
-          66% { opacity: 0.7; }
+          0% { opacity: 0; transform: translateY(2px); }
+          25% { opacity: 0.3; }
+          50% { opacity: 0.85; }
+          75% { opacity: 0.45; }
           100% { opacity: 1; }
         }
         .hud-card-bracket { position: absolute; width: 8px; height: 8px; border-color: #00c8ff; }
