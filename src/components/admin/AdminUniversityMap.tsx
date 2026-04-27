@@ -3,7 +3,7 @@ import maplibregl, { Map as MLMap, Popup } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { STATE_COORDS, STATE_RADIUS } from '@/data/indianStateCoords';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, MapPin, GraduationCap, Sparkles, Globe2, Search, Maximize2, Minimize2, X } from 'lucide-react';
+import { Loader2, MapPin, GraduationCap, Sparkles, Globe2, Search, Maximize2, Minimize2, X, Settings2, Eye, EyeOff, Type, Hexagon, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 type UniMap = Record<string, string[]>;
@@ -27,6 +27,12 @@ const AdminUniversityMap: React.FC = () => {
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(true);
+  const [showDots, setShowDots] = useState(true);
+  const [showClusters, setShowClusters] = useState(true);
+  const [showLabels, setShowLabels] = useState(true);
+  const [showBorders, setShowBorders] = useState(true);
+  const [activeOnly, setActiveOnly] = useState(false);
 
   // Search results (top 8)
   const results = useMemo(() => {
@@ -113,11 +119,21 @@ const AdminUniversityMap: React.FC = () => {
               tiles: ['https://a.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}@2x.png'],
               tileSize: 256,
             },
+            'carto-lines': {
+              type: 'raster',
+              tiles: [
+                'https://a.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png',
+                'https://b.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png',
+              ],
+              tileSize: 256,
+            },
           },
           layers: [
             { id: 'bg', type: 'background', paint: { 'background-color': '#080014' } },
-            { id: 'carto-dark', type: 'raster', source: 'carto-dark', paint: { 'raster-opacity': 0.5, 'raster-saturation': -0.5, 'raster-contrast': 0.2, 'raster-hue-rotate': 250 } },
-            { id: 'carto-labels', type: 'raster', source: 'carto-labels', paint: { 'raster-opacity': 0.55 } },
+            { id: 'carto-dark', type: 'raster', source: 'carto-dark', paint: { 'raster-opacity': 0.55, 'raster-saturation': -0.4, 'raster-contrast': 0.35, 'raster-hue-rotate': 250 } },
+            // Boundary emphasis: re-overlay base layer with high contrast & low opacity to lift admin lines
+            { id: 'carto-borders', type: 'raster', source: 'carto-lines', paint: { 'raster-opacity': 0.45, 'raster-contrast': 0.9, 'raster-brightness-min': 0.15, 'raster-brightness-max': 1, 'raster-saturation': -1, 'raster-hue-rotate': 290 } },
+            { id: 'carto-labels', type: 'raster', source: 'carto-labels', paint: { 'raster-opacity': 0.95, 'raster-contrast': 0.4, 'raster-brightness-min': 0.3 } },
           ],
         },
         center: [82.5, 22.5],
@@ -180,18 +196,22 @@ const AdminUniversityMap: React.FC = () => {
           id: 'unis-glow', type: 'circle', source: 'unis',
           filter: ['!', ['has', 'point_count']],
           paint: {
-            'circle-radius': 8, 'circle-color': '#e879f9', 'circle-opacity': 0.2, 'circle-blur': 0.8,
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 5, 8, 9, 12, 14, 16, 20],
+            'circle-color': ['case', ['>', ['get', 'enrolled'], 0], '#fde047', '#e879f9'],
+            'circle-opacity': 0.12,
+            'circle-blur': 1,
           },
         });
         map.addLayer({
           id: 'unis-core', type: 'circle', source: 'unis',
           filter: ['!', ['has', 'point_count']],
           paint: {
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 1.5, 8, 3, 12, 5, 16, 8],
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 1.6, 8, 3, 12, 5, 16, 8],
             'circle-color': ['case', ['>', ['get', 'enrolled'], 0], '#fde047', '#f0abfc'],
-            'circle-stroke-color': '#ffffff',
-            'circle-stroke-width': 0.4,
-            'circle-stroke-opacity': 0.6,
+            'circle-opacity': ['case', ['>', ['get', 'enrolled'], 0], 0.95, 0.55],
+            'circle-stroke-color': ['case', ['>', ['get', 'enrolled'], 0], '#fffbeb', '#fdf4ff'],
+            'circle-stroke-width': 0.6,
+            'circle-stroke-opacity': 0.5,
           },
         });
 
