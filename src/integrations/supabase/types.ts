@@ -1673,18 +1673,24 @@ export type Database = {
       }
       dating_likes: {
         Row: {
+          context_label: string | null
+          context_type: string | null
           created_at: string | null
           from_user_id: string
           id: string
           to_user_id: string
         }
         Insert: {
+          context_label?: string | null
+          context_type?: string | null
           created_at?: string | null
           from_user_id: string
           id?: string
           to_user_id: string
         }
         Update: {
+          context_label?: string | null
+          context_type?: string | null
           created_at?: string | null
           from_user_id?: string
           id?: string
@@ -1726,6 +1732,9 @@ export type Database = {
           id: string
           is_read: boolean | null
           match_id: string
+          media_url: string[] | null
+          reply_to_content: string | null
+          reply_to_id: string | null
           sender_id: string
         }
         Insert: {
@@ -1734,6 +1743,9 @@ export type Database = {
           id?: string
           is_read?: boolean | null
           match_id: string
+          media_url?: string[] | null
+          reply_to_content?: string | null
+          reply_to_id?: string | null
           sender_id: string
         }
         Update: {
@@ -1742,6 +1754,9 @@ export type Database = {
           id?: string
           is_read?: boolean | null
           match_id?: string
+          media_url?: string[] | null
+          reply_to_content?: string | null
+          reply_to_id?: string | null
           sender_id?: string
         }
         Relationships: [
@@ -1750,6 +1765,13 @@ export type Database = {
             columns: ["match_id"]
             isOneToOne: false
             referencedRelation: "dating_matches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dating_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "dating_messages"
             referencedColumns: ["id"]
           },
         ]
@@ -1777,6 +1799,7 @@ export type Database = {
       }
       dating_profiles: {
         Row: {
+          all_fetched_artists: Json | null
           bio: string | null
           created_at: string | null
           drink: string | null
@@ -1804,6 +1827,7 @@ export type Database = {
           zodiac: string | null
         }
         Insert: {
+          all_fetched_artists?: Json | null
           bio?: string | null
           created_at?: string | null
           drink?: string | null
@@ -1831,6 +1855,7 @@ export type Database = {
           zodiac?: string | null
         }
         Update: {
+          all_fetched_artists?: Json | null
           bio?: string | null
           created_at?: string | null
           drink?: string | null
@@ -2938,6 +2963,7 @@ export type Database = {
         Row: {
           conversation_id: string | null
           created_at: string
+          data: Json | null
           id: string
           is_read: boolean
           message: string
@@ -2952,6 +2978,7 @@ export type Database = {
         Insert: {
           conversation_id?: string | null
           created_at?: string
+          data?: Json | null
           id?: string
           is_read?: boolean
           message: string
@@ -2966,6 +2993,7 @@ export type Database = {
         Update: {
           conversation_id?: string | null
           created_at?: string
+          data?: Json | null
           id?: string
           is_read?: boolean
           message?: string
