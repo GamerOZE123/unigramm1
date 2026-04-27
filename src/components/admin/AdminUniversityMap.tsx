@@ -419,7 +419,7 @@ const AdminUniversityMap: React.FC = () => {
           </div>
 
           {results.length > 0 && (
-            <div className="absolute top-full mt-2 right-0 w-80 max-h-80 overflow-y-auto rounded-lg bg-[#0c0118]/95 backdrop-blur-md border border-cyan-400/30 shadow-[0_0_30px_rgba(217,70,239,0.25)]">
+            <div className="absolute top-full mt-2 right-0 w-80 max-h-80 overflow-y-auto rounded-lg bg-[#040a14]/95 backdrop-blur-md border border-cyan-400/30 shadow-[0_0_30px_rgba(34,211,238,0.25)]">
               {results.map((u, i) => (
                 <button
                   key={i}
@@ -434,7 +434,7 @@ const AdminUniversityMap: React.FC = () => {
             </div>
           )}
           {search.length >= 2 && results.length === 0 && (
-            <div className="absolute top-full mt-2 right-0 w-80 px-3 py-3 rounded-lg bg-[#0c0118]/95 backdrop-blur-md border border-cyan-400/30 text-xs text-cyan-300/60">
+            <div className="absolute top-full mt-2 right-0 w-80 px-3 py-3 rounded-lg bg-[#040a14]/95 backdrop-blur-md border border-cyan-400/30 text-xs text-cyan-300/60">
               No matches for "{search}"
             </div>
           )}
@@ -460,10 +460,10 @@ const AdminUniversityMap: React.FC = () => {
       <aside
         className={`absolute top-0 right-0 z-20 h-full w-[340px] flex flex-col transition-transform duration-300 ${panelOpen ? 'translate-x-0' : 'translate-x-full'}`}
         style={{
-          background: 'linear-gradient(180deg, rgba(20,3,40,0.92) 0%, rgba(40,7,80,0.85) 35%, rgba(15,2,30,0.92) 100%)',
+          background: 'linear-gradient(180deg, rgba(4,10,20,0.92) 0%, rgba(6,18,32,0.85) 35%, rgba(3,6,13,0.94) 100%)',
           backdropFilter: 'blur(18px)',
-          borderLeft: '1px solid rgba(217,70,239,0.35)',
-          boxShadow: '-20px 0 60px rgba(217,70,239,0.18)',
+          borderLeft: '1px solid rgba(34,211,238,0.35)',
+          boxShadow: '-20px 0 60px rgba(34,211,238,0.18)',
         }}
       >
         {/* Pulse line on left edge */}
@@ -544,8 +544,8 @@ const AdminUniversityMap: React.FC = () => {
               <div className="px-4 pt-3 pb-4 border-t border-cyan-400/15 mt-2">
                 <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-cyan-300/70 mb-2">Legend</p>
                 <div className="flex flex-col gap-1.5 text-[11px] text-cyan-100/80">
-                  <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-orange-300 shadow-[0_0_8px_#fde047]" />Active (has students)</div>
-                  <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-cyan-300/70 shadow-[0_0_6px_#e879f9]" />Listed university</div>
+                  <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-orange-300 shadow-[0_0_8px_#fb923c]" />Active (has students)</div>
+                  <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-cyan-300/70 shadow-[0_0_6px_#22d3ee]" />Listed university</div>
                   <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-cyan-500" />Cluster (zoom in)</div>
                 </div>
               </div>
@@ -647,7 +647,7 @@ const AdminUniversityMap: React.FC = () => {
       )}
 
       <style>{`
-        .sci-fi-scanlines {
+        .sci-fi-scanlines-LEGACY {
           background: repeating-linear-gradient(
             0deg,
             rgba(232, 121, 249, 0.04) 0px,
@@ -660,20 +660,20 @@ const AdminUniversityMap: React.FC = () => {
         .maplibregl-popup-tip { display: none !important; }
         .maplibregl-ctrl-attrib { background: rgba(0,0,0,0.5) !important; color: #f0abfc !important; font-size: 9px !important; }
         .maplibregl-ctrl-attrib a { color: #fbcfe8 !important; }
-        .maplibregl-ctrl-group { background: rgba(12,1,24,0.7) !important; border: 1px solid rgba(217,70,239,0.4) !important; backdrop-filter: blur(8px); }
+        .maplibregl-ctrl-group { background: rgba(4,10,20,0.7) !important; border: 1px solid rgba(34,211,238,0.4) !important; backdrop-filter: blur(8px); }
         .maplibregl-ctrl-group button { background: transparent !important; }
         .maplibregl-ctrl-group button span { filter: invert(1) hue-rotate(270deg) brightness(1.5); }
         .sci-fi-scroll::-webkit-scrollbar { width: 6px; }
         .sci-fi-scroll::-webkit-scrollbar-track { background: transparent; }
-        .sci-fi-scroll::-webkit-scrollbar-thumb { background: rgba(217,70,239,0.3); border-radius: 3px; }
-        .sci-fi-scroll::-webkit-scrollbar-thumb:hover { background: rgba(217,70,239,0.5); }
+        .sci-fi-scroll::-webkit-scrollbar-thumb { background: rgba(34,211,238,0.3); border-radius: 3px; }
+        .sci-fi-scroll::-webkit-scrollbar-thumb:hover { background: rgba(34,211,238,0.5); }
       `}</style>
     </div>
   );
 };
 
 const StatTile: React.FC<{ icon: React.ReactNode; label: string; value: string; accent?: boolean }> = ({ icon, label, value, accent }) => (
-  <div className={`px-3 py-2 rounded-lg backdrop-blur-md border flex items-center gap-2 ${accent ? 'bg-orange-500/10 border-orange-400/30' : 'bg-[#0c0118]/60 border-cyan-400/25'}`}>
+  <div className={`px-3 py-2 rounded-lg backdrop-blur-md border flex items-center gap-2 ${accent ? 'bg-orange-500/10 border-orange-400/30' : 'bg-[#040a14]/60 border-cyan-400/25'}`}>
     <div className={accent ? 'text-orange-300' : 'text-cyan-300'}>{icon}</div>
     <div className="leading-tight">
       <p className={`text-[9px] uppercase tracking-widest ${accent ? 'text-orange-300/70' : 'text-cyan-300/70'}`}>{label}</p>
