@@ -242,6 +242,7 @@ const AdminUniversityMap: React.FC = () => {
         // Diamond markers
         map.addLayer({
           id: 'unis-pins', type: 'symbol', source: 'unis',
+          filter: ['==', ['get', 'tier1'], 1],
           layout: {
             'icon-image': 'amber-diamond',
             'icon-size': ['interpolate', ['linear'], ['zoom'], 3, 0.3, 5, 0.45, 8, 0.6, 12, 0.85, 16, 1.1],
