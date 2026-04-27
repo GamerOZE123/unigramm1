@@ -468,6 +468,33 @@ const AdminUniversityMap: React.FC = () => {
       <div ref={containerRef} className="absolute inset-0" style={{ top: 44 }} />
 
       {/* Overlays */}
+      <div className="pointer-events-none absolute inset-0 z-[5] hud-globe" style={{ top: 44 }} aria-hidden="true">
+        <svg viewBox="-200 -200 400 400" preserveAspectRatio="xMidYMid meet" className="w-full h-full opacity-60">
+          <defs>
+            <radialGradient id="globeFade" cx="50%" cy="50%" r="50%">
+              <stop offset="55%" stopColor="rgba(0,200,255,0.35)" />
+              <stop offset="100%" stopColor="rgba(0,200,255,0)" />
+            </radialGradient>
+            <mask id="globeMask"><circle cx="0" cy="0" r="180" fill="url(#globeFade)" /></mask>
+          </defs>
+          <g mask="url(#globeMask)" fill="none" stroke="#00c8ff" strokeWidth="0.5" opacity="0.55">
+            <circle cx="0" cy="0" r="180" />
+            {/* Latitude lines (ellipses) */}
+            {[-150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150].map((y) => (
+              <line key={'lat'+y} x1="-180" y1={y} x2="180" y2={y} />
+            ))}
+            {/* Longitude lines (vertical ellipses) */}
+            {[20, 50, 80, 110, 140, 170].map((rx) => (
+              <g key={'lng'+rx}>
+                <ellipse cx="0" cy="0" rx={rx} ry="180" />
+              </g>
+            ))}
+            {/* Equator emphasis */}
+            <line x1="-180" y1="0" x2="180" y2="0" stroke="#00c8ff" strokeWidth="0.8" opacity="0.7" />
+            <ellipse cx="0" cy="0" rx="180" ry="180" stroke="#00c8ff" strokeWidth="0.8" opacity="0.7" />
+          </g>
+        </svg>
+      </div>
       <div className="pointer-events-none absolute inset-0 z-10 hud-grid" style={{ top: 44 }} />
       <div className="pointer-events-none fixed inset-0 z-[60] hud-crt" />
 
