@@ -365,24 +365,29 @@ const AdminUniversityMap: React.FC = () => {
   return (
     <div
       ref={wrapperRef}
-      className="relative w-full bg-[#080014] overflow-hidden"
+      className="relative w-full bg-[#03060d] overflow-hidden"
       style={{ height: fullscreen ? '100vh' : 'calc(100vh - 64px)' }}
     >
       {/* MAP */}
       <div ref={containerRef} className="absolute inset-0" />
 
-      {/* Scanlines + corner brackets */}
-      <div className="pointer-events-none absolute inset-0 z-10 sci-fi-scanlines" />
+      {/* Wireframe grid + vignette + corner brackets */}
+      <div className="pointer-events-none absolute inset-0 z-10 sci-fi-grid" />
+      <div className="pointer-events-none absolute inset-0 z-10 sci-fi-vignette" />
       <div className="pointer-events-none absolute inset-0 z-10">
-        <div className="absolute top-3 left-3 w-6 h-6 border-l-2 border-t-2 border-fuchsia-400/60" />
-        <div className="absolute top-3 right-3 w-6 h-6 border-r-2 border-t-2 border-fuchsia-400/60" />
-        <div className="absolute bottom-3 left-3 w-6 h-6 border-l-2 border-b-2 border-fuchsia-400/60" />
-        <div className="absolute bottom-3 right-3 w-6 h-6 border-r-2 border-b-2 border-fuchsia-400/60" />
+        <div className="absolute top-3 left-3 w-8 h-8 border-l border-t border-cyan-400/70" />
+        <div className="absolute top-3 right-3 w-8 h-8 border-r border-t border-cyan-400/70" />
+        <div className="absolute bottom-3 left-3 w-8 h-8 border-l border-b border-cyan-400/70" />
+        <div className="absolute bottom-3 right-3 w-8 h-8 border-r border-b border-cyan-400/70" />
+        {/* HUD ticks */}
+        <div className="absolute left-1/2 top-2 -translate-x-1/2 flex items-center gap-1 text-cyan-300/70 font-mono text-[9px] tracking-[0.3em]">
+          <span className="w-3 h-px bg-cyan-300/70" />SECTOR · IND-01<span className="w-3 h-px bg-cyan-300/70" />
+        </div>
       </div>
 
-      {/* Top HUD: title + stats */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 px-4 py-1.5 rounded-full bg-fuchsia-500/10 border border-fuchsia-400/40 backdrop-blur-md">
-        <p className="text-[10px] uppercase tracking-[0.35em] text-fuchsia-300 font-mono">UNIGRAMM · NETWORK GRID</p>
+      {/* Top HUD: title pill */}
+      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-20 px-4 py-1.5 rounded-sm bg-cyan-500/5 border border-cyan-400/40 backdrop-blur-md">
+        <p className="text-[10px] uppercase tracking-[0.45em] text-cyan-200 font-mono">UNIGRAMM · NETWORK GRID</p>
       </div>
 
       {/* Top-left stat tiles (transparent overlay) */}
