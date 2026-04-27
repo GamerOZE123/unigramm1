@@ -142,11 +142,11 @@ const AdminUniversityMap: React.FC = () => {
             },
           },
           layers: [
-            { id: 'bg', type: 'background', paint: { 'background-color': '#080014' } },
-            { id: 'carto-dark', type: 'raster', source: 'carto-dark', paint: { 'raster-opacity': 0.55, 'raster-saturation': -0.4, 'raster-contrast': 0.35, 'raster-hue-rotate': 250 } },
+            { id: 'bg', type: 'background', paint: { 'background-color': '#03060d' } },
+            { id: 'carto-dark', type: 'raster', source: 'carto-dark', paint: { 'raster-opacity': 0.35, 'raster-saturation': -1, 'raster-contrast': 0.5, 'raster-hue-rotate': 180, 'raster-brightness-min': 0.05, 'raster-brightness-max': 0.7 } },
             // Boundary emphasis: re-overlay base layer with high contrast & low opacity to lift admin lines
-            { id: 'carto-borders', type: 'raster', source: 'carto-lines', paint: { 'raster-opacity': 0.45, 'raster-contrast': 0.9, 'raster-brightness-min': 0.15, 'raster-brightness-max': 1, 'raster-saturation': -1, 'raster-hue-rotate': 290 } },
-            { id: 'carto-labels', type: 'raster', source: 'carto-labels', paint: { 'raster-opacity': 0.95, 'raster-contrast': 0.4, 'raster-brightness-min': 0.3 } },
+            { id: 'carto-borders', type: 'raster', source: 'carto-lines', paint: { 'raster-opacity': 0.55, 'raster-contrast': 1, 'raster-brightness-min': 0.2, 'raster-brightness-max': 1, 'raster-saturation': -1, 'raster-hue-rotate': 180 } },
+            { id: 'carto-labels', type: 'raster', source: 'carto-labels', paint: { 'raster-opacity': 0.85, 'raster-contrast': 0.5, 'raster-brightness-min': 0.4, 'raster-hue-rotate': 180, 'raster-saturation': -1 } },
           ],
         },
         center: [82.5, 22.5],
@@ -172,14 +172,14 @@ const AdminUniversityMap: React.FC = () => {
           clusterRadius: 45,
         });
 
-        // Magenta/violet neon theme
+        // Cyan + orange neon wireframe theme
         map.addLayer({
           id: 'clusters-glow', type: 'circle', source: 'unis',
           filter: ['has', 'point_count'],
           paint: {
             'circle-radius': ['step', ['get', 'point_count'], 30, 50, 42, 200, 56, 1000, 72],
-            'circle-color': '#d946ef',
-            'circle-opacity': 0.15,
+            'circle-color': '#22d3ee',
+            'circle-opacity': 0.18,
             'circle-blur': 1,
           },
         });
@@ -188,10 +188,10 @@ const AdminUniversityMap: React.FC = () => {
           filter: ['has', 'point_count'],
           paint: {
             'circle-radius': ['step', ['get', 'point_count'], 16, 50, 22, 200, 28, 1000, 36],
-            'circle-color': ['step', ['get', 'point_count'], '#a855f7', 50, '#c026d3', 200, '#ec4899', 1000, '#f0abfc'],
-            'circle-stroke-color': '#fce7f3',
-            'circle-stroke-width': 1.5,
-            'circle-opacity': 0.9,
+            'circle-color': ['step', ['get', 'point_count'], '#0891b2', 50, '#06b6d4', 200, '#22d3ee', 1000, '#67e8f9'],
+            'circle-stroke-color': '#cffafe',
+            'circle-stroke-width': 1.2,
+            'circle-opacity': 0.85,
           },
         });
         map.addLayer({
@@ -202,7 +202,7 @@ const AdminUniversityMap: React.FC = () => {
             'text-size': 12,
             'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
           },
-          paint: { 'text-color': '#1a0024' },
+          paint: { 'text-color': '#021018' },
         });
 
         map.addLayer({
@@ -210,8 +210,8 @@ const AdminUniversityMap: React.FC = () => {
           filter: ['!', ['has', 'point_count']],
           paint: {
             'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 5, 8, 9, 12, 14, 16, 20],
-            'circle-color': ['case', ['>', ['get', 'enrolled'], 0], '#fde047', '#e879f9'],
-            'circle-opacity': 0.12,
+            'circle-color': ['case', ['>', ['get', 'enrolled'], 0], '#fb923c', '#22d3ee'],
+            'circle-opacity': 0.18,
             'circle-blur': 1,
           },
         });
@@ -220,11 +220,11 @@ const AdminUniversityMap: React.FC = () => {
           filter: ['!', ['has', 'point_count']],
           paint: {
             'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 1.6, 8, 3, 12, 5, 16, 8],
-            'circle-color': ['case', ['>', ['get', 'enrolled'], 0], '#fde047', '#f0abfc'],
-            'circle-opacity': ['case', ['>', ['get', 'enrolled'], 0], 0.95, 0.55],
-            'circle-stroke-color': ['case', ['>', ['get', 'enrolled'], 0], '#fffbeb', '#fdf4ff'],
-            'circle-stroke-width': 0.6,
-            'circle-stroke-opacity': 0.5,
+            'circle-color': ['case', ['>', ['get', 'enrolled'], 0], '#fb923c', '#67e8f9'],
+            'circle-opacity': ['case', ['>', ['get', 'enrolled'], 0], 0.95, 0.6],
+            'circle-stroke-color': ['case', ['>', ['get', 'enrolled'], 0], '#fed7aa', '#ecfeff'],
+            'circle-stroke-width': 0.8,
+            'circle-stroke-opacity': 0.7,
           },
         });
 
