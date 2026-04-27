@@ -826,11 +826,25 @@ const AdminUniversityMap: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 mt-4">
-                  <DataTile label="STUDENTS" value={String(studentCount)} />
-                  <DataTile label="CLUBS" value={String(clubs.length)} />
+                  <button
+                    onClick={() => {
+                      setDetailTab('students');
+                      if (selected && students.length === 0 && !studentsLoading) loadStudents(selected);
+                    }}
+                    className="text-left"
+                  >
+                    <DataTile label="STUDENTS" value={String(studentCount)} active={detailTab === 'students'} />
+                  </button>
+                  <button
+                    onClick={() => setDetailTab('clubs')}
+                    className="text-left"
+                  >
+                    <DataTile label="CLUBS" value={String(clubs.length)} active={detailTab === 'clubs'} />
+                  </button>
                 </div>
               </div>
 
+              {detailTab === 'clubs' && (
               <div className="px-5 pt-3 pb-2">
                 <div className="flex items-center justify-between mb-2">
                   <p className="hud-mono text-[10px] text-[#7fb6c8] tracking-[0.2em]">// REGISTERED CLUBS</p>
@@ -861,6 +875,47 @@ const AdminUniversityMap: React.FC = () => {
                   ))}
                 </div>
               </div>
+              )}
+
+              {detailTab === 'students' && (
+              <div className="px-5 pt-3 pb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="hud-mono text-[10px] text-[#7fb6c8] tracking-[0.2em]">// ENROLLED STUDENTS</p>
+                  {studentsLoading && <Loader2 className="w-3 h-3 animate-spin text-[#00c8ff]" />}
+                </div>
+                {!studentsLoading && students.length === 0 && (
+                  <div className="text-center py-6 px-3 border border-dashed border-[#00c8ff]/20">
+                    <p className="hud-mono text-[10px] text-[#7fb6c8]">NO STUDENTS · NO SIGNAL</p>
+                  </div>
+                )}
+                <div className="flex flex-col gap-1.5">
+                  {students.map((s) => (
+                    <div
+                      key={s.user_id}
+                      className="flex items-center gap-2.5 p-2 bg-black/30 border border-[#00c8ff]/15 hover:border-[#00c8ff]/40 transition-colors"
+                      style={{ borderRadius: 3 }}
+                    >
+                      <div className="w-9 h-9 bg-[#0a1828] border border-[#00c8ff]/30 flex items-center justify-center overflow-hidden shrink-0" style={{ borderRadius: 2 }}>
+                        <img
+                          src={s.avatar_url || '/default-avatar.png'}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          onError={(e) => ((e.target as HTMLImageElement).src = '/default-avatar.png')}
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[12px] text-[#c8d8e8] truncate" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600 }}>
+                          {s.full_name || s.username || 'Unknown'}
+                        </p>
+                        <p className="hud-mono text-[9px] text-[#7fb6c8] truncate uppercase">
+                          {s.username ? '@' + s.username : '—'}{s.major ? ' · ' + s.major : ''}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              )}
             </div>
           </>
         )}
