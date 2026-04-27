@@ -3,11 +3,19 @@ import maplibregl, { Map as MLMap, Popup } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { STATE_COORDS, STATE_RADIUS } from '@/data/indianStateCoords';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, MapPin, GraduationCap, Sparkles, Globe2, Search, Maximize2, Minimize2, X, Settings2, Eye, EyeOff, Type, Hexagon, Star } from 'lucide-react';
+import { Loader2, MapPin, GraduationCap, Sparkles, Globe2, Search, Maximize2, Minimize2, X, Settings2, Type, Hexagon, Star, Users, Building2, ChevronRight, ArrowLeft, ChevronLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 type UniMap = Record<string, string[]>;
-type Univ = { name: string; state: string; lng: number; lat: number; enrolled: number };
+type Univ = { name: string; state: string; lng: number; lat: number; enrolled: number; abbr: string | null };
+
+type ClubLite = { id: string; club_name: string; category: string | null; member_count: number | null; logo_url: string | null };
+
+// Extract an abbreviation in parentheses, e.g. "Shiv Nadar University (SNU)" -> "SNU"
+function extractAbbr(name: string): string | null {
+  const m = name.match(/\(([A-Z][A-Z0-9&.\- ]{1,15})\)\s*$/);
+  return m ? m[1].trim() : null;
+}
 
 function seeded(i: number) {
   const x = Math.sin(i * 9301 + 49297) * 233280;
@@ -23,7 +31,10 @@ const AdminUniversityMap: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ states: 0, universities: 0 });
   const [enrolledByUniv, setEnrolledByUniv] = useState<Record<string, number>>({});
-  const [selected, setSelected] = useState<{ name: string; state: string; enrolled: number } | null>(null);
+  const [selected, setSelected] = useState<{ name: string; state: string; enrolled: number; abbr: string | null } | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [clubs, setClubs] = useState<ClubLite[]>([]);
+  const [studentCount, setStudentCount] = useState<number>(0);
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
@@ -84,12 +95,14 @@ const AdminUniversityMap: React.FC = () => {
           const lng = center.lng + Math.cos(angle) * dist;
           const lat = center.lat + Math.sin(angle) * dist * 0.85;
           counter++; total++;
-          const enrolled = enrolledMap[name] || 0;
-          flat.push({ name, state, lng, lat, enrolled });
+          const abbr = extractAbbr(name);
+          // Hook to existing DB: try abbreviation first (e.g. "SNU"), then full name
+          const enrolled = (abbr && enrolledMap[abbr]) || enrolledMap[name] || 0;
+          flat.push({ name, state, lng, lat, enrolled, abbr });
           features.push({
             type: 'Feature',
             geometry: { type: 'Point', coordinates: [lng, lat] },
-            properties: { name, state, idx: counter, enrolled },
+            properties: { name, state, idx: counter, enrolled, abbr: abbr || '' },
           });
         });
       });
@@ -238,6 +251,7 @@ const AdminUniversityMap: React.FC = () => {
             name: f.properties.name,
             state: f.properties.state,
             enrolled: Number(f.properties.enrolled || 0),
+            abbr: f.properties.abbr || null,
             lng: f.geometry.coordinates[0],
             lat: f.geometry.coordinates[1],
           });
@@ -254,22 +268,36 @@ const AdminUniversityMap: React.FC = () => {
     };
   }, []);
 
-  const openUni = (u: { name: string; state: string; enrolled: number; lng: number; lat: number }) => {
+  const openUni = async (u: { name: string; state: string; enrolled: number; abbr: string | null; lng: number; lat: number }) => {
     const map = mapRef.current;
     if (!map) return;
-    setSelected({ name: u.name, state: u.state, enrolled: u.enrolled });
+    setSelected({ name: u.name, state: u.state, enrolled: u.enrolled, abbr: u.abbr });
+    setClubs([]);
+    setStudentCount(u.enrolled);
+    setDetailLoading(true);
     if (popupRef.current) popupRef.current.remove();
-    popupRef.current = new maplibregl.Popup({ closeButton: false, offset: 14, className: 'sci-fi-popup' })
-      .setLngLat([u.lng, u.lat])
-      .setHTML(`
-        <div style="background:linear-gradient(135deg,#1a0024 0%,#3b0764 100%);border:1px solid #e879f988;padding:10px 12px;border-radius:8px;color:#fce7f3;font-family:system-ui;min-width:220px;box-shadow:0 0 30px #d946ef55;">
-          <div style="font-size:10px;letter-spacing:1.5px;color:#f0abfc;text-transform:uppercase;margin-bottom:4px;">${u.state}</div>
-          <div style="font-size:13px;font-weight:700;line-height:1.3;margin-bottom:6px;">${u.name}</div>
-          <div style="font-size:11px;color:#fbcfe8;">👥 ${u.enrolled} enrolled · 🏛️ 0 clubs</div>
-        </div>
-      `)
-      .addTo(map);
     map.flyTo({ center: [u.lng, u.lat], zoom: Math.max(map.getZoom(), 9), duration: 900 });
+
+    // Fetch live data from DB — try abbreviation first, then full name
+    const candidates = [u.abbr, u.name].filter(Boolean) as string[];
+    try {
+      const { count: sCount } = await supabase
+        .from('profiles')
+        .select('user_id', { count: 'exact', head: true })
+        .in('university', candidates);
+      const { data: clubRows } = await supabase
+        .from('clubs_profiles')
+        .select('id, club_name, category, member_count, logo_url')
+        .in('university', candidates)
+        .order('member_count', { ascending: false })
+        .limit(50);
+      setStudentCount(sCount || 0);
+      setClubs((clubRows as ClubLite[]) || []);
+    } catch (e) {
+      console.error('Uni detail fetch failed', e);
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   const toggleFullscreen = async () => {
