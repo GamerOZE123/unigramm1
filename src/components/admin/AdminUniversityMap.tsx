@@ -302,6 +302,38 @@ const AdminUniversityMap: React.FC = () => {
     return () => { window.removeEventListener('resize', onResize); clearTimeout(t); };
   }, []);
 
+  // Layer visibility toggles
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || loading) return;
+    const set = (id: string, vis: boolean) => {
+      if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis ? 'visible' : 'none');
+    };
+    set('unis-core', showDots);
+    set('unis-glow', showDots);
+    set('clusters', showClusters);
+    set('clusters-glow', showClusters);
+    set('cluster-count', showClusters);
+    set('carto-labels', showLabels);
+    set('carto-borders', showBorders);
+  }, [showDots, showClusters, showLabels, showBorders, loading]);
+
+  // Active-only filter
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || loading) return;
+    if (map.getLayer('unis-core')) {
+      map.setFilter('unis-core', activeOnly
+        ? ['all', ['!', ['has', 'point_count']], ['>', ['get', 'enrolled'], 0]]
+        : ['!', ['has', 'point_count']]);
+    }
+    if (map.getLayer('unis-glow')) {
+      map.setFilter('unis-glow', activeOnly
+        ? ['all', ['!', ['has', 'point_count']], ['>', ['get', 'enrolled'], 0]]
+        : ['!', ['has', 'point_count']]);
+    }
+  }, [activeOnly, loading]);
+
   return (
     <div
       ref={wrapperRef}
@@ -382,6 +414,38 @@ const AdminUniversityMap: React.FC = () => {
         >
           {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
         </button>
+        <button
+          onClick={() => setPanelOpen(v => !v)}
+          title="Controls"
+          className={`w-10 h-10 rounded-full backdrop-blur-md border flex items-center justify-center transition-colors ${panelOpen ? 'bg-fuchsia-500/20 border-fuchsia-400/60 text-fuchsia-100' : 'bg-black/40 border-fuchsia-400/30 text-fuchsia-300 hover:border-fuchsia-400/60'}`}
+        >
+          <Settings2 className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Right-side transparent control panel */}
+      <div
+        className={`absolute top-20 right-3 z-20 w-64 rounded-xl bg-[#0c0118]/55 backdrop-blur-xl border border-fuchsia-400/30 shadow-[0_0_40px_rgba(217,70,239,0.18)] transition-all duration-300 ${panelOpen ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-6 pointer-events-none'}`}
+      >
+        <div className="px-4 pt-3 pb-2 border-b border-fuchsia-400/20 flex items-center justify-between">
+          <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-fuchsia-300">Grid Controls</p>
+          <div className="w-1.5 h-1.5 rounded-full bg-fuchsia-400 animate-pulse" />
+        </div>
+        <div className="px-2 py-2 flex flex-col gap-0.5">
+          <ToggleRow icon={<MapPin className="w-3.5 h-3.5" />} label="University dots" on={showDots} onChange={setShowDots} />
+          <ToggleRow icon={<Hexagon className="w-3.5 h-3.5" />} label="Clusters" on={showClusters} onChange={setShowClusters} />
+          <ToggleRow icon={<Type className="w-3.5 h-3.5" />} label="Place labels" on={showLabels} onChange={setShowLabels} />
+          <ToggleRow icon={<Globe2 className="w-3.5 h-3.5" />} label="State borders" on={showBorders} onChange={setShowBorders} />
+          <ToggleRow icon={<Star className="w-3.5 h-3.5" />} label="Active campuses only" on={activeOnly} onChange={setActiveOnly} accent />
+        </div>
+        <div className="px-4 py-2 border-t border-fuchsia-400/20 flex items-center justify-between text-[10px] font-mono text-fuchsia-300/70">
+          <span>LEGEND</span>
+        </div>
+        <div className="px-4 pb-3 flex flex-col gap-1.5 text-[11px] text-fuchsia-100/80">
+          <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-yellow-300 shadow-[0_0_8px_#fde047]" />Active (has students)</div>
+          <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-fuchsia-300/70 shadow-[0_0_6px_#e879f9]" />Listed university</div>
+          <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-fuchsia-500" />Cluster (zoom in)</div>
+        </div>
       </div>
 
       {/* Bottom-left: selected info panel */}
