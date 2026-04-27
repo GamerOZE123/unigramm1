@@ -207,64 +207,36 @@ const AdminUniversityMap: React.FC = () => {
         map.addSource('unis', {
           type: 'geojson',
           data: { type: 'FeatureCollection', features },
-          cluster: true,
-          clusterMaxZoom: 8,
-          clusterRadius: 45,
-        });
-
-        // Cluster halo (cyan)
-        map.addLayer({
-          id: 'clusters-glow', type: 'circle', source: 'unis',
-          filter: ['has', 'point_count'],
-          paint: {
-            'circle-radius': ['step', ['get', 'point_count'], 26, 50, 36, 200, 48, 1000, 64],
-            'circle-color': '#00c8ff',
-            'circle-opacity': 0.08,
-            'circle-blur': 1,
-          },
-        });
-        map.addLayer({
-          id: 'clusters', type: 'circle', source: 'unis',
-          filter: ['has', 'point_count'],
-          paint: {
-            'circle-radius': ['step', ['get', 'point_count'], 14, 50, 18, 200, 24, 1000, 32],
-            'circle-color': '#0a1822',
-            'circle-stroke-color': '#00c8ff',
-            'circle-stroke-width': 1,
-            'circle-opacity': 0.85,
-          },
-        });
-        map.addLayer({
-          id: 'cluster-count', type: 'symbol', source: 'unis',
-          filter: ['has', 'point_count'],
-          layout: {
-            'text-field': '{point_count_abbreviated}',
-            'text-size': 11,
-            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-            'text-letter-spacing': 0.1,
-          },
-          paint: { 'text-color': '#00c8ff' },
+          cluster: false,
         });
 
         // Diamond markers
         map.addLayer({
           id: 'unis-pins', type: 'symbol', source: 'unis',
-          filter: ['!', ['has', 'point_count']],
           layout: {
             'icon-image': 'amber-diamond',
-            'icon-size': ['interpolate', ['linear'], ['zoom'], 4, 0.35, 8, 0.55, 12, 0.8, 16, 1.1],
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 3, 0.3, 5, 0.45, 8, 0.6, 12, 0.85, 16, 1.1],
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
+            'text-field': ['coalesce', ['get', 'abbr'], ''],
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+            'text-size': ['interpolate', ['linear'], ['zoom'], 5, 0, 6, 9, 10, 11, 14, 13],
+            'text-offset': [0, 1.2],
+            'text-anchor': 'top',
+            'text-letter-spacing': 0.08,
+            'text-allow-overlap': false,
+            'text-optional': true,
           },
           paint: {
             'icon-opacity': ['case', ['>', ['get', 'enrolled'], 0], 1, 0.75],
+            'text-color': '#f5c518',
+            'text-halo-color': '#080c12',
+            'text-halo-width': 1.5,
           },
         });
 
         const setPointer = () => (map!.getCanvas().style.cursor = 'crosshair');
         const resetPointer = () => (map!.getCanvas().style.cursor = '');
-        map.on('mouseenter', 'clusters', setPointer);
-        map.on('mouseleave', 'clusters', resetPointer);
         map.on('mouseenter', 'unis-pins', () => {
           setPointer();
         });
@@ -296,14 +268,6 @@ const AdminUniversityMap: React.FC = () => {
           hoverPopup.setLngLat([lng, lat]).setHTML(html).addTo(map!);
         });
         map.on('mouseleave', 'unis-pins', () => hoverPopup.remove());
-
-        map.on('click', 'clusters', (e) => {
-          const f = e.features?.[0] as any; if (!f) return;
-          (map!.getSource('unis') as any).getClusterExpansionZoom(f.properties.cluster_id, (err: any, zoom: number) => {
-            if (err) return;
-            map!.easeTo({ center: f.geometry.coordinates, zoom });
-          });
-        });
 
         map.on('click', 'unis-pins', (e) => {
           const f = e.features?.[0] as any; if (!f) return;
@@ -532,7 +496,6 @@ const AdminUniversityMap: React.FC = () => {
             <div className="flex flex-col gap-1.5 text-[10px] text-[#c8d8e8] hud-mono">
               <div className="flex items-center gap-2"><Diamond color="#f5c518" />UNIVERSITY · TARGET</div>
               <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-[#00ff88] shadow-[0_0_6px_#00ff88]" />ACTIVE · ENROLLED</div>
-              <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full border border-[#00c8ff]" />CLUSTER · ZOOM IN</div>
             </div>
           </div>
         </div>
