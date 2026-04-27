@@ -658,6 +658,10 @@ const AdminUniversityMap: React.FC = () => {
         .maplibregl-ctrl-group { background: rgba(12,1,24,0.7) !important; border: 1px solid rgba(217,70,239,0.4) !important; backdrop-filter: blur(8px); }
         .maplibregl-ctrl-group button { background: transparent !important; }
         .maplibregl-ctrl-group button span { filter: invert(1) hue-rotate(270deg) brightness(1.5); }
+        .sci-fi-scroll::-webkit-scrollbar { width: 6px; }
+        .sci-fi-scroll::-webkit-scrollbar-track { background: transparent; }
+        .sci-fi-scroll::-webkit-scrollbar-thumb { background: rgba(217,70,239,0.3); border-radius: 3px; }
+        .sci-fi-scroll::-webkit-scrollbar-thumb:hover { background: rgba(217,70,239,0.5); }
       `}</style>
     </div>
   );
