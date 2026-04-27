@@ -401,40 +401,40 @@ const AdminUniversityMap: React.FC = () => {
       {/* Top-right: search + fullscreen */}
       <div className="absolute top-3 right-3 z-30 flex items-start gap-2">
         <div className="relative">
-          <div className={`flex items-center gap-2 px-3 py-2 rounded-full bg-black/40 backdrop-blur-md border transition-all ${searchOpen || search ? 'border-fuchsia-400/60 w-72' : 'border-fuchsia-400/30 w-10 cursor-pointer'}`}
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-full bg-black/40 backdrop-blur-md border transition-all ${searchOpen || search ? 'border-cyan-400/60 w-72' : 'border-cyan-400/30 w-10 cursor-pointer'}`}
             onClick={() => setSearchOpen(true)}>
-            <Search className="w-4 h-4 text-fuchsia-300 shrink-0" />
+            <Search className="w-4 h-4 text-cyan-300 shrink-0" />
             <input
               value={search}
               onChange={(e) => { setSearch(e.target.value); setSearchOpen(true); }}
               onFocus={() => setSearchOpen(true)}
               placeholder="Search university or state…"
-              className={`bg-transparent outline-none text-xs text-fuchsia-100 placeholder:text-fuchsia-300/40 flex-1 transition-all ${searchOpen || search ? 'w-full opacity-100' : 'w-0 opacity-0'}`}
+              className={`bg-transparent outline-none text-xs text-cyan-100 placeholder:text-cyan-300/40 flex-1 transition-all ${searchOpen || search ? 'w-full opacity-100' : 'w-0 opacity-0'}`}
             />
             {search && (
-              <button onClick={(e) => { e.stopPropagation(); setSearch(''); }} className="text-fuchsia-300/60 hover:text-fuchsia-200">
+              <button onClick={(e) => { e.stopPropagation(); setSearch(''); }} className="text-cyan-300/60 hover:text-cyan-200">
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
 
           {results.length > 0 && (
-            <div className="absolute top-full mt-2 right-0 w-80 max-h-80 overflow-y-auto rounded-lg bg-[#0c0118]/95 backdrop-blur-md border border-fuchsia-400/30 shadow-[0_0_30px_rgba(217,70,239,0.25)]">
+            <div className="absolute top-full mt-2 right-0 w-80 max-h-80 overflow-y-auto rounded-lg bg-[#0c0118]/95 backdrop-blur-md border border-cyan-400/30 shadow-[0_0_30px_rgba(217,70,239,0.25)]">
               {results.map((u, i) => (
                 <button
                   key={i}
                   onClick={() => { openUni(u); setSearchOpen(false); }}
-                  className="w-full text-left px-3 py-2 hover:bg-fuchsia-500/10 border-b border-fuchsia-500/10 last:border-0 transition-colors"
+                  className="w-full text-left px-3 py-2 hover:bg-cyan-500/10 border-b border-cyan-500/10 last:border-0 transition-colors"
                 >
-                  <p className="text-[10px] uppercase tracking-widest text-fuchsia-300/70">{u.state}</p>
-                  <p className="text-xs text-fuchsia-100 font-medium leading-tight">{u.name}</p>
-                  {u.enrolled > 0 && <p className="text-[10px] text-yellow-300 mt-0.5">👥 {u.enrolled} enrolled</p>}
+                  <p className="text-[10px] uppercase tracking-widest text-cyan-300/70">{u.state}</p>
+                  <p className="text-xs text-cyan-100 font-medium leading-tight">{u.name}</p>
+                  {u.enrolled > 0 && <p className="text-[10px] text-orange-300 mt-0.5">👥 {u.enrolled} enrolled</p>}
                 </button>
               ))}
             </div>
           )}
           {search.length >= 2 && results.length === 0 && (
-            <div className="absolute top-full mt-2 right-0 w-80 px-3 py-3 rounded-lg bg-[#0c0118]/95 backdrop-blur-md border border-fuchsia-400/30 text-xs text-fuchsia-300/60">
+            <div className="absolute top-full mt-2 right-0 w-80 px-3 py-3 rounded-lg bg-[#0c0118]/95 backdrop-blur-md border border-cyan-400/30 text-xs text-cyan-300/60">
               No matches for "{search}"
             </div>
           )}
@@ -443,14 +443,14 @@ const AdminUniversityMap: React.FC = () => {
         <button
           onClick={toggleFullscreen}
           title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-          className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-fuchsia-400/30 flex items-center justify-center text-fuchsia-300 hover:border-fuchsia-400/60 hover:text-fuchsia-100 transition-colors"
+          className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-cyan-400/30 flex items-center justify-center text-cyan-300 hover:border-cyan-400/60 hover:text-cyan-100 transition-colors"
         >
           {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
         </button>
         <button
           onClick={() => setPanelOpen(v => !v)}
           title="Controls"
-          className={`w-10 h-10 rounded-full backdrop-blur-md border flex items-center justify-center transition-colors ${panelOpen ? 'bg-fuchsia-500/20 border-fuchsia-400/60 text-fuchsia-100' : 'bg-black/40 border-fuchsia-400/30 text-fuchsia-300 hover:border-fuchsia-400/60'}`}
+          className={`w-10 h-10 rounded-full backdrop-blur-md border flex items-center justify-center transition-colors ${panelOpen ? 'bg-cyan-500/20 border-cyan-400/60 text-cyan-100' : 'bg-black/40 border-cyan-400/30 text-cyan-300 hover:border-cyan-400/60'}`}
         >
           <Settings2 className="w-4 h-4" />
         </button>
@@ -467,25 +467,25 @@ const AdminUniversityMap: React.FC = () => {
         }}
       >
         {/* Pulse line on left edge */}
-        <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-fuchsia-400/80 to-transparent" />
+        <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-cyan-400/80 to-transparent" />
 
         {/* Header */}
-        <div className="px-5 pt-4 pb-3 border-b border-fuchsia-400/20 flex items-center justify-between shrink-0">
+        <div className="px-5 pt-4 pb-3 border-b border-cyan-400/20 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             {selected && (
-              <button onClick={() => { setSelected(null); popupRef.current?.remove(); }} className="text-fuchsia-300/70 hover:text-fuchsia-100 transition-colors">
+              <button onClick={() => { setSelected(null); popupRef.current?.remove(); }} className="text-cyan-300/70 hover:text-cyan-100 transition-colors">
                 <ArrowLeft className="w-4 h-4" />
               </button>
             )}
-            <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-fuchsia-300">
+            <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-cyan-300">
               {selected ? 'Campus Intel' : 'Grid Controls'}
             </p>
-            <div className="w-1.5 h-1.5 rounded-full bg-fuchsia-400 animate-pulse" />
+            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
           </div>
           <button
             onClick={() => setPanelOpen(false)}
             title="Collapse"
-            className="text-fuchsia-300/60 hover:text-fuchsia-100"
+            className="text-cyan-300/60 hover:text-cyan-100"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -497,31 +497,31 @@ const AdminUniversityMap: React.FC = () => {
             <div className="flex flex-col">
               {/* Search */}
               <div className="px-4 pt-4">
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/40 border border-fuchsia-400/30 focus-within:border-fuchsia-400/70 transition-colors">
-                  <Search className="w-4 h-4 text-fuchsia-300 shrink-0" />
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/40 border border-cyan-400/30 focus-within:border-cyan-400/70 transition-colors">
+                  <Search className="w-4 h-4 text-cyan-300 shrink-0" />
                   <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search university or state…"
-                    className="bg-transparent outline-none text-xs text-fuchsia-100 placeholder:text-fuchsia-300/40 flex-1"
+                    className="bg-transparent outline-none text-xs text-cyan-100 placeholder:text-cyan-300/40 flex-1"
                   />
                   {search && (
-                    <button onClick={() => setSearch('')} className="text-fuchsia-300/60 hover:text-fuchsia-200">
+                    <button onClick={() => setSearch('')} className="text-cyan-300/60 hover:text-cyan-200">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
                 {results.length > 0 && (
-                  <div className="mt-2 max-h-60 overflow-y-auto rounded-lg bg-black/30 border border-fuchsia-400/20">
+                  <div className="mt-2 max-h-60 overflow-y-auto rounded-lg bg-black/30 border border-cyan-400/20">
                     {results.map((u, i) => (
                       <button
                         key={i}
                         onClick={() => openUni(u)}
-                        className="w-full text-left px-3 py-2 hover:bg-fuchsia-500/10 border-b border-fuchsia-500/10 last:border-0 transition-colors"
+                        className="w-full text-left px-3 py-2 hover:bg-cyan-500/10 border-b border-cyan-500/10 last:border-0 transition-colors"
                       >
-                        <p className="text-[10px] uppercase tracking-widest text-fuchsia-300/70">{u.state}</p>
-                        <p className="text-xs text-fuchsia-100 font-medium leading-tight">{u.name}</p>
-                        {u.enrolled > 0 && <p className="text-[10px] text-yellow-300 mt-0.5">👥 {u.enrolled} enrolled</p>}
+                        <p className="text-[10px] uppercase tracking-widest text-cyan-300/70">{u.state}</p>
+                        <p className="text-xs text-cyan-100 font-medium leading-tight">{u.name}</p>
+                        {u.enrolled > 0 && <p className="text-[10px] text-orange-300 mt-0.5">👥 {u.enrolled} enrolled</p>}
                       </button>
                     ))}
                   </div>
@@ -530,7 +530,7 @@ const AdminUniversityMap: React.FC = () => {
 
               {/* Layer toggles */}
               <div className="px-4 pt-4 pb-2">
-                <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-fuchsia-300/70 mb-2">Layers</p>
+                <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-cyan-300/70 mb-2">Layers</p>
                 <div className="flex flex-col gap-1">
                   <ToggleRow icon={<MapPin className="w-3.5 h-3.5" />} label="University dots" on={showDots} onChange={setShowDots} />
                   <ToggleRow icon={<Hexagon className="w-3.5 h-3.5" />} label="Clusters" on={showClusters} onChange={setShowClusters} />
@@ -541,39 +541,39 @@ const AdminUniversityMap: React.FC = () => {
               </div>
 
               {/* Legend */}
-              <div className="px-4 pt-3 pb-4 border-t border-fuchsia-400/15 mt-2">
-                <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-fuchsia-300/70 mb-2">Legend</p>
-                <div className="flex flex-col gap-1.5 text-[11px] text-fuchsia-100/80">
-                  <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-yellow-300 shadow-[0_0_8px_#fde047]" />Active (has students)</div>
-                  <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-fuchsia-300/70 shadow-[0_0_6px_#e879f9]" />Listed university</div>
-                  <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-fuchsia-500" />Cluster (zoom in)</div>
+              <div className="px-4 pt-3 pb-4 border-t border-cyan-400/15 mt-2">
+                <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-cyan-300/70 mb-2">Legend</p>
+                <div className="flex flex-col gap-1.5 text-[11px] text-cyan-100/80">
+                  <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-orange-300 shadow-[0_0_8px_#fde047]" />Active (has students)</div>
+                  <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-cyan-300/70 shadow-[0_0_6px_#e879f9]" />Listed university</div>
+                  <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-cyan-500" />Cluster (zoom in)</div>
                 </div>
               </div>
             </div>
           ) : (
             <div className="flex flex-col">
               {/* Hero */}
-              <div className="px-5 pt-5 pb-4 border-b border-fuchsia-400/20 relative overflow-hidden">
-                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-fuchsia-500/20 blur-3xl pointer-events-none" />
-                <Badge variant="outline" className="border-fuchsia-400/40 text-fuchsia-200 text-[10px] mb-2">{selected.state}</Badge>
-                <h2 className="text-base font-bold text-fuchsia-50 leading-tight">{selected.name}</h2>
+              <div className="px-5 pt-5 pb-4 border-b border-cyan-400/20 relative overflow-hidden">
+                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-cyan-500/20 blur-3xl pointer-events-none" />
+                <Badge variant="outline" className="border-cyan-400/40 text-cyan-200 text-[10px] mb-2">{selected.state}</Badge>
+                <h2 className="text-base font-bold text-cyan-50 leading-tight">{selected.name}</h2>
                 {selected.abbr && (
-                  <p className="text-[10px] uppercase tracking-[0.25em] text-fuchsia-300/70 font-mono mt-1">ID · {selected.abbr}</p>
+                  <p className="text-[10px] uppercase tracking-[0.25em] text-cyan-300/70 font-mono mt-1">ID · {selected.abbr}</p>
                 )}
 
                 {/* Stat tiles */}
                 <div className="grid grid-cols-2 gap-2 mt-4">
-                  <div className="p-2.5 rounded-lg bg-gradient-to-br from-yellow-500/15 to-yellow-500/5 border border-yellow-400/30">
-                    <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-yellow-300/80">
+                  <div className="p-2.5 rounded-lg bg-gradient-to-br from-orange-500/15 to-orange-500/5 border border-orange-400/30">
+                    <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-orange-300/80">
                       <Users className="w-3 h-3" /> Students
                     </div>
-                    <p className="text-lg font-bold text-yellow-200 font-mono mt-0.5">{studentCount}</p>
+                    <p className="text-lg font-bold text-orange-200 font-mono mt-0.5">{studentCount}</p>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-gradient-to-br from-fuchsia-500/15 to-fuchsia-500/5 border border-fuchsia-400/30">
-                    <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-fuchsia-300/80">
+                  <div className="p-2.5 rounded-lg bg-gradient-to-br from-cyan-500/15 to-cyan-500/5 border border-cyan-400/30">
+                    <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-cyan-300/80">
                       <Building2 className="w-3 h-3" /> Clubs
                     </div>
-                    <p className="text-lg font-bold text-fuchsia-100 font-mono mt-0.5">{clubs.length}</p>
+                    <p className="text-lg font-bold text-cyan-100 font-mono mt-0.5">{clubs.length}</p>
                   </div>
                 </div>
               </div>
@@ -581,11 +581,11 @@ const AdminUniversityMap: React.FC = () => {
               {/* Clubs list */}
               <div className="px-5 pt-4 pb-2">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-fuchsia-300/70">Registered Clubs</p>
-                  {detailLoading && <Loader2 className="w-3 h-3 animate-spin text-fuchsia-300" />}
+                  <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-cyan-300/70">Registered Clubs</p>
+                  {detailLoading && <Loader2 className="w-3 h-3 animate-spin text-cyan-300" />}
                 </div>
                 {!detailLoading && clubs.length === 0 && (
-                  <div className="text-center py-8 px-3 rounded-lg border border-dashed border-fuchsia-400/20 text-[11px] text-fuchsia-300/50">
+                  <div className="text-center py-8 px-3 rounded-lg border border-dashed border-cyan-400/20 text-[11px] text-cyan-300/50">
                     No clubs registered yet for this campus.
                   </div>
                 )}
@@ -593,18 +593,18 @@ const AdminUniversityMap: React.FC = () => {
                   {clubs.map((c) => (
                     <div
                       key={c.id}
-                      className="flex items-center gap-3 p-2.5 rounded-lg bg-black/30 border border-fuchsia-400/15 hover:border-fuchsia-400/40 hover:bg-fuchsia-500/5 transition-colors"
+                      className="flex items-center gap-3 p-2.5 rounded-lg bg-black/30 border border-cyan-400/15 hover:border-cyan-400/40 hover:bg-cyan-500/5 transition-colors"
                     >
-                      <div className="w-9 h-9 rounded-md bg-gradient-to-br from-fuchsia-500/30 to-purple-700/30 border border-fuchsia-400/30 flex items-center justify-center overflow-hidden shrink-0">
+                      <div className="w-9 h-9 rounded-md bg-gradient-to-br from-cyan-500/30 to-purple-700/30 border border-cyan-400/30 flex items-center justify-center overflow-hidden shrink-0">
                         {c.logo_url ? (
                           <img src={c.logo_url} alt="" className="w-full h-full object-cover" onError={(e) => ((e.target as HTMLImageElement).src = '/default-avatar.png')} />
                         ) : (
-                          <Building2 className="w-4 h-4 text-fuchsia-200" />
+                          <Building2 className="w-4 h-4 text-cyan-200" />
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-fuchsia-50 truncate">{c.club_name}</p>
-                        <p className="text-[10px] text-fuchsia-300/70 truncate">
+                        <p className="text-xs font-semibold text-cyan-50 truncate">{c.club_name}</p>
+                        <p className="text-[10px] text-cyan-300/70 truncate">
                           {c.category || 'General'} · {c.member_count || 0} members
                         </p>
                       </div>
@@ -617,7 +617,7 @@ const AdminUniversityMap: React.FC = () => {
         </div>
 
         {/* Footer ribbon */}
-        <div className="px-5 py-2.5 border-t border-fuchsia-400/20 flex items-center justify-between text-[9px] font-mono text-fuchsia-300/60 shrink-0">
+        <div className="px-5 py-2.5 border-t border-cyan-400/20 flex items-center justify-between text-[9px] font-mono text-cyan-300/60 shrink-0">
           <span>UNIGRAMM · LIVE</span>
           <span className="flex items-center gap-1">
             <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" /> SYNCED
@@ -629,7 +629,7 @@ const AdminUniversityMap: React.FC = () => {
       {!panelOpen && (
         <button
           onClick={() => setPanelOpen(true)}
-          className="absolute top-1/2 right-0 -translate-y-1/2 z-20 h-16 w-7 rounded-l-lg bg-fuchsia-500/20 backdrop-blur-md border border-r-0 border-fuchsia-400/40 flex items-center justify-center text-fuchsia-200 hover:bg-fuchsia-500/30 transition-colors"
+          className="absolute top-1/2 right-0 -translate-y-1/2 z-20 h-16 w-7 rounded-l-lg bg-cyan-500/20 backdrop-blur-md border border-r-0 border-cyan-400/40 flex items-center justify-center text-cyan-200 hover:bg-cyan-500/30 transition-colors"
           title="Open panel"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -639,7 +639,7 @@ const AdminUniversityMap: React.FC = () => {
       {/* Loading overlay */}
       {loading && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-[#080014]/80">
-          <div className="flex items-center gap-2 text-fuchsia-300 text-sm font-mono">
+          <div className="flex items-center gap-2 text-cyan-300 text-sm font-mono">
             <Loader2 className="w-4 h-4 animate-spin" />
             INITIALIZING NETWORK GRID…
           </div>
@@ -673,11 +673,11 @@ const AdminUniversityMap: React.FC = () => {
 };
 
 const StatTile: React.FC<{ icon: React.ReactNode; label: string; value: string; accent?: boolean }> = ({ icon, label, value, accent }) => (
-  <div className={`px-3 py-2 rounded-lg backdrop-blur-md border flex items-center gap-2 ${accent ? 'bg-yellow-500/10 border-yellow-400/30' : 'bg-[#0c0118]/60 border-fuchsia-400/25'}`}>
-    <div className={accent ? 'text-yellow-300' : 'text-fuchsia-300'}>{icon}</div>
+  <div className={`px-3 py-2 rounded-lg backdrop-blur-md border flex items-center gap-2 ${accent ? 'bg-orange-500/10 border-orange-400/30' : 'bg-[#0c0118]/60 border-cyan-400/25'}`}>
+    <div className={accent ? 'text-orange-300' : 'text-cyan-300'}>{icon}</div>
     <div className="leading-tight">
-      <p className={`text-[9px] uppercase tracking-widest ${accent ? 'text-yellow-300/70' : 'text-fuchsia-300/70'}`}>{label}</p>
-      <p className={`text-xs font-bold font-mono ${accent ? 'text-yellow-100' : 'text-fuchsia-100'}`}>{value}</p>
+      <p className={`text-[9px] uppercase tracking-widest ${accent ? 'text-orange-300/70' : 'text-cyan-300/70'}`}>{label}</p>
+      <p className={`text-xs font-bold font-mono ${accent ? 'text-orange-100' : 'text-cyan-100'}`}>{value}</p>
     </div>
   </div>
 );
@@ -685,13 +685,13 @@ const StatTile: React.FC<{ icon: React.ReactNode; label: string; value: string; 
 const ToggleRow: React.FC<{ icon: React.ReactNode; label: string; on: boolean; onChange: (v: boolean) => void; accent?: boolean }> = ({ icon, label, on, onChange, accent }) => (
   <button
     onClick={() => onChange(!on)}
-    className={`group w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border transition-all ${on ? (accent ? 'bg-yellow-500/10 border-yellow-400/40' : 'bg-fuchsia-500/10 border-fuchsia-400/40') : 'bg-transparent border-transparent hover:bg-fuchsia-500/5 hover:border-fuchsia-400/20'}`}
+    className={`group w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border transition-all ${on ? (accent ? 'bg-orange-500/10 border-orange-400/40' : 'bg-cyan-500/10 border-cyan-400/40') : 'bg-transparent border-transparent hover:bg-cyan-500/5 hover:border-cyan-400/20'}`}
   >
     <div className="flex items-center gap-2 min-w-0">
-      <span className={on ? (accent ? 'text-yellow-300' : 'text-fuchsia-200') : 'text-fuchsia-300/50'}>{icon}</span>
-      <span className={`text-xs truncate ${on ? (accent ? 'text-yellow-100' : 'text-fuchsia-100') : 'text-fuchsia-300/60'}`}>{label}</span>
+      <span className={on ? (accent ? 'text-orange-300' : 'text-cyan-200') : 'text-cyan-300/50'}>{icon}</span>
+      <span className={`text-xs truncate ${on ? (accent ? 'text-orange-100' : 'text-cyan-100') : 'text-cyan-300/60'}`}>{label}</span>
     </div>
-    <span className={`relative w-8 h-4 rounded-full transition-colors ${on ? (accent ? 'bg-yellow-400/70' : 'bg-fuchsia-400/70') : 'bg-fuchsia-300/15'}`}>
+    <span className={`relative w-8 h-4 rounded-full transition-colors ${on ? (accent ? 'bg-orange-400/70' : 'bg-cyan-400/70') : 'bg-cyan-300/15'}`}>
       <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all shadow-[0_0_8px_rgba(255,255,255,0.5)] ${on ? 'left-[18px]' : 'left-0.5'}`} />
     </span>
   </button>
