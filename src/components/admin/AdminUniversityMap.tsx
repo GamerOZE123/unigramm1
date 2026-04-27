@@ -2,24 +2,28 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import maplibregl, { Map as MLMap, Popup } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { STATE_COORDS, STATE_RADIUS } from '@/data/indianStateCoords';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, MapPin, GraduationCap, Sparkles, Globe2, Search, Maximize2, Minimize2, X, Settings2, Type, Hexagon, Star, Users, Building2, ChevronRight, ArrowLeft, ChevronLeft } from 'lucide-react';
+import {
+  Loader2, Search, Maximize2, Minimize2, X, ChevronRight, ChevronLeft,
+  ArrowLeft, Users, Building2, Crosshair, Radio, Activity, Database, Layers,
+} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 type UniMap = Record<string, string[]>;
 type Univ = { name: string; state: string; lng: number; lat: number; enrolled: number; abbr: string | null };
-
 type ClubLite = { id: string; club_name: string; category: string | null; member_count: number | null; logo_url: string | null };
 
-// Extract an abbreviation in parentheses, e.g. "Shiv Nadar University (SNU)" -> "SNU"
 function extractAbbr(name: string): string | null {
   const m = name.match(/\(([A-Z][A-Z0-9&.\- ]{1,15})\)\s*$/);
   return m ? m[1].trim() : null;
 }
-
 function seeded(i: number) {
   const x = Math.sin(i * 9301 + 49297) * 233280;
   return x - Math.floor(x);
+}
+function fmtCoord(lat: number, lng: number) {
+  const ns = lat >= 0 ? 'N' : 'S';
+  const ew = lng >= 0 ? 'E' : 'W';
+  return `${Math.abs(lat).toFixed(3)}°${ns}  ${Math.abs(lng).toFixed(3)}°${ew}`;
 }
 
 const AdminUniversityMap: React.FC = () => {
@@ -31,21 +35,39 @@ const AdminUniversityMap: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ states: 0, universities: 0 });
   const [enrolledByUniv, setEnrolledByUniv] = useState<Record<string, number>>({});
-  const [selected, setSelected] = useState<{ name: string; state: string; enrolled: number; abbr: string | null } | null>(null);
+  const [selected, setSelected] = useState<{ name: string; state: string; enrolled: number; abbr: string | null; lng: number; lat: number } | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [clubs, setClubs] = useState<ClubLite[]>([]);
   const [studentCount, setStudentCount] = useState<number>(0);
   const [search, setSearch] = useState('');
-  const [searchOpen, setSearchOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
-  const [panelOpen, setPanelOpen] = useState(true);
-  const [showDots, setShowDots] = useState(true);
-  const [showClusters, setShowClusters] = useState(true);
-  const [showLabels, setShowLabels] = useState(true);
-  const [showBorders, setShowBorders] = useState(true);
-  const [activeOnly, setActiveOnly] = useState(false);
+  const [intelOpen, setIntelOpen] = useState(true);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [now, setNow] = useState(() => new Date());
 
-  // Search results (top 8)
+  // animated counter for "uniques pinned"
+  const [counter, setCounter] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // count up animation when stats arrive
+  useEffect(() => {
+    if (!stats.universities) return;
+    let raf = 0;
+    const start = performance.now();
+    const dur = 1200;
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - start) / dur);
+      setCounter(Math.floor(stats.universities * (1 - Math.pow(1 - p, 3))));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [stats.universities]);
+
   const results = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q || q.length < 2) return [] as Univ[];
@@ -65,7 +87,6 @@ const AdminUniversityMap: React.FC = () => {
 
     (async () => {
       const data = (await import('@/data/universities.json')).default as UniMap;
-
       let enrolledMap: Record<string, number> = {};
       try {
         const { data: profs } = await supabase
@@ -82,27 +103,26 @@ const AdminUniversityMap: React.FC = () => {
 
       const features: any[] = [];
       const flat: Univ[] = [];
-      let total = 0, counter = 0;
+      let total = 0, c = 0;
       Object.entries(data).forEach(([state, list]) => {
         const center = STATE_COORDS[state];
         const radius = STATE_RADIUS[state] || 1.2;
         if (!center) return;
         list.forEach((name) => {
-          const r1 = seeded(counter * 2);
-          const r2 = seeded(counter * 2 + 1);
+          const r1 = seeded(c * 2);
+          const r2 = seeded(c * 2 + 1);
           const angle = r1 * Math.PI * 2;
           const dist = Math.sqrt(r2) * radius;
           const lng = center.lng + Math.cos(angle) * dist;
           const lat = center.lat + Math.sin(angle) * dist * 0.85;
-          counter++; total++;
+          c++; total++;
           const abbr = extractAbbr(name);
-          // Hook to existing DB: try abbreviation first (e.g. "SNU"), then full name
           const enrolled = (abbr && enrolledMap[abbr]) || enrolledMap[name] || 0;
           flat.push({ name, state, lng, lat, enrolled, abbr });
           features.push({
             type: 'Feature',
             geometry: { type: 'Point', coordinates: [lng, lat] },
-            properties: { name, state, idx: counter, enrolled, abbr: abbr || '' },
+            properties: { name, state, enrolled, abbr: abbr || '' },
           });
         });
       });
@@ -132,21 +152,11 @@ const AdminUniversityMap: React.FC = () => {
               tiles: ['https://a.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}@2x.png'],
               tileSize: 256,
             },
-            'carto-lines': {
-              type: 'raster',
-              tiles: [
-                'https://a.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png',
-                'https://b.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png',
-              ],
-              tileSize: 256,
-            },
           },
           layers: [
-            { id: 'bg', type: 'background', paint: { 'background-color': '#03060d' } },
-            { id: 'carto-dark', type: 'raster', source: 'carto-dark', paint: { 'raster-opacity': 0.35, 'raster-saturation': -1, 'raster-contrast': 0.5, 'raster-hue-rotate': 180, 'raster-brightness-min': 0.05, 'raster-brightness-max': 0.7 } },
-            // Boundary emphasis: re-overlay base layer with high contrast & low opacity to lift admin lines
-            { id: 'carto-borders', type: 'raster', source: 'carto-lines', paint: { 'raster-opacity': 0.55, 'raster-contrast': 1, 'raster-brightness-min': 0.2, 'raster-brightness-max': 1, 'raster-saturation': -1, 'raster-hue-rotate': 180 } },
-            { id: 'carto-labels', type: 'raster', source: 'carto-labels', paint: { 'raster-opacity': 0.85, 'raster-contrast': 0.5, 'raster-brightness-min': 0.4, 'raster-hue-rotate': 180, 'raster-saturation': -1 } },
+            { id: 'bg', type: 'background', paint: { 'background-color': '#080c12' } },
+            { id: 'carto-dark', type: 'raster', source: 'carto-dark', paint: { 'raster-opacity': 0.4, 'raster-saturation': -1, 'raster-contrast': 0.4, 'raster-hue-rotate': 180, 'raster-brightness-min': 0.04, 'raster-brightness-max': 0.6 } },
+            { id: 'carto-labels', type: 'raster', source: 'carto-labels', paint: { 'raster-opacity': 0.7, 'raster-contrast': 0.5, 'raster-brightness-min': 0.4, 'raster-hue-rotate': 180, 'raster-saturation': -1 } },
           ],
         },
         center: [82.5, 22.5],
@@ -154,15 +164,49 @@ const AdminUniversityMap: React.FC = () => {
         minZoom: 2,
         maxZoom: 16,
         attributionControl: false,
-        pitch: 30,
+        pitch: 0,
       });
       mapRef.current = map;
 
-      map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
+      map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'bottom-right');
       map.addControl(new maplibregl.AttributionControl({ compact: true }));
 
-      map.on('load', () => {
+      // Build amber diamond SVG marker
+      const buildDiamond = (size = 64) => {
+        const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}">
+          <defs>
+            <radialGradient id="g" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#f5c518" stop-opacity="0.55"/>
+              <stop offset="60%" stop-color="#f5c518" stop-opacity="0.05"/>
+              <stop offset="100%" stop-color="#f5c518" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <circle cx="32" cy="32" r="28" fill="url(#g)"/>
+          <g transform="translate(32 32) rotate(45)">
+            <rect x="-9" y="-9" width="18" height="18" fill="none" stroke="#f5c518" stroke-width="1.5"/>
+            <rect x="-4" y="-4" width="8" height="8" fill="#f5c518"/>
+          </g>
+        </svg>`;
+        return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+      };
+
+      map.on('load', async () => {
         if (!map) return;
+
+        // load amber marker images
+        await new Promise<void>((res) => {
+          const img = new Image(64, 64);
+          img.onload = () => { if (!map!.hasImage('amber-diamond')) map!.addImage('amber-diamond', img as any); res(); };
+          img.onerror = () => res();
+          img.src = buildDiamond(64);
+        });
+        await new Promise<void>((res) => {
+          const img = new Image(64, 64);
+          img.onload = () => { if (!map!.hasImage('amber-diamond-active')) map!.addImage('amber-diamond-active', img as any); res(); };
+          img.onerror = () => res();
+          img.src = buildDiamond(80);
+        });
 
         map.addSource('unis', {
           type: 'geojson',
@@ -172,14 +216,14 @@ const AdminUniversityMap: React.FC = () => {
           clusterRadius: 45,
         });
 
-        // Cyan + orange neon wireframe theme
+        // Cluster halo (cyan)
         map.addLayer({
           id: 'clusters-glow', type: 'circle', source: 'unis',
           filter: ['has', 'point_count'],
           paint: {
-            'circle-radius': ['step', ['get', 'point_count'], 30, 50, 42, 200, 56, 1000, 72],
-            'circle-color': '#22d3ee',
-            'circle-opacity': 0.18,
+            'circle-radius': ['step', ['get', 'point_count'], 26, 50, 36, 200, 48, 1000, 64],
+            'circle-color': '#00c8ff',
+            'circle-opacity': 0.08,
             'circle-blur': 1,
           },
         });
@@ -187,10 +231,10 @@ const AdminUniversityMap: React.FC = () => {
           id: 'clusters', type: 'circle', source: 'unis',
           filter: ['has', 'point_count'],
           paint: {
-            'circle-radius': ['step', ['get', 'point_count'], 16, 50, 22, 200, 28, 1000, 36],
-            'circle-color': ['step', ['get', 'point_count'], '#0891b2', 50, '#06b6d4', 200, '#22d3ee', 1000, '#67e8f9'],
-            'circle-stroke-color': '#cffafe',
-            'circle-stroke-width': 1.2,
+            'circle-radius': ['step', ['get', 'point_count'], 14, 50, 18, 200, 24, 1000, 32],
+            'circle-color': '#0a1822',
+            'circle-stroke-color': '#00c8ff',
+            'circle-stroke-width': 1,
             'circle-opacity': 0.85,
           },
         });
@@ -199,54 +243,70 @@ const AdminUniversityMap: React.FC = () => {
           filter: ['has', 'point_count'],
           layout: {
             'text-field': '{point_count_abbreviated}',
-            'text-size': 12,
+            'text-size': 11,
             'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+            'text-letter-spacing': 0.1,
           },
-          paint: { 'text-color': '#021018' },
+          paint: { 'text-color': '#00c8ff' },
         });
 
+        // Diamond markers
         map.addLayer({
-          id: 'unis-glow', type: 'circle', source: 'unis',
+          id: 'unis-pins', type: 'symbol', source: 'unis',
           filter: ['!', ['has', 'point_count']],
-          paint: {
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 5, 8, 9, 12, 14, 16, 20],
-            'circle-color': ['case', ['>', ['get', 'enrolled'], 0], '#fb923c', '#22d3ee'],
-            'circle-opacity': 0.18,
-            'circle-blur': 1,
+          layout: {
+            'icon-image': 'amber-diamond',
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 4, 0.35, 8, 0.55, 12, 0.8, 16, 1.1],
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
           },
-        });
-        map.addLayer({
-          id: 'unis-core', type: 'circle', source: 'unis',
-          filter: ['!', ['has', 'point_count']],
           paint: {
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 4, 1.6, 8, 3, 12, 5, 16, 8],
-            'circle-color': ['case', ['>', ['get', 'enrolled'], 0], '#fb923c', '#67e8f9'],
-            'circle-opacity': ['case', ['>', ['get', 'enrolled'], 0], 0.95, 0.6],
-            'circle-stroke-color': ['case', ['>', ['get', 'enrolled'], 0], '#fed7aa', '#ecfeff'],
-            'circle-stroke-width': 0.8,
-            'circle-stroke-opacity': 0.7,
+            'icon-opacity': ['case', ['>', ['get', 'enrolled'], 0], 1, 0.75],
           },
         });
 
-        const setPointer = () => (map!.getCanvas().style.cursor = 'pointer');
+        const setPointer = () => (map!.getCanvas().style.cursor = 'crosshair');
         const resetPointer = () => (map!.getCanvas().style.cursor = '');
         map.on('mouseenter', 'clusters', setPointer);
         map.on('mouseleave', 'clusters', resetPointer);
-        map.on('mouseenter', 'unis-core', setPointer);
-        map.on('mouseleave', 'unis-core', resetPointer);
+        map.on('mouseenter', 'unis-pins', setPointer);
+        map.on('mouseleave', 'unis-pins', resetPointer);
+
+        // Hover HUD card
+        const hoverPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 16, className: 'hud-popup' });
+        map.on('mouseenter', 'unis-pins', (e) => {
+          const f = e.features?.[0] as any; if (!f) return;
+          const [lng, lat] = f.geometry.coordinates;
+          const html = `
+            <div class="hud-card">
+              <div class="hud-card-bracket tl"></div><div class="hud-card-bracket tr"></div>
+              <div class="hud-card-bracket bl"></div><div class="hud-card-bracket br"></div>
+              <div class="hud-card-row">
+                <span class="hud-card-label">// TARGET</span>
+                <span class="hud-card-status">● STATUS: ACTIVE</span>
+              </div>
+              <div class="hud-card-name">${escapeHtml(f.properties.name)}</div>
+              <div class="hud-card-meta">${escapeHtml(f.properties.state)}${f.properties.abbr ? ' · ID ' + escapeHtml(f.properties.abbr) : ''}</div>
+              <div class="hud-card-coord">${fmtCoord(lat, lng)}</div>
+              <div class="hud-card-row">
+                <span class="hud-card-stat">ENROLL <b>${f.properties.enrolled || 0}</b></span>
+                <span class="hud-card-stat">SECTOR <b>IND-01</b></span>
+              </div>
+            </div>`;
+          hoverPopup.setLngLat([lng, lat]).setHTML(html).addTo(map!);
+        });
+        map.on('mouseleave', 'unis-pins', () => hoverPopup.remove());
 
         map.on('click', 'clusters', (e) => {
-          const f = e.features?.[0] as any;
-          if (!f) return;
+          const f = e.features?.[0] as any; if (!f) return;
           (map!.getSource('unis') as any).getClusterExpansionZoom(f.properties.cluster_id, (err: any, zoom: number) => {
             if (err) return;
             map!.easeTo({ center: f.geometry.coordinates, zoom });
           });
         });
 
-        map.on('click', 'unis-core', (e) => {
-          const f = e.features?.[0] as any;
-          if (!f) return;
+        map.on('click', 'unis-pins', (e) => {
+          const f = e.features?.[0] as any; if (!f) return;
           openUni({
             name: f.properties.name,
             state: f.properties.state,
@@ -269,16 +329,14 @@ const AdminUniversityMap: React.FC = () => {
   }, []);
 
   const openUni = async (u: { name: string; state: string; enrolled: number; abbr: string | null; lng: number; lat: number }) => {
-    const map = mapRef.current;
-    if (!map) return;
-    setSelected({ name: u.name, state: u.state, enrolled: u.enrolled, abbr: u.abbr });
+    const map = mapRef.current; if (!map) return;
+    setSelected(u);
+    setDetailOpen(true);
     setClubs([]);
     setStudentCount(u.enrolled);
     setDetailLoading(true);
-    if (popupRef.current) popupRef.current.remove();
     map.flyTo({ center: [u.lng, u.lat], zoom: Math.max(map.getZoom(), 9), duration: 900 });
 
-    // Fetch live data from DB — try abbreviation first, then full name
     const candidates = [u.abbr, u.name].filter(Boolean) as string[];
     try {
       const { count: sCount } = await supabase
@@ -301,311 +359,231 @@ const AdminUniversityMap: React.FC = () => {
   };
 
   const toggleFullscreen = async () => {
-    const el = wrapperRef.current;
-    if (!el) return;
-    if (!document.fullscreenElement) {
-      await el.requestFullscreen?.();
-      setFullscreen(true);
-    } else {
-      await document.exitFullscreen?.();
-      setFullscreen(false);
-    }
+    const el = wrapperRef.current; if (!el) return;
+    if (!document.fullscreenElement) { await el.requestFullscreen?.(); setFullscreen(true); }
+    else { await document.exitFullscreen?.(); setFullscreen(false); }
   };
 
   useEffect(() => {
     const onFs = () => {
       setFullscreen(!!document.fullscreenElement);
-      // Resize map after transition
       setTimeout(() => mapRef.current?.resize(), 250);
     };
     document.addEventListener('fullscreenchange', onFs);
     return () => document.removeEventListener('fullscreenchange', onFs);
   }, []);
 
-  // Trigger map resize on mount/window resize for full-bleed sizing
   useEffect(() => {
     const onResize = () => mapRef.current?.resize();
     window.addEventListener('resize', onResize);
     const t = setTimeout(onResize, 300);
     return () => { window.removeEventListener('resize', onResize); clearTimeout(t); };
-  }, []);
+  }, [intelOpen, detailOpen]);
 
-  // Layer visibility toggles
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || loading) return;
-    const set = (id: string, vis: boolean) => {
-      if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis ? 'visible' : 'none');
-    };
-    set('unis-core', showDots);
-    set('unis-glow', showDots);
-    set('clusters', showClusters);
-    set('clusters-glow', showClusters);
-    set('cluster-count', showClusters);
-    set('carto-labels', showLabels);
-    set('carto-borders', showBorders);
-  }, [showDots, showClusters, showLabels, showBorders, loading]);
-
-  // Active-only filter
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || loading) return;
-    if (map.getLayer('unis-core')) {
-      map.setFilter('unis-core', activeOnly
-        ? ['all', ['!', ['has', 'point_count']], ['>', ['get', 'enrolled'], 0]]
-        : ['!', ['has', 'point_count']]);
-    }
-    if (map.getLayer('unis-glow')) {
-      map.setFilter('unis-glow', activeOnly
-        ? ['all', ['!', ['has', 'point_count']], ['>', ['get', 'enrolled'], 0]]
-        : ['!', ['has', 'point_count']]);
-    }
-  }, [activeOnly, loading]);
+  const totalEnrolled = Object.values(enrolledByUniv).reduce((a, b) => a + b, 0);
+  const ts = now.toISOString().replace('T', ' ').slice(0, 19) + 'Z';
 
   return (
     <div
       ref={wrapperRef}
-      className="relative w-full bg-[#03060d] overflow-hidden"
-      style={{ height: fullscreen ? '100vh' : 'calc(100vh - 64px)' }}
+      className="hud-root relative w-full overflow-hidden"
+      style={{ height: fullscreen ? '100vh' : 'calc(100vh - 64px)', background: '#080c12' }}
     >
+      {/* TOP BAR */}
+      <div className="hud-topbar absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-4 h-11">
+        <div className="flex items-center gap-3 min-w-0">
+          <Crosshair className="w-3.5 h-3.5 text-[#00c8ff]" />
+          <span className="hud-mono text-[11px] text-[#7fb6c8] truncate">
+            MAP_VIEW <span className="text-[#00c8ff]/50">&gt;</span> UNIVERSITIES <span className="text-[#00c8ff]/50">&gt;</span> <span className="text-[#c8d8e8]">GLOBAL</span>
+          </span>
+        </div>
+        <div className="hud-title hidden md:flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
+          <span className="text-[#f5c518] text-[13px] font-bold tracking-[0.18em]" style={{ fontFamily: 'Rajdhani, sans-serif' }}>UNIGRAMM</span>
+          <span className="text-[#00c8ff]/40">//</span>
+          <span className="text-[#c8d8e8] text-[13px] font-semibold tracking-[0.18em]" style={{ fontFamily: 'Rajdhani, sans-serif' }}>CAMPUS NETWORK INTELLIGENCE</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="hud-mono text-[10px] text-[#7fb6c8] hidden sm:inline">{ts}</span>
+          <span className="flex items-center gap-1.5">
+            <span className="hud-blink w-2 h-2 rounded-full bg-[#00ff88] shadow-[0_0_8px_#00ff88]" />
+            <span className="hud-mono text-[10px] text-[#00ff88]">SYSTEM ONLINE</span>
+          </span>
+        </div>
+        <div className="hud-scanline" />
+      </div>
+
       {/* MAP */}
-      <div ref={containerRef} className="absolute inset-0" />
+      <div ref={containerRef} className="absolute inset-0" style={{ top: 44 }} />
 
-      {/* Wireframe grid + vignette + corner brackets */}
-      <div className="pointer-events-none absolute inset-0 z-10 sci-fi-grid" />
-      <div className="pointer-events-none absolute inset-0 z-10 sci-fi-vignette" />
-      <div className="pointer-events-none absolute inset-0 z-10">
-        <div className="absolute top-3 left-3 w-8 h-8 border-l border-t border-cyan-400/70" />
-        <div className="absolute top-3 right-3 w-8 h-8 border-r border-t border-cyan-400/70" />
-        <div className="absolute bottom-3 left-3 w-8 h-8 border-l border-b border-cyan-400/70" />
-        <div className="absolute bottom-3 right-3 w-8 h-8 border-r border-b border-cyan-400/70" />
-        {/* HUD ticks */}
-        <div className="absolute left-1/2 top-2 -translate-x-1/2 flex items-center gap-1 text-cyan-300/70 font-mono text-[9px] tracking-[0.3em]">
-          <span className="w-3 h-px bg-cyan-300/70" />SECTOR · IND-01<span className="w-3 h-px bg-cyan-300/70" />
-        </div>
+      {/* Overlays */}
+      <div className="pointer-events-none absolute inset-0 z-10 hud-grid" style={{ top: 44 }} />
+      <div className="pointer-events-none fixed inset-0 z-[60] hud-crt" />
+
+      {/* Corner brackets on map */}
+      <div className="pointer-events-none absolute z-20" style={{ top: 56, left: 12, right: 12, bottom: 12 }}>
+        <div className="absolute top-0 left-0 w-6 h-6 border-l-2 border-t-2 border-[#00c8ff]" />
+        <div className="absolute top-0 right-0 w-6 h-6 border-r-2 border-t-2 border-[#00c8ff]" />
+        <div className="absolute bottom-0 left-0 w-6 h-6 border-l-2 border-b-2 border-[#00c8ff]" />
+        <div className="absolute bottom-0 right-0 w-6 h-6 border-r-2 border-b-2 border-[#00c8ff]" />
       </div>
 
-      {/* Top HUD: title pill */}
-      <div className="absolute top-8 left-1/2 -translate-x-1/2 z-20 px-4 py-1.5 rounded-sm bg-cyan-500/5 border border-cyan-400/40 backdrop-blur-md">
-        <p className="text-[10px] uppercase tracking-[0.45em] text-cyan-200 font-mono">UNIGRAMM · NETWORK GRID</p>
-      </div>
-
-      {/* Top-left stat tiles (transparent overlay) */}
-      <div className="absolute top-3 left-3 z-20 flex flex-col gap-2 max-w-[200px]">
-        <StatTile icon={<Globe2 className="w-3.5 h-3.5" />} label="States" value={`${stats.states}`} />
-        <StatTile icon={<GraduationCap className="w-3.5 h-3.5" />} label="Universities" value={stats.universities.toLocaleString()} />
-        <StatTile icon={<Sparkles className="w-3.5 h-3.5" />} label="Active" value={`${Object.keys(enrolledByUniv).length}`} accent />
-        <StatTile icon={<MapPin className="w-3.5 h-3.5" />} label="Enrolled" value={Object.values(enrolledByUniv).reduce((a, b) => a + b, 0).toLocaleString()} />
-      </div>
-
-      {/* Top-right: search + fullscreen */}
-      <div className="absolute top-3 right-3 z-30 flex items-start gap-2">
-        <div className="relative">
-          <div className={`flex items-center gap-2 px-3 py-2 rounded-full bg-black/40 backdrop-blur-md border transition-all ${searchOpen || search ? 'border-cyan-400/60 w-72' : 'border-cyan-400/30 w-10 cursor-pointer'}`}
-            onClick={() => setSearchOpen(true)}>
-            <Search className="w-4 h-4 text-cyan-300 shrink-0" />
-            <input
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setSearchOpen(true); }}
-              onFocus={() => setSearchOpen(true)}
-              placeholder="Search university or state…"
-              className={`bg-transparent outline-none text-xs text-cyan-100 placeholder:text-cyan-300/40 flex-1 transition-all ${searchOpen || search ? 'w-full opacity-100' : 'w-0 opacity-0'}`}
-            />
-            {search && (
-              <button onClick={(e) => { e.stopPropagation(); setSearch(''); }} className="text-cyan-300/60 hover:text-cyan-200">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {results.length > 0 && (
-            <div className="absolute top-full mt-2 right-0 w-80 max-h-80 overflow-y-auto rounded-lg bg-[#040a14]/95 backdrop-blur-md border border-cyan-400/30 shadow-[0_0_30px_rgba(34,211,238,0.25)]">
-              {results.map((u, i) => (
-                <button
-                  key={i}
-                  onClick={() => { openUni(u); setSearchOpen(false); }}
-                  className="w-full text-left px-3 py-2 hover:bg-cyan-500/10 border-b border-cyan-500/10 last:border-0 transition-colors"
-                >
-                  <p className="text-[10px] uppercase tracking-widest text-cyan-300/70">{u.state}</p>
-                  <p className="text-xs text-cyan-100 font-medium leading-tight">{u.name}</p>
-                  {u.enrolled > 0 && <p className="text-[10px] text-orange-300 mt-0.5">👥 {u.enrolled} enrolled</p>}
-                </button>
-              ))}
-            </div>
-          )}
-          {search.length >= 2 && results.length === 0 && (
-            <div className="absolute top-full mt-2 right-0 w-80 px-3 py-3 rounded-lg bg-[#040a14]/95 backdrop-blur-md border border-cyan-400/30 text-xs text-cyan-300/60">
-              No matches for "{search}"
-            </div>
-          )}
-        </div>
-
-        <button
-          onClick={toggleFullscreen}
-          title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-          className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-cyan-400/30 flex items-center justify-center text-cyan-300 hover:border-cyan-400/60 hover:text-cyan-100 transition-colors"
-        >
-          {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-        </button>
-        <button
-          onClick={() => setPanelOpen(v => !v)}
-          title="Controls"
-          className={`w-10 h-10 rounded-full backdrop-blur-md border flex items-center justify-center transition-colors ${panelOpen ? 'bg-cyan-500/20 border-cyan-400/60 text-cyan-100' : 'bg-black/40 border-cyan-400/30 text-cyan-300 hover:border-cyan-400/60'}`}
-        >
-          <Settings2 className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Right-side full-height gradient sidebar */}
+      {/* LEFT INTEL SIDEBAR */}
       <aside
-        className={`absolute top-0 right-0 z-20 h-full w-[340px] flex flex-col transition-transform duration-300 ${panelOpen ? 'translate-x-0' : 'translate-x-full'}`}
-        style={{
-          background: 'linear-gradient(180deg, rgba(4,10,20,0.92) 0%, rgba(6,18,32,0.85) 35%, rgba(3,6,13,0.94) 100%)',
-          backdropFilter: 'blur(18px)',
-          borderLeft: '1px solid rgba(34,211,238,0.35)',
-          boxShadow: '-20px 0 60px rgba(34,211,238,0.18)',
-        }}
+        className={`hud-panel absolute left-0 z-20 flex flex-col transition-transform duration-300 ${intelOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        style={{ top: 44, bottom: 0, width: 300 }}
       >
-        {/* Pulse line on left edge */}
-        <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-cyan-400/80 to-transparent" />
-
-        {/* Header */}
-        <div className="px-5 pt-4 pb-3 border-b border-cyan-400/20 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            {selected && (
-              <button onClick={() => { setSelected(null); popupRef.current?.remove(); }} className="text-cyan-300/70 hover:text-cyan-100 transition-colors">
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-            )}
-            <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-cyan-300">
-              {selected ? 'Campus Intel' : 'Grid Controls'}
-            </p>
-            <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-          </div>
-          <button
-            onClick={() => setPanelOpen(false)}
-            title="Collapse"
-            className="text-cyan-300/60 hover:text-cyan-100"
-          >
-            <ChevronRight className="w-4 h-4" />
+        <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-[#00c8ff]/20">
+          <span className="hud-mono text-[10px] text-[#00c8ff] tracking-[0.2em]">// INTEL OVERVIEW</span>
+          <button onClick={() => setIntelOpen(false)} className="text-[#7fb6c8] hover:text-[#00c8ff]">
+            <ChevronLeft className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto sci-fi-scroll">
-          {!selected ? (
-            <div className="flex flex-col">
-              {/* Search */}
-              <div className="px-4 pt-4">
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-black/40 border border-cyan-400/30 focus-within:border-cyan-400/70 transition-colors">
-                  <Search className="w-4 h-4 text-cyan-300 shrink-0" />
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Search university or state…"
-                    className="bg-transparent outline-none text-xs text-cyan-100 placeholder:text-cyan-300/40 flex-1"
-                  />
-                  {search && (
-                    <button onClick={() => setSearch('')} className="text-cyan-300/60 hover:text-cyan-200">
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-                {results.length > 0 && (
-                  <div className="mt-2 max-h-60 overflow-y-auto rounded-lg bg-black/30 border border-cyan-400/20">
-                    {results.map((u, i) => (
-                      <button
-                        key={i}
-                        onClick={() => openUni(u)}
-                        className="w-full text-left px-3 py-2 hover:bg-cyan-500/10 border-b border-cyan-500/10 last:border-0 transition-colors"
-                      >
-                        <p className="text-[10px] uppercase tracking-widest text-cyan-300/70">{u.state}</p>
-                        <p className="text-xs text-cyan-100 font-medium leading-tight">{u.name}</p>
-                        {u.enrolled > 0 && <p className="text-[10px] text-orange-300 mt-0.5">👥 {u.enrolled} enrolled</p>}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Layer toggles */}
-              <div className="px-4 pt-4 pb-2">
-                <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-cyan-300/70 mb-2">Layers</p>
-                <div className="flex flex-col gap-1">
-                  <ToggleRow icon={<MapPin className="w-3.5 h-3.5" />} label="University dots" on={showDots} onChange={setShowDots} />
-                  <ToggleRow icon={<Hexagon className="w-3.5 h-3.5" />} label="Clusters" on={showClusters} onChange={setShowClusters} />
-                  <ToggleRow icon={<Type className="w-3.5 h-3.5" />} label="Place labels" on={showLabels} onChange={setShowLabels} />
-                  <ToggleRow icon={<Globe2 className="w-3.5 h-3.5" />} label="State borders" on={showBorders} onChange={setShowBorders} />
-                  <ToggleRow icon={<Star className="w-3.5 h-3.5" />} label="Active campuses only" on={activeOnly} onChange={setActiveOnly} accent />
-                </div>
-              </div>
-
-              {/* Legend */}
-              <div className="px-4 pt-3 pb-4 border-t border-cyan-400/15 mt-2">
-                <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-cyan-300/70 mb-2">Legend</p>
-                <div className="flex flex-col gap-1.5 text-[11px] text-cyan-100/80">
-                  <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-orange-300 shadow-[0_0_8px_#fb923c]" />Active (has students)</div>
-                  <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-cyan-300/70 shadow-[0_0_6px_#22d3ee]" />Listed university</div>
-                  <div className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-cyan-500" />Cluster (zoom in)</div>
-                </div>
-              </div>
+        <div className="flex-1 overflow-y-auto hud-scroll">
+          {/* Search */}
+          <div className="px-4 pt-3">
+            <div className="hud-input flex items-center gap-2 px-2.5 py-1.5">
+              <Search className="w-3.5 h-3.5 text-[#00c8ff]" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="QUERY UNIVERSITY..."
+                className="bg-transparent outline-none text-[11px] text-[#c8d8e8] placeholder:text-[#7fb6c8]/50 flex-1 hud-mono uppercase tracking-wider"
+              />
+              {search && (
+                <button onClick={() => setSearch('')} className="text-[#7fb6c8] hover:text-[#00c8ff]"><X className="w-3 h-3" /></button>
+              )}
             </div>
-          ) : (
-            <div className="flex flex-col">
-              {/* Hero */}
-              <div className="px-5 pt-5 pb-4 border-b border-cyan-400/20 relative overflow-hidden">
-                <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full bg-cyan-500/20 blur-3xl pointer-events-none" />
-                <Badge variant="outline" className="border-cyan-400/40 text-cyan-200 text-[10px] mb-2">{selected.state}</Badge>
-                <h2 className="text-base font-bold text-cyan-50 leading-tight">{selected.name}</h2>
-                {selected.abbr && (
-                  <p className="text-[10px] uppercase tracking-[0.25em] text-cyan-300/70 font-mono mt-1">ID · {selected.abbr}</p>
-                )}
+            {results.length > 0 && (
+              <div className="mt-2 max-h-56 overflow-y-auto hud-scroll border border-[#00c8ff]/20 bg-black/40">
+                {results.map((u, i) => (
+                  <button
+                    key={i}
+                    onClick={() => openUni(u)}
+                    className="w-full text-left px-2.5 py-1.5 border-b border-[#00c8ff]/10 last:border-0 hover:bg-[#00c8ff]/5 transition-colors"
+                  >
+                    <p className="hud-mono text-[9px] text-[#7fb6c8] tracking-widest uppercase">{u.state}</p>
+                    <p className="text-[11px] text-[#c8d8e8] leading-tight" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600 }}>{u.name}</p>
+                    {u.enrolled > 0 && <p className="hud-mono text-[9px] text-[#f5c518] mt-0.5">ENROLL · {u.enrolled}</p>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
-                {/* Stat tiles */}
+          {/* Stats */}
+          <div className="px-4 pt-4 flex flex-col gap-2">
+            <StatRow icon={<Database className="w-3 h-3" />} label="UNIVERSITIES PINNED" value={counter.toLocaleString()} />
+            <StatRow icon={<Layers className="w-3 h-3" />} label="REGIONS COVERED" value={String(stats.states)} />
+            <StatRow icon={<Users className="w-3 h-3" />} label="ACTIVE CAMPUSES" value={String(Object.keys(enrolledByUniv).length)} />
+            <StatRow icon={<Activity className="w-3 h-3" />} label="TOTAL ENROLLED" value={totalEnrolled.toLocaleString()} />
+            <StatRow icon={<Radio className="w-3 h-3" />} label="LAST SYNC" value={ts.slice(11)} small />
+          </div>
+
+          {/* Legend */}
+          <div className="px-4 pt-5 pb-4">
+            <p className="hud-mono text-[10px] text-[#7fb6c8] tracking-[0.2em] mb-2">// LEGEND</p>
+            <div className="flex flex-col gap-1.5 text-[10px] text-[#c8d8e8] hud-mono">
+              <div className="flex items-center gap-2"><Diamond color="#f5c518" />UNIVERSITY · TARGET</div>
+              <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-[#00ff88] shadow-[0_0_6px_#00ff88]" />ACTIVE · ENROLLED</div>
+              <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full border border-[#00c8ff]" />CLUSTER · ZOOM IN</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-4 py-2 border-t border-[#00c8ff]/20 flex items-center justify-between">
+          <span className="hud-mono text-[9px] text-[#7fb6c8]">UNIGRAMM · TACTICAL</span>
+          <span className="hud-mono text-[9px] text-[#00ff88] flex items-center gap-1">
+            <span className="hud-blink w-1 h-1 rounded-full bg-[#00ff88]" /> LIVE
+          </span>
+        </div>
+      </aside>
+
+      {!intelOpen && (
+        <button
+          onClick={() => setIntelOpen(true)}
+          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 h-16 w-7 bg-[#080e1a]/90 border border-l-0 border-[#00c8ff]/40 flex items-center justify-center text-[#00c8ff] hover:bg-[#0a1828]"
+          style={{ borderRadius: '0 4px 4px 0' }}
+          title="Open intel"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      )}
+
+      {/* TOP-RIGHT: search + fullscreen quick actions */}
+      <div className="absolute z-30 flex items-center gap-2" style={{ top: 56, right: 28 }}>
+        <button
+          onClick={toggleFullscreen}
+          title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+          className="w-9 h-9 bg-[#080e1a]/85 border border-[#00c8ff]/30 hover:border-[#00c8ff]/70 text-[#00c8ff] flex items-center justify-center"
+          style={{ borderRadius: 4 }}
+        >
+          {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+        </button>
+      </div>
+
+      {/* RIGHT DETAIL PANEL */}
+      <aside
+        className={`hud-panel absolute right-0 z-20 flex flex-col transition-transform duration-300 ${detailOpen && selected ? 'translate-x-0' : 'translate-x-full'}`}
+        style={{ top: 44, bottom: 0, width: 340 }}
+      >
+        {selected && (
+          <>
+            <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-[#00c8ff]/20">
+              <div className="flex items-center gap-2">
+                <button onClick={() => setDetailOpen(false)} className="text-[#7fb6c8] hover:text-[#00c8ff]">
+                  <ArrowLeft className="w-4 h-4" />
+                </button>
+                <span className="hud-mono text-[10px] text-[#00c8ff] tracking-[0.2em]">// CAMPUS DOSSIER</span>
+              </div>
+              <span className="hud-blink w-1.5 h-1.5 rounded-full bg-[#00ff88]" />
+            </div>
+
+            <div className="flex-1 overflow-y-auto hud-scroll">
+              <div className="px-5 pt-4 pb-3 border-b border-[#00c8ff]/15">
+                <p className="hud-mono text-[9px] text-[#7fb6c8] tracking-widest uppercase mb-1">{selected.state}</p>
+                <h2 className="text-[#f5c518] leading-tight text-base" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, textShadow: '0 0 8px rgba(245,197,24,0.4)' }}>
+                  {selected.name}
+                </h2>
+                {selected.abbr && (
+                  <p className="hud-mono text-[10px] text-[#00c8ff]/80 mt-1">ID · {selected.abbr}</p>
+                )}
+                <p className="hud-mono text-[10px] text-[#7fb6c8] mt-1">{fmtCoord(selected.lat, selected.lng)}</p>
+                <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 border border-[#00ff88]/40 bg-[#00ff88]/5">
+                  <span className="hud-blink w-1.5 h-1.5 rounded-full bg-[#00ff88]" />
+                  <span className="hud-mono text-[9px] text-[#00ff88]">STATUS: ACTIVE</span>
+                </div>
+
                 <div className="grid grid-cols-2 gap-2 mt-4">
-                  <div className="p-2.5 rounded-lg bg-gradient-to-br from-orange-500/15 to-orange-500/5 border border-orange-400/30">
-                    <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-orange-300/80">
-                      <Users className="w-3 h-3" /> Students
-                    </div>
-                    <p className="text-lg font-bold text-orange-200 font-mono mt-0.5">{studentCount}</p>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-gradient-to-br from-cyan-500/15 to-cyan-500/5 border border-cyan-400/30">
-                    <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-cyan-300/80">
-                      <Building2 className="w-3 h-3" /> Clubs
-                    </div>
-                    <p className="text-lg font-bold text-cyan-100 font-mono mt-0.5">{clubs.length}</p>
-                  </div>
+                  <DataTile label="STUDENTS" value={String(studentCount)} />
+                  <DataTile label="CLUBS" value={String(clubs.length)} />
                 </div>
               </div>
 
-              {/* Clubs list */}
-              <div className="px-5 pt-4 pb-2">
+              <div className="px-5 pt-3 pb-2">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] uppercase tracking-[0.3em] font-mono text-cyan-300/70">Registered Clubs</p>
-                  {detailLoading && <Loader2 className="w-3 h-3 animate-spin text-cyan-300" />}
+                  <p className="hud-mono text-[10px] text-[#7fb6c8] tracking-[0.2em]">// REGISTERED CLUBS</p>
+                  {detailLoading && <Loader2 className="w-3 h-3 animate-spin text-[#00c8ff]" />}
                 </div>
                 {!detailLoading && clubs.length === 0 && (
-                  <div className="text-center py-8 px-3 rounded-lg border border-dashed border-cyan-400/20 text-[11px] text-cyan-300/50">
-                    No clubs registered yet for this campus.
+                  <div className="text-center py-6 px-3 border border-dashed border-[#00c8ff]/20">
+                    <p className="hud-mono text-[10px] text-[#7fb6c8]">NO CLUBS · NO SIGNAL</p>
                   </div>
                 )}
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-1.5">
                   {clubs.map((c) => (
-                    <div
-                      key={c.id}
-                      className="flex items-center gap-3 p-2.5 rounded-lg bg-black/30 border border-cyan-400/15 hover:border-cyan-400/40 hover:bg-cyan-500/5 transition-colors"
-                    >
-                      <div className="w-9 h-9 rounded-md bg-gradient-to-br from-cyan-500/30 to-purple-700/30 border border-cyan-400/30 flex items-center justify-center overflow-hidden shrink-0">
+                    <div key={c.id} className="flex items-center gap-2.5 p-2 bg-black/30 border border-[#00c8ff]/15 hover:border-[#00c8ff]/40 transition-colors" style={{ borderRadius: 3 }}>
+                      <div className="w-8 h-8 bg-[#0a1828] border border-[#00c8ff]/30 flex items-center justify-center overflow-hidden shrink-0" style={{ borderRadius: 2 }}>
                         {c.logo_url ? (
                           <img src={c.logo_url} alt="" className="w-full h-full object-cover" onError={(e) => ((e.target as HTMLImageElement).src = '/default-avatar.png')} />
                         ) : (
-                          <Building2 className="w-4 h-4 text-cyan-200" />
+                          <Building2 className="w-4 h-4 text-[#00c8ff]" />
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-semibold text-cyan-50 truncate">{c.club_name}</p>
-                        <p className="text-[10px] text-cyan-300/70 truncate">
-                          {c.category || 'General'} · {c.member_count || 0} members
+                        <p className="text-[12px] text-[#c8d8e8] truncate" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600 }}>{c.club_name}</p>
+                        <p className="hud-mono text-[9px] text-[#7fb6c8] truncate uppercase">
+                          {c.category || 'GENERAL'} · {c.member_count || 0} MBR
                         </p>
                       </div>
                     </div>
@@ -613,91 +591,152 @@ const AdminUniversityMap: React.FC = () => {
                 </div>
               </div>
             </div>
-          )}
-        </div>
-
-        {/* Footer ribbon */}
-        <div className="px-5 py-2.5 border-t border-cyan-400/20 flex items-center justify-between text-[9px] font-mono text-cyan-300/60 shrink-0">
-          <span>UNIGRAMM · LIVE</span>
-          <span className="flex items-center gap-1">
-            <span className="w-1 h-1 rounded-full bg-emerald-400 animate-pulse" /> SYNCED
-          </span>
-        </div>
+          </>
+        )}
       </aside>
 
-      {/* Collapsed re-open tab */}
-      {!panelOpen && (
-        <button
-          onClick={() => setPanelOpen(true)}
-          className="absolute top-1/2 right-0 -translate-y-1/2 z-20 h-16 w-7 rounded-l-lg bg-cyan-500/20 backdrop-blur-md border border-r-0 border-cyan-400/40 flex items-center justify-center text-cyan-200 hover:bg-cyan-500/30 transition-colors"
-          title="Open panel"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-      )}
-
-      {/* Loading overlay */}
+      {/* Loading */}
       {loading && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-[#080014]/80">
-          <div className="flex items-center gap-2 text-cyan-300 text-sm font-mono">
+        <div className="absolute inset-0 z-40 flex items-center justify-center" style={{ background: 'rgba(8,12,18,0.92)' }}>
+          <div className="flex items-center gap-2 hud-mono text-[#00c8ff] text-xs">
             <Loader2 className="w-4 h-4 animate-spin" />
-            INITIALIZING NETWORK GRID…
+            ACQUIRING SIGNAL<span className="hud-cursor">_</span>
           </div>
         </div>
       )}
 
       <style>{`
-        .sci-fi-grid {
+        .hud-root { font-family: 'Rajdhani', system-ui, sans-serif; color: #c8d8e8; }
+        .hud-mono { font-family: 'Share Tech Mono', ui-monospace, monospace; }
+        .hud-topbar {
+          background: rgba(8, 14, 26, 0.92);
+          border-bottom: 1px solid rgba(0, 200, 255, 0.25);
+          box-shadow: 0 0 20px rgba(0, 200, 255, 0.08);
+          overflow: hidden;
+        }
+        .hud-scanline {
+          position: absolute; inset: 0; pointer-events: none;
+          background: linear-gradient(90deg, transparent 0%, rgba(0,200,255,0.18) 50%, transparent 100%);
+          width: 30%; animation: hudScan 6s linear infinite;
+        }
+        @keyframes hudScan { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+
+        .hud-panel {
+          background: rgba(8, 14, 26, 0.85);
+          border-right: 1px solid rgba(0, 200, 255, 0.25);
+          box-shadow: 0 0 20px rgba(0, 200, 255, 0.1);
+          backdrop-filter: blur(10px);
+        }
+        .hud-panel:last-of-type, .hud-panel + .hud-panel { border-right: none; border-left: 1px solid rgba(0, 200, 255, 0.25); }
+
+        .hud-input {
+          background: rgba(0,0,0,0.4);
+          border: 1px solid rgba(0, 200, 255, 0.3);
+          border-radius: 3px;
+        }
+        .hud-input:focus-within { border-color: rgba(0, 200, 255, 0.7); box-shadow: 0 0 8px rgba(0,200,255,0.2); }
+
+        .hud-grid {
           background-image:
-            linear-gradient(rgba(34,211,238,0.06) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(34,211,238,0.06) 1px, transparent 1px);
-          background-size: 48px 48px, 48px 48px;
-          mask-image: radial-gradient(ellipse at center, rgba(0,0,0,0.9) 30%, rgba(0,0,0,0.2) 80%, transparent 100%);
+            linear-gradient(rgba(0,200,255,0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,200,255,0.05) 1px, transparent 1px);
+          background-size: 40px 40px;
+          mask-image: radial-gradient(ellipse at center, rgba(0,0,0,0.85) 30%, transparent 95%);
         }
-        .sci-fi-vignette {
-          background:
-            radial-gradient(ellipse at center, transparent 55%, rgba(3,6,13,0.55) 90%, rgba(3,6,13,0.85) 100%),
-            linear-gradient(180deg, rgba(3,6,13,0.5) 0%, transparent 18%, transparent 82%, rgba(3,6,13,0.6) 100%);
+        .hud-crt {
+          background: repeating-linear-gradient(
+            to bottom,
+            rgba(0, 200, 255, 0.02) 0px,
+            rgba(0, 200, 255, 0.02) 1px,
+            transparent 1px,
+            transparent 3px
+          );
         }
-        .maplibregl-popup-content { background: transparent !important; padding: 0 !important; box-shadow: none !important; }
-        .maplibregl-popup-tip { display: none !important; }
-        .maplibregl-ctrl-attrib { background: rgba(0,0,0,0.5) !important; color: #f0abfc !important; font-size: 9px !important; }
-        .maplibregl-ctrl-attrib a { color: #fbcfe8 !important; }
-        .maplibregl-ctrl-group { background: rgba(4,10,20,0.7) !important; border: 1px solid rgba(34,211,238,0.4) !important; backdrop-filter: blur(8px); }
+        .hud-blink { animation: hudBlink 1.4s steps(2) infinite; }
+        @keyframes hudBlink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0.25; } }
+
+        .hud-cursor { animation: hudCursor 1s steps(2) infinite; margin-left: 2px; }
+        @keyframes hudCursor { 50% { opacity: 0; } }
+
+        .hud-scroll::-webkit-scrollbar { width: 5px; }
+        .hud-scroll::-webkit-scrollbar-track { background: transparent; }
+        .hud-scroll::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.3); }
+        .hud-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,200,255,0.6); }
+
+        /* MapLibre overrides */
+        .maplibregl-popup.hud-popup .maplibregl-popup-content {
+          background: transparent !important; padding: 0 !important; box-shadow: none !important;
+        }
+        .maplibregl-popup.hud-popup .maplibregl-popup-tip { display: none !important; }
+        .hud-card {
+          position: relative;
+          min-width: 220px;
+          background: rgba(8, 14, 26, 0.92);
+          border: 1px solid rgba(0, 200, 255, 0.45);
+          box-shadow: 0 0 20px rgba(0, 200, 255, 0.18);
+          padding: 10px 12px;
+          color: #c8d8e8;
+          border-radius: 3px;
+          animation: hudFlick 200ms steps(3) both;
+        }
+        @keyframes hudFlick {
+          0% { opacity: 0; }
+          33% { opacity: 0.4; }
+          66% { opacity: 0.7; }
+          100% { opacity: 1; }
+        }
+        .hud-card-bracket { position: absolute; width: 8px; height: 8px; border-color: #00c8ff; }
+        .hud-card-bracket.tl { top: -1px; left: -1px; border-top: 1px solid; border-left: 1px solid; }
+        .hud-card-bracket.tr { top: -1px; right: -1px; border-top: 1px solid; border-right: 1px solid; }
+        .hud-card-bracket.bl { bottom: -1px; left: -1px; border-bottom: 1px solid; border-left: 1px solid; }
+        .hud-card-bracket.br { bottom: -1px; right: -1px; border-bottom: 1px solid; border-right: 1px solid; }
+        .hud-card-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+        .hud-card-label { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: rgba(0,200,255,0.7); letter-spacing: 0.15em; }
+        .hud-card-status { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: #00ff88; letter-spacing: 0.1em; }
+        .hud-card-name { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; color: #f5c518; line-height: 1.15; margin-top: 4px; text-shadow: 0 0 6px rgba(245,197,24,0.4); }
+        .hud-card-meta { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: rgba(127,182,200,0.85); letter-spacing: 0.1em; margin-top: 2px; text-transform: uppercase; }
+        .hud-card-coord { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #00c8ff; opacity: 0.85; margin-top: 6px; }
+        .hud-card-stat { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: rgba(127,182,200,0.85); letter-spacing: 0.1em; margin-top: 6px; }
+        .hud-card-stat b { color: #f5c518; font-weight: 400; margin-left: 4px; }
+
+        .maplibregl-ctrl-attrib { background: rgba(8,14,26,0.6) !important; color: #7fb6c8 !important; font-size: 9px !important; font-family: 'Share Tech Mono', monospace !important; }
+        .maplibregl-ctrl-attrib a { color: #00c8ff !important; }
+        .maplibregl-ctrl-group { background: rgba(8,14,26,0.85) !important; border: 1px solid rgba(0,200,255,0.4) !important; border-radius: 3px !important; backdrop-filter: blur(8px); }
         .maplibregl-ctrl-group button { background: transparent !important; }
-        .maplibregl-ctrl-group button span { filter: invert(1) hue-rotate(160deg) brightness(1.6); }
-        .sci-fi-scroll::-webkit-scrollbar { width: 6px; }
-        .sci-fi-scroll::-webkit-scrollbar-track { background: transparent; }
-        .sci-fi-scroll::-webkit-scrollbar-thumb { background: rgba(34,211,238,0.3); border-radius: 3px; }
-        .sci-fi-scroll::-webkit-scrollbar-thumb:hover { background: rgba(34,211,238,0.5); }
+        .maplibregl-ctrl-group button span { filter: invert(1) hue-rotate(160deg) brightness(1.4); }
       `}</style>
     </div>
   );
 };
 
-const StatTile: React.FC<{ icon: React.ReactNode; label: string; value: string; accent?: boolean }> = ({ icon, label, value, accent }) => (
-  <div className={`px-3 py-2 rounded-lg backdrop-blur-md border flex items-center gap-2 ${accent ? 'bg-orange-500/10 border-orange-400/30' : 'bg-[#040a14]/60 border-cyan-400/25'}`}>
-    <div className={accent ? 'text-orange-300' : 'text-cyan-300'}>{icon}</div>
-    <div className="leading-tight">
-      <p className={`text-[9px] uppercase tracking-widest ${accent ? 'text-orange-300/70' : 'text-cyan-300/70'}`}>{label}</p>
-      <p className={`text-xs font-bold font-mono ${accent ? 'text-orange-100' : 'text-cyan-100'}`}>{value}</p>
+const StatRow: React.FC<{ icon: React.ReactNode; label: string; value: string; small?: boolean }> = ({ icon, label, value, small }) => (
+  <div className="flex items-center justify-between gap-2 pl-2.5 pr-3 py-2 bg-black/25 border border-[#00c8ff]/15" style={{ borderLeft: '3px solid #f5c518', borderRadius: 2 }}>
+    <div className="flex items-center gap-2 min-w-0">
+      <span className="text-[#f5c518]">{icon}</span>
+      <span className="hud-mono text-[9px] tracking-[0.18em] text-[#7fb6c8] truncate">{label}</span>
     </div>
+    <span
+      className={`hud-mono ${small ? 'text-[10px]' : 'text-[13px]'} text-[#f5c518]`}
+      style={{ textShadow: '0 0 8px rgba(245, 197, 24, 0.6)' }}
+    >
+      {value}
+    </span>
   </div>
 );
 
-const ToggleRow: React.FC<{ icon: React.ReactNode; label: string; on: boolean; onChange: (v: boolean) => void; accent?: boolean }> = ({ icon, label, on, onChange, accent }) => (
-  <button
-    onClick={() => onChange(!on)}
-    className={`group w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border transition-all ${on ? (accent ? 'bg-orange-500/10 border-orange-400/40' : 'bg-cyan-500/10 border-cyan-400/40') : 'bg-transparent border-transparent hover:bg-cyan-500/5 hover:border-cyan-400/20'}`}
-  >
-    <div className="flex items-center gap-2 min-w-0">
-      <span className={on ? (accent ? 'text-orange-300' : 'text-cyan-200') : 'text-cyan-300/50'}>{icon}</span>
-      <span className={`text-xs truncate ${on ? (accent ? 'text-orange-100' : 'text-cyan-100') : 'text-cyan-300/60'}`}>{label}</span>
-    </div>
-    <span className={`relative w-8 h-4 rounded-full transition-colors ${on ? (accent ? 'bg-orange-400/70' : 'bg-cyan-400/70') : 'bg-cyan-300/15'}`}>
-      <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all shadow-[0_0_8px_rgba(255,255,255,0.5)] ${on ? 'left-[18px]' : 'left-0.5'}`} />
-    </span>
-  </button>
+const DataTile: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div className="px-2.5 py-2 bg-black/30 border border-[#00c8ff]/25" style={{ borderRadius: 3 }}>
+    <p className="hud-mono text-[9px] tracking-[0.2em] text-[#7fb6c8]">{label}</p>
+    <p className="hud-mono text-lg text-[#f5c518] mt-0.5" style={{ textShadow: '0 0 8px rgba(245,197,24,0.55)' }}>{value}</p>
+  </div>
 );
+
+const Diamond: React.FC<{ color: string }> = ({ color }) => (
+  <span className="inline-block w-2.5 h-2.5 rotate-45 border" style={{ borderColor: color, boxShadow: `0 0 6px ${color}` }} />
+);
+
+function escapeHtml(s: string) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+}
 
 export default AdminUniversityMap;
