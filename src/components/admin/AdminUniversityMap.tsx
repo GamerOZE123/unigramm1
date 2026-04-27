@@ -216,6 +216,28 @@ const AdminUniversityMap: React.FC = () => {
           clusterRadius: 45,
         });
 
+        // Pulsing glow halo behind every pin (animated via paint updates)
+        map.addLayer({
+          id: 'unis-pulse', type: 'circle', source: 'unis',
+          filter: ['!', ['has', 'point_count']],
+          paint: {
+            'circle-radius': 14,
+            'circle-color': '#f5c518',
+            'circle-opacity': 0.0,
+            'circle-blur': 0.9,
+          },
+        });
+        map.addLayer({
+          id: 'unis-glow', type: 'circle', source: 'unis',
+          filter: ['!', ['has', 'point_count']],
+          paint: {
+            'circle-radius': 9,
+            'circle-color': '#f5c518',
+            'circle-opacity': 0.18,
+            'circle-blur': 0.6,
+          },
+        });
+
         // Cluster halo (cyan)
         map.addLayer({
           id: 'clusters-glow', type: 'circle', source: 'unis',
@@ -265,12 +287,42 @@ const AdminUniversityMap: React.FC = () => {
           },
         });
 
+        // Animate the pulse ring (radius + opacity sine)
+        let pulseRaf = 0;
+        const startPulse = (t0: number) => {
+          const tick = (t: number) => {
+            const p = ((t - t0) % 1800) / 1800; // 1.8s loop
+            const r = 10 + p * 26;
+            const o = 0.45 * (1 - p);
+            if (map && map.getLayer('unis-pulse')) {
+              map.setPaintProperty('unis-pulse', 'circle-radius', r);
+              map.setPaintProperty('unis-pulse', 'circle-opacity', o);
+            }
+            pulseRaf = requestAnimationFrame(tick);
+          };
+          pulseRaf = requestAnimationFrame(tick);
+        };
+        startPulse(performance.now());
+        (map as any).__pulseRaf = () => cancelAnimationFrame(pulseRaf);
+
         const setPointer = () => (map!.getCanvas().style.cursor = 'crosshair');
         const resetPointer = () => (map!.getCanvas().style.cursor = '');
         map.on('mouseenter', 'clusters', setPointer);
         map.on('mouseleave', 'clusters', resetPointer);
-        map.on('mouseenter', 'unis-pins', setPointer);
-        map.on('mouseleave', 'unis-pins', resetPointer);
+        map.on('mouseenter', 'unis-pins', () => {
+          setPointer();
+          if (map!.getLayer('unis-glow')) {
+            map!.setPaintProperty('unis-glow', 'circle-radius', 14);
+            map!.setPaintProperty('unis-glow', 'circle-opacity', 0.32);
+          }
+        });
+        map.on('mouseleave', 'unis-pins', () => {
+          resetPointer();
+          if (map!.getLayer('unis-glow')) {
+            map!.setPaintProperty('unis-glow', 'circle-radius', 9);
+            map!.setPaintProperty('unis-glow', 'circle-opacity', 0.18);
+          }
+        });
 
         // Hover HUD card
         const hoverPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 16, className: 'hud-popup' });
@@ -324,7 +376,7 @@ const AdminUniversityMap: React.FC = () => {
     return () => {
       mounted = false;
       if (popupRef.current) popupRef.current.remove();
-      if (map) map.remove();
+      if (map) { try { (map as any).__pulseRaf?.(); } catch {} map.remove(); }
     };
   }, []);
 
