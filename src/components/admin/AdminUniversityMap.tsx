@@ -408,6 +408,24 @@ const AdminUniversityMap: React.FC = () => {
     else map.once('idle', apply);
   }, [tier1Only]);
 
+  // Highlight selected university on the map (cyan diamond)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => {
+      const src = map.getSource('unis') as any;
+      if (!src || !featuresRef.current.length) return;
+      const selKey = selected ? `${selected.name}|${selected.state}` : '';
+      featuresRef.current.forEach((f) => {
+        const key = `${f.properties.name}|${f.properties.state}`;
+        f.properties.selected = key === selKey ? 1 : 0;
+      });
+      src.setData({ type: 'FeatureCollection', features: featuresRef.current });
+    };
+    if (map.isStyleLoaded()) apply();
+    else map.once('idle', apply);
+  }, [selected]);
+
   const visibleCount = useMemo(() => {
     if (!tier1Only) return allUniv.current.length;
     return allUniv.current.filter((u) => isTier1(u.name)).length;
