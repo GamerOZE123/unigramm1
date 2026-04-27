@@ -151,7 +151,7 @@ const AdminUniversityMap: React.FC = () => {
           features.push({
             type: 'Feature',
             geometry: { type: 'Point', coordinates: [lng, lat] },
-            properties: { name, state, enrolled, abbr: abbr || '' },
+            properties: { name, state, enrolled, abbr: abbr || '', tier1: isTier1(name) ? 1 : 0 },
           });
         });
       });
