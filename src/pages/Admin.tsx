@@ -28,6 +28,7 @@ import AdminOverflow from '@/components/admin/AdminOverflow';
 import AdminOfficials from '@/components/admin/AdminOfficials';
 import AdminPointsManagement from '@/components/admin/AdminPointsManagement';
 import AdminApplicants from '@/components/admin/AdminApplicants';
+import AdminUniversityMap from '@/components/admin/AdminUniversityMap';
 import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
@@ -472,6 +473,8 @@ const Admin: React.FC = () => {
 
           {/* Pending Accounts */}
           {section === 'pending' && <AdminPendingAccounts password={storedPassword} />}
+
+          {section === 'map' && <AdminUniversityMap />}
 
           {/* Waitlist */}
           {section === 'waitlist' && (
