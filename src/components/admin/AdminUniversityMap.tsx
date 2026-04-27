@@ -1052,8 +1052,11 @@ const StatRow: React.FC<{ icon: React.ReactNode; label: string; value: string; s
   </div>
 );
 
-const DataTile: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className="px-2.5 py-2 bg-black/30 border border-[#00c8ff]/25" style={{ borderRadius: 3 }}>
+const DataTile: React.FC<{ label: string; value: string; active?: boolean }> = ({ label, value, active }) => (
+  <div
+    className={`px-2.5 py-2 bg-black/30 border transition-colors ${active ? 'border-[#f5c518]/70 shadow-[0_0_10px_rgba(245,197,24,0.25)]' : 'border-[#00c8ff]/25 hover:border-[#00c8ff]/60'}`}
+    style={{ borderRadius: 3 }}
+  >
     <p className="hud-mono text-[9px] tracking-[0.2em] text-[#7fb6c8]">{label}</p>
     <p className="hud-mono text-lg text-[#f5c518] mt-0.5" style={{ textShadow: '0 0 8px rgba(245,197,24,0.55)' }}>{value}</p>
   </div>
