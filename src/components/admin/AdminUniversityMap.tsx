@@ -747,6 +747,7 @@ const AdminUniversityMap: React.FC = () => {
           background: transparent !important; padding: 0 !important; box-shadow: none !important;
         }
         .maplibregl-popup.hud-popup .maplibregl-popup-tip { display: none !important; }
+        .hud-globe { mix-blend-mode: screen; }
         .hud-card {
           position: relative;
           min-width: 220px;
@@ -756,12 +757,13 @@ const AdminUniversityMap: React.FC = () => {
           padding: 10px 12px;
           color: #c8d8e8;
           border-radius: 3px;
-          animation: hudFlick 200ms steps(3) both;
+          animation: hudFlick 80ms steps(4) both;
         }
         @keyframes hudFlick {
-          0% { opacity: 0; }
-          33% { opacity: 0.4; }
-          66% { opacity: 0.7; }
+          0% { opacity: 0; transform: translateY(2px); }
+          25% { opacity: 0.3; }
+          50% { opacity: 0.85; }
+          75% { opacity: 0.45; }
           100% { opacity: 1; }
         }
         .hud-card-bracket { position: absolute; width: 8px; height: 8px; border-color: #00c8ff; }
