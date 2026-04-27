@@ -372,6 +372,8 @@ const Admin: React.FC = () => {
         </div>
 
         <div className="p-4 md:p-6 space-y-6 max-w-[1400px]">
+          {/* Full-bleed sections (escape max-width container) */}
+
           {/* Overview Section */}
           {section === 'overview' && (
             <>
