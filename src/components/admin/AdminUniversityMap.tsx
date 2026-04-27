@@ -159,8 +159,8 @@ const AdminUniversityMap: React.FC = () => {
           },
           layers: [
             { id: 'bg', type: 'background', paint: { 'background-color': '#080c12' } },
-            { id: 'carto-dark', type: 'raster', source: 'carto-dark', paint: { 'raster-opacity': 0.85, 'raster-saturation': -0.3, 'raster-contrast': 0.15, 'raster-hue-rotate': 190, 'raster-brightness-min': 0.05, 'raster-brightness-max': 0.85 } },
-            { id: 'carto-labels', type: 'raster', source: 'carto-labels', paint: { 'raster-opacity': 0.9, 'raster-contrast': 0.3, 'raster-brightness-min': 0.5, 'raster-brightness-max': 1, 'raster-hue-rotate': 190, 'raster-saturation': -0.4 } },
+            { id: 'carto-dark', type: 'raster', source: 'carto-dark', paint: { 'raster-opacity': 0.9, 'raster-saturation': -1, 'raster-contrast': 0.25, 'raster-brightness-min': 0.05, 'raster-brightness-max': 1 } },
+            { id: 'carto-labels', type: 'raster', source: 'carto-labels', paint: { 'raster-opacity': 0.95, 'raster-contrast': 0.4, 'raster-brightness-min': 0.6, 'raster-brightness-max': 1, 'raster-saturation': -1 } },
           ],
         },
         center: [82.5, 22.5],
