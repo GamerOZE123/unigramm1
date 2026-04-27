@@ -372,6 +372,8 @@ const Admin: React.FC = () => {
         </div>
 
         <div className="p-4 md:p-6 space-y-6 max-w-[1400px]">
+          {/* Full-bleed sections (escape max-width container) */}
+
           {/* Overview Section */}
           {section === 'overview' && (
             <>
@@ -474,8 +476,6 @@ const Admin: React.FC = () => {
           {/* Pending Accounts */}
           {section === 'pending' && <AdminPendingAccounts password={storedPassword} />}
 
-          {section === 'map' && <AdminUniversityMap />}
-
           {/* Waitlist */}
           {section === 'waitlist' && (
             <AdminWaitlistSection
@@ -560,6 +560,9 @@ const Admin: React.FC = () => {
           {/* Team Members (admin only) */}
           {section === 'team' && adminRole === 'admin' && <AdminTeamMembers password={storedPassword} />}
         </div>
+
+        {/* Full-bleed: University Map (renders outside the max-w container) */}
+        {section === 'map' && <AdminUniversityMap />}
       </main>
     </div>
   );
