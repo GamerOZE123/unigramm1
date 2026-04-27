@@ -560,6 +560,9 @@ const Admin: React.FC = () => {
           {/* Team Members (admin only) */}
           {section === 'team' && adminRole === 'admin' && <AdminTeamMembers password={storedPassword} />}
         </div>
+
+        {/* Full-bleed: University Map (renders outside the max-w container) */}
+        {section === 'map' && <AdminUniversityMap />}
       </main>
     </div>
   );
