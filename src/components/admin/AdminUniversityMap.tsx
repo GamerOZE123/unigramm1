@@ -359,13 +359,32 @@ const AdminUniversityMap: React.FC = () => {
 
         map.on('click', 'unis-pins', (e) => {
           const f = e.features?.[0] as any; if (!f) return;
+          const [lng, lat] = f.geometry.coordinates;
+          const html = `
+            <div class="hud-card hud-card-anchored">
+              <div class="hud-card-bracket tl"></div><div class="hud-card-bracket tr"></div>
+              <div class="hud-card-bracket bl"></div><div class="hud-card-bracket br"></div>
+              <div class="hud-card-row">
+                <span class="hud-card-label">// LOCKED</span>
+                <span class="hud-card-status">● STATUS: ACTIVE</span>
+              </div>
+              <div class="hud-card-name">${escapeHtml(f.properties.name)}</div>
+              <div class="hud-card-meta">${escapeHtml(f.properties.state)}${f.properties.abbr ? ' · ID ' + escapeHtml(f.properties.abbr) : ''}</div>
+              <div class="hud-card-coord">${fmtCoord(lat, lng)}</div>
+              <div class="hud-card-row">
+                <span class="hud-card-stat">ENROLL <b>${f.properties.enrolled || 0}</b></span>
+                <span class="hud-card-stat">SECTOR <b>IND-01</b></span>
+              </div>
+            </div>`;
+          if (popupRef.current) popupRef.current.remove();
+          popupRef.current = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 18, className: 'hud-popup' })
+            .setLngLat([lng, lat]).setHTML(html).addTo(map!);
           openUni({
             name: f.properties.name,
             state: f.properties.state,
             enrolled: Number(f.properties.enrolled || 0),
             abbr: f.properties.abbr || null,
-            lng: f.geometry.coordinates[0],
-            lat: f.geometry.coordinates[1],
+            lng, lat,
           });
         });
 
