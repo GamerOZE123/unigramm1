@@ -204,13 +204,17 @@ const AdminUniversityMap: React.FC = () => {
       map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'bottom-right');
       map.addControl(new maplibregl.AttributionControl({ compact: true }));
 
-      // Build amber diamond SVG marker
-      const buildDiamond = (size = 64) => {
+      // Build diamond SVG marker (amber for normal, cyan for selected)
+      const buildDiamond = (size = 64, color = '#f5c518', glow = false) => {
+        const filter = glow ? `<filter id="g"><feGaussianBlur stdDeviation="2"/></filter>` : '';
+        const halo = glow ? `<rect x="-13" y="-13" width="26" height="26" fill="none" stroke="${color}" stroke-width="1" opacity="0.55" filter="url(#g)"/>` : '';
         const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}">
+          <defs>${filter}</defs>
           <g transform="translate(32 32) rotate(45)">
-            <rect x="-9" y="-9" width="18" height="18" fill="none" stroke="#f5c518" stroke-width="1.5"/>
-            <rect x="-4" y="-4" width="8" height="8" fill="#f5c518"/>
+            ${halo}
+            <rect x="-9" y="-9" width="18" height="18" fill="none" stroke="${color}" stroke-width="1.5"/>
+            <rect x="-4" y="-4" width="8" height="8" fill="${color}"/>
           </g>
         </svg>`;
         return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
@@ -219,19 +223,16 @@ const AdminUniversityMap: React.FC = () => {
       map.on('load', async () => {
         if (!map) return;
 
-        // load amber marker images
-        await new Promise<void>((res) => {
-          const img = new Image(64, 64);
-          img.onload = () => { if (!map!.hasImage('amber-diamond')) map!.addImage('amber-diamond', img as any); res(); };
-          img.onerror = () => res();
-          img.src = buildDiamond(64);
-        });
-        await new Promise<void>((res) => {
-          const img = new Image(64, 64);
-          img.onload = () => { if (!map!.hasImage('amber-diamond-active')) map!.addImage('amber-diamond-active', img as any); res(); };
-          img.onerror = () => res();
-          img.src = buildDiamond(80);
-        });
+        // load marker images
+        const loadImg = (name: string, src: string, w = 64, h = 64) =>
+          new Promise<void>((res) => {
+            const img = new Image(w, h);
+            img.onload = () => { if (!map!.hasImage(name)) map!.addImage(name, img as any); res(); };
+            img.onerror = () => res();
+            img.src = src;
+          });
+        await loadImg('amber-diamond', buildDiamond(64, '#f5c518'));
+        await loadImg('cyan-diamond', buildDiamond(96, '#00c8ff', true), 96, 96);
 
         map.addSource('unis', {
           type: 'geojson',
