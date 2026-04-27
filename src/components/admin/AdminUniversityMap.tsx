@@ -496,7 +496,6 @@ const AdminUniversityMap: React.FC = () => {
             <div className="flex flex-col gap-1.5 text-[10px] text-[#c8d8e8] hud-mono">
               <div className="flex items-center gap-2"><Diamond color="#f5c518" />UNIVERSITY · TARGET</div>
               <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-[#00ff88] shadow-[0_0_6px_#00ff88]" />ACTIVE · ENROLLED</div>
-              <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full border border-[#00c8ff]" />CLUSTER · ZOOM IN</div>
             </div>
           </div>
         </div>
