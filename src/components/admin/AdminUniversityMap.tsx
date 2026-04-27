@@ -665,7 +665,7 @@ const AdminUniversityMap: React.FC = () => {
         .maplibregl-ctrl-attrib a { color: #fbcfe8 !important; }
         .maplibregl-ctrl-group { background: rgba(4,10,20,0.7) !important; border: 1px solid rgba(34,211,238,0.4) !important; backdrop-filter: blur(8px); }
         .maplibregl-ctrl-group button { background: transparent !important; }
-        .maplibregl-ctrl-group button span { filter: invert(1) hue-rotate(270deg) brightness(1.5); }
+        .maplibregl-ctrl-group button span { filter: invert(1) hue-rotate(160deg) brightness(1.6); }
         .sci-fi-scroll::-webkit-scrollbar { width: 6px; }
         .sci-fi-scroll::-webkit-scrollbar-track { background: transparent; }
         .sci-fi-scroll::-webkit-scrollbar-thumb { background: rgba(34,211,238,0.3); border-radius: 3px; }
