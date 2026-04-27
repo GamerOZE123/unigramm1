@@ -1,16 +1,41 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import maplibregl, { Map as MLMap, Popup } from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
-import { STATE_COORDS, STATE_RADIUS } from '@/data/indianStateCoords';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import maplibregl, { Map as MLMap, Popup } from "maplibre-gl";
+import "maplibre-gl/dist/maplibre-gl.css";
+import { STATE_COORDS, STATE_RADIUS } from "@/data/indianStateCoords";
 import {
-  Loader2, Search, Maximize2, Minimize2, X, ChevronRight, ChevronLeft,
-  ArrowLeft, Users, Building2, Crosshair, Radio, Activity, Database, Layers, Filter,
-} from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+  Loader2,
+  Search,
+  Maximize2,
+  Minimize2,
+  X,
+  ChevronRight,
+  ChevronLeft,
+  ArrowLeft,
+  Users,
+  Building2,
+  Crosshair,
+  Radio,
+  Activity,
+  Database,
+  Layers,
+  Filter,
+  Zap,
+  Shield,
+  Eye,
+  Globe,
+  Wifi,
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 type UniMap = Record<string, string[]>;
 type Univ = { name: string; state: string; lng: number; lat: number; enrolled: number; abbr: string | null };
-type ClubLite = { id: string; club_name: string; category: string | null; member_count: number | null; logo_url: string | null };
+type ClubLite = {
+  id: string;
+  club_name: string;
+  category: string | null;
+  member_count: number | null;
+  logo_url: string | null;
+};
 
 function extractAbbr(name: string): string | null {
   const m = name.match(/\(([A-Z][A-Z0-9&.\- ]{1,15})\)\s*$/);
@@ -21,31 +46,73 @@ function seeded(i: number) {
   return x - Math.floor(x);
 }
 function fmtCoord(lat: number, lng: number) {
-  const ns = lat >= 0 ? 'N' : 'S';
-  const ew = lng >= 0 ? 'E' : 'W';
-  return `${Math.abs(lat).toFixed(3)}°${ns}  ${Math.abs(lng).toFixed(3)}°${ew}`;
+  const ns = lat >= 0 ? "N" : "S";
+  const ew = lng >= 0 ? "E" : "W";
+  return `${Math.abs(lat).toFixed(4)}°${ns}  ${Math.abs(lng).toFixed(4)}°${ew}`;
 }
 
-// Whitelist of "Tier 1" / major private + flagship universities to highlight.
-// Matched as case-insensitive substrings against the university name.
 const TIER1_KEYWORDS: string[] = [
-  'shiv nadar', 'amity', 'jindal', 'o.p. jindal', 'op jindal',
-  'ashoka', 'krea', 'plaksha', 'flame',
-  'manipal', 'srm', 'vit', 'vellore institute', 'symbiosis',
-  'bits ', 'birla institute of technology and science',
-  'iit ', 'indian institute of technology',
-  'iim ', 'indian institute of management',
-  'iiit', 'indian institute of information technology',
-  'nit ', 'national institute of technology',
-  'iisc', 'indian institute of science',
-  'iiser', 'aiims',
-  'thapar', 'lpu', 'lovely professional', 'chandigarh university',
-  'christ university', 'xavier', 'xlri', 'mdi', 'iift', 'isb',
-  'snu', 'pes university', 'reva', 'nmims', 'mit-wpu', 'mit world peace',
-  'bennett', 'bml munjal', 'galgotias', 'sharda', 'ansal',
-  'jamia millia', 'jawaharlal nehru university', 'bhu', 'banaras hindu',
-  'delhi university', 'university of delhi', 'du ',
-  'icfai', 'great lakes', 'spjain', 's.p. jain', 'iim-',
+  "shiv nadar",
+  "amity",
+  "jindal",
+  "o.p. jindal",
+  "op jindal",
+  "ashoka",
+  "krea",
+  "plaksha",
+  "flame",
+  "manipal",
+  "srm",
+  "vit",
+  "vellore institute",
+  "symbiosis",
+  "bits ",
+  "birla institute of technology and science",
+  "iit ",
+  "indian institute of technology",
+  "iim ",
+  "indian institute of management",
+  "iiit",
+  "indian institute of information technology",
+  "nit ",
+  "national institute of technology",
+  "iisc",
+  "indian institute of science",
+  "iiser",
+  "aiims",
+  "thapar",
+  "lpu",
+  "lovely professional",
+  "chandigarh university",
+  "christ university",
+  "xavier",
+  "xlri",
+  "mdi",
+  "iift",
+  "isb",
+  "snu",
+  "pes university",
+  "reva",
+  "nmims",
+  "mit-wpu",
+  "mit world peace",
+  "bennett",
+  "bml munjal",
+  "galgotias",
+  "sharda",
+  "ansal",
+  "jamia millia",
+  "jawaharlal nehru university",
+  "bhu",
+  "banaras hindu",
+  "delhi university",
+  "university of delhi",
+  "du ",
+  "icfai",
+  "great lakes",
+  "spjain",
+  "s.p. jain",
+  "iim-",
 ];
 
 function isTier1(name: string): boolean {
@@ -53,133 +120,70 @@ function isTier1(name: string): boolean {
   return TIER1_KEYWORDS.some((k) => n.includes(k));
 }
 
-// Real lat/lng for major Tier-1 campuses. Matched as case-insensitive
-// substrings against the university name. First match wins, so order
-// from most specific to least specific.
 const TIER1_COORDS: Array<{ match: string; lat: number; lng: number }> = [
-  // Private flagships
-  { match: 'shiv nadar', lat: 28.5237, lng: 77.5740 },
-  { match: 'ashoka', lat: 28.9450, lng: 77.1015 },
-  { match: 'plaksha', lat: 30.6595, lng: 76.7406 },
-  { match: 'krea', lat: 13.6280, lng: 79.5680 },
-  { match: 'flame', lat: 18.5290, lng: 73.7270 },
-  { match: 'o.p. jindal', lat: 28.7980, lng: 76.6440 },
-  { match: 'op jindal', lat: 28.7980, lng: 76.6440 },
-  { match: 'jindal', lat: 28.7980, lng: 76.6440 },
-  { match: 'amity', lat: 28.5447, lng: 77.3320 },
-  { match: 'bennett', lat: 28.4503, lng: 77.5840 },
-  { match: 'bml munjal', lat: 28.3760, lng: 76.8970 },
-  { match: 'galgotias', lat: 28.4506, lng: 77.5856 },
-  { match: 'sharda', lat: 28.4730, lng: 77.4820 },
-  { match: 'manipal', lat: 13.3525, lng: 74.7869 },
-  { match: 'srm', lat: 12.8230, lng: 80.0444 },
-  { match: 'vellore institute', lat: 12.9692, lng: 79.1559 },
-  { match: 'vit', lat: 12.9692, lng: 79.1559 },
-  { match: 'symbiosis', lat: 18.4575, lng: 73.8500 },
-  { match: 'thapar', lat: 30.3540, lng: 76.3625 },
-  { match: 'lovely professional', lat: 31.2553, lng: 75.7050 },
-  { match: 'lpu', lat: 31.2553, lng: 75.7050 },
-  { match: 'chandigarh university', lat: 30.7700, lng: 76.5760 },
-  { match: 'christ university', lat: 12.9344, lng: 77.6062 },
-  { match: 'nmims', lat: 19.1075, lng: 72.8370 },
-  { match: 'pes university', lat: 12.9352, lng: 77.5354 },
-  { match: 'reva', lat: 13.1180, lng: 77.6630 },
-  { match: 'mit-wpu', lat: 18.5089, lng: 73.8128 },
-  { match: 'mit world peace', lat: 18.5089, lng: 73.8128 },
-  { match: 'snu', lat: 28.5237, lng: 77.5740 },
-  // BITS
-  { match: 'birla institute of technology and science', lat: 28.3640, lng: 75.5870 },
-  { match: 'bits ', lat: 28.3640, lng: 75.5870 },
-  // IITs
-  { match: 'iit bombay', lat: 19.1334, lng: 72.9133 },
-  { match: 'iit delhi', lat: 28.5450, lng: 77.1926 },
-  { match: 'iit madras', lat: 12.9915, lng: 80.2336 },
-  { match: 'iit kanpur', lat: 26.5123, lng: 80.2329 },
-  { match: 'iit kharagpur', lat: 22.3149, lng: 87.3105 },
-  { match: 'iit roorkee', lat: 29.8650, lng: 77.8964 },
-  { match: 'iit guwahati', lat: 26.1900, lng: 91.6991 },
-  { match: 'iit hyderabad', lat: 17.5970, lng: 78.1242 },
-  { match: 'iit indore', lat: 22.5208, lng: 75.9216 },
-  { match: 'iit mandi', lat: 31.7780, lng: 77.0386 },
-  { match: 'iit bhubaneswar', lat: 20.1490, lng: 85.6700 },
-  { match: 'iit gandhinagar', lat: 23.2130, lng: 72.6840 },
-  { match: 'iit jodhpur', lat: 26.4727, lng: 73.1140 },
-  { match: 'iit patna', lat: 25.5360, lng: 84.8510 },
-  { match: 'iit ropar', lat: 30.9690, lng: 76.4730 },
-  { match: 'iit (bhu)', lat: 25.2630, lng: 82.9910 },
-  { match: 'iit varanasi', lat: 25.2630, lng: 82.9910 },
-  { match: 'iit dhanbad', lat: 23.8147, lng: 86.4412 },
-  { match: 'ism dhanbad', lat: 23.8147, lng: 86.4412 },
-  { match: 'iit tirupati', lat: 13.7298, lng: 79.5947 },
-  { match: 'iit palakkad', lat: 10.7260, lng: 76.7280 },
-  { match: 'iit goa', lat: 15.4830, lng: 73.9100 },
-  { match: 'iit jammu', lat: 32.7320, lng: 74.8580 },
-  { match: 'iit dharwad', lat: 15.3878, lng: 75.0080 },
-  // IIMs
-  { match: 'iim ahmedabad', lat: 23.0320, lng: 72.5310 },
-  { match: 'iim bangalore', lat: 12.9170, lng: 77.5970 },
-  { match: 'iim calcutta', lat: 22.4570, lng: 88.3120 },
-  { match: 'iim lucknow', lat: 26.8970, lng: 81.0050 },
-  { match: 'iim kozhikode', lat: 11.3290, lng: 75.8430 },
-  { match: 'iim indore', lat: 22.7350, lng: 75.8770 },
-  { match: 'iim shillong', lat: 25.6630, lng: 91.8800 },
-  { match: 'iim udaipur', lat: 24.5220, lng: 73.7120 },
-  { match: 'iim trichy', lat: 10.7610, lng: 78.8140 },
-  { match: 'iim raipur', lat: 21.2510, lng: 81.6290 },
-  { match: 'iim rohtak', lat: 28.9180, lng: 76.5820 },
-  { match: 'iim ranchi', lat: 23.4140, lng: 85.4400 },
-  { match: 'iim kashipur', lat: 29.2120, lng: 78.9610 },
-  { match: 'iim nagpur', lat: 21.1240, lng: 79.0490 },
-  { match: 'iim visakhapatnam', lat: 17.7460, lng: 83.3320 },
-  { match: 'iim amritsar', lat: 31.6360, lng: 74.8730 },
-  { match: 'iim sambalpur', lat: 21.4660, lng: 84.0140 },
-  { match: 'iim sirmaur', lat: 30.5680, lng: 77.2880 },
-  { match: 'iim bodhgaya', lat: 24.6960, lng: 84.9920 },
-  { match: 'iim jammu', lat: 32.7320, lng: 74.8580 },
-  { match: 'iim mumbai', lat: 19.1280, lng: 72.9120 },
-  // IISc / IISER / AIIMS / NITs flagships
-  { match: 'iisc', lat: 13.0218, lng: 77.5660 },
-  { match: 'indian institute of science', lat: 13.0218, lng: 77.5660 },
-  { match: 'iiser pune', lat: 18.5470, lng: 73.8070 },
-  { match: 'iiser kolkata', lat: 22.9620, lng: 88.5240 },
-  { match: 'iiser mohali', lat: 30.6660, lng: 76.7290 },
-  { match: 'iiser bhopal', lat: 23.2880, lng: 77.2750 },
-  { match: 'iiser thiruvananthapuram', lat: 8.6792, lng: 77.1366 },
-  { match: 'iiser tirupati', lat: 13.6280, lng: 79.5680 },
-  { match: 'iiser berhampur', lat: 19.3140, lng: 84.7900 },
-  { match: 'aiims delhi', lat: 28.5672, lng: 77.2100 },
-  { match: 'aiims', lat: 28.5672, lng: 77.2100 },
-  { match: 'nit trichy', lat: 10.7590, lng: 78.8140 },
-  { match: 'nit warangal', lat: 17.9817, lng: 79.5310 },
-  { match: 'nit surathkal', lat: 13.0090, lng: 74.7940 },
-  { match: 'nit karnataka', lat: 13.0090, lng: 74.7940 },
-  { match: 'nit calicut', lat: 11.3210, lng: 75.9340 },
-  { match: 'nit rourkela', lat: 22.2530, lng: 84.9010 },
-  { match: 'nit kurukshetra', lat: 29.9460, lng: 76.8170 },
-  { match: 'nit allahabad', lat: 25.4910, lng: 81.8650 },
-  { match: 'mnnit', lat: 25.4910, lng: 81.8650 },
-  { match: 'nit jaipur', lat: 26.8630, lng: 75.8170 },
-  { match: 'mnit jaipur', lat: 26.8630, lng: 75.8170 },
-  { match: 'nit nagpur', lat: 21.1250, lng: 79.0490 },
-  { match: 'vnit', lat: 21.1250, lng: 79.0490 },
-  // IIIT flagships
-  { match: 'iiit hyderabad', lat: 17.4450, lng: 78.3490 },
-  { match: 'iiit bangalore', lat: 12.8460, lng: 77.6630 },
-  { match: 'iiit delhi', lat: 28.5450, lng: 77.2730 },
-  { match: 'iiit allahabad', lat: 25.4310, lng: 81.7720 },
-  // Universities
-  { match: 'jamia millia', lat: 28.5621, lng: 77.2810 },
-  { match: 'jawaharlal nehru university', lat: 28.5400, lng: 77.1650 },
-  { match: 'banaras hindu', lat: 25.2670, lng: 82.9907 },
-  { match: 'bhu', lat: 25.2670, lng: 82.9907 },
-  { match: 'university of delhi', lat: 28.6890, lng: 77.2090 },
-  { match: 'delhi university', lat: 28.6890, lng: 77.2090 },
-  { match: 'xlri', lat: 22.7780, lng: 86.1860 },
-  { match: 'mdi', lat: 28.4500, lng: 77.0260 },
-  { match: 'iift', lat: 28.5200, lng: 77.1620 },
-  { match: 'isb', lat: 17.4204, lng: 78.3470 },
-  { match: 'spjain', lat: 19.0830, lng: 72.8420 },
-  { match: 'great lakes', lat: 12.7920, lng: 80.0220 },
+  { match: "shiv nadar", lat: 28.5237, lng: 77.574 },
+  { match: "ashoka", lat: 28.945, lng: 77.1015 },
+  { match: "plaksha", lat: 30.6595, lng: 76.7406 },
+  { match: "krea", lat: 13.628, lng: 79.568 },
+  { match: "flame", lat: 18.529, lng: 73.727 },
+  { match: "o.p. jindal", lat: 28.798, lng: 76.644 },
+  { match: "op jindal", lat: 28.798, lng: 76.644 },
+  { match: "jindal", lat: 28.798, lng: 76.644 },
+  { match: "amity", lat: 28.5447, lng: 77.332 },
+  { match: "bennett", lat: 28.4503, lng: 77.584 },
+  { match: "bml munjal", lat: 28.376, lng: 76.897 },
+  { match: "galgotias", lat: 28.4506, lng: 77.5856 },
+  { match: "sharda", lat: 28.473, lng: 77.482 },
+  { match: "manipal", lat: 13.3525, lng: 74.7869 },
+  { match: "srm", lat: 12.823, lng: 80.0444 },
+  { match: "vellore institute", lat: 12.9692, lng: 79.1559 },
+  { match: "vit", lat: 12.9692, lng: 79.1559 },
+  { match: "symbiosis", lat: 18.4575, lng: 73.85 },
+  { match: "thapar", lat: 30.354, lng: 76.3625 },
+  { match: "lovely professional", lat: 31.2553, lng: 75.705 },
+  { match: "lpu", lat: 31.2553, lng: 75.705 },
+  { match: "chandigarh university", lat: 30.77, lng: 76.576 },
+  { match: "christ university", lat: 12.9344, lng: 77.6062 },
+  { match: "nmims", lat: 19.1075, lng: 72.837 },
+  { match: "pes university", lat: 12.9352, lng: 77.5354 },
+  { match: "reva", lat: 13.118, lng: 77.663 },
+  { match: "mit-wpu", lat: 18.5089, lng: 73.8128 },
+  { match: "mit world peace", lat: 18.5089, lng: 73.8128 },
+  { match: "snu", lat: 28.5237, lng: 77.574 },
+  { match: "birla institute of technology and science", lat: 28.364, lng: 75.587 },
+  { match: "bits ", lat: 28.364, lng: 75.587 },
+  { match: "iit bombay", lat: 19.1334, lng: 72.9133 },
+  { match: "iit delhi", lat: 28.545, lng: 77.1926 },
+  { match: "iit madras", lat: 12.9915, lng: 80.2336 },
+  { match: "iit kanpur", lat: 26.5123, lng: 80.2329 },
+  { match: "iit kharagpur", lat: 22.3149, lng: 87.3105 },
+  { match: "iit roorkee", lat: 29.865, lng: 77.8964 },
+  { match: "iit guwahati", lat: 26.19, lng: 91.6991 },
+  { match: "iit hyderabad", lat: 17.597, lng: 78.1242 },
+  { match: "iit indore", lat: 22.5208, lng: 75.9216 },
+  { match: "iit bombay", lat: 19.1334, lng: 72.9133 },
+  { match: "iisc", lat: 13.0218, lng: 77.566 },
+  { match: "indian institute of science", lat: 13.0218, lng: 77.566 },
+  { match: "iiser pune", lat: 18.547, lng: 73.807 },
+  { match: "aiims", lat: 28.5672, lng: 77.21 },
+  { match: "nit trichy", lat: 10.759, lng: 78.814 },
+  { match: "nit warangal", lat: 17.9817, lng: 79.531 },
+  { match: "nit surathkal", lat: 13.009, lng: 74.794 },
+  { match: "iiit hyderabad", lat: 17.445, lng: 78.349 },
+  { match: "iiit delhi", lat: 28.545, lng: 77.273 },
+  { match: "iim ahmedabad", lat: 23.032, lng: 72.531 },
+  { match: "iim bangalore", lat: 12.917, lng: 77.597 },
+  { match: "iim calcutta", lat: 22.457, lng: 88.312 },
+  { match: "iim lucknow", lat: 26.897, lng: 81.005 },
+  { match: "iim kozhikode", lat: 11.329, lng: 75.843 },
+  { match: "iim indore", lat: 22.735, lng: 75.877 },
+  { match: "jamia millia", lat: 28.5621, lng: 77.281 },
+  { match: "jawaharlal nehru university", lat: 28.54, lng: 77.165 },
+  { match: "banaras hindu", lat: 25.267, lng: 82.9907 },
+  { match: "bhu", lat: 25.267, lng: 82.9907 },
+  { match: "university of delhi", lat: 28.689, lng: 77.209 },
+  { match: "xlri", lat: 22.778, lng: 86.186 },
+  { match: "isb", lat: 17.4204, lng: 78.347 },
 ];
 
 function tier1Coord(name: string): { lat: number; lng: number } | null {
@@ -196,39 +200,64 @@ const AdminUniversityMap: React.FC = () => {
   const allUniv = useRef<Univ[]>([]);
   const featuresRef = useRef<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadPhase, setLoadPhase] = useState(0);
   const [stats, setStats] = useState({ states: 0, universities: 0 });
   const [enrolledByUniv, setEnrolledByUniv] = useState<Record<string, number>>({});
-  const [selected, setSelected] = useState<{ name: string; state: string; enrolled: number; abbr: string | null; lng: number; lat: number } | null>(null);
+  const [selected, setSelected] = useState<{
+    name: string;
+    state: string;
+    enrolled: number;
+    abbr: string | null;
+    lng: number;
+    lat: number;
+  } | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [clubs, setClubs] = useState<ClubLite[]>([]);
   const [studentCount, setStudentCount] = useState<number>(0);
-  const [students, setStudents] = useState<Array<{ user_id: string; full_name: string | null; username: string | null; avatar_url: string | null; major: string | null; university: string | null }>>([]);
+  const [students, setStudents] = useState<
+    Array<{
+      user_id: string;
+      full_name: string | null;
+      username: string | null;
+      avatar_url: string | null;
+      major: string | null;
+      university: string | null;
+    }>
+  >([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
-  const [detailTab, setDetailTab] = useState<'clubs' | 'students'>('clubs');
-  const [search, setSearch] = useState('');
+  const [detailTab, setDetailTab] = useState<"clubs" | "students">("clubs");
+  const [search, setSearch] = useState("");
   const [fullscreen, setFullscreen] = useState(false);
   const [intelOpen, setIntelOpen] = useState(true);
   const [detailOpen, setDetailOpen] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const [tier1Only, setTier1Only] = useState(true);
-
-  // animated counter for "uniques pinned"
   const [counter, setCounter] = useState(0);
+  const [mapTilt, setMapTilt] = useState(false);
+  const [signalStrength, setSignalStrength] = useState(0);
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  // count up animation when stats arrive
+  // Animated signal strength bars
+  useEffect(() => {
+    const id = setInterval(() => {
+      setSignalStrength(Math.floor(Math.random() * 3) + 3);
+    }, 2000);
+    return () => clearInterval(id);
+  }, []);
+
   useEffect(() => {
     if (!stats.universities) return;
     let raf = 0;
     const start = performance.now();
-    const dur = 1200;
+    const dur = 1800;
     const tick = (t: number) => {
       const p = Math.min(1, (t - start) / dur);
-      setCounter(Math.floor(stats.universities * (1 - Math.pow(1 - p, 3))));
+      const ease = 1 - Math.pow(1 - p, 4);
+      setCounter(Math.floor(stats.universities * ease));
       if (p < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
@@ -254,13 +283,15 @@ const AdminUniversityMap: React.FC = () => {
     let map: MLMap | null = null;
 
     (async () => {
-      const data = (await import('@/data/universities.json')).default as UniMap;
+      setLoadPhase(1);
+      const data = (await import("@/data/universities.json")).default as UniMap;
+      setLoadPhase(2);
       let enrolledMap: Record<string, number> = {};
       try {
         const { data: profs } = await supabase
-          .from('profiles')
-          .select('university')
-          .not('university', 'is', null)
+          .from("profiles")
+          .select("university")
+          .not("university", "is", null)
           .limit(10000);
         (profs || []).forEach((p: any) => {
           if (p.university) enrolledMap[p.university] = (enrolledMap[p.university] || 0) + 1;
@@ -268,10 +299,12 @@ const AdminUniversityMap: React.FC = () => {
       } catch {}
       if (!mounted) return;
       setEnrolledByUniv(enrolledMap);
+      setLoadPhase(3);
 
       const features: any[] = [];
       const flat: Univ[] = [];
-      let total = 0, c = 0;
+      let total = 0,
+        c = 0;
       Object.entries(data).forEach(([state, list]) => {
         const center = STATE_COORDS[state];
         const radius = STATE_RADIUS[state] || 1.2;
@@ -280,7 +313,6 @@ const AdminUniversityMap: React.FC = () => {
           const real = tier1Coord(name);
           let lng: number, lat: number;
           if (real) {
-            // Tiny deterministic jitter to separate co-located campuses
             const j = (seeded(c * 7 + 3) - 0.5) * 0.02;
             const k = (seeded(c * 11 + 5) - 0.5) * 0.02;
             lng = real.lng + j;
@@ -293,20 +325,22 @@ const AdminUniversityMap: React.FC = () => {
             lng = center.lng + Math.cos(angle) * dist;
             lat = center.lat + Math.sin(angle) * dist * 0.85;
           }
-          c++; total++;
+          c++;
+          total++;
           const abbr = extractAbbr(name);
           const enrolled = (abbr && enrolledMap[abbr]) || enrolledMap[name] || 0;
           flat.push({ name, state, lng, lat, enrolled, abbr });
           features.push({
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: [lng, lat] },
-            properties: { name, state, enrolled, abbr: abbr || '', tier1: isTier1(name) ? 1 : 0 },
+            type: "Feature",
+            geometry: { type: "Point", coordinates: [lng, lat] },
+            properties: { name, state, enrolled, abbr: abbr || "", tier1: isTier1(name) ? 1 : 0 },
           });
         });
       });
       allUniv.current = flat;
       featuresRef.current = features;
       setStats({ states: Object.keys(data).length, universities: total });
+      setLoadPhase(4);
 
       if (!containerRef.current) return;
 
@@ -314,170 +348,201 @@ const AdminUniversityMap: React.FC = () => {
         container: containerRef.current,
         style: {
           version: 8,
+          glyphs: "https://fonts.openmaptiles.org/{fontstack}/{range}.pbf",
           sources: {
-            'carto-dark': {
-              type: 'raster',
+            "carto-dark": {
+              type: "raster",
               tiles: [
-                'https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png',
-                'https://b.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png',
-                'https://c.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png',
-                'https://d.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png',
+                "https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png",
+                "https://b.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png",
+                "https://c.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png",
               ],
               tileSize: 256,
-              attribution: '© OSM © CARTO',
-            },
-            'carto-labels': {
-              type: 'raster',
-              tiles: [
-                'https://a.basemaps.cartocdn.com/rastertiles/dark_only_labels/{z}/{x}/{y}@2x.png',
-                'https://b.basemaps.cartocdn.com/rastertiles/dark_only_labels/{z}/{x}/{y}@2x.png',
-                'https://c.basemaps.cartocdn.com/rastertiles/dark_only_labels/{z}/{x}/{y}@2x.png',
-              ],
-              tileSize: 256,
+              attribution: "© OSM © CARTO",
             },
           },
           layers: [
-            { id: 'bg', type: 'background', paint: { 'background-color': '#080c12' } },
-            { id: 'carto-dark', type: 'raster', source: 'carto-dark', paint: { 'raster-opacity': 0.9, 'raster-saturation': -1, 'raster-contrast': 0.25, 'raster-brightness-min': 0.05, 'raster-brightness-max': 1 } },
-            { id: 'carto-labels', type: 'raster', source: 'carto-labels', paint: { 'raster-opacity': 0.95, 'raster-contrast': 0.4, 'raster-brightness-min': 0.6, 'raster-brightness-max': 1, 'raster-saturation': -1 } },
+            { id: "bg", type: "background", paint: { "background-color": "#030508" } },
+            {
+              id: "carto-dark",
+              type: "raster",
+              source: "carto-dark",
+              paint: {
+                "raster-opacity": 0.85,
+                "raster-saturation": -1,
+                "raster-contrast": 0.3,
+                "raster-brightness-min": 0.02,
+                "raster-brightness-max": 0.85,
+                "raster-hue-rotate": 200,
+              },
+            },
           ],
         },
         center: [82.5, 22.5],
         zoom: 4.2,
+        pitch: 45,
+        bearing: -10,
         minZoom: 2,
         maxZoom: 16,
         attributionControl: false,
-        pitch: 0,
       });
       mapRef.current = map;
 
-      map.addControl(new maplibregl.NavigationControl({ visualizePitch: false }), 'bottom-right');
+      map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "bottom-right");
       map.addControl(new maplibregl.AttributionControl({ compact: true }));
 
-      // Build diamond SVG marker (amber for normal, cyan for selected)
-      const buildDiamond = (size = 64, color = '#f5c518', glow = false) => {
-        const filter = glow ? `<filter id="g"><feGaussianBlur stdDeviation="2"/></filter>` : '';
-        const halo = glow ? `<rect x="-13" y="-13" width="26" height="26" fill="none" stroke="${color}" stroke-width="1" opacity="0.55" filter="url(#g)"/>` : '';
+      // Holographic hexagon marker
+      const buildHex = (size = 80, color = "#00ffe7", selected = false) => {
+        const outerR = selected ? 24 : 14;
+        const innerR = selected ? 10 : 5;
+        const ringR = selected ? 32 : 20;
+        const pulseR = selected ? 40 : 0;
+        const hex = (r: number, cx = 0, cy = 0) => {
+          const pts = Array.from({ length: 6 }, (_, i) => {
+            const a = (Math.PI / 180) * (60 * i - 30);
+            return `${cx + r * Math.cos(a)},${cy + r * Math.sin(a)}`;
+          }).join(" ");
+          return pts;
+        };
+
+        const glowId = `g${Math.random().toString(36).slice(2, 6)}`;
         const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}">
-          <defs>${filter}</defs>
-          <g transform="translate(32 32) rotate(45)">
-            ${halo}
-            <rect x="-9" y="-9" width="18" height="18" fill="none" stroke="${color}" stroke-width="1.5"/>
-            <rect x="-4" y="-4" width="8" height="8" fill="${color}"/>
-          </g>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="-${size / 2} -${size / 2} ${size} ${size}" width="${size}" height="${size}">
+          <defs>
+            <filter id="${glowId}" x="-100%" y="-100%" width="300%" height="300%">
+              <feGaussianBlur stdDeviation="${selected ? 4 : 2.5}" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          ${pulseR > 0 ? `<circle cx="0" cy="0" r="${pulseR}" fill="none" stroke="${color}" stroke-width="1" opacity="0.3"/>` : ""}
+          <polygon points="${hex(ringR)}" fill="none" stroke="${color}" stroke-width="${selected ? 1.5 : 1}" opacity="${selected ? 0.6 : 0.35}" filter="url(#${glowId})"/>
+          <polygon points="${hex(outerR)}" fill="${color}18" stroke="${color}" stroke-width="${selected ? 2 : 1.5}" opacity="${selected ? 1 : 0.9}" filter="url(#${glowId})"/>
+          <polygon points="${hex(innerR)}" fill="${color}" opacity="${selected ? 1 : 0.95}" filter="url(#${glowId})"/>
+          ${selected ? `<circle cx="0" cy="0" r="3" fill="#fff" opacity="0.95"/>` : ""}
         </svg>`;
-        return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+        return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
       };
 
-      map.on('load', async () => {
+      map.on("load", async () => {
         if (!map) return;
 
-        // load marker images
-        const loadImg = (name: string, src: string, w = 64, h = 64) =>
+        const loadImg = (name: string, src: string, w = 80, h = 80) =>
           new Promise<void>((res) => {
             const img = new Image(w, h);
-            img.onload = () => { if (!map!.hasImage(name)) map!.addImage(name, img as any); res(); };
+            img.onload = () => {
+              if (!map!.hasImage(name)) map!.addImage(name, img as any);
+              res();
+            };
             img.onerror = () => res();
             img.src = src;
           });
-        await loadImg('amber-diamond', buildDiamond(64, '#f5c518'));
-        await loadImg('cyan-diamond', buildDiamond(96, '#00c8ff', true), 96, 96);
 
-        map.addSource('unis', {
-          type: 'geojson',
-          data: { type: 'FeatureCollection', features },
+        await Promise.all([
+          loadImg("hex-cyan", buildHex(80, "#00ffe7")),
+          loadImg("hex-selected", buildHex(100, "#ff6b35", true), 100, 100),
+          loadImg("hex-amber", buildHex(80, "#f5c518")),
+        ]);
+
+        map.addSource("unis", {
+          type: "geojson",
+          data: { type: "FeatureCollection", features },
           cluster: false,
         });
 
-        // Diamond markers
+        // Non-tier1 dim dots
         map.addLayer({
-          id: 'unis-pins', type: 'symbol', source: 'unis',
-          filter: ['==', ['get', 'tier1'], 1],
+          id: "unis-dots",
+          type: "circle",
+          source: "unis",
+          filter: ["==", ["get", "tier1"], 0],
+          paint: {
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 3, 1.5, 8, 3, 12, 5],
+            "circle-color": "#1a4a6b",
+            "circle-opacity": 0.5,
+          },
+        });
+
+        // Tier1 hex pins
+        map.addLayer({
+          id: "unis-pins",
+          type: "symbol",
+          source: "unis",
+          filter: ["==", ["get", "tier1"], 1],
           layout: {
-            'icon-image': ['case', ['==', ['get', 'selected'], 1], 'cyan-diamond', 'amber-diamond'],
-            'icon-size': ['interpolate', ['linear'], ['zoom'], 3, 0.3, 5, 0.45, 8, 0.6, 12, 0.85, 16, 1.1],
-            'icon-allow-overlap': true,
-            'icon-ignore-placement': true,
-            'text-field': ['coalesce', ['get', 'abbr'], ''],
-            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-            'text-size': ['interpolate', ['linear'], ['zoom'], 5, 0, 6, 9, 10, 11, 14, 13],
-            'text-offset': [0, 1.2],
-            'text-anchor': 'top',
-            'text-letter-spacing': 0.08,
-            'text-allow-overlap': false,
-            'text-optional': true,
+            "icon-image": [
+              "case",
+              ["==", ["get", "selected"], 1],
+              "hex-selected",
+              [">", ["get", "enrolled"], 0],
+              "hex-amber",
+              "hex-cyan",
+            ],
+            "icon-size": ["interpolate", ["linear"], ["zoom"], 3, 0.28, 5, 0.42, 8, 0.58, 12, 0.78, 16, 1.0],
+            "icon-allow-overlap": true,
+            "icon-ignore-placement": true,
+            "text-field": ["coalesce", ["get", "abbr"], ""],
+            "text-font": ["Open Sans Bold", "Arial Unicode MS Bold"],
+            "text-size": ["interpolate", ["linear"], ["zoom"], 5, 0, 6.5, 8, 10, 10, 14, 12],
+            "text-offset": [0, 1.4],
+            "text-anchor": "top",
+            "text-letter-spacing": 0.12,
+            "text-allow-overlap": false,
+            "text-optional": true,
           },
           paint: {
-            'icon-opacity': ['case', ['>', ['get', 'enrolled'], 0], 1, 0.75],
-            'text-color': ['case', ['==', ['get', 'selected'], 1], '#00c8ff', '#f5c518'],
-            'text-halo-color': '#080c12',
-            'text-halo-width': 1.5,
+            "icon-opacity": 1,
+            "text-color": ["case", ["==", ["get", "selected"], 1], "#ff6b35", "#00ffe7"],
+            "text-halo-color": "#000814",
+            "text-halo-width": 1.5,
           },
         });
 
-        const setPointer = () => (map!.getCanvas().style.cursor = 'crosshair');
-        const resetPointer = () => (map!.getCanvas().style.cursor = '');
-        map.on('mouseenter', 'unis-pins', () => {
-          setPointer();
+        // Hover glow popup
+        const hoverPopup = new maplibregl.Popup({
+          closeButton: false,
+          closeOnClick: false,
+          offset: 20,
+          className: "holo-popup",
         });
-        map.on('mouseleave', 'unis-pins', () => {
-          resetPointer();
-        });
-
-        // Hover HUD card
-        const hoverPopup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 16, className: 'hud-popup' });
-        map.on('mouseenter', 'unis-pins', (e) => {
-          const f = e.features?.[0] as any; if (!f) return;
+        map.on("mouseenter", "unis-pins", (e) => {
+          map!.getCanvas().style.cursor = "crosshair";
+          const f = e.features?.[0] as any;
+          if (!f) return;
           const [lng, lat] = f.geometry.coordinates;
+          const enrolled = f.properties.enrolled || 0;
           const html = `
-            <div class="hud-card">
-              <div class="hud-card-bracket tl"></div><div class="hud-card-bracket tr"></div>
-              <div class="hud-card-bracket bl"></div><div class="hud-card-bracket br"></div>
-              <div class="hud-card-row">
-                <span class="hud-card-label">// TARGET</span>
-                <span class="hud-card-status">● STATUS: ACTIVE</span>
+            <div class="holo-card">
+              <div class="holo-card-header">
+                <span class="holo-tag">ACQUIRE</span>
+                <span class="holo-live">◉ LOCK</span>
               </div>
-              <div class="hud-card-name">${escapeHtml(f.properties.name)}</div>
-              <div class="hud-card-meta">${escapeHtml(f.properties.state)}${f.properties.abbr ? ' · ID ' + escapeHtml(f.properties.abbr) : ''}</div>
-              <div class="hud-card-coord">${fmtCoord(lat, lng)}</div>
-              <div class="hud-card-row">
-                <span class="hud-card-stat">ENROLL <b>${f.properties.enrolled || 0}</b></span>
-                <span class="hud-card-stat">SECTOR <b>IND-01</b></span>
+              <div class="holo-card-name">${escapeHtml(f.properties.name)}</div>
+              <div class="holo-card-sub">${escapeHtml(f.properties.state)}${f.properties.abbr ? ` · ${escapeHtml(f.properties.abbr)}` : ""}</div>
+              <div class="holo-card-coord">${fmtCoord(lat, lng)}</div>
+              <div class="holo-card-footer">
+                <span>STUDENTS <b>${enrolled}</b></span>
+                <span>SECTOR <b>EDU-01</b></span>
               </div>
             </div>`;
           hoverPopup.setLngLat([lng, lat]).setHTML(html).addTo(map!);
         });
-        map.on('mouseleave', 'unis-pins', () => hoverPopup.remove());
+        map.on("mouseleave", "unis-pins", () => {
+          map!.getCanvas().style.cursor = "";
+          hoverPopup.remove();
+        });
 
-        map.on('click', 'unis-pins', (e) => {
-          const f = e.features?.[0] as any; if (!f) return;
+        map.on("click", "unis-pins", (e) => {
+          const f = e.features?.[0] as any;
+          if (!f) return;
           const [lng, lat] = f.geometry.coordinates;
-          const html = `
-            <div class="hud-card hud-card-anchored">
-              <div class="hud-card-bracket tl"></div><div class="hud-card-bracket tr"></div>
-              <div class="hud-card-bracket bl"></div><div class="hud-card-bracket br"></div>
-              <div class="hud-card-row">
-                <span class="hud-card-label">// LOCKED</span>
-                <span class="hud-card-status">● STATUS: ACTIVE</span>
-              </div>
-              <div class="hud-card-name">${escapeHtml(f.properties.name)}</div>
-              <div class="hud-card-meta">${escapeHtml(f.properties.state)}${f.properties.abbr ? ' · ID ' + escapeHtml(f.properties.abbr) : ''}</div>
-              <div class="hud-card-coord">${fmtCoord(lat, lng)}</div>
-              <div class="hud-card-row">
-                <span class="hud-card-stat">ENROLL <b>${f.properties.enrolled || 0}</b></span>
-                <span class="hud-card-stat">SECTOR <b>IND-01</b></span>
-              </div>
-            </div>`;
           if (popupRef.current) popupRef.current.remove();
-          popupRef.current = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 18, className: 'hud-popup' })
-            .setLngLat([lng, lat]).setHTML(html).addTo(map!);
           openUni({
             name: f.properties.name,
             state: f.properties.state,
             enrolled: Number(f.properties.enrolled || 0),
             abbr: f.properties.abbr || null,
-            lng, lat,
+            lng,
+            lat,
           });
         });
 
@@ -488,37 +553,53 @@ const AdminUniversityMap: React.FC = () => {
     return () => {
       mounted = false;
       if (popupRef.current) popupRef.current.remove();
-      if (map) { try { (map as any).__pulseRaf?.(); } catch {} map.remove(); }
+      if (map) map.remove();
     };
   }, []);
 
-  const openUni = async (u: { name: string; state: string; enrolled: number; abbr: string | null; lng: number; lat: number }) => {
-    const map = mapRef.current; if (!map) return;
+  const toggleTilt = () => {
+    const map = mapRef.current;
+    if (!map) return;
+    const newTilt = !mapTilt;
+    setMapTilt(newTilt);
+    map.easeTo({ pitch: newTilt ? 60 : 0, bearing: newTilt ? -15 : 0, duration: 1200 });
+  };
+
+  const openUni = async (u: {
+    name: string;
+    state: string;
+    enrolled: number;
+    abbr: string | null;
+    lng: number;
+    lat: number;
+  }) => {
+    const map = mapRef.current;
+    if (!map) return;
     setSelected(u);
     setDetailOpen(true);
     setClubs([]);
     setStudents([]);
-    setDetailTab('clubs');
+    setDetailTab("clubs");
     setStudentCount(u.enrolled);
     setDetailLoading(true);
-    map.flyTo({ center: [u.lng, u.lat], zoom: Math.max(map.getZoom(), 9), duration: 900 });
+    map.flyTo({ center: [u.lng, u.lat], zoom: Math.max(map.getZoom(), 9), pitch: 55, bearing: -12, duration: 1200 });
 
     const candidates = [u.abbr, u.name].filter(Boolean) as string[];
     try {
       const { count: sCount } = await supabase
-        .from('profiles')
-        .select('user_id', { count: 'exact', head: true })
-        .in('university', candidates);
+        .from("profiles")
+        .select("user_id", { count: "exact", head: true })
+        .in("university", candidates);
       const { data: clubRows } = await supabase
-        .from('clubs_profiles')
-        .select('id, club_name, category, member_count, logo_url')
-        .in('university', candidates)
-        .order('member_count', { ascending: false })
+        .from("clubs_profiles")
+        .select("id, club_name, category, member_count, logo_url")
+        .in("university", candidates)
+        .order("member_count", { ascending: false })
         .limit(50);
       setStudentCount(sCount || 0);
       setClubs((clubRows as ClubLite[]) || []);
     } catch (e) {
-      console.error('Uni detail fetch failed', e);
+      console.error(e);
     } finally {
       setDetailLoading(false);
     }
@@ -529,23 +610,29 @@ const AdminUniversityMap: React.FC = () => {
     try {
       const candidates = [u.abbr, u.name].filter(Boolean) as string[];
       const { data } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, username, avatar_url, major, university')
-        .in('university', candidates)
-        .eq('user_type', 'student')
+        .from("profiles")
+        .select("user_id, full_name, username, avatar_url, major, university")
+        .in("university", candidates)
+        .eq("user_type", "student")
         .limit(200);
       setStudents((data as any[]) || []);
     } catch (e) {
-      console.error('Students fetch failed', e);
+      console.error(e);
     } finally {
       setStudentsLoading(false);
     }
   };
 
   const toggleFullscreen = async () => {
-    const el = wrapperRef.current; if (!el) return;
-    if (!document.fullscreenElement) { await el.requestFullscreen?.(); setFullscreen(true); }
-    else { await document.exitFullscreen?.(); setFullscreen(false); }
+    const el = wrapperRef.current;
+    if (!el) return;
+    if (!document.fullscreenElement) {
+      await el.requestFullscreen?.();
+      setFullscreen(true);
+    } else {
+      await document.exitFullscreen?.();
+      setFullscreen(false);
+    }
   };
 
   useEffect(() => {
@@ -553,45 +640,46 @@ const AdminUniversityMap: React.FC = () => {
       setFullscreen(!!document.fullscreenElement);
       setTimeout(() => mapRef.current?.resize(), 250);
     };
-    document.addEventListener('fullscreenchange', onFs);
-    return () => document.removeEventListener('fullscreenchange', onFs);
+    document.addEventListener("fullscreenchange", onFs);
+    return () => document.removeEventListener("fullscreenchange", onFs);
   }, []);
 
   useEffect(() => {
     const onResize = () => mapRef.current?.resize();
-    window.addEventListener('resize', onResize);
+    window.addEventListener("resize", onResize);
     const t = setTimeout(onResize, 300);
-    return () => { window.removeEventListener('resize', onResize); clearTimeout(t); };
+    return () => {
+      window.removeEventListener("resize", onResize);
+      clearTimeout(t);
+    };
   }, [intelOpen, detailOpen]);
 
-  // Update map layer filter when Tier-1 toggle changes
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     const apply = () => {
-      if (!map.getLayer('unis-pins')) return;
-      map.setFilter('unis-pins', tier1Only ? ['==', ['get', 'tier1'], 1] : null as any);
+      if (!map.getLayer("unis-pins")) return;
+      map.setFilter("unis-pins", tier1Only ? ["==", ["get", "tier1"], 1] : (null as any));
     };
     if (map.isStyleLoaded()) apply();
-    else map.once('idle', apply);
+    else map.once("idle", apply);
   }, [tier1Only]);
 
-  // Highlight selected university on the map (cyan diamond)
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     const apply = () => {
-      const src = map.getSource('unis') as any;
+      const src = map.getSource("unis") as any;
       if (!src || !featuresRef.current.length) return;
-      const selKey = selected ? `${selected.name}|${selected.state}` : '';
+      const selKey = selected ? `${selected.name}|${selected.state}` : "";
       featuresRef.current.forEach((f) => {
         const key = `${f.properties.name}|${f.properties.state}`;
         f.properties.selected = key === selKey ? 1 : 0;
       });
-      src.setData({ type: 'FeatureCollection', features: featuresRef.current });
+      src.setData({ type: "FeatureCollection", features: featuresRef.current });
     };
     if (map.isStyleLoaded()) apply();
-    else map.once('idle', apply);
+    else map.once("idle", apply);
   }, [selected]);
 
   const visibleCount = useMemo(() => {
@@ -600,474 +688,1153 @@ const AdminUniversityMap: React.FC = () => {
   }, [tier1Only, stats.universities]);
 
   const totalEnrolled = Object.values(enrolledByUniv).reduce((a, b) => a + b, 0);
-  const ts = now.toISOString().replace('T', ' ').slice(0, 19) + 'Z';
+  const ts = now.toISOString().replace("T", " ").slice(0, 19) + " UTC";
+
+  const loadMessages = [
+    "INITIALIZING NEURAL GRID...",
+    "CALIBRATING SENSORS...",
+    "LOADING GEODATA...",
+    "BUILDING HOLONET...",
+  ];
 
   return (
     <div
       ref={wrapperRef}
-      className="hud-root relative w-full overflow-hidden"
-      style={{ height: fullscreen ? '100vh' : 'calc(100vh - 64px)', background: '#080c12' }}
+      style={{
+        position: "relative",
+        width: "100%",
+        overflow: "hidden",
+        height: fullscreen ? "100vh" : "calc(100vh - 64px)",
+        background: "#030508",
+        fontFamily: "'Space Mono', ui-monospace, monospace",
+      }}
     >
-      {/* TOP BAR */}
-      <div className="hud-topbar absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-4 h-11">
-        <div className="flex items-center gap-3 min-w-0">
-          <Crosshair className="w-3.5 h-3.5 text-[#00c8ff]" />
-          <span className="hud-mono text-[11px] text-[#7fb6c8] truncate">
-            MAP_VIEW <span className="text-[#00c8ff]/50">&gt;</span> UNIVERSITIES <span className="text-[#00c8ff]/50">&gt;</span> <span className="text-[#c8d8e8]">GLOBAL</span>
-          </span>
-        </div>
-        <div className="hud-title hidden md:flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
-          <span className="text-[#f5c518] text-[13px] font-bold tracking-[0.18em]" style={{ fontFamily: 'Rajdhani, sans-serif' }}>UNIGRAMM</span>
-          <span className="text-[#00c8ff]/40">//</span>
-          <span className="text-[#c8d8e8] text-[13px] font-semibold tracking-[0.18em]" style={{ fontFamily: 'Rajdhani, sans-serif' }}>CAMPUS NETWORK INTELLIGENCE</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="hud-mono text-[10px] text-[#7fb6c8] hidden sm:inline">{ts}</span>
-          <span className="flex items-center gap-1.5">
-            <span className="hud-blink w-2 h-2 rounded-full bg-[#00ff88] shadow-[0_0_8px_#00ff88]" />
-            <span className="hud-mono text-[10px] text-[#00ff88]">SYSTEM ONLINE</span>
-          </span>
-        </div>
-        <div className="hud-scanline" />
+      {/* Atmospheric background layers */}
+      <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none" }}>
+        {/* Deep space gradient */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(ellipse at 30% 40%, rgba(0,40,80,0.6) 0%, transparent 60%), radial-gradient(ellipse at 70% 60%, rgba(0,20,60,0.4) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, rgba(0,10,30,0.8) 0%, #030508 80%)",
+          }}
+        />
+        {/* Vignette */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,2,10,0.9) 100%)",
+          }}
+        />
       </div>
 
-      {/* MAP */}
-      <div ref={containerRef} className="absolute inset-0" style={{ top: 44 }} />
-
-      {/* Overlays */}
-      <div className="pointer-events-none absolute inset-0 z-[5] hud-globe" style={{ top: 44 }} aria-hidden="true">
-        <svg viewBox="-200 -200 400 400" preserveAspectRatio="xMidYMid meet" className="w-full h-full opacity-60">
-          <defs>
-            <radialGradient id="globeFade" cx="50%" cy="50%" r="50%">
-              <stop offset="55%" stopColor="rgba(0,200,255,0.35)" />
-              <stop offset="100%" stopColor="rgba(0,200,255,0)" />
-            </radialGradient>
-            <mask id="globeMask"><circle cx="0" cy="0" r="180" fill="url(#globeFade)" /></mask>
-          </defs>
-          <g mask="url(#globeMask)" fill="none" stroke="#00c8ff" strokeWidth="0.5" opacity="0.55">
-            <circle cx="0" cy="0" r="180" />
-            {/* Latitude lines (ellipses) */}
-            {[-150, -120, -90, -60, -30, 0, 30, 60, 90, 120, 150].map((y) => (
-              <line key={'lat'+y} x1="-180" y1={y} x2="180" y2={y} />
-            ))}
-            {/* Longitude lines (vertical ellipses) */}
-            {[20, 50, 80, 110, 140, 170].map((rx) => (
-              <g key={'lng'+rx}>
-                <ellipse cx="0" cy="0" rx={rx} ry="180" />
-              </g>
-            ))}
-            {/* Equator emphasis */}
-            <line x1="-180" y1="0" x2="180" y2="0" stroke="#00c8ff" strokeWidth="0.8" opacity="0.7" />
-            <ellipse cx="0" cy="0" rx="180" ry="180" stroke="#00c8ff" strokeWidth="0.8" opacity="0.7" />
-          </g>
-        </svg>
-      </div>
-      <div className="pointer-events-none absolute inset-0 z-10 hud-grid" style={{ top: 44 }} />
-      <div className="pointer-events-none fixed inset-0 z-[60] hud-crt" />
-
-      {/* Corner brackets on map */}
-      <div className="pointer-events-none absolute z-20" style={{ top: 56, left: 12, right: 12, bottom: 12 }}>
-        <div className="absolute top-0 left-0 w-6 h-6 border-l-2 border-t-2 border-[#00c8ff]" />
-        <div className="absolute top-0 right-0 w-6 h-6 border-r-2 border-t-2 border-[#00c8ff]" />
-        <div className="absolute bottom-0 left-0 w-6 h-6 border-l-2 border-b-2 border-[#00c8ff]" />
-        <div className="absolute bottom-0 right-0 w-6 h-6 border-r-2 border-b-2 border-[#00c8ff]" />
-      </div>
-
-      {/* LEFT INTEL SIDEBAR */}
-      <aside
-        className={`hud-panel absolute left-0 z-20 flex flex-col transition-transform duration-300 ${intelOpen ? 'translate-x-0' : '-translate-x-full'}`}
-        style={{ top: 44, bottom: 0, width: 300 }}
+      {/* TOP NAVIGATION BAR */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 30,
+          height: 48,
+          background: "linear-gradient(180deg, rgba(0,255,231,0.06) 0%, rgba(0,0,0,0) 100%)",
+          borderBottom: "1px solid rgba(0,255,231,0.15)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "0 16px",
+          backdropFilter: "blur(20px)",
+        }}
       >
-        <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-[#00c8ff]/20">
-          <span className="hud-mono text-[10px] text-[#00c8ff] tracking-[0.2em]">// INTEL OVERVIEW</span>
-          <button onClick={() => setIntelOpen(false)} className="text-[#7fb6c8] hover:text-[#00c8ff]">
-            <ChevronLeft className="w-4 h-4" />
+        {/* Left: breadcrumb */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div
+              style={{ width: 6, height: 6, background: "#00ffe7", borderRadius: "50%", boxShadow: "0 0 8px #00ffe7" }}
+              className="pulse-dot"
+            />
+            <span style={{ fontSize: 9, color: "#00ffe7", letterSpacing: "0.25em", opacity: 0.7 }}>UNIGRAMM</span>
+          </div>
+          <span style={{ color: "rgba(0,255,231,0.3)", fontSize: 10 }}>›</span>
+          <span style={{ fontSize: 9, color: "rgba(0,255,231,0.5)", letterSpacing: "0.2em" }}>GEOINT</span>
+          <span style={{ color: "rgba(0,255,231,0.3)", fontSize: 10 }}>›</span>
+          <span style={{ fontSize: 9, color: "#fff", letterSpacing: "0.2em" }}>UNIVERSITY MESH</span>
+        </div>
+
+        {/* Center: title */}
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            transform: "translateX(-50%)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 1,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: "0.5em",
+              color: "#00ffe7",
+              textShadow: "0 0 20px rgba(0,255,231,0.8)",
+              fontFamily: "'Rajdhani', sans-serif",
+            }}
+          >
+            CAMPUS INTELLIGENCE NETWORK
+          </div>
+          <div style={{ fontSize: 8, color: "rgba(0,255,231,0.4)", letterSpacing: "0.3em" }}>
+            HOLOGRAPHIC GEODISPLAY v4.2
+          </div>
+        </div>
+
+        {/* Right: status */}
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          {/* Signal bars */}
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 16 }}>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div
+                key={i}
+                style={{
+                  width: 3,
+                  height: 4 + i * 2,
+                  background: i <= signalStrength ? "#00ffe7" : "rgba(0,255,231,0.15)",
+                  borderRadius: 1,
+                  boxShadow: i <= signalStrength ? "0 0 4px #00ffe7" : "none",
+                  transition: "all 0.3s",
+                }}
+              />
+            ))}
+          </div>
+          <span
+            style={{
+              fontSize: 9,
+              color: "rgba(0,255,231,0.5)",
+              letterSpacing: "0.15em",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            {ts}
+          </span>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "3px 10px",
+              border: "1px solid rgba(0,255,100,0.4)",
+              background: "rgba(0,255,100,0.05)",
+              borderRadius: 3,
+            }}
+          >
+            <div
+              style={{ width: 5, height: 5, borderRadius: "50%", background: "#00ff88", boxShadow: "0 0 6px #00ff88" }}
+              className="pulse-dot"
+            />
+            <span style={{ fontSize: 8, color: "#00ff88", letterSpacing: "0.2em" }}>SYS ONLINE</span>
+          </div>
+          <button
+            onClick={toggleFullscreen}
+            style={{
+              width: 32,
+              height: 32,
+              background: "rgba(0,255,231,0.06)",
+              border: "1px solid rgba(0,255,231,0.2)",
+              borderRadius: 4,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#00ffe7",
+              cursor: "pointer",
+            }}
+          >
+            {fullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+          </button>
+        </div>
+      </div>
+
+      {/* MAP CONTAINER */}
+      <div ref={containerRef} style={{ position: "absolute", top: 48, left: 0, right: 0, bottom: 0 }} />
+
+      {/* Holographic grid overlay */}
+      <div
+        style={{
+          position: "absolute",
+          top: 48,
+          inset: 0,
+          zIndex: 4,
+          pointerEvents: "none",
+          backgroundImage: `
+          linear-gradient(rgba(0,255,231,0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0,255,231,0.04) 1px, transparent 1px)
+        `,
+          backgroundSize: "48px 48px",
+          maskImage: "radial-gradient(ellipse at 50% 60%, rgba(0,0,0,0.7) 20%, transparent 80%)",
+        }}
+      />
+
+      {/* CRT scan-line */}
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 60,
+          pointerEvents: "none",
+          background:
+            "repeating-linear-gradient(to bottom, transparent 0px, transparent 2px, rgba(0,255,231,0.012) 2px, rgba(0,255,231,0.012) 3px)",
+        }}
+      />
+
+      {/* Corner HUD brackets */}
+      {[
+        { top: 56, left: 16 },
+        { top: 56, right: 16 },
+        { bottom: 16, left: 16 },
+        { bottom: 16, right: 16 },
+      ].map((pos, i) => (
+        <div key={i} style={{ position: "absolute", ...pos, width: 24, height: 24, zIndex: 20, pointerEvents: "none" }}>
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              borderTop: i < 2 ? "1.5px solid rgba(0,255,231,0.5)" : "none",
+              borderBottom: i >= 2 ? "1.5px solid rgba(0,255,231,0.5)" : "none",
+              borderLeft: i % 2 === 0 ? "1.5px solid rgba(0,255,231,0.5)" : "none",
+              borderRight: i % 2 === 1 ? "1.5px solid rgba(0,255,231,0.5)" : "none",
+            }}
+          />
+        </div>
+      ))}
+
+      {/* TILT TOGGLE BUTTON */}
+      <button
+        onClick={toggleTilt}
+        title="Toggle 3D pitch"
+        style={{
+          position: "absolute",
+          top: 64,
+          right: 56,
+          zIndex: 25,
+          width: 36,
+          height: 36,
+          background: mapTilt ? "rgba(0,255,231,0.15)" : "rgba(0,8,20,0.85)",
+          border: `1px solid ${mapTilt ? "rgba(0,255,231,0.7)" : "rgba(0,255,231,0.25)"}`,
+          borderRadius: 4,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: mapTilt ? "#00ffe7" : "rgba(0,255,231,0.5)",
+          cursor: "pointer",
+          boxShadow: mapTilt ? "0 0 12px rgba(0,255,231,0.3)" : "none",
+          transition: "all 0.3s",
+        }}
+      >
+        <Globe size={15} />
+      </button>
+
+      {/* LEFT INTEL PANEL */}
+      <aside
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 48,
+          bottom: 0,
+          width: 300,
+          zIndex: 20,
+          background: "linear-gradient(135deg, rgba(0,8,20,0.95) 0%, rgba(0,4,12,0.9) 100%)",
+          borderRight: "1px solid rgba(0,255,231,0.15)",
+          display: "flex",
+          flexDirection: "column",
+          transform: intelOpen ? "translateX(0)" : "translateX(-100%)",
+          transition: "transform 0.35s cubic-bezier(0.4,0,0.2,1)",
+          backdropFilter: "blur(24px)",
+        }}
+      >
+        {/* Panel header */}
+        <div
+          style={{
+            padding: "12px 16px",
+            borderBottom: "1px solid rgba(0,255,231,0.12)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "rgba(0,255,231,0.03)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Eye size={12} color="#00ffe7" />
+            <span style={{ fontSize: 9, color: "#00ffe7", letterSpacing: "0.3em" }}>INTEL OVERVIEW</span>
+          </div>
+          <button
+            onClick={() => setIntelOpen(false)}
+            style={{
+              background: "none",
+              border: "none",
+              color: "rgba(0,255,231,0.4)",
+              cursor: "pointer",
+              display: "flex",
+              padding: 2,
+            }}
+          >
+            <ChevronLeft size={14} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto hud-scroll">
+        <div style={{ flex: 1, overflowY: "auto", scrollbarWidth: "thin" }}>
           {/* Search */}
-          <div className="px-4 pt-3">
-            <div className="hud-input flex items-center gap-2 px-2.5 py-1.5">
-              <Search className="w-3.5 h-3.5 text-[#00c8ff]" />
+          <div style={{ padding: "12px 16px 0" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 12px",
+                background: "rgba(0,255,231,0.04)",
+                border: "1px solid rgba(0,255,231,0.2)",
+                borderRadius: 4,
+              }}
+            >
+              <Search size={12} color="#00ffe7" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="QUERY UNIVERSITY..."
-                className="bg-transparent outline-none text-[11px] text-[#c8d8e8] placeholder:text-[#7fb6c8]/50 flex-1 hud-mono uppercase tracking-wider"
+                style={{
+                  background: "none",
+                  border: "none",
+                  outline: "none",
+                  flex: 1,
+                  fontSize: 10,
+                  color: "#c8e8f0",
+                  letterSpacing: "0.15em",
+                  textTransform: "uppercase",
+                  fontFamily: "inherit",
+                }}
               />
               {search && (
-                <button onClick={() => setSearch('')} className="text-[#7fb6c8] hover:text-[#00c8ff]"><X className="w-3 h-3" /></button>
+                <button
+                  onClick={() => setSearch("")}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "rgba(0,255,231,0.4)",
+                    cursor: "pointer",
+                    padding: 0,
+                  }}
+                >
+                  <X size={12} />
+                </button>
               )}
             </div>
+
             {results.length > 0 && (
-              <div className="mt-2 max-h-56 overflow-y-auto hud-scroll border border-[#00c8ff]/20 bg-black/40">
+              <div
+                style={{
+                  marginTop: 6,
+                  maxHeight: 220,
+                  overflowY: "auto",
+                  border: "1px solid rgba(0,255,231,0.15)",
+                  background: "rgba(0,4,12,0.95)",
+                  borderRadius: 4,
+                }}
+              >
                 {results.map((u, i) => (
                   <button
                     key={i}
                     onClick={() => openUni(u)}
-                    className="w-full text-left px-2.5 py-1.5 border-b border-[#00c8ff]/10 last:border-0 hover:bg-[#00c8ff]/5 transition-colors"
+                    style={{
+                      width: "100%",
+                      textAlign: "left",
+                      padding: "8px 12px",
+                      borderBottom: "1px solid rgba(0,255,231,0.08)",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      display: "block",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(0,255,231,0.06)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
                   >
-                    <p className="hud-mono text-[9px] text-[#7fb6c8] tracking-widest uppercase">{u.state}</p>
-                    <p className="text-[11px] text-[#c8d8e8] leading-tight" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600 }}>{u.name}</p>
-                    {u.enrolled > 0 && <p className="hud-mono text-[9px] text-[#f5c518] mt-0.5">ENROLL · {u.enrolled}</p>}
+                    <p
+                      style={{
+                        fontSize: 8,
+                        color: "rgba(0,255,231,0.5)",
+                        letterSpacing: "0.2em",
+                        margin: 0,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {u.state}
+                    </p>
+                    <p
+                      style={{
+                        fontSize: 11,
+                        color: "#c8e8f0",
+                        margin: "2px 0 0",
+                        fontFamily: "'Rajdhani', sans-serif",
+                        fontWeight: 600,
+                      }}
+                    >
+                      {u.name}
+                    </p>
+                    {u.enrolled > 0 && (
+                      <p style={{ fontSize: 8, color: "#f5c518", margin: "2px 0 0", letterSpacing: "0.1em" }}>
+                        ENROLLED · {u.enrolled}
+                      </p>
+                    )}
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Filter */}
-          <div className="px-4 pt-3">
-            <p className="hud-mono text-[10px] text-[#7fb6c8] tracking-[0.2em] mb-1.5 flex items-center gap-1.5">
-              <Filter className="w-3 h-3 text-[#00c8ff]" /> // FILTER
-            </p>
-            <div className="flex items-center gap-2 p-2 bg-black/30 border border-[#00c8ff]/25" style={{ borderRadius: 3 }}>
-              <button
-                onClick={() => setTier1Only(true)}
-                className={`flex-1 hud-mono text-[10px] px-2 py-1.5 tracking-[0.15em] transition-colors ${tier1Only ? 'bg-[#f5c518]/15 text-[#f5c518] border border-[#f5c518]/60' : 'text-[#7fb6c8] border border-[#00c8ff]/20 hover:border-[#00c8ff]/50'}`}
-                style={{ borderRadius: 2 }}
-              >
-                TIER-1 ONLY
-              </button>
-              <button
-                onClick={() => setTier1Only(false)}
-                className={`flex-1 hud-mono text-[10px] px-2 py-1.5 tracking-[0.15em] transition-colors ${!tier1Only ? 'bg-[#00c8ff]/15 text-[#00c8ff] border border-[#00c8ff]/60' : 'text-[#7fb6c8] border border-[#00c8ff]/20 hover:border-[#00c8ff]/50'}`}
-                style={{ borderRadius: 2 }}
-              >
-                ALL UNIVS
-              </button>
+          {/* Filter toggle */}
+          <div style={{ padding: "12px 16px 0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+              <Filter size={10} color="rgba(0,255,231,0.5)" />
+              <span style={{ fontSize: 8, color: "rgba(0,255,231,0.5)", letterSpacing: "0.25em" }}>FILTER MODE</span>
             </div>
-            <p className="hud-mono text-[9px] text-[#7fb6c8] mt-1.5">
-              SHOWING <span className="text-[#f5c518]">{visibleCount.toLocaleString()}</span> / {stats.universities.toLocaleString()}
+            <div
+              style={{
+                display: "flex",
+                gap: 6,
+                padding: 6,
+                background: "rgba(0,0,0,0.3)",
+                border: "1px solid rgba(0,255,231,0.12)",
+                borderRadius: 4,
+              }}
+            >
+              {[
+                { v: true, label: "TIER-1" },
+                { v: false, label: "ALL" },
+              ].map(({ v, label }) => (
+                <button
+                  key={label}
+                  onClick={() => setTier1Only(v)}
+                  style={{
+                    flex: 1,
+                    padding: "6px 8px",
+                    border: "1px solid",
+                    borderColor:
+                      tier1Only === v ? (v ? "rgba(245,197,24,0.6)" : "rgba(0,255,231,0.6)") : "rgba(0,255,231,0.12)",
+                    background: tier1Only === v ? (v ? "rgba(245,197,24,0.1)" : "rgba(0,255,231,0.1)") : "transparent",
+                    color: tier1Only === v ? (v ? "#f5c518" : "#00ffe7") : "rgba(0,255,231,0.4)",
+                    fontSize: 9,
+                    letterSpacing: "0.2em",
+                    cursor: "pointer",
+                    borderRadius: 3,
+                    boxShadow:
+                      tier1Only === v ? `0 0 10px ${v ? "rgba(245,197,24,0.2)" : "rgba(0,255,231,0.2)"}` : "none",
+                    transition: "all 0.25s",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p style={{ fontSize: 8, color: "rgba(0,255,231,0.35)", margin: "6px 0 0", letterSpacing: "0.15em" }}>
+              NODES ACTIVE <span style={{ color: "#f5c518" }}>{visibleCount.toLocaleString()}</span> /{" "}
+              {stats.universities.toLocaleString()}
             </p>
           </div>
 
           {/* Stats */}
-          <div className="px-4 pt-4 flex flex-col gap-2">
-            <StatRow icon={<Database className="w-3 h-3" />} label="UNIVERSITIES PINNED" value={counter.toLocaleString()} />
-            <StatRow icon={<Layers className="w-3 h-3" />} label="REGIONS COVERED" value={String(stats.states)} />
-            <StatRow icon={<Users className="w-3 h-3" />} label="ACTIVE CAMPUSES" value={String(Object.keys(enrolledByUniv).length)} />
-            <StatRow icon={<Activity className="w-3 h-3" />} label="TOTAL ENROLLED" value={totalEnrolled.toLocaleString()} />
-            <StatRow icon={<Radio className="w-3 h-3" />} label="LAST SYNC" value={ts.slice(11)} small />
+          <div style={{ padding: "14px 16px 0", display: "flex", flexDirection: "column", gap: 6 }}>
+            {[
+              {
+                icon: <Database size={11} />,
+                label: "UNIVERSITIES MAPPED",
+                value: counter.toLocaleString(),
+                glow: true,
+              },
+              { icon: <Layers size={11} />, label: "REGIONS ONLINE", value: String(stats.states) },
+              {
+                icon: <Users size={11} />,
+                label: "ACTIVE CAMPUSES",
+                value: String(Object.keys(enrolledByUniv).length),
+              },
+              { icon: <Activity size={11} />, label: "TOTAL ENROLLED", value: totalEnrolled.toLocaleString() },
+              { icon: <Wifi size={11} />, label: "LAST SYNC", value: ts.slice(11) },
+            ].map(({ icon, label, value, glow }) => (
+              <div
+                key={label}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "8px 10px",
+                  background: "rgba(0,0,0,0.25)",
+                  borderLeft: "2px solid rgba(0,255,231,0.4)",
+                  borderTop: "1px solid rgba(0,255,231,0.08)",
+                  borderRight: "1px solid rgba(0,255,231,0.06)",
+                  borderBottom: "1px solid rgba(0,255,231,0.06)",
+                  borderRadius: "0 3px 3px 0",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ color: "rgba(0,255,231,0.6)" }}>{icon}</span>
+                  <span style={{ fontSize: 8, color: "rgba(0,255,231,0.45)", letterSpacing: "0.18em" }}>{label}</span>
+                </div>
+                <span
+                  style={{
+                    fontSize: glow ? 14 : 11,
+                    color: "#f5c518",
+                    letterSpacing: "0.05em",
+                    fontVariantNumeric: "tabular-nums",
+                    textShadow: glow ? "0 0 10px rgba(245,197,24,0.6)" : "none",
+                  }}
+                >
+                  {value}
+                </span>
+              </div>
+            ))}
           </div>
 
           {/* Legend */}
-          <div className="px-4 pt-5 pb-4">
-            <p className="hud-mono text-[10px] text-[#7fb6c8] tracking-[0.2em] mb-2">// LEGEND</p>
-            <div className="flex flex-col gap-1.5 text-[10px] text-[#c8d8e8] hud-mono">
-              <div className="flex items-center gap-2"><Diamond color="#f5c518" />UNIVERSITY · TARGET</div>
-              <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-[#00ff88] shadow-[0_0_6px_#00ff88]" />ACTIVE · ENROLLED</div>
+          <div style={{ padding: "16px 16px 0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+              <Zap size={10} color="rgba(0,255,231,0.5)" />
+              <span style={{ fontSize: 8, color: "rgba(0,255,231,0.5)", letterSpacing: "0.25em" }}>NODE LEGEND</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {[
+                { color: "#f5c518", label: "TIER-1 · ENROLLED", shape: "hex" },
+                { color: "#00ffe7", label: "TIER-1 · NO DATA", shape: "hex" },
+                { color: "#ff6b35", label: "SELECTED TARGET", shape: "hex" },
+                { color: "#1a4a6b", label: "GENERAL UNIVERSITY", shape: "dot" },
+              ].map(({ color, label, shape }) => (
+                <div
+                  key={label}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    fontSize: 9,
+                    color: "rgba(0,255,231,0.6)",
+                    letterSpacing: "0.1em",
+                  }}
+                >
+                  {shape === "hex" ? (
+                    <svg width="14" height="14" viewBox="-7 -7 14 14">
+                      <polygon
+                        points="5,0 2.5,4.33 -2.5,4.33 -5,0 -2.5,-4.33 2.5,-4.33"
+                        fill={color + "30"}
+                        stroke={color}
+                        strokeWidth="1.5"
+                      />
+                      <polygon points="2.5,0 1.25,2.17 -1.25,2.17 -2.5,0 -1.25,-2.17 1.25,-2.17" fill={color} />
+                    </svg>
+                  ) : (
+                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: color, opacity: 0.7 }} />
+                  )}
+                  {label}
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        <div className="px-4 py-2 border-t border-[#00c8ff]/20 flex items-center justify-between">
-          <span className="hud-mono text-[9px] text-[#7fb6c8]">UNIGRAMM · TACTICAL</span>
-          <span className="hud-mono text-[9px] text-[#00ff88] flex items-center gap-1">
-            <span className="hud-blink w-1 h-1 rounded-full bg-[#00ff88]" /> LIVE
+        {/* Panel footer */}
+        <div
+          style={{
+            padding: "8px 16px",
+            borderTop: "1px solid rgba(0,255,231,0.12)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "rgba(0,255,231,0.02)",
+          }}
+        >
+          <span style={{ fontSize: 8, color: "rgba(0,255,231,0.3)", letterSpacing: "0.15em" }}>
+            UNIGRAMM GEOINT · v4.2
           </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <div
+              style={{ width: 4, height: 4, borderRadius: "50%", background: "#00ff88", boxShadow: "0 0 4px #00ff88" }}
+              className="pulse-dot"
+            />
+            <span style={{ fontSize: 8, color: "#00ff88", letterSpacing: "0.15em" }}>LIVE</span>
+          </div>
         </div>
       </aside>
 
+      {/* Left panel toggle */}
       {!intelOpen && (
         <button
           onClick={() => setIntelOpen(true)}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 h-16 w-7 bg-[#080e1a]/90 border border-l-0 border-[#00c8ff]/40 flex items-center justify-center text-[#00c8ff] hover:bg-[#0a1828]"
-          style={{ borderRadius: '0 4px 4px 0' }}
-          title="Open intel"
+          style={{
+            position: "absolute",
+            left: 0,
+            top: "50%",
+            transform: "translateY(-50%)",
+            zIndex: 25,
+            height: 64,
+            width: 24,
+            background: "rgba(0,8,20,0.9)",
+            cursor: "pointer",
+            border: "1px solid rgba(0,255,231,0.3)",
+            borderLeft: "none",
+            borderRadius: "0 6px 6px 0",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "#00ffe7",
+          }}
         >
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight size={14} />
         </button>
       )}
 
-      {/* TOP-RIGHT: search + fullscreen quick actions */}
-      <div className="absolute z-30 flex items-center gap-2" style={{ top: 56, right: 28 }}>
-        <button
-          onClick={toggleFullscreen}
-          title={fullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-          className="w-9 h-9 bg-[#080e1a]/85 border border-[#00c8ff]/30 hover:border-[#00c8ff]/70 text-[#00c8ff] flex items-center justify-center"
-          style={{ borderRadius: 4 }}
-        >
-          {fullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-        </button>
-      </div>
-
       {/* RIGHT DETAIL PANEL */}
       <aside
-        className={`hud-panel absolute right-0 z-20 flex flex-col transition-transform duration-300 ${detailOpen && selected ? 'translate-x-0' : 'translate-x-full'}`}
-        style={{ top: 44, bottom: 0, width: 340 }}
+        style={{
+          position: "absolute",
+          right: 0,
+          top: 48,
+          bottom: 0,
+          width: 340,
+          zIndex: 20,
+          background: "linear-gradient(225deg, rgba(0,8,20,0.97) 0%, rgba(0,4,12,0.92) 100%)",
+          borderLeft: "1px solid rgba(0,255,231,0.15)",
+          display: "flex",
+          flexDirection: "column",
+          transform: detailOpen && selected ? "translateX(0)" : "translateX(100%)",
+          transition: "transform 0.35s cubic-bezier(0.4,0,0.2,1)",
+          backdropFilter: "blur(24px)",
+        }}
       >
         {selected && (
           <>
-            <div className="px-4 pt-3 pb-2 flex items-center justify-between border-b border-[#00c8ff]/20">
-              <div className="flex items-center gap-2">
-                <button onClick={() => setDetailOpen(false)} className="text-[#7fb6c8] hover:text-[#00c8ff]">
-                  <ArrowLeft className="w-4 h-4" />
+            <div
+              style={{
+                padding: "12px 16px",
+                borderBottom: "1px solid rgba(0,255,231,0.12)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "rgba(0,255,231,0.03)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  onClick={() => setDetailOpen(false)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "rgba(0,255,231,0.5)",
+                    cursor: "pointer",
+                    padding: 2,
+                  }}
+                >
+                  <ArrowLeft size={14} />
                 </button>
-                <span className="hud-mono text-[10px] text-[#00c8ff] tracking-[0.2em]">// CAMPUS DOSSIER</span>
+                <Shield size={11} color="#00ffe7" />
+                <span style={{ fontSize: 9, color: "#00ffe7", letterSpacing: "0.3em" }}>CAMPUS DOSSIER</span>
               </div>
-              <span className="hud-blink w-1.5 h-1.5 rounded-full bg-[#00ff88]" />
+              <div
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: "50%",
+                  background: "#00ff88",
+                  boxShadow: "0 0 6px #00ff88",
+                }}
+                className="pulse-dot"
+              />
             </div>
 
-            <div className="flex-1 overflow-y-auto hud-scroll">
-              <div className="px-5 pt-4 pb-3 border-b border-[#00c8ff]/15">
-                <p className="hud-mono text-[9px] text-[#7fb6c8] tracking-widest uppercase mb-1">{selected.state}</p>
-                <h2 className="text-[#f5c518] leading-tight text-base" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, textShadow: '0 0 8px rgba(245,197,24,0.4)' }}>
+            <div style={{ flex: 1, overflowY: "auto", scrollbarWidth: "thin" }}>
+              {/* University identity block */}
+              <div style={{ padding: "16px 20px", borderBottom: "1px solid rgba(0,255,231,0.1)" }}>
+                <p
+                  style={{
+                    fontSize: 8,
+                    color: "rgba(0,255,231,0.4)",
+                    letterSpacing: "0.3em",
+                    margin: "0 0 4px",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {selected.state}
+                </p>
+                <h2
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: "#f5c518",
+                    margin: "0 0 4px",
+                    lineHeight: 1.2,
+                    textShadow: "0 0 15px rgba(245,197,24,0.5)",
+                    fontFamily: "'Rajdhani', sans-serif",
+                  }}
+                >
                   {selected.name}
                 </h2>
                 {selected.abbr && (
-                  <p className="hud-mono text-[10px] text-[#00c8ff]/80 mt-1">ID · {selected.abbr}</p>
+                  <p style={{ fontSize: 9, color: "#00ffe7", margin: "4px 0 0", letterSpacing: "0.2em", opacity: 0.8 }}>
+                    CALLSIGN · {selected.abbr}
+                  </p>
                 )}
-                <p className="hud-mono text-[10px] text-[#7fb6c8] mt-1">{fmtCoord(selected.lat, selected.lng)}</p>
-                <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 border border-[#00ff88]/40 bg-[#00ff88]/5">
-                  <span className="hud-blink w-1.5 h-1.5 rounded-full bg-[#00ff88]" />
-                  <span className="hud-mono text-[9px] text-[#00ff88]">STATUS: ACTIVE</span>
-                </div>
+                <p style={{ fontSize: 9, color: "rgba(0,255,231,0.4)", margin: "6px 0 0", letterSpacing: "0.12em" }}>
+                  {fmtCoord(selected.lat, selected.lng)}
+                </p>
 
-                <div className="grid grid-cols-2 gap-2 mt-4">
-                  <button
-                    onClick={() => {
-                      setDetailTab('students');
-                      if (selected && students.length === 0 && !studentsLoading) loadStudents(selected);
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    marginTop: 10,
+                    padding: "4px 8px",
+                    border: "1px solid rgba(0,255,100,0.35)",
+                    background: "rgba(0,255,100,0.05)",
+                    borderRadius: 3,
+                    width: "fit-content",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: "50%",
+                      background: "#00ff88",
+                      boxShadow: "0 0 5px #00ff88",
                     }}
-                    className="text-left"
-                  >
-                    <DataTile label="STUDENTS" value={String(studentCount)} active={detailTab === 'students'} />
-                  </button>
-                  <button
-                    onClick={() => setDetailTab('clubs')}
-                    className="text-left"
-                  >
-                    <DataTile label="CLUBS" value={String(clubs.length)} active={detailTab === 'clubs'} />
-                  </button>
+                    className="pulse-dot"
+                  />
+                  <span style={{ fontSize: 8, color: "#00ff88", letterSpacing: "0.2em" }}>STATUS: ACTIVE</span>
                 </div>
-              </div>
 
-              {detailTab === 'clubs' && (
-              <div className="px-5 pt-3 pb-2">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="hud-mono text-[10px] text-[#7fb6c8] tracking-[0.2em]">// REGISTERED CLUBS</p>
-                  {detailLoading && <Loader2 className="w-3 h-3 animate-spin text-[#00c8ff]" />}
-                </div>
-                {!detailLoading && clubs.length === 0 && (
-                  <div className="text-center py-6 px-3 border border-dashed border-[#00c8ff]/20">
-                    <p className="hud-mono text-[10px] text-[#7fb6c8]">NO CLUBS · NO SIGNAL</p>
-                  </div>
-                )}
-                <div className="flex flex-col gap-1.5">
-                  {clubs.map((c) => (
-                    <div key={c.id} className="flex items-center gap-2.5 p-2 bg-black/30 border border-[#00c8ff]/15 hover:border-[#00c8ff]/40 transition-colors" style={{ borderRadius: 3 }}>
-                      <div className="w-8 h-8 bg-[#0a1828] border border-[#00c8ff]/30 flex items-center justify-center overflow-hidden shrink-0" style={{ borderRadius: 2 }}>
-                        {c.logo_url ? (
-                          <img src={c.logo_url} alt="" className="w-full h-full object-cover" onError={(e) => ((e.target as HTMLImageElement).src = '/default-avatar.png')} />
-                        ) : (
-                          <Building2 className="w-4 h-4 text-[#00c8ff]" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[12px] text-[#c8d8e8] truncate" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600 }}>{c.club_name}</p>
-                        <p className="hud-mono text-[9px] text-[#7fb6c8] truncate uppercase">
-                          {c.category || 'GENERAL'} · {c.member_count || 0} MBR
-                        </p>
-                      </div>
-                    </div>
+                {/* Data tiles */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
+                  {[
+                    { label: "STUDENTS", value: String(studentCount), tab: "students" as const },
+                    { label: "CLUBS", value: String(clubs.length), tab: "clubs" as const },
+                  ].map(({ label, value, tab }) => (
+                    <button
+                      key={tab}
+                      onClick={() => {
+                        setDetailTab(tab);
+                        if (tab === "students" && selected && students.length === 0 && !studentsLoading)
+                          loadStudents(selected);
+                      }}
+                      style={{
+                        padding: "10px 12px",
+                        textAlign: "left",
+                        cursor: "pointer",
+                        background: detailTab === tab ? "rgba(245,197,24,0.08)" : "rgba(0,255,231,0.03)",
+                        border: `1px solid ${detailTab === tab ? "rgba(245,197,24,0.5)" : "rgba(0,255,231,0.15)"}`,
+                        borderRadius: 4,
+                        transition: "all 0.2s",
+                        boxShadow: detailTab === tab ? "0 0 12px rgba(245,197,24,0.15)" : "none",
+                        fontFamily: "inherit",
+                      }}
+                    >
+                      <p style={{ fontSize: 8, color: "rgba(0,255,231,0.5)", letterSpacing: "0.2em", margin: 0 }}>
+                        {label}
+                      </p>
+                      <p
+                        style={{
+                          fontSize: 22,
+                          color: "#f5c518",
+                          margin: "4px 0 0",
+                          textShadow: "0 0 8px rgba(245,197,24,0.5)",
+                        }}
+                      >
+                        {value}
+                      </p>
+                    </button>
                   ))}
                 </div>
               </div>
+
+              {/* Tabs: Clubs */}
+              {detailTab === "clubs" && (
+                <div style={{ padding: "12px 16px" }}>
+                  <div
+                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <Building2 size={10} color="rgba(0,255,231,0.5)" />
+                      <span style={{ fontSize: 8, color: "rgba(0,255,231,0.5)", letterSpacing: "0.25em" }}>
+                        REGISTERED CLUBS
+                      </span>
+                    </div>
+                    {detailLoading && <Loader2 size={12} color="#00ffe7" className="spin" />}
+                  </div>
+                  {!detailLoading && clubs.length === 0 && (
+                    <div
+                      style={{
+                        textAlign: "center",
+                        padding: "24px",
+                        border: "1px dashed rgba(0,255,231,0.15)",
+                        borderRadius: 4,
+                      }}
+                    >
+                      <p style={{ fontSize: 9, color: "rgba(0,255,231,0.35)", letterSpacing: "0.15em", margin: 0 }}>
+                        NO CLUBS · NO SIGNAL
+                      </p>
+                    </div>
+                  )}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {clubs.map((c) => (
+                      <div
+                        key={c.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          padding: "8px 10px",
+                          background: "rgba(0,0,0,0.3)",
+                          border: "1px solid rgba(0,255,231,0.1)",
+                          borderRadius: 4,
+                          transition: "border-color 0.2s",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(0,255,231,0.35)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.borderColor = "rgba(0,255,231,0.1)")}
+                      >
+                        <div
+                          style={{
+                            width: 32,
+                            height: 32,
+                            background: "rgba(0,255,231,0.06)",
+                            border: "1px solid rgba(0,255,231,0.2)",
+                            borderRadius: 3,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            overflow: "hidden",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {c.logo_url ? (
+                            <img
+                              src={c.logo_url}
+                              alt=""
+                              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            />
+                          ) : (
+                            <Building2 size={14} color="#00ffe7" />
+                          )}
+                        </div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <p
+                            style={{
+                              fontSize: 12,
+                              color: "#c8e8f0",
+                              margin: 0,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              fontFamily: "'Rajdhani', sans-serif",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {c.club_name}
+                          </p>
+                          <p
+                            style={{
+                              fontSize: 8,
+                              color: "rgba(0,255,231,0.4)",
+                              margin: "2px 0 0",
+                              letterSpacing: "0.1em",
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {c.category || "GENERAL"} · {c.member_count || 0} MBR
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
 
-              {detailTab === 'students' && (
-              <div className="px-5 pt-3 pb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="hud-mono text-[10px] text-[#7fb6c8] tracking-[0.2em]">// ENROLLED STUDENTS</p>
-                  {studentsLoading && <Loader2 className="w-3 h-3 animate-spin text-[#00c8ff]" />}
-                </div>
-                {!studentsLoading && students.length === 0 && (
-                  <div className="text-center py-6 px-3 border border-dashed border-[#00c8ff]/20">
-                    <p className="hud-mono text-[10px] text-[#7fb6c8]">NO STUDENTS · NO SIGNAL</p>
-                  </div>
-                )}
-                <div className="flex flex-col gap-1.5">
-                  {students.map((s) => (
-                    <div
-                      key={s.user_id}
-                      className="flex items-center gap-2.5 p-2 bg-black/30 border border-[#00c8ff]/15 hover:border-[#00c8ff]/40 transition-colors"
-                      style={{ borderRadius: 3 }}
-                    >
-                      <div className="w-9 h-9 bg-[#0a1828] border border-[#00c8ff]/30 flex items-center justify-center overflow-hidden shrink-0" style={{ borderRadius: 2 }}>
-                        <img
-                          src={s.avatar_url || '/default-avatar.png'}
-                          alt=""
-                          className="w-full h-full object-cover"
-                          onError={(e) => ((e.target as HTMLImageElement).src = '/default-avatar.png')}
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[12px] text-[#c8d8e8] truncate" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600 }}>
-                          {s.full_name || s.username || 'Unknown'}
-                        </p>
-                        <p className="hud-mono text-[9px] text-[#7fb6c8] truncate uppercase">
-                          {s.username ? '@' + s.username : '—'}{s.major ? ' · ' + s.major : ''}
-                        </p>
-                      </div>
+              {/* Tabs: Students */}
+              {detailTab === "students" && (
+                <div style={{ padding: "12px 16px" }}>
+                  <div
+                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <Users size={10} color="rgba(0,255,231,0.5)" />
+                      <span style={{ fontSize: 8, color: "rgba(0,255,231,0.5)", letterSpacing: "0.25em" }}>
+                        ENROLLED AGENTS
+                      </span>
                     </div>
-                  ))}
+                    {studentsLoading && <Loader2 size={12} color="#00ffe7" className="spin" />}
+                  </div>
+                  {!studentsLoading && students.length === 0 && (
+                    <div
+                      style={{
+                        textAlign: "center",
+                        padding: "24px",
+                        border: "1px dashed rgba(0,255,231,0.15)",
+                        borderRadius: 4,
+                      }}
+                    >
+                      <p style={{ fontSize: 9, color: "rgba(0,255,231,0.35)", letterSpacing: "0.15em", margin: 0 }}>
+                        NO STUDENTS · NO SIGNAL
+                      </p>
+                    </div>
+                  )}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {students.map((s) => (
+                      <div
+                        key={s.user_id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          padding: "8px 10px",
+                          background: "rgba(0,0,0,0.3)",
+                          border: "1px solid rgba(0,255,231,0.1)",
+                          borderRadius: 4,
+                          transition: "border-color 0.2s",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(0,255,231,0.35)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.borderColor = "rgba(0,255,231,0.1)")}
+                      >
+                        <div
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: 3,
+                            overflow: "hidden",
+                            flexShrink: 0,
+                            border: "1px solid rgba(0,255,231,0.2)",
+                          }}
+                        >
+                          <img
+                            src={s.avatar_url || "/default-avatar.png"}
+                            alt=""
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                            onError={(e) => ((e.target as HTMLImageElement).src = "/default-avatar.png")}
+                          />
+                        </div>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <p
+                            style={{
+                              fontSize: 12,
+                              color: "#c8e8f0",
+                              margin: 0,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                              fontFamily: "'Rajdhani', sans-serif",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {s.full_name || s.username || "Unknown"}
+                          </p>
+                          <p
+                            style={{
+                              fontSize: 8,
+                              color: "rgba(0,255,231,0.4)",
+                              margin: "2px 0 0",
+                              letterSpacing: "0.1em",
+                              textTransform: "uppercase",
+                            }}
+                          >
+                            {s.username ? "@" + s.username : "—"}
+                            {s.major ? " · " + s.major : ""}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
               )}
             </div>
           </>
         )}
       </aside>
 
-      {/* Loading */}
+      {/* LOADING OVERLAY */}
       {loading && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center" style={{ background: 'rgba(8,12,18,0.92)' }}>
-          <div className="flex items-center gap-2 hud-mono text-[#00c8ff] text-xs">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            ACQUIRING SIGNAL<span className="hud-cursor">_</span>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 50,
+            background: "rgba(3,5,8,0.96)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 24,
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          {/* Holographic circle */}
+          <div style={{ position: "relative", width: 120, height: 120 }}>
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                borderRadius: "50%",
+                border: "1px solid rgba(0,255,231,0.3)",
+                animation: "spin 3s linear infinite",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                inset: 12,
+                borderRadius: "50%",
+                border: "2px solid rgba(0,255,231,0.15)",
+                borderTopColor: "#00ffe7",
+                animation: "spin 1.5s linear infinite reverse",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                inset: 28,
+                borderRadius: "50%",
+                border: "1px solid rgba(0,255,231,0.4)",
+                animation: "spin 2s linear infinite",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                inset: "50%",
+                width: 12,
+                height: 12,
+                transform: "translate(-50%,-50%)",
+                background: "#00ffe7",
+                borderRadius: "50%",
+                boxShadow: "0 0 20px #00ffe7, 0 0 40px rgba(0,255,231,0.5)",
+              }}
+            />
+          </div>
+
+          <div style={{ textAlign: "center" }}>
+            <p style={{ fontSize: 9, color: "#00ffe7", letterSpacing: "0.4em", margin: "0 0 8px" }}>
+              {loadMessages[Math.min(loadPhase, loadMessages.length - 1)]}
+            </p>
+            {/* Progress bar */}
+            <div
+              style={{ width: 200, height: 2, background: "rgba(0,255,231,0.15)", borderRadius: 2, overflow: "hidden" }}
+            >
+              <div
+                style={{
+                  height: "100%",
+                  width: `${(loadPhase / 4) * 100}%`,
+                  background: "linear-gradient(90deg, #00ffe7, #00a8ff)",
+                  transition: "width 0.5s ease",
+                  boxShadow: "0 0 8px #00ffe7",
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: 3 }}>
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                style={{
+                  width: 4,
+                  height: 4,
+                  borderRadius: "50%",
+                  background: loadPhase > i ? "#00ffe7" : "rgba(0,255,231,0.2)",
+                  boxShadow: loadPhase > i ? "0 0 6px #00ffe7" : "none",
+                  transition: "all 0.3s",
+                }}
+              />
+            ))}
           </div>
         </div>
       )}
 
+      {/* Holographic popup styles */}
       <style>{`
-        .hud-root { font-family: 'Rajdhani', system-ui, sans-serif; color: #c8d8e8; }
-        .hud-mono { font-family: 'Share Tech Mono', ui-monospace, monospace; }
-        .hud-topbar {
-          background: rgba(8, 14, 26, 0.92);
-          border-bottom: 1px solid rgba(0, 200, 255, 0.25);
-          box-shadow: 0 0 20px rgba(0, 200, 255, 0.08);
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Rajdhani:wght@500;600;700&display=swap');
+
+        .maplibregl-popup.holo-popup .maplibregl-popup-content {
+          background: transparent !important; padding: 0 !important; box-shadow: none !important; border-radius: 0 !important;
+        }
+        .maplibregl-popup.holo-popup .maplibregl-popup-tip { display: none !important; }
+
+        .holo-card {
+          min-width: 230px;
+          background: linear-gradient(135deg, rgba(0,8,20,0.97) 0%, rgba(0,4,14,0.95) 100%);
+          border: 1px solid rgba(0,255,231,0.4);
+          box-shadow: 0 0 30px rgba(0,255,231,0.15), inset 0 0 20px rgba(0,255,231,0.02);
+          padding: 12px 14px;
+          font-family: 'Space Mono', monospace;
+          animation: holoIn 120ms ease-out both;
+          position: relative;
           overflow: hidden;
         }
-        .hud-scanline {
-          position: absolute; inset: 0; pointer-events: none;
-          background: linear-gradient(90deg, transparent 0%, rgba(0,200,255,0.18) 50%, transparent 100%);
-          width: 30%; animation: hudScan 6s linear infinite;
+        .holo-card::before {
+          content: '';
+          position: absolute;
+          top: 0; left: -100%; width: 50%; height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(0,255,231,0.04), transparent);
+          animation: shimmer 3s linear infinite;
         }
-        @keyframes hudScan { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+        @keyframes shimmer { to { left: 200%; } }
+        @keyframes holoIn {
+          0% { opacity: 0; transform: translateY(-4px) scale(0.98); }
+          60% { opacity: 0.8; }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .holo-card-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+        .holo-tag { font-size: 8px; color: rgba(0,255,231,0.6); letter-spacing: 0.25em; }
+        .holo-live { font-size: 8px; color: #ff6b35; letter-spacing: 0.15em; }
+        .holo-card-name { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; color: #f5c518; line-height: 1.2; margin: 4px 0 3px; text-shadow: 0 0 8px rgba(245,197,24,0.4); }
+        .holo-card-sub { font-size: 8px; color: rgba(0,255,231,0.45); letter-spacing: 0.12em; text-transform: uppercase; }
+        .holo-card-coord { font-size: 9px; color: rgba(0,255,231,0.7); margin: 6px 0; letter-spacing: 0.1em; }
+        .holo-card-footer { display: flex; justify-content: space-between; font-size: 8px; color: rgba(0,255,231,0.5); letter-spacing: 0.1em; margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(0,255,231,0.12); }
+        .holo-card-footer b { color: #f5c518; font-weight: 400; margin-left: 4px; }
 
-        .hud-panel {
-          background: rgba(8, 14, 26, 0.85);
-          border-right: 1px solid rgba(0, 200, 255, 0.25);
-          box-shadow: 0 0 20px rgba(0, 200, 255, 0.1);
-          backdrop-filter: blur(10px);
-        }
-        .hud-panel:last-of-type, .hud-panel + .hud-panel { border-right: none; border-left: 1px solid rgba(0, 200, 255, 0.25); }
+        .pulse-dot { animation: pulseDot 2s ease-in-out infinite; }
+        @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-        .hud-input {
-          background: rgba(0,0,0,0.4);
-          border: 1px solid rgba(0, 200, 255, 0.3);
-          border-radius: 3px;
-        }
-        .hud-input:focus-within { border-color: rgba(0, 200, 255, 0.7); box-shadow: 0 0 8px rgba(0,200,255,0.2); }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        .hud-grid {
-          background-image:
-            linear-gradient(rgba(0,200,255,0.05) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0,200,255,0.05) 1px, transparent 1px);
-          background-size: 40px 40px;
-          mask-image: radial-gradient(ellipse at center, rgba(0,0,0,0.85) 30%, transparent 95%);
+        .maplibregl-ctrl-group {
+          background: rgba(0,8,20,0.9) !important;
+          border: 1px solid rgba(0,255,231,0.3) !important;
+          border-radius: 4px !important;
+          backdrop-filter: blur(10px) !important;
         }
-        .hud-crt {
-          background: repeating-linear-gradient(
-            to bottom,
-            rgba(0, 200, 255, 0.02) 0px,
-            rgba(0, 200, 255, 0.02) 1px,
-            transparent 1px,
-            transparent 3px
-          );
+        .maplibregl-ctrl-group button { background: transparent !important; color: rgba(0,255,231,0.7) !important; }
+        .maplibregl-ctrl-group button span { filter: invert(1) hue-rotate(140deg) brightness(1.5) saturate(2); }
+        .maplibregl-ctrl-attrib {
+          background: rgba(0,8,20,0.75) !important;
+          color: rgba(0,255,231,0.35) !important;
+          font-size: 8px !important;
+          font-family: 'Space Mono', monospace !important;
+          border: 1px solid rgba(0,255,231,0.1) !important;
         }
-        .hud-blink { animation: hudBlink 1.4s steps(2) infinite; }
-        @keyframes hudBlink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0.25; } }
+        .maplibregl-ctrl-attrib a { color: rgba(0,255,231,0.5) !important; }
 
-        .hud-cursor { animation: hudCursor 1s steps(2) infinite; margin-left: 2px; }
-        @keyframes hudCursor { 50% { opacity: 0; } }
-
-        .hud-scroll::-webkit-scrollbar { width: 5px; }
-        .hud-scroll::-webkit-scrollbar-track { background: transparent; }
-        .hud-scroll::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.3); }
-        .hud-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,200,255,0.6); }
-
-        /* MapLibre overrides */
-        .maplibregl-popup.hud-popup .maplibregl-popup-content {
-          background: transparent !important; padding: 0 !important; box-shadow: none !important;
-        }
-        .maplibregl-popup.hud-popup .maplibregl-popup-tip { display: none !important; }
-        .hud-globe { mix-blend-mode: screen; }
-        .hud-card {
-          position: relative;
-          min-width: 220px;
-          background: rgba(8, 14, 26, 0.92);
-          border: 1px solid rgba(0, 200, 255, 0.45);
-          box-shadow: 0 0 20px rgba(0, 200, 255, 0.18);
-          padding: 10px 12px;
-          color: #c8d8e8;
-          border-radius: 3px;
-          animation: hudFlick 80ms steps(4) both;
-        }
-        @keyframes hudFlick {
-          0% { opacity: 0; transform: translateY(2px); }
-          25% { opacity: 0.3; }
-          50% { opacity: 0.85; }
-          75% { opacity: 0.45; }
-          100% { opacity: 1; }
-        }
-        .hud-card-bracket { position: absolute; width: 8px; height: 8px; border-color: #00c8ff; }
-        .hud-card-bracket.tl { top: -1px; left: -1px; border-top: 1px solid; border-left: 1px solid; }
-        .hud-card-bracket.tr { top: -1px; right: -1px; border-top: 1px solid; border-right: 1px solid; }
-        .hud-card-bracket.bl { bottom: -1px; left: -1px; border-bottom: 1px solid; border-left: 1px solid; }
-        .hud-card-bracket.br { bottom: -1px; right: -1px; border-bottom: 1px solid; border-right: 1px solid; }
-        .hud-card-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-        .hud-card-label { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: rgba(0,200,255,0.7); letter-spacing: 0.15em; }
-        .hud-card-status { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: #00ff88; letter-spacing: 0.1em; }
-        .hud-card-name { font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 14px; color: #f5c518; line-height: 1.15; margin-top: 4px; text-shadow: 0 0 6px rgba(245,197,24,0.4); }
-        .hud-card-meta { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: rgba(127,182,200,0.85); letter-spacing: 0.1em; margin-top: 2px; text-transform: uppercase; }
-        .hud-card-coord { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: #00c8ff; opacity: 0.85; margin-top: 6px; }
-        .hud-card-stat { font-family: 'Share Tech Mono', monospace; font-size: 9px; color: rgba(127,182,200,0.85); letter-spacing: 0.1em; margin-top: 6px; }
-        .hud-card-stat b { color: #f5c518; font-weight: 400; margin-left: 4px; }
-
-        .maplibregl-ctrl-attrib { background: rgba(8,14,26,0.6) !important; color: #7fb6c8 !important; font-size: 9px !important; font-family: 'Share Tech Mono', monospace !important; }
-        .maplibregl-ctrl-attrib a { color: #00c8ff !important; }
-        .maplibregl-ctrl-group { background: rgba(8,14,26,0.85) !important; border: 1px solid rgba(0,200,255,0.4) !important; border-radius: 3px !important; backdrop-filter: blur(8px); }
-        .maplibregl-ctrl-group button { background: transparent !important; }
-        .maplibregl-ctrl-group button span { filter: invert(1) hue-rotate(160deg) brightness(1.4); }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(0,255,231,0.2); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0,255,231,0.4); }
       `}</style>
     </div>
   );
 };
 
-const StatRow: React.FC<{ icon: React.ReactNode; label: string; value: string; small?: boolean }> = ({ icon, label, value, small }) => (
-  <div className="flex items-center justify-between gap-2 pl-2.5 pr-3 py-2 bg-black/25 border border-[#00c8ff]/15" style={{ borderLeft: '3px solid #f5c518', borderRadius: 2 }}>
-    <div className="flex items-center gap-2 min-w-0">
-      <span className="text-[#f5c518]">{icon}</span>
-      <span className="hud-mono text-[9px] tracking-[0.18em] text-[#7fb6c8] truncate">{label}</span>
-    </div>
-    <span
-      className={`hud-mono ${small ? 'text-[10px]' : 'text-[13px]'} text-[#f5c518]`}
-      style={{ textShadow: '0 0 8px rgba(245, 197, 24, 0.6)' }}
-    >
-      {value}
-    </span>
-  </div>
-);
-
-const DataTile: React.FC<{ label: string; value: string; active?: boolean }> = ({ label, value, active }) => (
-  <div
-    className={`px-2.5 py-2 bg-black/30 border transition-colors ${active ? 'border-[#f5c518]/70 shadow-[0_0_10px_rgba(245,197,24,0.25)]' : 'border-[#00c8ff]/25 hover:border-[#00c8ff]/60'}`}
-    style={{ borderRadius: 3 }}
-  >
-    <p className="hud-mono text-[9px] tracking-[0.2em] text-[#7fb6c8]">{label}</p>
-    <p className="hud-mono text-lg text-[#f5c518] mt-0.5" style={{ textShadow: '0 0 8px rgba(245,197,24,0.55)' }}>{value}</p>
-  </div>
-);
-
-const Diamond: React.FC<{ color: string }> = ({ color }) => (
-  <span className="inline-block w-2.5 h-2.5 rotate-45 border" style={{ borderColor: color, boxShadow: `0 0 6px ${color}` }} />
-);
-
 function escapeHtml(s: string) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+  return String(s).replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c] as string,
+  );
 }
 
 export default AdminUniversityMap;
