@@ -4,7 +4,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { STATE_COORDS, STATE_RADIUS } from '@/data/indianStateCoords';
 import {
   Loader2, Search, Maximize2, Minimize2, X, ChevronRight, ChevronLeft,
-  ArrowLeft, Users, Building2, Crosshair, Radio, Activity, Database, Layers,
+  ArrowLeft, Users, Building2, Crosshair, Radio, Activity, Database, Layers, Filter,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -26,6 +26,33 @@ function fmtCoord(lat: number, lng: number) {
   return `${Math.abs(lat).toFixed(3)}°${ns}  ${Math.abs(lng).toFixed(3)}°${ew}`;
 }
 
+// Whitelist of "Tier 1" / major private + flagship universities to highlight.
+// Matched as case-insensitive substrings against the university name.
+const TIER1_KEYWORDS: string[] = [
+  'shiv nadar', 'amity', 'jindal', 'o.p. jindal', 'op jindal',
+  'ashoka', 'krea', 'plaksha', 'flame',
+  'manipal', 'srm', 'vit', 'vellore institute', 'symbiosis',
+  'bits ', 'birla institute of technology and science',
+  'iit ', 'indian institute of technology',
+  'iim ', 'indian institute of management',
+  'iiit', 'indian institute of information technology',
+  'nit ', 'national institute of technology',
+  'iisc', 'indian institute of science',
+  'iiser', 'aiims',
+  'thapar', 'lpu', 'lovely professional', 'chandigarh university',
+  'christ university', 'xavier', 'xlri', 'mdi', 'iift', 'isb',
+  'snu', 'pes university', 'reva', 'nmims', 'mit-wpu', 'mit world peace',
+  'bennett', 'bml munjal', 'galgotias', 'sharda', 'ansal',
+  'jamia millia', 'jawaharlal nehru university', 'bhu', 'banaras hindu',
+  'delhi university', 'university of delhi', 'du ',
+  'icfai', 'great lakes', 'spjain', 's.p. jain', 'iim-',
+];
+
+function isTier1(name: string): boolean {
+  const n = name.toLowerCase();
+  return TIER1_KEYWORDS.some((k) => n.includes(k));
+}
+
 const AdminUniversityMap: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -44,6 +71,7 @@ const AdminUniversityMap: React.FC = () => {
   const [intelOpen, setIntelOpen] = useState(true);
   const [detailOpen, setDetailOpen] = useState(false);
   const [now, setNow] = useState(() => new Date());
+  const [tier1Only, setTier1Only] = useState(true);
 
   // animated counter for "uniques pinned"
   const [counter, setCounter] = useState(0);
@@ -73,13 +101,14 @@ const AdminUniversityMap: React.FC = () => {
     if (!q || q.length < 2) return [] as Univ[];
     const out: Univ[] = [];
     for (const u of allUniv.current) {
+      if (tier1Only && !isTier1(u.name)) continue;
       if (u.name.toLowerCase().includes(q) || u.state.toLowerCase().includes(q)) {
         out.push(u);
         if (out.length >= 12) break;
       }
     }
     return out;
-  }, [search]);
+  }, [search, tier1Only]);
 
   useEffect(() => {
     let mounted = true;
@@ -122,7 +151,7 @@ const AdminUniversityMap: React.FC = () => {
           features.push({
             type: 'Feature',
             geometry: { type: 'Point', coordinates: [lng, lat] },
-            properties: { name, state, enrolled, abbr: abbr || '' },
+            properties: { name, state, enrolled, abbr: abbr || '', tier1: isTier1(name) ? 1 : 0 },
           });
         });
       });
@@ -213,6 +242,7 @@ const AdminUniversityMap: React.FC = () => {
         // Diamond markers
         map.addLayer({
           id: 'unis-pins', type: 'symbol', source: 'unis',
+          filter: ['==', ['get', 'tier1'], 1],
           layout: {
             'icon-image': 'amber-diamond',
             'icon-size': ['interpolate', ['linear'], ['zoom'], 3, 0.3, 5, 0.45, 8, 0.6, 12, 0.85, 16, 1.1],
@@ -363,6 +393,23 @@ const AdminUniversityMap: React.FC = () => {
     return () => { window.removeEventListener('resize', onResize); clearTimeout(t); };
   }, [intelOpen, detailOpen]);
 
+  // Update map layer filter when Tier-1 toggle changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => {
+      if (!map.getLayer('unis-pins')) return;
+      map.setFilter('unis-pins', tier1Only ? ['==', ['get', 'tier1'], 1] : null as any);
+    };
+    if (map.isStyleLoaded()) apply();
+    else map.once('idle', apply);
+  }, [tier1Only]);
+
+  const visibleCount = useMemo(() => {
+    if (!tier1Only) return allUniv.current.length;
+    return allUniv.current.filter((u) => isTier1(u.name)).length;
+  }, [tier1Only, stats.universities]);
+
   const totalEnrolled = Object.values(enrolledByUniv).reduce((a, b) => a + b, 0);
   const ts = now.toISOString().replace('T', ' ').slice(0, 19) + 'Z';
 
@@ -479,6 +526,32 @@ const AdminUniversityMap: React.FC = () => {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Filter */}
+          <div className="px-4 pt-3">
+            <p className="hud-mono text-[10px] text-[#7fb6c8] tracking-[0.2em] mb-1.5 flex items-center gap-1.5">
+              <Filter className="w-3 h-3 text-[#00c8ff]" /> // FILTER
+            </p>
+            <div className="flex items-center gap-2 p-2 bg-black/30 border border-[#00c8ff]/25" style={{ borderRadius: 3 }}>
+              <button
+                onClick={() => setTier1Only(true)}
+                className={`flex-1 hud-mono text-[10px] px-2 py-1.5 tracking-[0.15em] transition-colors ${tier1Only ? 'bg-[#f5c518]/15 text-[#f5c518] border border-[#f5c518]/60' : 'text-[#7fb6c8] border border-[#00c8ff]/20 hover:border-[#00c8ff]/50'}`}
+                style={{ borderRadius: 2 }}
+              >
+                TIER-1 ONLY
+              </button>
+              <button
+                onClick={() => setTier1Only(false)}
+                className={`flex-1 hud-mono text-[10px] px-2 py-1.5 tracking-[0.15em] transition-colors ${!tier1Only ? 'bg-[#00c8ff]/15 text-[#00c8ff] border border-[#00c8ff]/60' : 'text-[#7fb6c8] border border-[#00c8ff]/20 hover:border-[#00c8ff]/50'}`}
+                style={{ borderRadius: 2 }}
+              >
+                ALL UNIVS
+              </button>
+            </div>
+            <p className="hud-mono text-[9px] text-[#7fb6c8] mt-1.5">
+              SHOWING <span className="text-[#f5c518]">{visibleCount.toLocaleString()}</span> / {stats.universities.toLocaleString()}
+            </p>
           </div>
 
           {/* Stats */}
