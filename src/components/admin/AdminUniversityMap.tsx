@@ -393,6 +393,23 @@ const AdminUniversityMap: React.FC = () => {
     return () => { window.removeEventListener('resize', onResize); clearTimeout(t); };
   }, [intelOpen, detailOpen]);
 
+  // Update map layer filter when Tier-1 toggle changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const apply = () => {
+      if (!map.getLayer('unis-pins')) return;
+      map.setFilter('unis-pins', tier1Only ? ['==', ['get', 'tier1'], 1] : null as any);
+    };
+    if (map.isStyleLoaded()) apply();
+    else map.once('idle', apply);
+  }, [tier1Only]);
+
+  const visibleCount = useMemo(() => {
+    if (!tier1Only) return allUniv.current.length;
+    return allUniv.current.filter((u) => isTier1(u.name)).length;
+  }, [tier1Only, stats.universities]);
+
   const totalEnrolled = Object.values(enrolledByUniv).reduce((a, b) => a + b, 0);
   const ts = now.toISOString().replace('T', ' ').slice(0, 19) + 'Z';
 
