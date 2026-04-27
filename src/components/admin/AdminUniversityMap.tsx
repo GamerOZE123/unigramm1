@@ -245,7 +245,7 @@ const AdminUniversityMap: React.FC = () => {
           id: 'unis-pins', type: 'symbol', source: 'unis',
           filter: ['==', ['get', 'tier1'], 1],
           layout: {
-            'icon-image': 'amber-diamond',
+            'icon-image': ['case', ['==', ['get', 'selected'], 1], 'cyan-diamond', 'amber-diamond'],
             'icon-size': ['interpolate', ['linear'], ['zoom'], 3, 0.3, 5, 0.45, 8, 0.6, 12, 0.85, 16, 1.1],
             'icon-allow-overlap': true,
             'icon-ignore-placement': true,
@@ -260,7 +260,7 @@ const AdminUniversityMap: React.FC = () => {
           },
           paint: {
             'icon-opacity': ['case', ['>', ['get', 'enrolled'], 0], 1, 0.75],
-            'text-color': '#f5c518',
+            'text-color': ['case', ['==', ['get', 'selected'], 1], '#00c8ff', '#f5c518'],
             'text-halo-color': '#080c12',
             'text-halo-width': 1.5,
           },
