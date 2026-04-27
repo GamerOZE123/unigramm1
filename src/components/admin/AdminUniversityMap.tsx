@@ -179,14 +179,6 @@ const AdminUniversityMap: React.FC = () => {
       const buildDiamond = (size = 64) => {
         const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}">
-          <defs>
-            <radialGradient id="g" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="#f5c518" stop-opacity="0.55"/>
-              <stop offset="60%" stop-color="#f5c518" stop-opacity="0.05"/>
-              <stop offset="100%" stop-color="#f5c518" stop-opacity="0"/>
-            </radialGradient>
-          </defs>
-          <circle cx="32" cy="32" r="28" fill="url(#g)"/>
           <g transform="translate(32 32) rotate(45)">
             <rect x="-9" y="-9" width="18" height="18" fill="none" stroke="#f5c518" stroke-width="1.5"/>
             <rect x="-4" y="-4" width="8" height="8" fill="#f5c518"/>
@@ -218,28 +210,6 @@ const AdminUniversityMap: React.FC = () => {
           cluster: true,
           clusterMaxZoom: 8,
           clusterRadius: 45,
-        });
-
-        // Pulsing glow halo behind every pin (animated via paint updates)
-        map.addLayer({
-          id: 'unis-pulse', type: 'circle', source: 'unis',
-          filter: ['!', ['has', 'point_count']],
-          paint: {
-            'circle-radius': 14,
-            'circle-color': '#f5c518',
-            'circle-opacity': 0.0,
-            'circle-blur': 0.9,
-          },
-        });
-        map.addLayer({
-          id: 'unis-glow', type: 'circle', source: 'unis',
-          filter: ['!', ['has', 'point_count']],
-          paint: {
-            'circle-radius': 9,
-            'circle-color': '#f5c518',
-            'circle-opacity': 0.18,
-            'circle-blur': 0.6,
-          },
         });
 
         // Cluster halo (cyan)
