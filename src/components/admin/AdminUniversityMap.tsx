@@ -53,6 +53,141 @@ function isTier1(name: string): boolean {
   return TIER1_KEYWORDS.some((k) => n.includes(k));
 }
 
+// Real lat/lng for major Tier-1 campuses. Matched as case-insensitive
+// substrings against the university name. First match wins, so order
+// from most specific to least specific.
+const TIER1_COORDS: Array<{ match: string; lat: number; lng: number }> = [
+  // Private flagships
+  { match: 'shiv nadar', lat: 28.5237, lng: 77.5740 },
+  { match: 'ashoka', lat: 28.9450, lng: 77.1015 },
+  { match: 'plaksha', lat: 30.6595, lng: 76.7406 },
+  { match: 'krea', lat: 13.6280, lng: 79.5680 },
+  { match: 'flame', lat: 18.5290, lng: 73.7270 },
+  { match: 'o.p. jindal', lat: 28.7980, lng: 76.6440 },
+  { match: 'op jindal', lat: 28.7980, lng: 76.6440 },
+  { match: 'jindal', lat: 28.7980, lng: 76.6440 },
+  { match: 'amity', lat: 28.5447, lng: 77.3320 },
+  { match: 'bennett', lat: 28.4503, lng: 77.5840 },
+  { match: 'bml munjal', lat: 28.3760, lng: 76.8970 },
+  { match: 'galgotias', lat: 28.4506, lng: 77.5856 },
+  { match: 'sharda', lat: 28.4730, lng: 77.4820 },
+  { match: 'manipal', lat: 13.3525, lng: 74.7869 },
+  { match: 'srm', lat: 12.8230, lng: 80.0444 },
+  { match: 'vellore institute', lat: 12.9692, lng: 79.1559 },
+  { match: 'vit', lat: 12.9692, lng: 79.1559 },
+  { match: 'symbiosis', lat: 18.4575, lng: 73.8500 },
+  { match: 'thapar', lat: 30.3540, lng: 76.3625 },
+  { match: 'lovely professional', lat: 31.2553, lng: 75.7050 },
+  { match: 'lpu', lat: 31.2553, lng: 75.7050 },
+  { match: 'chandigarh university', lat: 30.7700, lng: 76.5760 },
+  { match: 'christ university', lat: 12.9344, lng: 77.6062 },
+  { match: 'nmims', lat: 19.1075, lng: 72.8370 },
+  { match: 'pes university', lat: 12.9352, lng: 77.5354 },
+  { match: 'reva', lat: 13.1180, lng: 77.6630 },
+  { match: 'mit-wpu', lat: 18.5089, lng: 73.8128 },
+  { match: 'mit world peace', lat: 18.5089, lng: 73.8128 },
+  { match: 'snu', lat: 28.5237, lng: 77.5740 },
+  // BITS
+  { match: 'birla institute of technology and science', lat: 28.3640, lng: 75.5870 },
+  { match: 'bits ', lat: 28.3640, lng: 75.5870 },
+  // IITs
+  { match: 'iit bombay', lat: 19.1334, lng: 72.9133 },
+  { match: 'iit delhi', lat: 28.5450, lng: 77.1926 },
+  { match: 'iit madras', lat: 12.9915, lng: 80.2336 },
+  { match: 'iit kanpur', lat: 26.5123, lng: 80.2329 },
+  { match: 'iit kharagpur', lat: 22.3149, lng: 87.3105 },
+  { match: 'iit roorkee', lat: 29.8650, lng: 77.8964 },
+  { match: 'iit guwahati', lat: 26.1900, lng: 91.6991 },
+  { match: 'iit hyderabad', lat: 17.5970, lng: 78.1242 },
+  { match: 'iit indore', lat: 22.5208, lng: 75.9216 },
+  { match: 'iit mandi', lat: 31.7780, lng: 77.0386 },
+  { match: 'iit bhubaneswar', lat: 20.1490, lng: 85.6700 },
+  { match: 'iit gandhinagar', lat: 23.2130, lng: 72.6840 },
+  { match: 'iit jodhpur', lat: 26.4727, lng: 73.1140 },
+  { match: 'iit patna', lat: 25.5360, lng: 84.8510 },
+  { match: 'iit ropar', lat: 30.9690, lng: 76.4730 },
+  { match: 'iit (bhu)', lat: 25.2630, lng: 82.9910 },
+  { match: 'iit varanasi', lat: 25.2630, lng: 82.9910 },
+  { match: 'iit dhanbad', lat: 23.8147, lng: 86.4412 },
+  { match: 'ism dhanbad', lat: 23.8147, lng: 86.4412 },
+  { match: 'iit tirupati', lat: 13.7298, lng: 79.5947 },
+  { match: 'iit palakkad', lat: 10.7260, lng: 76.7280 },
+  { match: 'iit goa', lat: 15.4830, lng: 73.9100 },
+  { match: 'iit jammu', lat: 32.7320, lng: 74.8580 },
+  { match: 'iit dharwad', lat: 15.3878, lng: 75.0080 },
+  // IIMs
+  { match: 'iim ahmedabad', lat: 23.0320, lng: 72.5310 },
+  { match: 'iim bangalore', lat: 12.9170, lng: 77.5970 },
+  { match: 'iim calcutta', lat: 22.4570, lng: 88.3120 },
+  { match: 'iim lucknow', lat: 26.8970, lng: 81.0050 },
+  { match: 'iim kozhikode', lat: 11.3290, lng: 75.8430 },
+  { match: 'iim indore', lat: 22.7350, lng: 75.8770 },
+  { match: 'iim shillong', lat: 25.6630, lng: 91.8800 },
+  { match: 'iim udaipur', lat: 24.5220, lng: 73.7120 },
+  { match: 'iim trichy', lat: 10.7610, lng: 78.8140 },
+  { match: 'iim raipur', lat: 21.2510, lng: 81.6290 },
+  { match: 'iim rohtak', lat: 28.9180, lng: 76.5820 },
+  { match: 'iim ranchi', lat: 23.4140, lng: 85.4400 },
+  { match: 'iim kashipur', lat: 29.2120, lng: 78.9610 },
+  { match: 'iim nagpur', lat: 21.1240, lng: 79.0490 },
+  { match: 'iim visakhapatnam', lat: 17.7460, lng: 83.3320 },
+  { match: 'iim amritsar', lat: 31.6360, lng: 74.8730 },
+  { match: 'iim sambalpur', lat: 21.4660, lng: 84.0140 },
+  { match: 'iim sirmaur', lat: 30.5680, lng: 77.2880 },
+  { match: 'iim bodhgaya', lat: 24.6960, lng: 84.9920 },
+  { match: 'iim jammu', lat: 32.7320, lng: 74.8580 },
+  { match: 'iim mumbai', lat: 19.1280, lng: 72.9120 },
+  // IISc / IISER / AIIMS / NITs flagships
+  { match: 'iisc', lat: 13.0218, lng: 77.5660 },
+  { match: 'indian institute of science', lat: 13.0218, lng: 77.5660 },
+  { match: 'iiser pune', lat: 18.5470, lng: 73.8070 },
+  { match: 'iiser kolkata', lat: 22.9620, lng: 88.5240 },
+  { match: 'iiser mohali', lat: 30.6660, lng: 76.7290 },
+  { match: 'iiser bhopal', lat: 23.2880, lng: 77.2750 },
+  { match: 'iiser thiruvananthapuram', lat: 8.6792, lng: 77.1366 },
+  { match: 'iiser tirupati', lat: 13.6280, lng: 79.5680 },
+  { match: 'iiser berhampur', lat: 19.3140, lng: 84.7900 },
+  { match: 'aiims delhi', lat: 28.5672, lng: 77.2100 },
+  { match: 'aiims', lat: 28.5672, lng: 77.2100 },
+  { match: 'nit trichy', lat: 10.7590, lng: 78.8140 },
+  { match: 'nit warangal', lat: 17.9817, lng: 79.5310 },
+  { match: 'nit surathkal', lat: 13.0090, lng: 74.7940 },
+  { match: 'nit karnataka', lat: 13.0090, lng: 74.7940 },
+  { match: 'nit calicut', lat: 11.3210, lng: 75.9340 },
+  { match: 'nit rourkela', lat: 22.2530, lng: 84.9010 },
+  { match: 'nit kurukshetra', lat: 29.9460, lng: 76.8170 },
+  { match: 'nit allahabad', lat: 25.4910, lng: 81.8650 },
+  { match: 'mnnit', lat: 25.4910, lng: 81.8650 },
+  { match: 'nit jaipur', lat: 26.8630, lng: 75.8170 },
+  { match: 'mnit jaipur', lat: 26.8630, lng: 75.8170 },
+  { match: 'nit nagpur', lat: 21.1250, lng: 79.0490 },
+  { match: 'vnit', lat: 21.1250, lng: 79.0490 },
+  // IIIT flagships
+  { match: 'iiit hyderabad', lat: 17.4450, lng: 78.3490 },
+  { match: 'iiit bangalore', lat: 12.8460, lng: 77.6630 },
+  { match: 'iiit delhi', lat: 28.5450, lng: 77.2730 },
+  { match: 'iiit allahabad', lat: 25.4310, lng: 81.7720 },
+  // Universities
+  { match: 'jamia millia', lat: 28.5621, lng: 77.2810 },
+  { match: 'jawaharlal nehru university', lat: 28.5400, lng: 77.1650 },
+  { match: 'banaras hindu', lat: 25.2670, lng: 82.9907 },
+  { match: 'bhu', lat: 25.2670, lng: 82.9907 },
+  { match: 'university of delhi', lat: 28.6890, lng: 77.2090 },
+  { match: 'delhi university', lat: 28.6890, lng: 77.2090 },
+  { match: 'xlri', lat: 22.7780, lng: 86.1860 },
+  { match: 'mdi', lat: 28.4500, lng: 77.0260 },
+  { match: 'iift', lat: 28.5200, lng: 77.1620 },
+  { match: 'isb', lat: 17.4204, lng: 78.3470 },
+  { match: 'spjain', lat: 19.0830, lng: 72.8420 },
+  { match: 'great lakes', lat: 12.7920, lng: 80.0220 },
+];
+
+function tier1Coord(name: string): { lat: number; lng: number } | null {
+  const n = name.toLowerCase();
+  for (const c of TIER1_COORDS) if (n.includes(c.match)) return { lat: c.lat, lng: c.lng };
+  return null;
+}
+
 const AdminUniversityMap: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -67,6 +202,9 @@ const AdminUniversityMap: React.FC = () => {
   const [detailLoading, setDetailLoading] = useState(false);
   const [clubs, setClubs] = useState<ClubLite[]>([]);
   const [studentCount, setStudentCount] = useState<number>(0);
+  const [students, setStudents] = useState<Array<{ user_id: string; full_name: string | null; username: string | null; avatar_url: string | null; major: string | null; university: string | null }>>([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
+  const [detailTab, setDetailTab] = useState<'clubs' | 'students'>('clubs');
   const [search, setSearch] = useState('');
   const [fullscreen, setFullscreen] = useState(false);
   const [intelOpen, setIntelOpen] = useState(true);
@@ -139,12 +277,22 @@ const AdminUniversityMap: React.FC = () => {
         const radius = STATE_RADIUS[state] || 1.2;
         if (!center) return;
         list.forEach((name) => {
-          const r1 = seeded(c * 2);
-          const r2 = seeded(c * 2 + 1);
-          const angle = r1 * Math.PI * 2;
-          const dist = Math.sqrt(r2) * radius;
-          const lng = center.lng + Math.cos(angle) * dist;
-          const lat = center.lat + Math.sin(angle) * dist * 0.85;
+          const real = tier1Coord(name);
+          let lng: number, lat: number;
+          if (real) {
+            // Tiny deterministic jitter to separate co-located campuses
+            const j = (seeded(c * 7 + 3) - 0.5) * 0.02;
+            const k = (seeded(c * 11 + 5) - 0.5) * 0.02;
+            lng = real.lng + j;
+            lat = real.lat + k;
+          } else {
+            const r1 = seeded(c * 2);
+            const r2 = seeded(c * 2 + 1);
+            const angle = r1 * Math.PI * 2;
+            const dist = Math.sqrt(r2) * radius;
+            lng = center.lng + Math.cos(angle) * dist;
+            lat = center.lat + Math.sin(angle) * dist * 0.85;
+          }
           c++; total++;
           const abbr = extractAbbr(name);
           const enrolled = (abbr && enrolledMap[abbr]) || enrolledMap[name] || 0;
@@ -349,6 +497,8 @@ const AdminUniversityMap: React.FC = () => {
     setSelected(u);
     setDetailOpen(true);
     setClubs([]);
+    setStudents([]);
+    setDetailTab('clubs');
     setStudentCount(u.enrolled);
     setDetailLoading(true);
     map.flyTo({ center: [u.lng, u.lat], zoom: Math.max(map.getZoom(), 9), duration: 900 });
@@ -371,6 +521,24 @@ const AdminUniversityMap: React.FC = () => {
       console.error('Uni detail fetch failed', e);
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  const loadStudents = async (u: { name: string; abbr: string | null }) => {
+    setStudentsLoading(true);
+    try {
+      const candidates = [u.abbr, u.name].filter(Boolean) as string[];
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, username, avatar_url, major, university')
+        .in('university', candidates)
+        .eq('user_type', 'student')
+        .limit(200);
+      setStudents((data as any[]) || []);
+    } catch (e) {
+      console.error('Students fetch failed', e);
+    } finally {
+      setStudentsLoading(false);
     }
   };
 
@@ -658,11 +826,25 @@ const AdminUniversityMap: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2 mt-4">
-                  <DataTile label="STUDENTS" value={String(studentCount)} />
-                  <DataTile label="CLUBS" value={String(clubs.length)} />
+                  <button
+                    onClick={() => {
+                      setDetailTab('students');
+                      if (selected && students.length === 0 && !studentsLoading) loadStudents(selected);
+                    }}
+                    className="text-left"
+                  >
+                    <DataTile label="STUDENTS" value={String(studentCount)} active={detailTab === 'students'} />
+                  </button>
+                  <button
+                    onClick={() => setDetailTab('clubs')}
+                    className="text-left"
+                  >
+                    <DataTile label="CLUBS" value={String(clubs.length)} active={detailTab === 'clubs'} />
+                  </button>
                 </div>
               </div>
 
+              {detailTab === 'clubs' && (
               <div className="px-5 pt-3 pb-2">
                 <div className="flex items-center justify-between mb-2">
                   <p className="hud-mono text-[10px] text-[#7fb6c8] tracking-[0.2em]">// REGISTERED CLUBS</p>
@@ -693,6 +875,47 @@ const AdminUniversityMap: React.FC = () => {
                   ))}
                 </div>
               </div>
+              )}
+
+              {detailTab === 'students' && (
+              <div className="px-5 pt-3 pb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="hud-mono text-[10px] text-[#7fb6c8] tracking-[0.2em]">// ENROLLED STUDENTS</p>
+                  {studentsLoading && <Loader2 className="w-3 h-3 animate-spin text-[#00c8ff]" />}
+                </div>
+                {!studentsLoading && students.length === 0 && (
+                  <div className="text-center py-6 px-3 border border-dashed border-[#00c8ff]/20">
+                    <p className="hud-mono text-[10px] text-[#7fb6c8]">NO STUDENTS · NO SIGNAL</p>
+                  </div>
+                )}
+                <div className="flex flex-col gap-1.5">
+                  {students.map((s) => (
+                    <div
+                      key={s.user_id}
+                      className="flex items-center gap-2.5 p-2 bg-black/30 border border-[#00c8ff]/15 hover:border-[#00c8ff]/40 transition-colors"
+                      style={{ borderRadius: 3 }}
+                    >
+                      <div className="w-9 h-9 bg-[#0a1828] border border-[#00c8ff]/30 flex items-center justify-center overflow-hidden shrink-0" style={{ borderRadius: 2 }}>
+                        <img
+                          src={s.avatar_url || '/default-avatar.png'}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          onError={(e) => ((e.target as HTMLImageElement).src = '/default-avatar.png')}
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[12px] text-[#c8d8e8] truncate" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600 }}>
+                          {s.full_name || s.username || 'Unknown'}
+                        </p>
+                        <p className="hud-mono text-[9px] text-[#7fb6c8] truncate uppercase">
+                          {s.username ? '@' + s.username : '—'}{s.major ? ' · ' + s.major : ''}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              )}
             </div>
           </>
         )}
@@ -829,8 +1052,11 @@ const StatRow: React.FC<{ icon: React.ReactNode; label: string; value: string; s
   </div>
 );
 
-const DataTile: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className="px-2.5 py-2 bg-black/30 border border-[#00c8ff]/25" style={{ borderRadius: 3 }}>
+const DataTile: React.FC<{ label: string; value: string; active?: boolean }> = ({ label, value, active }) => (
+  <div
+    className={`px-2.5 py-2 bg-black/30 border transition-colors ${active ? 'border-[#f5c518]/70 shadow-[0_0_10px_rgba(245,197,24,0.25)]' : 'border-[#00c8ff]/25 hover:border-[#00c8ff]/60'}`}
+    style={{ borderRadius: 3 }}
+  >
     <p className="hud-mono text-[9px] tracking-[0.2em] text-[#7fb6c8]">{label}</p>
     <p className="hud-mono text-lg text-[#f5c518] mt-0.5" style={{ textShadow: '0 0 8px rgba(245,197,24,0.55)' }}>{value}</p>
   </div>
