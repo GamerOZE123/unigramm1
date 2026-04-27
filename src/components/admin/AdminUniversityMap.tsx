@@ -139,24 +139,28 @@ const AdminUniversityMap: React.FC = () => {
             'carto-dark': {
               type: 'raster',
               tiles: [
-                'https://a.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png',
-                'https://b.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png',
-                'https://c.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png',
-                'https://d.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}@2x.png',
+                'https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png',
+                'https://b.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png',
+                'https://c.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png',
+                'https://d.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png',
               ],
               tileSize: 256,
               attribution: '© OSM © CARTO',
             },
             'carto-labels': {
               type: 'raster',
-              tiles: ['https://a.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}@2x.png'],
+              tiles: [
+                'https://a.basemaps.cartocdn.com/rastertiles/dark_only_labels/{z}/{x}/{y}@2x.png',
+                'https://b.basemaps.cartocdn.com/rastertiles/dark_only_labels/{z}/{x}/{y}@2x.png',
+                'https://c.basemaps.cartocdn.com/rastertiles/dark_only_labels/{z}/{x}/{y}@2x.png',
+              ],
               tileSize: 256,
             },
           },
           layers: [
             { id: 'bg', type: 'background', paint: { 'background-color': '#080c12' } },
-            { id: 'carto-dark', type: 'raster', source: 'carto-dark', paint: { 'raster-opacity': 0.4, 'raster-saturation': -1, 'raster-contrast': 0.4, 'raster-hue-rotate': 180, 'raster-brightness-min': 0.04, 'raster-brightness-max': 0.6 } },
-            { id: 'carto-labels', type: 'raster', source: 'carto-labels', paint: { 'raster-opacity': 0.7, 'raster-contrast': 0.5, 'raster-brightness-min': 0.4, 'raster-hue-rotate': 180, 'raster-saturation': -1 } },
+            { id: 'carto-dark', type: 'raster', source: 'carto-dark', paint: { 'raster-opacity': 0.85, 'raster-saturation': -0.3, 'raster-contrast': 0.15, 'raster-hue-rotate': 190, 'raster-brightness-min': 0.05, 'raster-brightness-max': 0.85 } },
+            { id: 'carto-labels', type: 'raster', source: 'carto-labels', paint: { 'raster-opacity': 0.9, 'raster-contrast': 0.3, 'raster-brightness-min': 0.5, 'raster-brightness-max': 1, 'raster-hue-rotate': 190, 'raster-saturation': -0.4 } },
           ],
         },
         center: [82.5, 22.5],
@@ -175,14 +179,6 @@ const AdminUniversityMap: React.FC = () => {
       const buildDiamond = (size = 64) => {
         const svg = `
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="${size}" height="${size}">
-          <defs>
-            <radialGradient id="g" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stop-color="#f5c518" stop-opacity="0.55"/>
-              <stop offset="60%" stop-color="#f5c518" stop-opacity="0.05"/>
-              <stop offset="100%" stop-color="#f5c518" stop-opacity="0"/>
-            </radialGradient>
-          </defs>
-          <circle cx="32" cy="32" r="28" fill="url(#g)"/>
           <g transform="translate(32 32) rotate(45)">
             <rect x="-9" y="-9" width="18" height="18" fill="none" stroke="#f5c518" stroke-width="1.5"/>
             <rect x="-4" y="-4" width="8" height="8" fill="#f5c518"/>
@@ -214,28 +210,6 @@ const AdminUniversityMap: React.FC = () => {
           cluster: true,
           clusterMaxZoom: 8,
           clusterRadius: 45,
-        });
-
-        // Pulsing glow halo behind every pin (animated via paint updates)
-        map.addLayer({
-          id: 'unis-pulse', type: 'circle', source: 'unis',
-          filter: ['!', ['has', 'point_count']],
-          paint: {
-            'circle-radius': 14,
-            'circle-color': '#f5c518',
-            'circle-opacity': 0.0,
-            'circle-blur': 0.9,
-          },
-        });
-        map.addLayer({
-          id: 'unis-glow', type: 'circle', source: 'unis',
-          filter: ['!', ['has', 'point_count']],
-          paint: {
-            'circle-radius': 9,
-            'circle-color': '#f5c518',
-            'circle-opacity': 0.18,
-            'circle-blur': 0.6,
-          },
         });
 
         // Cluster halo (cyan)
@@ -287,41 +261,15 @@ const AdminUniversityMap: React.FC = () => {
           },
         });
 
-        // Animate the pulse ring (radius + opacity sine)
-        let pulseRaf = 0;
-        const startPulse = (t0: number) => {
-          const tick = (t: number) => {
-            const p = ((t - t0) % 1800) / 1800; // 1.8s loop
-            const r = 10 + p * 26;
-            const o = 0.45 * (1 - p);
-            if (map && map.getLayer('unis-pulse')) {
-              map.setPaintProperty('unis-pulse', 'circle-radius', r);
-              map.setPaintProperty('unis-pulse', 'circle-opacity', o);
-            }
-            pulseRaf = requestAnimationFrame(tick);
-          };
-          pulseRaf = requestAnimationFrame(tick);
-        };
-        startPulse(performance.now());
-        (map as any).__pulseRaf = () => cancelAnimationFrame(pulseRaf);
-
         const setPointer = () => (map!.getCanvas().style.cursor = 'crosshair');
         const resetPointer = () => (map!.getCanvas().style.cursor = '');
         map.on('mouseenter', 'clusters', setPointer);
         map.on('mouseleave', 'clusters', resetPointer);
         map.on('mouseenter', 'unis-pins', () => {
           setPointer();
-          if (map!.getLayer('unis-glow')) {
-            map!.setPaintProperty('unis-glow', 'circle-radius', 14);
-            map!.setPaintProperty('unis-glow', 'circle-opacity', 0.32);
-          }
         });
         map.on('mouseleave', 'unis-pins', () => {
           resetPointer();
-          if (map!.getLayer('unis-glow')) {
-            map!.setPaintProperty('unis-glow', 'circle-radius', 9);
-            map!.setPaintProperty('unis-glow', 'circle-opacity', 0.18);
-          }
         });
 
         // Hover HUD card
