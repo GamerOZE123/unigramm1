@@ -647,14 +647,17 @@ const AdminUniversityMap: React.FC = () => {
       )}
 
       <style>{`
-        .sci-fi-scanlines-LEGACY {
-          background: repeating-linear-gradient(
-            0deg,
-            rgba(232, 121, 249, 0.04) 0px,
-            rgba(232, 121, 249, 0.04) 1px,
-            transparent 1px,
-            transparent 3px
-          );
+        .sci-fi-grid {
+          background-image:
+            linear-gradient(rgba(34,211,238,0.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(34,211,238,0.06) 1px, transparent 1px);
+          background-size: 48px 48px, 48px 48px;
+          mask-image: radial-gradient(ellipse at center, rgba(0,0,0,0.9) 30%, rgba(0,0,0,0.2) 80%, transparent 100%);
+        }
+        .sci-fi-vignette {
+          background:
+            radial-gradient(ellipse at center, transparent 55%, rgba(3,6,13,0.55) 90%, rgba(3,6,13,0.85) 100%),
+            linear-gradient(180deg, rgba(3,6,13,0.5) 0%, transparent 18%, transparent 82%, rgba(3,6,13,0.6) 100%);
         }
         .maplibregl-popup-content { background: transparent !important; padding: 0 !important; box-shadow: none !important; }
         .maplibregl-popup-tip { display: none !important; }
