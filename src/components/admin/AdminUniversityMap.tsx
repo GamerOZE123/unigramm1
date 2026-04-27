@@ -59,6 +59,7 @@ const AdminUniversityMap: React.FC = () => {
   const mapRef = useRef<MLMap | null>(null);
   const popupRef = useRef<Popup | null>(null);
   const allUniv = useRef<Univ[]>([]);
+  const featuresRef = useRef<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ states: 0, universities: 0 });
   const [enrolledByUniv, setEnrolledByUniv] = useState<Record<string, number>>({});
@@ -156,6 +157,7 @@ const AdminUniversityMap: React.FC = () => {
         });
       });
       allUniv.current = flat;
+      featuresRef.current = features;
       setStats({ states: Object.keys(data).length, universities: total });
 
       if (!containerRef.current) return;
