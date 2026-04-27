@@ -202,6 +202,9 @@ const AdminUniversityMap: React.FC = () => {
   const [detailLoading, setDetailLoading] = useState(false);
   const [clubs, setClubs] = useState<ClubLite[]>([]);
   const [studentCount, setStudentCount] = useState<number>(0);
+  const [students, setStudents] = useState<Array<{ user_id: string; full_name: string | null; username: string | null; avatar_url: string | null; major: string | null; university: string | null }>>([]);
+  const [studentsLoading, setStudentsLoading] = useState(false);
+  const [detailTab, setDetailTab] = useState<'clubs' | 'students'>('clubs');
   const [search, setSearch] = useState('');
   const [fullscreen, setFullscreen] = useState(false);
   const [intelOpen, setIntelOpen] = useState(true);
@@ -494,6 +497,8 @@ const AdminUniversityMap: React.FC = () => {
     setSelected(u);
     setDetailOpen(true);
     setClubs([]);
+    setStudents([]);
+    setDetailTab('clubs');
     setStudentCount(u.enrolled);
     setDetailLoading(true);
     map.flyTo({ center: [u.lng, u.lat], zoom: Math.max(map.getZoom(), 9), duration: 900 });
@@ -516,6 +521,24 @@ const AdminUniversityMap: React.FC = () => {
       console.error('Uni detail fetch failed', e);
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  const loadStudents = async (u: { name: string; abbr: string | null }) => {
+    setStudentsLoading(true);
+    try {
+      const candidates = [u.abbr, u.name].filter(Boolean) as string[];
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, username, avatar_url, major, university')
+        .in('university', candidates)
+        .eq('user_type', 'student')
+        .limit(200);
+      setStudents((data as any[]) || []);
+    } catch (e) {
+      console.error('Students fetch failed', e);
+    } finally {
+      setStudentsLoading(false);
     }
   };
 
