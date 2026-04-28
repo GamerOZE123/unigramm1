@@ -803,6 +803,74 @@ const AdminUniversityMap: React.FC = () => {
     }
   };
 
+  const openStudentPanel = async (s: StudentLite) => {
+    setSubPanel("student");
+    setSelectedClub(null);
+    setClubMembers([]);
+    setSelectedStudent({ ...s });
+    setSubPanelLoading(true);
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select(
+          "user_id, full_name, username, avatar_url, major, university, bio, country, state, area, followers_count, following_count, campus_year, interests, status_message, created_at"
+        )
+        .eq("user_id", s.user_id)
+        .maybeSingle();
+      if (data) setSelectedStudent({ ...(data as any) });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSubPanelLoading(false);
+    }
+  };
+
+  const openClubPanel = async (c: ClubLite) => {
+    setSubPanel("club");
+    setSelectedStudent(null);
+    setSelectedClub(c);
+    setClubMembers([]);
+    setSubPanelLoading(true);
+    try {
+      const { data: memberships } = await supabase
+        .from("club_memberships")
+        .select("user_id, role, joined_at")
+        .eq("club_id", c.id)
+        .order("joined_at", { ascending: false })
+        .limit(200);
+      const ids = (memberships || []).map((m: any) => m.user_id);
+      let profilesMap = new Map<string, any>();
+      if (ids.length) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, username, avatar_url, major")
+          .in("user_id", ids);
+        (profiles || []).forEach((p: any) => profilesMap.set(p.user_id, p));
+      }
+      const merged: ClubMemberLite[] = (memberships || []).map((m: any) => ({
+        user_id: m.user_id,
+        role: m.role,
+        joined_at: m.joined_at,
+        full_name: profilesMap.get(m.user_id)?.full_name ?? null,
+        username: profilesMap.get(m.user_id)?.username ?? null,
+        avatar_url: profilesMap.get(m.user_id)?.avatar_url ?? null,
+        major: profilesMap.get(m.user_id)?.major ?? null,
+      }));
+      setClubMembers(merged);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSubPanelLoading(false);
+    }
+  };
+
+  const closeSubPanel = () => {
+    setSubPanel(null);
+    setSelectedStudent(null);
+    setSelectedClub(null);
+    setClubMembers([]);
+  };
+
   const toggleFullscreen = async () => {
     const el = wrapperRef.current;
     if (!el) return;
