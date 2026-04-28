@@ -1840,6 +1840,7 @@ const AdminUniversityMap: React.FC = () => {
                     {students.map((s) => (
                       <div
                         key={s.user_id}
+                        onClick={() => openStudentPanel(s)}
                         style={{
                           display: "flex",
                           alignItems: "center",
@@ -1849,6 +1850,7 @@ const AdminUniversityMap: React.FC = () => {
                           border: "1px solid rgba(0,255,231,0.1)",
                           borderRadius: 4,
                           transition: "border-color 0.2s",
+                          cursor: "pointer",
                         }}
                         onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(0,255,231,0.35)")}
                         onMouseLeave={(e) => (e.currentTarget.style.borderColor = "rgba(0,255,231,0.1)")}
