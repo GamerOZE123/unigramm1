@@ -235,6 +235,13 @@ const AdminUniversityMap: React.FC = () => {
   const [counter, setCounter] = useState(0);
   const [mapTilt, setMapTilt] = useState(false);
   const [signalStrength, setSignalStrength] = useState(0);
+  const [selectedState, setSelectedState] = useState<{
+    name: string;
+    total: number;
+    tier1: number;
+  } | null>(null);
+  const [stateDossierOpen, setStateDossierOpen] = useState(false);
+  const [stateSearch, setStateSearch] = useState("");
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
