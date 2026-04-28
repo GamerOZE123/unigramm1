@@ -1468,8 +1468,11 @@ const AdminUniversityMap: React.FC = () => {
         }}
       >
         {selectedState && (() => {
+          const norm = (s: string) =>
+            (s || "").toLowerCase().replace(/&/g, "and").replace(/[^a-z]+/g, "").trim();
+          const selKey = norm(selectedState.name);
           const colleges = allUniv.current
-            .filter((u) => u.state === selectedState.name)
+            .filter((u) => norm(u.state) === selKey)
             .filter((u) =>
               !stateSearch
                 ? true
