@@ -1736,6 +1736,7 @@ const AdminUniversityMap: React.FC = () => {
                     {clubs.map((c) => (
                       <div
                         key={c.id}
+                        onClick={() => openClubPanel(c)}
                         style={{
                           display: "flex",
                           alignItems: "center",
@@ -1745,6 +1746,7 @@ const AdminUniversityMap: React.FC = () => {
                           border: "1px solid rgba(0,255,231,0.1)",
                           borderRadius: 4,
                           transition: "border-color 0.2s",
+                          cursor: "pointer",
                         }}
                         onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(0,255,231,0.35)")}
                         onMouseLeave={(e) => (e.currentTarget.style.borderColor = "rgba(0,255,231,0.1)")}
