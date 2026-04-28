@@ -36,6 +36,36 @@ type ClubLite = {
   member_count: number | null;
   logo_url: string | null;
 };
+type StudentLite = {
+  user_id: string;
+  full_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+  major: string | null;
+  university: string | null;
+};
+type StudentDetail = StudentLite & {
+  bio?: string | null;
+  email?: string | null;
+  country?: string | null;
+  state?: string | null;
+  area?: string | null;
+  followers_count?: number | null;
+  following_count?: number | null;
+  campus_year?: string | null;
+  interests?: string[] | null;
+  status_message?: string | null;
+  created_at?: string | null;
+};
+type ClubMemberLite = {
+  user_id: string;
+  role: string | null;
+  joined_at: string | null;
+  full_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+  major: string | null;
+};
 
 function extractAbbr(name: string): string | null {
   const m = name.match(/\(([A-Z][A-Z0-9&.\- ]{1,15})\)\s*$/);
