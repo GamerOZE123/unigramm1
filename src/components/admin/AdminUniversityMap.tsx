@@ -222,6 +222,63 @@ function tier1Coord(name: string): { lat: number; lng: number } | null {
   return null;
 }
 
+const DataTile: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div
+    style={{
+      padding: "10px 12px",
+      background: "rgba(0,255,231,0.03)",
+      border: "1px solid rgba(0,255,231,0.15)",
+      borderRadius: 4,
+    }}
+  >
+    <p style={{ fontSize: 8, color: "rgba(0,255,231,0.5)", letterSpacing: "0.2em", margin: 0 }}>{label}</p>
+    <p
+      style={{
+        fontSize: 20,
+        color: "#f5c518",
+        margin: "4px 0 0",
+        textShadow: "0 0 8px rgba(245,197,24,0.5)",
+        fontFamily: "'Rajdhani', sans-serif",
+        fontWeight: 700,
+      }}
+    >
+      {value}
+    </p>
+  </div>
+);
+
+const InfoRow: React.FC<{ label: string; value: string | null | undefined }> = ({ label, value }) => (
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: 12,
+      padding: "6px 10px",
+      background: "rgba(0,0,0,0.25)",
+      border: "1px solid rgba(0,255,231,0.08)",
+      borderRadius: 3,
+    }}
+  >
+    <span style={{ fontSize: 8, color: "rgba(0,255,231,0.5)", letterSpacing: "0.22em" }}>{label}</span>
+    <span
+      style={{
+        fontSize: 11,
+        color: value ? "#c8e8f0" : "rgba(200,232,240,0.3)",
+        textAlign: "right",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+        maxWidth: 200,
+        fontFamily: "'Rajdhani', sans-serif",
+        fontWeight: 600,
+      }}
+    >
+      {value || "—"}
+    </span>
+  </div>
+);
+
 const AdminUniversityMap: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
