@@ -556,6 +556,10 @@ const AdminUniversityMap: React.FC = () => {
               const name: string = f.properties.__display_name || "STATE";
               const total = Number(f.properties.__college_count || 0);
               const tier1 = Number(f.properties.__tier1_count || 0);
+              // Open the State Dossier sidebar
+              setSelectedState({ name, total, tier1 });
+              setStateDossierOpen(true);
+              setStateSearch("");
               const html = `
                 <div class="holo-card">
                   <div class="holo-card-header">
