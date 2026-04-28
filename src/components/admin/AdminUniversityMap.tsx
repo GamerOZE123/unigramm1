@@ -36,6 +36,36 @@ type ClubLite = {
   member_count: number | null;
   logo_url: string | null;
 };
+type StudentLite = {
+  user_id: string;
+  full_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+  major: string | null;
+  university: string | null;
+};
+type StudentDetail = StudentLite & {
+  bio?: string | null;
+  email?: string | null;
+  country?: string | null;
+  state?: string | null;
+  area?: string | null;
+  followers_count?: number | null;
+  following_count?: number | null;
+  campus_year?: string | null;
+  interests?: string[] | null;
+  status_message?: string | null;
+  created_at?: string | null;
+};
+type ClubMemberLite = {
+  user_id: string;
+  role: string | null;
+  joined_at: string | null;
+  full_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+  major: string | null;
+};
 
 function extractAbbr(name: string): string | null {
   const m = name.match(/\(([A-Z][A-Z0-9&.\- ]{1,15})\)\s*$/);
@@ -192,6 +222,63 @@ function tier1Coord(name: string): { lat: number; lng: number } | null {
   return null;
 }
 
+const DataTile: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div
+    style={{
+      padding: "10px 12px",
+      background: "rgba(0,255,231,0.03)",
+      border: "1px solid rgba(0,255,231,0.15)",
+      borderRadius: 4,
+    }}
+  >
+    <p style={{ fontSize: 8, color: "rgba(0,255,231,0.5)", letterSpacing: "0.2em", margin: 0 }}>{label}</p>
+    <p
+      style={{
+        fontSize: 20,
+        color: "#f5c518",
+        margin: "4px 0 0",
+        textShadow: "0 0 8px rgba(245,197,24,0.5)",
+        fontFamily: "'Rajdhani', sans-serif",
+        fontWeight: 700,
+      }}
+    >
+      {value}
+    </p>
+  </div>
+);
+
+const InfoRow: React.FC<{ label: string; value: string | null | undefined }> = ({ label, value }) => (
+  <div
+    style={{
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: 12,
+      padding: "6px 10px",
+      background: "rgba(0,0,0,0.25)",
+      border: "1px solid rgba(0,255,231,0.08)",
+      borderRadius: 3,
+    }}
+  >
+    <span style={{ fontSize: 8, color: "rgba(0,255,231,0.5)", letterSpacing: "0.22em" }}>{label}</span>
+    <span
+      style={{
+        fontSize: 11,
+        color: value ? "#c8e8f0" : "rgba(200,232,240,0.3)",
+        textAlign: "right",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        whiteSpace: "nowrap",
+        maxWidth: 200,
+        fontFamily: "'Rajdhani', sans-serif",
+        fontWeight: 600,
+      }}
+    >
+      {value || "—"}
+    </span>
+  </div>
+);
+
 const AdminUniversityMap: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -226,6 +313,12 @@ const AdminUniversityMap: React.FC = () => {
   >([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [detailTab, setDetailTab] = useState<"clubs" | "students">("clubs");
+  // Sub-panel (left of the right sidebar) state
+  const [subPanel, setSubPanel] = useState<"student" | "club" | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<StudentDetail | null>(null);
+  const [selectedClub, setSelectedClub] = useState<ClubLite | null>(null);
+  const [clubMembers, setClubMembers] = useState<ClubMemberLite[]>([]);
+  const [subPanelLoading, setSubPanelLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [fullscreen, setFullscreen] = useState(false);
   const [intelOpen, setIntelOpen] = useState(true);
@@ -765,6 +858,74 @@ const AdminUniversityMap: React.FC = () => {
     } finally {
       setStudentsLoading(false);
     }
+  };
+
+  const openStudentPanel = async (s: StudentLite) => {
+    setSubPanel("student");
+    setSelectedClub(null);
+    setClubMembers([]);
+    setSelectedStudent({ ...s });
+    setSubPanelLoading(true);
+    try {
+      const { data } = await supabase
+        .from("profiles")
+        .select(
+          "user_id, full_name, username, avatar_url, major, university, bio, country, state, area, followers_count, following_count, campus_year, interests, status_message, created_at"
+        )
+        .eq("user_id", s.user_id)
+        .maybeSingle();
+      if (data) setSelectedStudent({ ...(data as any) });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSubPanelLoading(false);
+    }
+  };
+
+  const openClubPanel = async (c: ClubLite) => {
+    setSubPanel("club");
+    setSelectedStudent(null);
+    setSelectedClub(c);
+    setClubMembers([]);
+    setSubPanelLoading(true);
+    try {
+      const { data: memberships } = await supabase
+        .from("club_memberships")
+        .select("user_id, role, joined_at")
+        .eq("club_id", c.id)
+        .order("joined_at", { ascending: false })
+        .limit(200);
+      const ids = (memberships || []).map((m: any) => m.user_id);
+      let profilesMap = new Map<string, any>();
+      if (ids.length) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, username, avatar_url, major")
+          .in("user_id", ids);
+        (profiles || []).forEach((p: any) => profilesMap.set(p.user_id, p));
+      }
+      const merged: ClubMemberLite[] = (memberships || []).map((m: any) => ({
+        user_id: m.user_id,
+        role: m.role,
+        joined_at: m.joined_at,
+        full_name: profilesMap.get(m.user_id)?.full_name ?? null,
+        username: profilesMap.get(m.user_id)?.username ?? null,
+        avatar_url: profilesMap.get(m.user_id)?.avatar_url ?? null,
+        major: profilesMap.get(m.user_id)?.major ?? null,
+      }));
+      setClubMembers(merged);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSubPanelLoading(false);
+    }
+  };
+
+  const closeSubPanel = () => {
+    setSubPanel(null);
+    setSelectedStudent(null);
+    setSelectedClub(null);
+    setClubMembers([]);
   };
 
   const toggleFullscreen = async () => {
@@ -1632,6 +1793,7 @@ const AdminUniversityMap: React.FC = () => {
                     {clubs.map((c) => (
                       <div
                         key={c.id}
+                        onClick={() => openClubPanel(c)}
                         style={{
                           display: "flex",
                           alignItems: "center",
@@ -1641,6 +1803,7 @@ const AdminUniversityMap: React.FC = () => {
                           border: "1px solid rgba(0,255,231,0.1)",
                           borderRadius: 4,
                           transition: "border-color 0.2s",
+                          cursor: "pointer",
                         }}
                         onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(0,255,231,0.35)")}
                         onMouseLeave={(e) => (e.currentTarget.style.borderColor = "rgba(0,255,231,0.1)")}
@@ -1734,6 +1897,7 @@ const AdminUniversityMap: React.FC = () => {
                     {students.map((s) => (
                       <div
                         key={s.user_id}
+                        onClick={() => openStudentPanel(s)}
                         style={{
                           display: "flex",
                           alignItems: "center",
@@ -1743,6 +1907,7 @@ const AdminUniversityMap: React.FC = () => {
                           border: "1px solid rgba(0,255,231,0.1)",
                           borderRadius: 4,
                           transition: "border-color 0.2s",
+                          cursor: "pointer",
                         }}
                         onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(0,255,231,0.35)")}
                         onMouseLeave={(e) => (e.currentTarget.style.borderColor = "rgba(0,255,231,0.1)")}
@@ -1800,6 +1965,326 @@ const AdminUniversityMap: React.FC = () => {
             </div>
           </>
         )}
+      </aside>
+
+      {/* SUB DETAIL PANEL — Student or Club, opens to the LEFT of right sidebar */}
+      <aside
+        style={{
+          position: "absolute",
+          right: 340,
+          top: 48,
+          bottom: 0,
+          width: 360,
+          zIndex: 19,
+          background: "linear-gradient(225deg, rgba(0,8,20,0.97) 0%, rgba(0,4,12,0.94) 100%)",
+          borderLeft: "1px solid rgba(0,255,231,0.12)",
+          borderRight: "1px solid rgba(0,255,231,0.12)",
+          display: "flex",
+          flexDirection: "column",
+          transform: subPanel && detailOpen ? "translateX(0)" : "translateX(120%)",
+          transition: "transform 0.35s cubic-bezier(0.4,0,0.2,1)",
+          backdropFilter: "blur(24px)",
+          boxShadow: "-20px 0 40px -20px rgba(0,255,231,0.25)",
+        }}
+      >
+        <div
+          style={{
+            padding: "12px 16px",
+            borderBottom: "1px solid rgba(0,255,231,0.12)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "rgba(0,255,231,0.03)",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              onClick={closeSubPanel}
+              style={{ background: "none", border: "none", color: "rgba(0,255,231,0.5)", cursor: "pointer", padding: 2 }}
+            >
+              <ArrowLeft size={14} />
+            </button>
+            {subPanel === "student" ? <Users size={11} color="#f5c518" /> : <Building2 size={11} color="#f5c518" />}
+            <span style={{ fontSize: 9, color: "#f5c518", letterSpacing: "0.3em" }}>
+              {subPanel === "student" ? "AGENT DOSSIER" : "CLUB ROSTER"}
+            </span>
+          </div>
+          {subPanelLoading && <Loader2 size={12} color="#00ffe7" className="spin" />}
+        </div>
+
+        <div style={{ flex: 1, overflowY: "auto", scrollbarWidth: "thin" }}>
+          {/* STUDENT VIEW */}
+          {subPanel === "student" && selectedStudent && (
+            <div style={{ padding: "18px 20px" }}>
+              <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                <div
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: 6,
+                    overflow: "hidden",
+                    border: "1px solid rgba(0,255,231,0.3)",
+                    boxShadow: "0 0 18px rgba(0,255,231,0.18)",
+                    flexShrink: 0,
+                  }}
+                >
+                  <img
+                    src={selectedStudent.avatar_url || "/default-avatar.png"}
+                    alt=""
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    onError={(e) => ((e.target as HTMLImageElement).src = "/default-avatar.png")}
+                  />
+                </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <h3
+                    style={{
+                      fontSize: 16,
+                      color: "#f5c518",
+                      margin: 0,
+                      fontFamily: "'Rajdhani', sans-serif",
+                      fontWeight: 700,
+                      textShadow: "0 0 12px rgba(245,197,24,0.4)",
+                    }}
+                  >
+                    {selectedStudent.full_name || selectedStudent.username || "Unknown"}
+                  </h3>
+                  {selectedStudent.username && (
+                    <p style={{ fontSize: 10, color: "#00ffe7", margin: "3px 0 0", letterSpacing: "0.18em" }}>
+                      @{selectedStudent.username}
+                    </p>
+                  )}
+                  {selectedStudent.status_message && (
+                    <p style={{ fontSize: 10, color: "rgba(200,232,240,0.7)", margin: "4px 0 0", fontStyle: "italic" }}>
+                      "{selectedStudent.status_message}"
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {selectedStudent.bio && (
+                <p
+                  style={{
+                    fontSize: 11,
+                    color: "#c8e8f0",
+                    margin: "14px 0 0",
+                    lineHeight: 1.5,
+                    padding: "10px 12px",
+                    background: "rgba(0,255,231,0.04)",
+                    border: "1px solid rgba(0,255,231,0.1)",
+                    borderRadius: 4,
+                  }}
+                >
+                  {selectedStudent.bio}
+                </p>
+              )}
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
+                <DataTile label="FOLLOWERS" value={String(selectedStudent.followers_count ?? 0)} />
+                <DataTile label="FOLLOWING" value={String(selectedStudent.following_count ?? 0)} />
+              </div>
+
+              <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 8 }}>
+                <InfoRow label="UNIVERSITY" value={selectedStudent.university} />
+                <InfoRow label="MAJOR" value={selectedStudent.major} />
+                <InfoRow label="CAMPUS YEAR" value={selectedStudent.campus_year} />
+                <InfoRow
+                  label="LOCATION"
+                  value={[selectedStudent.area, selectedStudent.state, selectedStudent.country].filter(Boolean).join(", ") || null}
+                />
+                <InfoRow
+                  label="JOINED"
+                  value={selectedStudent.created_at ? new Date(selectedStudent.created_at).toLocaleDateString() : null}
+                />
+              </div>
+
+              {selectedStudent.interests && selectedStudent.interests.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <p style={{ fontSize: 8, color: "rgba(0,255,231,0.5)", letterSpacing: "0.25em", margin: "0 0 8px" }}>
+                    INTERESTS
+                  </p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {selectedStudent.interests.map((it, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          fontSize: 9,
+                          color: "#00ffe7",
+                          padding: "3px 8px",
+                          background: "rgba(0,255,231,0.06)",
+                          border: "1px solid rgba(0,255,231,0.2)",
+                          borderRadius: 3,
+                          letterSpacing: "0.1em",
+                        }}
+                      >
+                        {it}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* CLUB VIEW */}
+          {subPanel === "club" && selectedClub && (
+            <div style={{ padding: "18px 20px" }}>
+              <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                <div
+                  style={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: 6,
+                    overflow: "hidden",
+                    border: "1px solid rgba(0,255,231,0.3)",
+                    background: "rgba(0,255,231,0.05)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  {selectedClub.logo_url ? (
+                    <img
+                      src={selectedClub.logo_url}
+                      alt=""
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <Building2 size={26} color="#00ffe7" />
+                  )}
+                </div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <h3
+                    style={{
+                      fontSize: 16,
+                      color: "#f5c518",
+                      margin: 0,
+                      fontFamily: "'Rajdhani', sans-serif",
+                      fontWeight: 700,
+                      textShadow: "0 0 12px rgba(245,197,24,0.4)",
+                    }}
+                  >
+                    {selectedClub.club_name}
+                  </h3>
+                  <p style={{ fontSize: 10, color: "#00ffe7", margin: "3px 0 0", letterSpacing: "0.18em" }}>
+                    {selectedClub.category || "GENERAL"}
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 14 }}>
+                <DataTile label="MEMBERS" value={String(selectedClub.member_count ?? clubMembers.length)} />
+                <DataTile label="LISTED" value={String(clubMembers.length)} />
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  margin: "18px 0 10px",
+                }}
+              >
+                <Users size={10} color="rgba(0,255,231,0.5)" />
+                <span style={{ fontSize: 8, color: "rgba(0,255,231,0.5)", letterSpacing: "0.25em" }}>
+                  ROSTER · {clubMembers.length}
+                </span>
+              </div>
+
+              {!subPanelLoading && clubMembers.length === 0 && (
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "24px",
+                    border: "1px dashed rgba(0,255,231,0.15)",
+                    borderRadius: 4,
+                  }}
+                >
+                  <p style={{ fontSize: 9, color: "rgba(0,255,231,0.35)", letterSpacing: "0.15em", margin: 0 }}>
+                    NO MEMBERS · NO SIGNAL
+                  </p>
+                </div>
+              )}
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {clubMembers.map((m) => (
+                  <div
+                    key={m.user_id}
+                    onClick={() =>
+                      openStudentPanel({
+                        user_id: m.user_id,
+                        full_name: m.full_name,
+                        username: m.username,
+                        avatar_url: m.avatar_url,
+                        major: m.major,
+                        university: null,
+                      })
+                    }
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "8px 10px",
+                      background: "rgba(0,0,0,0.3)",
+                      border: "1px solid rgba(0,255,231,0.1)",
+                      borderRadius: 4,
+                      cursor: "pointer",
+                      transition: "border-color 0.2s",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(0,255,231,0.35)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.borderColor = "rgba(0,255,231,0.1)")}
+                  >
+                    <div
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 3,
+                        overflow: "hidden",
+                        border: "1px solid rgba(0,255,231,0.2)",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <img
+                        src={m.avatar_url || "/default-avatar.png"}
+                        alt=""
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        onError={(e) => ((e.target as HTMLImageElement).src = "/default-avatar.png")}
+                      />
+                    </div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <p
+                        style={{
+                          fontSize: 12,
+                          color: "#c8e8f0",
+                          margin: 0,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                          fontFamily: "'Rajdhani', sans-serif",
+                          fontWeight: 600,
+                        }}
+                      >
+                        {m.full_name || m.username || "Unknown"}
+                      </p>
+                      <p
+                        style={{
+                          fontSize: 8,
+                          color: "rgba(0,255,231,0.4)",
+                          margin: "2px 0 0",
+                          letterSpacing: "0.1em",
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {m.role || "MEMBER"}
+                        {m.major ? " · " + m.major : ""}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </aside>
 
       {/* LOADING OVERLAY */}
