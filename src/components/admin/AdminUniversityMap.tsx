@@ -256,6 +256,12 @@ const AdminUniversityMap: React.FC = () => {
   >([]);
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [detailTab, setDetailTab] = useState<"clubs" | "students">("clubs");
+  // Sub-panel (left of the right sidebar) state
+  const [subPanel, setSubPanel] = useState<"student" | "club" | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<StudentDetail | null>(null);
+  const [selectedClub, setSelectedClub] = useState<ClubLite | null>(null);
+  const [clubMembers, setClubMembers] = useState<ClubMemberLite[]>([]);
+  const [subPanelLoading, setSubPanelLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [fullscreen, setFullscreen] = useState(false);
   const [intelOpen, setIntelOpen] = useState(true);
