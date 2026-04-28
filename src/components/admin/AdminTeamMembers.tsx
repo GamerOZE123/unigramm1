@@ -25,7 +25,6 @@ interface TeamMember {
 
 const ALL_SECTIONS: { key: AdminSection; label: string }[] = [
   { key: 'overview', label: 'Overview' },
-  { key: 'map', label: 'University Map' },
   { key: 'analytics', label: 'Analytics' },
   { key: 'pending', label: 'Pending Accounts' },
   { key: 'waitlist', label: 'Waitlist' },
