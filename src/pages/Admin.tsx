@@ -223,7 +223,7 @@ const Admin: React.FC = () => {
     }
 
     const { error: invokeError } = await supabase.functions.invoke('send-invite', {
-      body: { email: signup.email, name: signup.full_name || '' },
+      body: { email: signup.email, name: signup.full_name || '', admin_password: storedPassword },
     });
     if (invokeError) {
       toast.error('Invited but email failed to send');
@@ -239,7 +239,7 @@ const Admin: React.FC = () => {
     setReInviting(signup.id);
     try {
       const { error } = await supabase.functions.invoke('send-invite', {
-        body: { email: signup.email, name: signup.full_name || '' },
+        body: { email: signup.email, name: signup.full_name || '', admin_password: storedPassword },
       });
       if (error) throw error;
       toast.success(`Re-invite sent to ${signup.email}`);
@@ -253,7 +253,7 @@ const Admin: React.FC = () => {
     setSendingAndroid(signup.id);
     try {
       const { data, error } = await supabase.functions.invoke('send-android-invite', {
-        body: { email: signup.email },
+        body: { email: signup.email, admin_password: storedPassword },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
