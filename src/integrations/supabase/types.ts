@@ -5558,6 +5558,7 @@ export type Database = {
           unread_count: number
         }[]
       }
+      get_my_store_bank_details: { Args: never; Returns: Json }
       get_or_create_conversation: {
         Args: { p_user1_id: string; p_user2_id: string }
         Returns: string
@@ -5740,6 +5741,7 @@ export type Database = {
         Args: { group_id: string; user_id: string }
         Returns: boolean
       }
+      is_my_confession: { Args: { _confession_id: string }; Returns: boolean }
       log_post_impressions: { Args: { post_ids: string[] }; Returns: undefined }
       mark_messages_as_read: {
         Args: { conversation_uuid: string; reader_user_id: string }
