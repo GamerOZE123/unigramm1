@@ -83,7 +83,7 @@ export default function ProfileSettingsModal({
     try {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("*")
+        .select("user_id, full_name, username, bio, university, major, status_message, avatar_url, banner_url, banner_position, linkedin_url, instagram_url, twitter_url, website_url, interests")
         .eq("user_id", user.id)
         .single();
 

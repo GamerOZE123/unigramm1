@@ -90,7 +90,7 @@ export default function StudentApplicationForm({ onComplete, onCancel }: Student
     try {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('*')
+        .select('user_id, full_name')
         .eq('user_id', user.id)
         .single();
 

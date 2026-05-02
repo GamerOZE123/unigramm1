@@ -57,7 +57,7 @@ export default function EditProfileModal({
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('user_id, full_name, username, bio, university, major, avatar_url, banner_position')
         .eq('user_id', user.id)
         .single();
       if (error) throw error;

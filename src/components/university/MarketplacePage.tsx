@@ -96,7 +96,7 @@ export default function MarketplacePage() {
       // Fetch user's store
       const { data: storeData } = await supabase
         .from('student_stores')
-        .select('*')
+        .select('id, user_id, store_name, store_description, store_logo_url, payment_methods, is_active, created_at, updated_at')
         .eq('user_id', user.id)
         .maybeSingle();
       
@@ -475,7 +475,7 @@ export default function MarketplacePage() {
             if (!user) return;
             const { data: storeData } = await supabase
               .from('student_stores')
-              .select('*')
+              .select('id, user_id, store_name, store_description, store_logo_url, payment_methods, is_active, created_at, updated_at')
               .eq('user_id', user.id)
               .single();
             setUserStore(storeData);
