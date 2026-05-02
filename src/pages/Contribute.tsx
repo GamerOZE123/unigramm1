@@ -429,7 +429,7 @@ export default function Contribute() {
 
                     <motion.div className="space-y-1.5" variants={fieldVariants} initial="hidden" animate="visible" custom={3}>
                       <Label htmlFor="portfolio_url" className="text-sm text-white/70">Portfolio / LinkedIn / GitHub *</Label>
-                      <input id="portfolio_url" name="portfolio_url" type="url" value={formData.portfolio_url} onChange={handleChange}
+                      <input id="portfolio_url" name="portfolio_url" type="text" value={formData.portfolio_url} onChange={handleChange}
                         required placeholder="https://..."
                         className="w-full h-11 px-4 rounded-xl text-sm outline-none" style={inputStyle} />
                     </motion.div>
