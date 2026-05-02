@@ -357,13 +357,17 @@ const Field: React.FC<{ icon: React.ElementType; label: string; value: string | 
 );
 
 const Section: React.FC<{ icon: React.ElementType; title: string; content: string | null }> = ({ icon: Icon, title, content }) => {
-  if (!content) return null;
+  const isEmpty = !content || !content.trim();
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
         <Icon className="w-4 h-4 text-muted-foreground" /> {title}
       </div>
-      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed pl-6">{content}</p>
+      {isEmpty ? (
+        <p className="text-sm text-muted-foreground italic pl-6">— No answer provided</p>
+      ) : (
+        <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed pl-6">{content}</p>
+      )}
     </div>
   );
 };
