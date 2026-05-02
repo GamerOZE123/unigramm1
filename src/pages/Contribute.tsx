@@ -43,8 +43,6 @@ export default function Contribute() {
   const [submitted, setSubmitted] = useState(false);
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [savedId, setSavedId] = useState<string | null>(null);
-  const [savingStep1, setSavingStep1] = useState(false);
   const [selectedRole, setSelectedRole] = useState('');
   const [formData, setFormData] = useState({
     full_name: '', email: '', skills: '', message: '', portfolio_url: '',
@@ -109,56 +107,8 @@ export default function Contribute() {
     formData.portfolio_url.trim() &&
     formData.message.trim();
 
-  const goNext = async () => {
+  const goNext = () => {
     if (!canProceed) return;
-    setSavingStep1(true);
-    try {
-      // Upload attachment if present
-      let uploadedUrl: string | null = null;
-      if (attachmentFile) {
-        uploadedUrl = await uploadAttachment();
-      }
-
-      const { data, error } = await supabase
-        .from('contributor_applications')
-        .insert({
-          full_name: formData.full_name.trim(),
-          email: formData.email.trim().toLowerCase(),
-          skills: formData.skills.trim() || null,
-          experience: formData.experience.trim() || null,
-          experience_links: formData.experience_links.trim() || null,
-          university: formData.university.trim() || null,
-          year_of_study: formData.year_of_study.trim() || null,
-          portfolio_url: uploadedUrl || formData.portfolio_url.trim() || null,
-        })
-        .select('id')
-        .single();
-
-      if (error) {
-        if (error.code === '23505') {
-          // Duplicate email — look up the existing record so we can update it on submit
-          const { data: existing } = await supabase
-            .from('contributor_applications')
-            .select('id')
-            .eq('email', formData.email.trim().toLowerCase())
-            .maybeSingle();
-          if (existing?.id) setSavedId(existing.id);
-        } else {
-          console.error('Contributor application insert error:', error);
-          toast.error(error.message || 'Could not save your info. Please try again.');
-          setSavingStep1(false);
-          return;
-        }
-      } else if (data) {
-        setSavedId(data.id);
-      }
-    } catch (err: any) {
-      console.error('Contribute goNext error:', err);
-      toast.error(err?.message || 'Something went wrong. Please try again.');
-      setSavingStep1(false);
-      return;
-    }
-    setSavingStep1(false);
     setDirection(1);
     setStep(1);
   };
@@ -170,25 +120,38 @@ export default function Contribute() {
     if (!canSubmit) return;
     setLoading(true);
     try {
-      const updateData = {
+      let uploadedUrl: string | null = attachmentUrl;
+      if (attachmentFile && !uploadedUrl) {
+        uploadedUrl = await uploadAttachment();
+        if (!uploadedUrl) {
+          setLoading(false);
+          return;
+        }
+      }
+
+      const { error } = await supabase.from('contributor_applications').insert({
+        full_name: formData.full_name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        skills: formData.skills.trim() || null,
+        experience: formData.experience.trim() || null,
+        experience_links: formData.experience_links.trim() || null,
+        university: formData.university.trim() || null,
+        year_of_study: formData.year_of_study.trim() || null,
         role: selectedRole,
         custom_role: selectedRole === 'other' ? formData.custom_role.trim() || null : null,
         message: formData.message.trim() || null,
-        portfolio_url: formData.portfolio_url.trim() || null,
-      };
-
-      let error;
-      if (savedId) {
-        ({ error } = await supabase.from('contributor_applications').update(updateData).eq('id', savedId));
-      } else {
-        ({ error } = await supabase.from('contributor_applications').update(updateData).eq('email', formData.email.trim().toLowerCase()));
-      }
+        portfolio_url: formData.portfolio_url.trim() || uploadedUrl || null,
+      });
 
       if (!error) {
         setSubmitted(true);
+      } else {
+        console.error('Contributor application submit error:', error);
+        toast.error(error.message || 'Could not submit your application. Please try again.');
       }
-    } catch {
-      // silent
+    } catch (err: any) {
+      console.error('Contribute submit error:', err);
+      toast.error(err?.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -380,10 +343,10 @@ export default function Contribute() {
                     </motion.div>
 
                     <motion.div variants={fieldVariants} initial="hidden" animate="visible" custom={7} className="pt-2">
-                      <button type="button" onClick={goNext} disabled={!canProceed || savingStep1}
+                      <button type="button" onClick={goNext} disabled={!canProceed}
                         className="w-full h-12 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 transition-all hover:brightness-110 disabled:opacity-50"
                         style={{ background: 'linear-gradient(135deg, #4f8eff, #38bdf8)', color: '#080c17' }}>
-                        {savingStep1 ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Continue <ArrowRight className="w-4 h-4" /></>}
+                        Continue <ArrowRight className="w-4 h-4" />
                       </button>
                     </motion.div>
                   </motion.div>
