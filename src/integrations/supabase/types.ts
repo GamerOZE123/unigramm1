@@ -5836,6 +5836,15 @@ export type Database = {
         Args: { check_user_id: string; conv_id: string }
         Returns: boolean
       }
+      verify_admin_team_password: {
+        Args: { _password: string }
+        Returns: {
+          allowed_sections: string[]
+          email: string
+          id: string
+          name: string
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

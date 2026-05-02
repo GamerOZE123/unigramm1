@@ -60,18 +60,36 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const isMainAdmin = adminPassword && password === adminPassword;
+    // Timing-safe comparison for the main admin password to prevent timing
+    // attacks that could leak the secret one byte at a time.
+    const timingSafeEqual = (a: string, b: string): boolean => {
+      const enc = new TextEncoder();
+      const ab = enc.encode(a);
+      const bb = enc.encode(b);
+      // Always compare a same-length buffer to avoid early-exit timing leaks.
+      const len = Math.max(ab.length, bb.length);
+      const pa = new Uint8Array(len);
+      const pb = new Uint8Array(len);
+      pa.set(ab);
+      pb.set(bb);
+      let diff = ab.length ^ bb.length;
+      for (let i = 0; i < len; i++) diff |= pa[i] ^ pb[i];
+      return diff === 0;
+    };
+
+    const isMainAdmin = !!(adminPassword && typeof password === 'string' && timingSafeEqual(password, adminPassword));
     let teamMember: any = null;
 
     if (!isMainAdmin) {
-      // Check if it's a team member password
-      const { data: members } = await supabaseAdmin
-        .from('admin_team_members')
-        .select('*')
-        .eq('password', password)
-        .eq('is_active', true);
-      if (members && members.length > 0) {
-        teamMember = members[0];
+      // Verify against bcrypt-hashed team-member passwords via SECURITY DEFINER RPC.
+      // The password column is never read by the edge function — verification is
+      // performed inside Postgres using crypt() comparison.
+      if (typeof password === 'string' && password.length > 0) {
+        const { data: members } = await supabaseAdmin
+          .rpc('verify_admin_team_password', { _password: password });
+        if (members && members.length > 0) {
+          teamMember = members[0];
+        }
       }
     }
 

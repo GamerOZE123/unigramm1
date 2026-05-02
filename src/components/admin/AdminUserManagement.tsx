@@ -169,7 +169,7 @@ const AdminUserManagement: React.FC<Props> = ({ password }) => {
     setSendingAndroid(user.user_id);
     try {
       const { data, error } = await supabase.functions.invoke('send-android-invite', {
-        body: { email: user.email },
+        body: { email: user.email, admin_password: password },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
