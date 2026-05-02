@@ -21,7 +21,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen text-white overflow-x-hidden" style={{ background: '#080c17', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
       <Helmet>
-        <title>Unigramm — Your Campus, Supercharged</title>
+        <title>Unigramm — Your Campus</title>
         <meta name="description" content="Unigramm is the all-in-one campus app for Indian university students — connect, collaborate, date, trade, and thrive with your college community." />
       </Helmet>
       <NavSection logo={logoImg} />
