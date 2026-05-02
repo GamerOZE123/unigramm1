@@ -72,9 +72,6 @@ export default function FeaturesSection() {
       <div className="max-w-6xl mx-auto">
         <motion.div className="mb-10" initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
           <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: '#4f8eff' }}>Everything inside</p>
-          <h2 style={{ fontFamily: "'Clash Display', sans-serif", fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', fontWeight: 700 }}>
-            Your campus, supercharged.
-          </h2>
           <p className="mt-2 text-sm" style={{ color: 'rgba(255,255,255,0.4)', maxWidth: '480px' }}>
             Nine powerful tools built for student life — from day-one conversations to graduation-day memories.
           </p>
