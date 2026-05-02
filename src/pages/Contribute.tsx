@@ -49,7 +49,7 @@ export default function Contribute() {
   const [formData, setFormData] = useState({
     full_name: '', email: '', skills: '', message: '', portfolio_url: '',
     custom_role: '', experience: '', experience_links: '', university: '',
-    year_of_study: '', availability: '',
+    year_of_study: '',
   });
   const [attachmentFile, setAttachmentFile] = useState<File | null>(null);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
@@ -95,8 +95,19 @@ export default function Contribute() {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const canProceed = formData.full_name.trim() && formData.email.trim();
-  const canSubmit = selectedRole && (selectedRole !== 'other' || formData.custom_role.trim());
+  const canProceed =
+    formData.full_name.trim() &&
+    formData.email.trim() &&
+    formData.university.trim() &&
+    formData.year_of_study.trim() &&
+    formData.skills.trim() &&
+    formData.experience.trim() &&
+    formData.experience_links.trim();
+  const canSubmit =
+    selectedRole &&
+    (selectedRole !== 'other' || formData.custom_role.trim()) &&
+    formData.portfolio_url.trim() &&
+    formData.message.trim();
 
   const goNext = async () => {
     if (!canProceed) return;
@@ -125,7 +136,6 @@ export default function Contribute() {
 
       if (error) {
         if (error.code !== '23505') {
-          toast.error('Something went wrong. Please try again.');
           setSavingStep1(false);
           return;
         }
@@ -133,7 +143,6 @@ export default function Contribute() {
         setSavedId(data.id);
       }
     } catch {
-      toast.error('Something went wrong. Please try again.');
       setSavingStep1(false);
       return;
     }
@@ -154,7 +163,6 @@ export default function Contribute() {
         custom_role: selectedRole === 'other' ? formData.custom_role.trim() || null : null,
         message: formData.message.trim() || null,
         portfolio_url: formData.portfolio_url.trim() || null,
-        availability: formData.availability.trim() || null,
       };
 
       let error;
@@ -164,14 +172,11 @@ export default function Contribute() {
         ({ error } = await supabase.from('contributor_applications').update(updateData).eq('email', formData.email.trim().toLowerCase()));
       }
 
-      if (error) {
-        toast.error('Something went wrong. Please try again.');
-      } else {
+      if (!error) {
         setSubmitted(true);
-        toast.success("Application submitted! We'll reach out soon.");
       }
     } catch {
-      toast.error('Something went wrong. Please try again.');
+      // silent
     } finally {
       setLoading(false);
     }
@@ -189,11 +194,11 @@ export default function Contribute() {
           </motion.div>
           <motion.h1 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
             className="text-2xl font-bold mb-2 text-white" style={{ fontFamily: "'Clash Display', sans-serif" }}>
-            You're in!
+            Application received
           </motion.h1>
           <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
             className="text-sm mb-8" style={{ color: 'rgba(255,255,255,0.45)' }}>
-            Thanks for wanting to be part of Unigramm. We'll review your application and reach out soon.
+            Thanks for applying to be part of Unigramm. We'll review your application carefully and reach out soon if it's a fit.
           </motion.p>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
             <button onClick={() => navigate('/')} className="h-10 px-5 rounded-xl text-sm font-medium flex items-center gap-2 mx-auto transition-all hover:bg-[#4f8eff]/10"

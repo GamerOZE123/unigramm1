@@ -1429,7 +1429,6 @@ export type Database = {
       }
       contributor_applications: {
         Row: {
-          availability: string | null
           created_at: string | null
           custom_role: string | null
           email: string
@@ -1446,7 +1445,6 @@ export type Database = {
           year_of_study: string | null
         }
         Insert: {
-          availability?: string | null
           created_at?: string | null
           custom_role?: string | null
           email: string
@@ -1463,7 +1461,6 @@ export type Database = {
           year_of_study?: string | null
         }
         Update: {
-          availability?: string | null
           created_at?: string | null
           custom_role?: string | null
           email?: string
