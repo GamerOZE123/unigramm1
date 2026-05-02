@@ -135,14 +135,26 @@ export default function Contribute() {
         .single();
 
       if (error) {
-        if (error.code !== '23505') {
+        if (error.code === '23505') {
+          // Duplicate email — look up the existing record so we can update it on submit
+          const { data: existing } = await supabase
+            .from('contributor_applications')
+            .select('id')
+            .eq('email', formData.email.trim().toLowerCase())
+            .maybeSingle();
+          if (existing?.id) setSavedId(existing.id);
+        } else {
+          console.error('Contributor application insert error:', error);
+          toast.error(error.message || 'Could not save your info. Please try again.');
           setSavingStep1(false);
           return;
         }
       } else if (data) {
         setSavedId(data.id);
       }
-    } catch {
+    } catch (err: any) {
+      console.error('Contribute goNext error:', err);
+      toast.error(err?.message || 'Something went wrong. Please try again.');
       setSavingStep1(false);
       return;
     }
