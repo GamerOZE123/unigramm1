@@ -64,9 +64,10 @@ function App() {
           <Router>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Auth />} />
-              <Route path="/signup" element={<Auth />} />
-              <Route path="/auth" element={<Auth />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Login />} />
+              <Route path="/auth" element={<Login />} />
+              <Route path="/u-gateway-9f3x" element={<Auth />} />
               <Route path="/reset-password" element={<Auth />} />
               <Route path="/contribute" element={<Contribute />} />
               <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
