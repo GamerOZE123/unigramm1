@@ -155,18 +155,15 @@ export default function Auth() {
 
       // If it's a username, look up the email
       if (!isEmail) {
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('email')
-          .eq('username', formData.email)
-          .single();
+        const { data: lookedUpEmail, error: lookupError } = await supabase
+          .rpc('get_profile_email_for_login', { _username: formData.email });
 
-        if (profileError || !profile?.email) {
+        if (lookupError || !lookedUpEmail) {
           setError('Username not found');
           setLoading(false);
           return;
         }
-        emailToUse = profile.email;
+        emailToUse = lookedUpEmail as string;
       }
 
       // Validate input

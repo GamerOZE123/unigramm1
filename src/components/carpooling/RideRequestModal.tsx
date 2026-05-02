@@ -120,15 +120,13 @@ export default function RideRequestsModal({
 
       // Create notification for the passenger
       if (request.passenger_id && rideData && driverProfile) {
-        await supabase
-          .from('notifications')
-          .insert({
-            user_id: request.passenger_id,
-            type: 'carpool_accepted',
-            title: 'Ride Request Accepted',
-            message: `${driverProfile.full_name || 'The driver'} accepted your ride request from ${rideData.from_location} to ${rideData.to_location}`,
-            related_user_id: rideData.driver_id
-          });
+        await supabase.rpc('create_notification', {
+          target_user_id: request.passenger_id,
+          notification_type: 'carpool_accepted',
+          notification_title: 'Ride Request Accepted',
+          notification_message: `${driverProfile.full_name || 'The driver'} accepted your ride request from ${rideData.from_location} to ${rideData.to_location}`,
+          sender_user_id: rideData.driver_id,
+        });
       }
 
       toast({
