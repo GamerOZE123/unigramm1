@@ -12,6 +12,27 @@ serve(async (req) => {
   }
 
   try {
+    // Require CRON_SECRET to prevent unauthorized invocation of this
+    // privileged, destructive function. Cron job must send the header.
+    const cronSecret = Deno.env.get('CRON_SECRET');
+    const provided = req.headers.get('x-cron-secret') ?? '';
+    if (!cronSecret || provided.length !== cronSecret.length) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    let diff = 0;
+    for (let i = 0; i < cronSecret.length; i++) {
+      diff |= cronSecret.charCodeAt(i) ^ provided.charCodeAt(i);
+    }
+    if (diff !== 0) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
