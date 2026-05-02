@@ -41,6 +41,27 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Require CRON_SECRET to prevent unauthorized invocation. This function
+    // is meant to be called by the scheduled cron job only.
+    const cronSecret = Deno.env.get('CRON_SECRET')
+    const provided = req.headers.get('x-cron-secret') ?? ''
+    if (!cronSecret || provided.length !== cronSecret.length) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    let diff = 0
+    for (let i = 0; i < cronSecret.length; i++) {
+      diff |= cronSecret.charCodeAt(i) ^ provided.charCodeAt(i)
+    }
+    if (diff !== 0) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const supabaseUrl = 'https://sdqmiwsvplykgsxrthfp.supabase.co'
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     
