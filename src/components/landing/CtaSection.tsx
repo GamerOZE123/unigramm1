@@ -13,8 +13,10 @@ export default function CtaSection() {
 
   useEffect(() => {
     const fetchCount = async () => {
-      const { count } = await supabase.from('profiles').select('id', { count: 'exact', head: true });
-      if (count && count > 0) setUserCount(count);
+      const { data, error } = await supabase.rpc('get_public_stats');
+      if (error || !data) return;
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row?.user_count) setUserCount(Number(row.user_count));
     };
     fetchCount();
   }, []);
