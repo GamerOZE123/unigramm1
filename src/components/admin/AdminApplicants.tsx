@@ -299,11 +299,12 @@ const AdminApplicants: React.FC<Props> = ({ password }) => {
             <Field icon={GraduationCap} label="University" value={app.university} />
             <Field icon={Calendar} label="Year of study" value={app.year_of_study} />
             <Field icon={Globe} label="Portfolio" value={app.portfolio_url} isLink />
+            <Field icon={User} label="Role" value={displayRole as string | null} />
           </div>
 
-          {/* Long-form sections */}
-          <Section icon={Sparkles} title="Skills" content={app.skills} />
-          <Section icon={FileText} title="Experience" content={app.experience} />
+          {/* Long-form sections — always shown, even if blank */}
+          <Section icon={Sparkles} title="Skills / Tech stack" content={app.skills} />
+          <Section icon={FileText} title="Any prior experience?" content={app.experience} />
           <Section icon={LinkIcon} title="Experience links" content={app.experience_links} />
           <Section icon={FileText} title="Anything they wanted to ask or say" content={app.message} />
         </CardContent>
@@ -356,13 +357,17 @@ const Field: React.FC<{ icon: React.ElementType; label: string; value: string | 
 );
 
 const Section: React.FC<{ icon: React.ElementType; title: string; content: string | null }> = ({ icon: Icon, title, content }) => {
-  if (!content) return null;
+  const isEmpty = !content || !content.trim();
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
         <Icon className="w-4 h-4 text-muted-foreground" /> {title}
       </div>
-      <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed pl-6">{content}</p>
+      {isEmpty ? (
+        <p className="text-sm text-muted-foreground italic pl-6">— No answer provided</p>
+      ) : (
+        <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed pl-6">{content}</p>
+      )}
     </div>
   );
 };
