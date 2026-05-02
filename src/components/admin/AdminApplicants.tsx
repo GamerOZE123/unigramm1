@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
-  ChevronLeft, ChevronRight, Mail, GraduationCap, Calendar, Briefcase,
+  ChevronLeft, ChevronRight, Mail, GraduationCap, Calendar,
   Link as LinkIcon, FileText, Sparkles, Trash2, RefreshCw, User, Globe, Clock,
   Hourglass, RotateCcw
 } from 'lucide-react';
