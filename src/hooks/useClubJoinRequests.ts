@@ -274,15 +274,13 @@ export const useClubJoinRequests = (clubId: string | null, isStudent: boolean = 
 
       // Create notification for the student
       if (clubData && studentProfile) {
-        await supabase
-          .from('notifications')
-          .insert({
-            user_id: studentId,
-            type: 'club_accepted',
-            title: 'Club Request Accepted',
-            message: `Your request to join ${clubData.club_name} has been accepted!`,
-            related_user_id: clubData.user_id
-          });
+        await supabase.rpc('create_notification', {
+          target_user_id: studentId,
+          notification_type: 'club_accepted',
+          notification_title: 'Club Request Accepted',
+          notification_message: `Your request to join ${clubData.club_name} has been accepted!`,
+          sender_user_id: clubData.user_id,
+        });
       }
 
       toast({

@@ -52,7 +52,7 @@ export default function StoreManagement() {
     try {
       const { data, error } = await supabase
         .from('student_stores')
-        .select('*')
+        .select('id, user_id, store_name, store_description, store_logo_url, payment_methods, is_active, created_at, updated_at')
         .eq('user_id', user.id)
         .single();
 
@@ -64,6 +64,9 @@ export default function StoreManagement() {
         throw error;
       }
 
+      // bank_details is column-revoked from clients; fetch via owner-only RPC
+      const { data: bankData } = await supabase.rpc('get_my_store_bank_details');
+
       setStore(data);
       setFormData({
         store_name: data.store_name || '',
@@ -71,7 +74,7 @@ export default function StoreManagement() {
       });
       setLogoPreview(data.store_logo_url || '');
       setPaymentMethods((data.payment_methods as unknown as PaymentMethod[]) || []);
-      setBankDetails((data.bank_details as unknown as typeof bankDetails) || {
+      setBankDetails((bankData as unknown as typeof bankDetails) || {
         account_name: '',
         account_number: '',
         bank_name: '',

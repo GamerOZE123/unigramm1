@@ -5558,9 +5558,23 @@ export type Database = {
           unread_count: number
         }[]
       }
+      get_my_sensitive_profile_fields: {
+        Args: never
+        Returns: {
+          email: string
+          personal_email: string
+          push_token: string
+          push_token_type: string
+          push_token_updated_at: string
+        }[]
+      }
       get_my_store_bank_details: { Args: never; Returns: Json }
       get_or_create_conversation: {
         Args: { p_user1_id: string; p_user2_id: string }
+        Returns: string
+      }
+      get_profile_email_for_login: {
+        Args: { _username: string }
         Returns: string
       }
       get_public_profile_columns: { Args: never; Returns: string }
