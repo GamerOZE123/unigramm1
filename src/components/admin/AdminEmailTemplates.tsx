@@ -66,7 +66,11 @@ const EMAIL_TEMPLATES: EmailTemplate[] = [
   },
 ];
 
-const AdminEmailTemplates: React.FC = () => {
+interface AdminEmailTemplatesProps {
+  adminPassword: string;
+}
+
+const AdminEmailTemplates: React.FC<AdminEmailTemplatesProps> = ({ adminPassword }) => {
   const [testEmail, setTestEmail] = useState('');
   const [sendingKey, setSendingKey] = useState<string | null>(null);
   const [sentKeys, setSentKeys] = useState<Set<string>>(new Set());
@@ -84,7 +88,7 @@ const AdminEmailTemplates: React.FC = () => {
     try {
       if (template.type === 'edge-function' && template.functionName && template.bodyBuilder) {
         const { data, error } = await supabase.functions.invoke(template.functionName, {
-          body: template.bodyBuilder(testEmail),
+          body: { ...template.bodyBuilder(testEmail), admin_password: adminPassword },
         });
         if (error) throw error;
         if (data?.error) throw new Error(data.error);
