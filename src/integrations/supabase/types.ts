@@ -5997,6 +5997,13 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_public_stats: {
+        Args: never
+        Returns: {
+          startup_count: number
+          user_count: number
+        }[]
+      }
       get_public_student_info: {
         Args: { target_user_id: string }
         Returns: {

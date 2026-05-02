@@ -107,12 +107,11 @@ export default function HeroSection({ indiaMap, screenshots }: { indiaMap: strin
 
   useEffect(() => {
     const fetchCounts = async () => {
-      const [profilesRes, startupRes] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact', head: true }),
-        supabase.from('student_startups').select('id', { count: 'exact', head: true }),
-      ]);
-      if (profilesRes.count && profilesRes.count > 0) setUserCount(profilesRes.count);
-      if (startupRes.count && startupRes.count > 0) setStartupCount(startupRes.count);
+      const { data, error } = await supabase.rpc('get_public_stats');
+      if (error || !data) return;
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row?.user_count) setUserCount(Number(row.user_count));
+      if (row?.startup_count) setStartupCount(Number(row.startup_count));
     };
     fetchCounts();
   }, []);
