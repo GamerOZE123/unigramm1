@@ -292,34 +292,34 @@ export default function Contribute() {
 
                     <motion.div className="grid grid-cols-1 sm:grid-cols-2 gap-4" variants={fieldVariants} initial="hidden" animate="visible" custom={2}>
                       <div className="space-y-1.5">
-                        <Label htmlFor="university" className="text-sm text-white/70">University</Label>
+                        <Label htmlFor="university" className="text-sm text-white/70">University *</Label>
                         <input id="university" name="university" value={formData.university} onChange={handleChange}
-                          placeholder="Your university" className="w-full h-11 px-4 rounded-xl text-sm outline-none" style={inputStyle} />
+                          required placeholder="Your university" className="w-full h-11 px-4 rounded-xl text-sm outline-none" style={inputStyle} />
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="year_of_study" className="text-sm text-white/70">Year of study</Label>
+                        <Label htmlFor="year_of_study" className="text-sm text-white/70">Year of study *</Label>
                         <input id="year_of_study" name="year_of_study" value={formData.year_of_study} onChange={handleChange}
-                          placeholder="e.g. 2nd year, Graduate..." className="w-full h-11 px-4 rounded-xl text-sm outline-none" style={inputStyle} />
+                          required placeholder="e.g. 2nd year, Graduate..." className="w-full h-11 px-4 rounded-xl text-sm outline-none" style={inputStyle} />
                       </div>
                     </motion.div>
 
                     <motion.div className="space-y-1.5" variants={fieldVariants} initial="hidden" animate="visible" custom={3}>
-                      <Label htmlFor="skills" className="text-sm text-white/70">Skills / Tech stack</Label>
+                      <Label htmlFor="skills" className="text-sm text-white/70">Skills / Tech stack *</Label>
                       <input id="skills" name="skills" value={formData.skills} onChange={handleChange}
-                        placeholder="e.g. React, Figma, Python, Premiere Pro..." className="w-full h-11 px-4 rounded-xl text-sm outline-none" style={inputStyle} />
+                        required placeholder="e.g. React, Figma, Python, Premiere Pro..." className="w-full h-11 px-4 rounded-xl text-sm outline-none" style={inputStyle} />
                     </motion.div>
 
                     <motion.div className="space-y-1.5" variants={fieldVariants} initial="hidden" animate="visible" custom={4}>
-                      <Label htmlFor="experience" className="text-sm text-white/70">Any prior experience?</Label>
+                      <Label htmlFor="experience" className="text-sm text-white/70">Any prior experience? *</Label>
                       <textarea id="experience" name="experience" value={formData.experience} onChange={handleChange}
-                        placeholder="Projects, internships, freelance work, or anything relevant..." rows={3}
+                        required placeholder="Projects, internships, freelance work, or anything relevant..." rows={3}
                         className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none" style={inputStyle} />
                     </motion.div>
 
                     <motion.div className="space-y-1.5" variants={fieldVariants} initial="hidden" animate="visible" custom={5}>
-                      <Label htmlFor="experience_links" className="text-sm text-white/70">Links to your work</Label>
+                      <Label htmlFor="experience_links" className="text-sm text-white/70">Links to your work *</Label>
                       <textarea id="experience_links" name="experience_links" value={formData.experience_links} onChange={handleChange}
-                        placeholder={"Portfolio, GitHub, Behance, Dribbble, LinkedIn...\nhttps://github.com/yourname"} rows={2}
+                        required placeholder={"Portfolio, GitHub, Behance, Dribbble, LinkedIn...\nhttps://github.com/yourname"} rows={2}
                         className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none" style={inputStyle} />
                     </motion.div>
 
@@ -390,7 +390,7 @@ export default function Contribute() {
                     </motion.div>
 
                     <motion.div className="space-y-2" variants={fieldVariants} initial="hidden" animate="visible" custom={1}>
-                      <Label className="text-sm font-medium text-white/70">How would you like to contribute?</Label>
+                      <Label className="text-sm font-medium text-white/70">How would you like to contribute? *</Label>
                       <div className="grid grid-cols-2 gap-2.5">
                         {roles.map((role) => (
                           <motion.button key={role.value} type="button" onClick={() => setSelectedRole(role.value)}
@@ -427,24 +427,17 @@ export default function Contribute() {
                       )}
                     </AnimatePresence>
 
-                    <motion.div className="space-y-1.5" variants={fieldVariants} initial="hidden" animate="visible" custom={2}>
-                      <Label htmlFor="availability" className="text-sm text-white/70">How many hours per week can you dedicate?</Label>
-                      <input id="availability" name="availability" value={formData.availability} onChange={handleChange}
-                        placeholder="e.g. 5-10 hours, weekends only..."
-                        className="w-full h-11 px-4 rounded-xl text-sm outline-none" style={inputStyle} />
-                    </motion.div>
-
                     <motion.div className="space-y-1.5" variants={fieldVariants} initial="hidden" animate="visible" custom={3}>
-                      <Label htmlFor="portfolio_url" className="text-sm text-white/70">Portfolio / LinkedIn / GitHub</Label>
+                      <Label htmlFor="portfolio_url" className="text-sm text-white/70">Portfolio / LinkedIn / GitHub *</Label>
                       <input id="portfolio_url" name="portfolio_url" type="url" value={formData.portfolio_url} onChange={handleChange}
-                        placeholder="https://..."
+                        required placeholder="https://..."
                         className="w-full h-11 px-4 rounded-xl text-sm outline-none" style={inputStyle} />
                     </motion.div>
 
                     <motion.div className="space-y-1.5" variants={fieldVariants} initial="hidden" animate="visible" custom={4}>
-                      <Label htmlFor="message" className="text-sm text-white/70">How would you like to contribute to being a part of Unigramm?</Label>
+                      <Label htmlFor="message" className="text-sm text-white/70">Anything you wanna ask or say? *</Label>
                       <textarea id="message" name="message" value={formData.message} onChange={handleChange}
-                        placeholder="What excites you about Unigramm? What ideas do you have?" rows={4}
+                        required placeholder="Questions, ideas, or anything you'd like us to know..." rows={4}
                         className="w-full px-4 py-3 rounded-xl text-sm outline-none resize-none" style={inputStyle} />
                     </motion.div>
 
