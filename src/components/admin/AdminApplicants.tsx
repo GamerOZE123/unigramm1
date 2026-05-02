@@ -10,6 +10,8 @@ import {
   Hourglass, RotateCcw
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
@@ -43,6 +45,7 @@ const AdminApplicants: React.FC<Props> = ({ password }) => {
   const [deleting, setDeleting] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [notify, setNotify] = useState(true);
+  const [view, setView] = useState<'list' | 'individuals'>('list');
 
   const fetchApps = async () => {
     setLoading(true);
@@ -141,7 +144,72 @@ const AdminApplicants: React.FC<Props> = ({ password }) => {
 
   return (
     <div className="space-y-4">
-      {/* Top bar: counter + actions */}
+      <Tabs value={view} onValueChange={(v) => setView(v as 'list' | 'individuals')}>
+        <TabsList className="grid w-full max-w-sm grid-cols-2">
+          <TabsTrigger value="list">List</TabsTrigger>
+          <TabsTrigger value="individuals">Individuals</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="list" className="mt-4">
+          <div className="flex items-center justify-between mb-3">
+            <Badge variant="secondary" className="text-sm">{apps.length} applicants</Badge>
+            <Button variant="outline" size="sm" onClick={fetchApps}>
+              <RefreshCw className="w-4 h-4 mr-1" /> Refresh
+            </Button>
+          </div>
+          <Card className="border-border/40">
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">#</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>University</TableHead>
+                    <TableHead>Year</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Applied</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {apps.map((a, i) => {
+                    const r = a.role === 'other' && a.custom_role ? a.custom_role : a.role;
+                    return (
+                      <TableRow key={a.id} className="cursor-pointer" onClick={() => { setIndex(i); setView('individuals'); }}>
+                        <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+                        <TableCell className="font-medium">{a.full_name}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{a.email}</TableCell>
+                        <TableCell className="text-sm">{a.university || '—'}</TableCell>
+                        <TableCell className="text-sm">{a.year_of_study || '—'}</TableCell>
+                        <TableCell className="text-sm capitalize">{r || '—'}</TableCell>
+                        <TableCell>
+                          {a.status === 'waitlisted' ? (
+                            <Badge variant="secondary" className="text-xs gap-1"><Hourglass className="w-3 h-3" /> Waitlisted</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs">Pending</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {a.created_at ? new Date(a.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); setIndex(i); setView('individuals'); }}>
+                            View
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="individuals" className="mt-4 space-y-4">
+          {/* Top bar: counter + actions */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="text-sm">
@@ -261,6 +329,8 @@ const AdminApplicants: React.FC<Props> = ({ password }) => {
           Next <ChevronRight className="w-4 h-4 ml-1" />
         </Button>
       </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
