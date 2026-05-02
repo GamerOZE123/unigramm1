@@ -1,0 +1,1 @@
+ALTER TABLE public.contributor_applications DROP COLUMN IF EXISTS availability;

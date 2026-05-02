@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
-  ChevronLeft, ChevronRight, Mail, GraduationCap, Calendar, Briefcase,
+  ChevronLeft, ChevronRight, Mail, GraduationCap, Calendar,
   Link as LinkIcon, FileText, Sparkles, Trash2, RefreshCw, User, Globe, Clock,
   Hourglass, RotateCcw
 } from 'lucide-react';
@@ -27,7 +27,6 @@ interface Application {
   experience: string | null;
   experience_links: string | null;
   portfolio_url: string | null;
-  availability: string | null;
   message: string | null;
   created_at: string | null;
   status?: string | null;
@@ -231,7 +230,6 @@ const AdminApplicants: React.FC<Props> = ({ password }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Field icon={GraduationCap} label="University" value={app.university} />
             <Field icon={Calendar} label="Year of study" value={app.year_of_study} />
-            <Field icon={Briefcase} label="Availability" value={app.availability} />
             <Field icon={Globe} label="Portfolio" value={app.portfolio_url} isLink />
           </div>
 
@@ -239,7 +237,7 @@ const AdminApplicants: React.FC<Props> = ({ password }) => {
           <Section icon={Sparkles} title="Skills" content={app.skills} />
           <Section icon={FileText} title="Experience" content={app.experience} />
           <Section icon={LinkIcon} title="Experience links" content={app.experience_links} />
-          <Section icon={FileText} title="Why they want to join" content={app.message} />
+          <Section icon={FileText} title="Anything they wanted to ask or say" content={app.message} />
         </CardContent>
       </Card>
 
