@@ -1,9 +1,27 @@
 import nodemailer from 'npm:nodemailer@6.9.16'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
+
+// Timing-safe string comparison to avoid leaking secrets via response time.
+function timingSafeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const ab = enc.encode(a);
+  const bb = enc.encode(b);
+  const len = Math.max(ab.length, bb.length);
+  const pa = new Uint8Array(len);
+  const pb = new Uint8Array(len);
+  pa.set(ab);
+  pb.set(bb);
+  let diff = ab.length ^ bb.length;
+  for (let i = 0; i < len; i++) diff |= pa[i] ^ pb[i];
+  return diff === 0;
+}
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -11,11 +29,32 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { email, name } = await req.json()
+    const { email, name, admin_password } = await req.json()
 
-    if (!email) {
+    // Require admin authentication so anyone with the function URL can't
+    // weaponize our SMTP server to spam arbitrary recipients.
+    const adminPassword = Deno.env.get('ADMIN_PASSWORD')
+    let authorized = !!(adminPassword && typeof admin_password === 'string' && timingSafeEqual(admin_password, adminPassword))
+
+    if (!authorized && typeof admin_password === 'string' && admin_password.length > 0) {
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      )
+      const { data: members } = await supabaseAdmin.rpc('verify_admin_team_password', { _password: admin_password })
+      if (members && members.length > 0) authorized = true
+    }
+
+    if (!authorized) {
       return new Response(
-        JSON.stringify({ error: 'Email is required' }),
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (!email || typeof email !== 'string' || !EMAIL_RE.test(email) || email.length > 254) {
+      return new Response(
+        JSON.stringify({ error: 'A valid email is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
