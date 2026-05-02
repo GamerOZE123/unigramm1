@@ -517,7 +517,7 @@ const Admin: React.FC = () => {
           {section === 'broadcast' && <AdminBroadcastNotifications password={storedPassword} />}
 
           {/* Email Templates */}
-          {section === 'emails' && <AdminEmailTemplates />}
+          {section === 'emails' && <AdminEmailTemplates adminPassword={storedPassword} />}
 
           {/* Dating Module */}
           {section === 'dating' && <AdminDatingModule password={storedPassword} />}
