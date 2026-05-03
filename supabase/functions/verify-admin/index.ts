@@ -12,6 +12,23 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Timing-safe comparison helper (module-scope within handler) used by both
+    // the multipart and JSON paths to avoid leaking password content via
+    // response timing.
+    const timingSafeEqual = (a: string, b: string): boolean => {
+      const enc = new TextEncoder();
+      const ab = enc.encode(a);
+      const bb = enc.encode(b);
+      const len = Math.max(ab.length, bb.length);
+      const pa = new Uint8Array(len);
+      const pb = new Uint8Array(len);
+      pa.set(ab);
+      pb.set(bb);
+      let diff = ab.length ^ bb.length;
+      for (let i = 0; i < len; i++) diff |= pa[i] ^ pb[i];
+      return diff === 0;
+    };
+
     const contentType = req.headers.get('content-type') || '';
 
     // Handle multipart upload
@@ -22,7 +39,7 @@ Deno.serve(async (req) => {
       const file = formData.get('file') as File;
       const adminPassword = Deno.env.get('ADMIN_PASSWORD');
 
-      if (!adminPassword || password !== adminPassword) {
+      if (!adminPassword || typeof password !== 'string' || !timingSafeEqual(password, adminPassword)) {
         return new Response(JSON.stringify({ valid: false }), {
           status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -59,23 +76,6 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
-
-    // Timing-safe comparison for the main admin password to prevent timing
-    // attacks that could leak the secret one byte at a time.
-    const timingSafeEqual = (a: string, b: string): boolean => {
-      const enc = new TextEncoder();
-      const ab = enc.encode(a);
-      const bb = enc.encode(b);
-      // Always compare a same-length buffer to avoid early-exit timing leaks.
-      const len = Math.max(ab.length, bb.length);
-      const pa = new Uint8Array(len);
-      const pb = new Uint8Array(len);
-      pa.set(ab);
-      pb.set(bb);
-      let diff = ab.length ^ bb.length;
-      for (let i = 0; i < len; i++) diff |= pa[i] ^ pb[i];
-      return diff === 0;
-    };
 
     const isMainAdmin = !!(adminPassword && typeof password === 'string' && timingSafeEqual(password, adminPassword));
     let teamMember: any = null;
