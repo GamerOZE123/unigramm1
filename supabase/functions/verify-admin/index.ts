@@ -719,7 +719,7 @@ Deno.serve(async (req) => {
       if (!isMainAdmin) return json({ valid: true, error: 'Only main admin can manage team' }, 403);
       const { data, error } = await supabaseAdmin
         .from('admin_team_members')
-        .select('*')
+        .select('id, name, email, allowed_sections, is_active, created_at, updated_at')
         .order('created_at', { ascending: false });
       if (error) return json({ valid: true, error: error.message }, 400);
       return json({ valid: true, members: data });
@@ -732,7 +732,7 @@ Deno.serve(async (req) => {
       const { data, error } = await supabaseAdmin
         .from('admin_team_members')
         .insert({ name, email: memberEmail || null, password: member_password, allowed_sections: sections || [] })
-        .select()
+        .select('id, name, email, allowed_sections, is_active, created_at, updated_at')
         .single();
       if (error) return json({ valid: true, error: error.message }, 400);
       return json({ valid: true, success: true, member: data });
