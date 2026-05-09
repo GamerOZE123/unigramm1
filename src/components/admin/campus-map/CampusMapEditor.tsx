@@ -166,11 +166,10 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
   useEffect(() => {
     if (!selectedUni) return;
     (async () => {
-      const { data } = await supabase
-        .from('campus_svg_data' as any)
-        .select('shapes, boundary_coordinates, center_lat, center_lng, zoom_level, last_edited_at, last_edited_by')
-        .eq('university_id', selectedUni)
-        .maybeSingle();
+      const { data: resp } = await supabase.functions.invoke('verify-admin', {
+        body: { password, action: 'fetch_campus_map', university_id: selectedUni },
+      });
+      const data = resp?.data;
       if (data) {
         const d: any = data;
         setShapes((d.shapes as Shape[]) ?? []);
