@@ -68,7 +68,11 @@ function MapCenterer({ center, zoom }: { center: [number, number]; zoom: number 
   return null;
 }
 
-const CampusMapEditor: React.FC = () => {
+interface CampusMapEditorProps {
+  password?: string;
+}
+
+const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
   // Universities
   const [universities, setUniversities] = useState<{ id: string; name: string; abbreviation: string | null }[]>([]);
   const [selectedUni, setSelectedUni] = useState<string>('');
@@ -162,11 +166,10 @@ const CampusMapEditor: React.FC = () => {
   useEffect(() => {
     if (!selectedUni) return;
     (async () => {
-      const { data } = await supabase
-        .from('campus_svg_data' as any)
-        .select('shapes, boundary_coordinates, center_lat, center_lng, zoom_level, last_edited_at, last_edited_by')
-        .eq('university_id', selectedUni)
-        .maybeSingle();
+      const { data: resp } = await supabase.functions.invoke('verify-admin', {
+        body: { password, action: 'fetch_campus_map', university_id: selectedUni },
+      });
+      const data = resp?.data;
       if (data) {
         const d: any = data;
         setShapes((d.shapes as Shape[]) ?? []);
@@ -378,11 +381,11 @@ const CampusMapEditor: React.FC = () => {
       last_edited_by: editor,
       last_edited_at: new Date().toISOString(),
     };
-    const { error } = await supabase
-      .from('campus_svg_data' as any)
-      .upsert(payload, { onConflict: 'university_id' });
-    if (error) {
-      toast.error('Save failed: ' + error.message);
+    const { data: resp, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password, action: 'save_campus_map', payload },
+    });
+    if (error || resp?.error || !resp?.success) {
+      toast.error('Save failed: ' + (error?.message || resp?.error || 'unknown'));
       return;
     }
     setLastEdit({ at: payload.last_edited_at, by: editor });
@@ -395,7 +398,7 @@ const CampusMapEditor: React.FC = () => {
         actor: editor,
       } as any);
     } catch { /* ignore */ }
-  }, [selectedUni, universities, svgString, shapes, boundary, center, zoom]);
+  }, [selectedUni, universities, svgString, shapes, boundary, center, zoom, password]);
 
   // ----- Reference image upload -----
   const onPickRefImage = (file: File) => {
@@ -576,8 +579,10 @@ const CampusMapEditor: React.FC = () => {
           .campus-cursor-select .leaflet-container:active { cursor: grabbing; }
           .campus-cursor-draw .leaflet-container,
           .campus-cursor-path .leaflet-container,
-          .campus-cursor-boundary .leaflet-container,
           .campus-cursor-corner .leaflet-container { cursor: crosshair; }
+          .campus-cursor-boundary .leaflet-container {
+            cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'><rect x='4' y='4' width='20' height='20' fill='none' stroke='%234f8eff' stroke-width='2' stroke-dasharray='3 3'/><circle cx='14' cy='14' r='1.5' fill='%234f8eff'/></svg>") 14 14, crosshair;
+          }
           .campus-cursor-pin .leaflet-container { cursor: cell; }
           .leaflet-interactive { cursor: pointer !important; }
         `}</style>
