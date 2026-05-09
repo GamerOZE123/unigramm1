@@ -569,7 +569,7 @@ const Admin: React.FC = () => {
         {section === 'map' && <AdminUniversityMap />}
 
         {/* Full-bleed: Campus Map Editor */}
-        {section === 'campus_maps' && <CampusMapEditor />}
+        {section === 'campus_maps' && <CampusMapEditor password={storedPassword} />}
       </main>
     </div>
   );
