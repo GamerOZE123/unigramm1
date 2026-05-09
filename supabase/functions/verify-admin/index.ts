@@ -188,6 +188,9 @@ Deno.serve(async (req) => {
       fetch_contributor_applications: 'applicants',
       delete_contributor_application: 'applicants',
       set_application_status: 'applicants',
+      // Campus maps
+      fetch_campus_map: 'campus_maps',
+      save_campus_map: 'campus_maps',
       // Team management — guarded inside handlers via isMainAdmin too
       fetch_team_members: 'team',
       add_team_member: 'team',
