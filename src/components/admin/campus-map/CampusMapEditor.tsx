@@ -398,7 +398,7 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
         actor: editor,
       } as any);
     } catch { /* ignore */ }
-  }, [selectedUni, universities, svgString, shapes, boundary, center, zoom]);
+  }, [selectedUni, universities, svgString, shapes, boundary, center, zoom, password]);
 
   // ----- Reference image upload -----
   const onPickRefImage = (file: File) => {
