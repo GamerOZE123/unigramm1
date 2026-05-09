@@ -1467,6 +1467,39 @@ Deno.serve(async (req) => {
       return json({ valid: true, success: true, status: newStatus, notified, notifyError });
     }
 
+    // ── Campus map ───────────────────────────────────────────
+    if (action === 'fetch_campus_map') {
+      const universityId = body?.university_id;
+      if (!universityId) return json({ valid: true, error: 'university_id required' }, 400);
+      const { data, error } = await supabaseAdmin
+        .from('campus_svg_data')
+        .select('shapes, boundary_coordinates, center_lat, center_lng, zoom_level, last_edited_at, last_edited_by, svg_content')
+        .eq('university_id', universityId)
+        .maybeSingle();
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, data });
+    }
+
+    if (action === 'save_campus_map') {
+      const payload = body?.payload;
+      if (!payload?.university_id) return json({ valid: true, error: 'payload.university_id required' }, 400);
+      const { error } = await supabaseAdmin
+        .from('campus_svg_data')
+        .upsert({
+          university_id: payload.university_id,
+          svg_content: payload.svg_content,
+          shapes: payload.shapes,
+          boundary_coordinates: payload.boundary_coordinates,
+          center_lat: payload.center_lat,
+          center_lng: payload.center_lng,
+          zoom_level: payload.zoom_level,
+          last_edited_by: payload.last_edited_by,
+          last_edited_at: new Date().toISOString(),
+        }, { onConflict: 'university_id' });
+      if (error) return json({ valid: true, error: error.message }, 400);
+      return json({ valid: true, success: true });
+    }
+
     // Default: just validate password
     return json({ valid: true, role, allowed_sections: allowedSections });
   } catch {
