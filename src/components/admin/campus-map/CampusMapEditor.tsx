@@ -68,7 +68,11 @@ function MapCenterer({ center, zoom }: { center: [number, number]; zoom: number 
   return null;
 }
 
-const CampusMapEditor: React.FC = () => {
+interface CampusMapEditorProps {
+  password?: string;
+}
+
+const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
   // Universities
   const [universities, setUniversities] = useState<{ id: string; name: string; abbreviation: string | null }[]>([]);
   const [selectedUni, setSelectedUni] = useState<string>('');
