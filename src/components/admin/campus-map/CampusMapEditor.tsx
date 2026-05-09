@@ -202,11 +202,14 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
     if (tool === 'select' || tool === 'landmark') return;
     const min = tool === 'path' ? 2 : 3;
     if (drafting.length < min) { setDrafting([]); return; }
+    const name = window.prompt(`Name this ${tool}:`, '')?.trim();
+    if (name === undefined) { setDrafting([]); return; }
+    if (!name) { toast.error('A label is required'); setDrafting([]); return; }
     pushHistory();
     const newShape: Shape = {
       id: genId(),
       type: tool as ShapeType,
-      label: '',
+      label: name,
       coordinates: drafting,
       style: { ...DEFAULT_STYLES[tool as ShapeType] },
       order: shapes.length,
@@ -234,11 +237,14 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
 
     if (tool === 'select') return;
     if (tool === 'landmark') {
+      const name = window.prompt('Name this landmark:', '')?.trim();
+      if (name === undefined) return;
+      if (!name) { toast.error('A label is required'); return; }
       pushHistory();
       const newShape: Shape = {
         id: genId(),
         type: 'landmark',
-        label: '',
+        label: name,
         coordinates: [[ll.lat, ll.lng]],
         style: { ...DEFAULT_STYLES.landmark },
         order: shapes.length,
