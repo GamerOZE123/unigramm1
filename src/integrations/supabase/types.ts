@@ -697,6 +697,75 @@ export type Database = {
           },
         ]
       }
+      campus_locations: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          is_visible: boolean | null
+          latitude: number | null
+          location_name: string
+          longitude: number | null
+          university_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_visible?: boolean | null
+          latitude?: number | null
+          location_name: string
+          longitude?: number | null
+          university_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          is_visible?: boolean | null
+          latitude?: number | null
+          location_name?: string
+          longitude?: number | null
+          university_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      campus_zones: {
+        Row: {
+          center_lat: number
+          center_lng: number
+          created_at: string | null
+          icon: string | null
+          id: string
+          radius_meters: number | null
+          university_id: string
+          zone_name: string
+        }
+        Insert: {
+          center_lat: number
+          center_lng: number
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          radius_meters?: number | null
+          university_id: string
+          zone_name: string
+        }
+        Update: {
+          center_lat?: number
+          center_lng?: number
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          radius_meters?: number | null
+          university_id?: string
+          zone_name?: string
+        }
+        Relationships: []
+      }
       carpool_ride_requests: {
         Row: {
           created_at: string
@@ -958,7 +1027,10 @@ export type Database = {
           event_visibility: string | null
           id: string
           image_url: string | null
+          latitude: number | null
           location: string | null
+          location_name: string | null
+          longitude: number | null
           max_attendees: number | null
           max_capacity: number | null
           registration_link: string | null
@@ -980,7 +1052,10 @@ export type Database = {
           event_visibility?: string | null
           id?: string
           image_url?: string | null
+          latitude?: number | null
           location?: string | null
+          location_name?: string | null
+          longitude?: number | null
           max_attendees?: number | null
           max_capacity?: number | null
           registration_link?: string | null
@@ -1002,7 +1077,10 @@ export type Database = {
           event_visibility?: string | null
           id?: string
           image_url?: string | null
+          latitude?: number | null
           location?: string | null
+          location_name?: string | null
+          longitude?: number | null
           max_attendees?: number | null
           max_capacity?: number | null
           registration_link?: string | null
@@ -6018,6 +6096,7 @@ export type Database = {
         Args: { challenge_uuid: string }
         Returns: number
       }
+      get_email_by_username: { Args: { p_username: string }; Returns: string }
       get_enhanced_conversations: {
         Args: { target_user_id: string }
         Returns: {
