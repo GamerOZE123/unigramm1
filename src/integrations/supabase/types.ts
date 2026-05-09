@@ -74,32 +74,32 @@ export type Database = {
       admin_team_members: {
         Row: {
           allowed_sections: string[]
+          auth_id: string | null
           created_at: string
           email: string | null
           id: string
           is_active: boolean
           name: string
-          password: string
           updated_at: string
         }
         Insert: {
           allowed_sections?: string[]
+          auth_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
           is_active?: boolean
           name: string
-          password: string
           updated_at?: string
         }
         Update: {
           allowed_sections?: string[]
+          auth_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
           is_active?: boolean
           name?: string
-          password?: string
           updated_at?: string
         }
         Relationships: []
@@ -354,6 +354,13 @@ export type Database = {
             columns: ["message_id"]
             isOneToOne: false
             referencedRelation: "anonymous_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "anonymous_message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "anonymous_messages_view"
             referencedColumns: ["id"]
           },
         ]
@@ -2118,6 +2125,13 @@ export type Database = {
             columns: ["discount_id"]
             isOneToOne: false
             referencedRelation: "student_discounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "discount_redemptions_discount_id_fkey"
+            columns: ["discount_id"]
+            isOneToOne: false
+            referencedRelation: "student_discounts_safe"
             referencedColumns: ["id"]
           },
         ]
@@ -5649,6 +5663,27 @@ export type Database = {
       }
     }
     Views: {
+      anonymous_messages_view: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          message: string | null
+          university: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          message?: string | null
+          university?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          message?: string | null
+          university?: string | null
+        }
+        Relationships: []
+      }
       profiles_public: {
         Row: {
           academic_year: string | null
@@ -5820,6 +5855,47 @@ export type Database = {
             columns: ["startup_id"]
             isOneToOne: false
             referencedRelation: "student_startups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_discounts_safe: {
+        Row: {
+          business_id: string | null
+          category: string | null
+          description: string | null
+          discount_code: string | null
+          id: string | null
+          is_active: boolean | null
+          min_points_required: number | null
+          title: string | null
+        }
+        Insert: {
+          business_id?: string | null
+          category?: string | null
+          description?: string | null
+          discount_code?: never
+          id?: string | null
+          is_active?: boolean | null
+          min_points_required?: number | null
+          title?: string | null
+        }
+        Update: {
+          business_id?: string | null
+          category?: string | null
+          description?: string | null
+          discount_code?: never
+          id?: string | null
+          is_active?: boolean | null
+          min_points_required?: number | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_discounts_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "business_profiles"
             referencedColumns: ["id"]
           },
         ]
