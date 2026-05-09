@@ -589,11 +589,7 @@ const CampusMapEditor: React.FC = () => {
 
           {/* Drafting preview */}
           {drafting.length > 0 && tool !== 'select' && tool !== 'landmark' && (
-            tool === 'path' ? (
-              <Polyline positions={drafting as any} pathOptions={{ color: '#8dcfff', dashArray: '2 4', weight: 2 }} />
-            ) : (
-              <Polyline positions={drafting as any} pathOptions={{ color: '#8dcfff', dashArray: '2 4', weight: 2 }} />
-            )
+            <Polyline positions={drafting as any} pathOptions={{ color: '#8dcfff', dashArray: '2 4', weight: 2 }} />
           )}
           {drafting.map((d, i) => (
             <CircleMarker key={i} center={d as any} radius={3} pathOptions={{ color: '#8dcfff', fillColor: '#8dcfff', fillOpacity: 1 }} />
