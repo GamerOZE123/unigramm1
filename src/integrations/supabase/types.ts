@@ -4842,6 +4842,13 @@ export type Database = {
             referencedRelation: "student_stores"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "student_store_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "student_stores_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       student_store_purchases: {
@@ -5899,6 +5906,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      student_stores_public: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          is_active: boolean | null
+          store_description: string | null
+          store_logo_url: string | null
+          store_name: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          store_description?: string | null
+          store_logo_url?: string | null
+          store_name?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          store_description?: string | null
+          store_logo_url?: string | null
+          store_name?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       trending_hashtags: {
         Row: {
