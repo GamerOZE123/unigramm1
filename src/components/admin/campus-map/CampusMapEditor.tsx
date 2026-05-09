@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { toast } from 'sonner';
 import {
   Building2, Hexagon, Minus, Diamond, Square, MousePointer2, Trash2, Eye, EyeOff,
-  Image as ImageIcon, Download, Copy, Save, Eye as PreviewIcon, MoveUp, MoveDown,
+  Image as ImageIcon, Download, Copy, Save, Eye as PreviewIcon, MoveUp, MoveDown, Search,
 } from 'lucide-react';
 import {
   buildSvg, DEFAULT_STYLES, COLOR_PRESETS,
@@ -40,12 +40,13 @@ function CoordTooltip({ onMove }: { onMove: (ll: L.LatLng) => void }) {
 }
 
 function MapClickHandler({
-  tool, drafting, onClick, onDblClick,
+  tool, drafting, onClick, onDblClick, onMapReady,
 }: {
   tool: Tool;
   drafting: LatLng[];
   onClick: (ll: L.LatLng) => void;
   onDblClick: () => void;
+  onMapReady?: (map: L.Map) => void;
 }) {
   useMapEvents({
     click: (e) => onClick(e.latlng),
@@ -57,6 +58,7 @@ function MapClickHandler({
     if (tool !== 'select') map.doubleClickZoom.disable();
     else map.doubleClickZoom.enable();
   }, [tool, map]);
+  useEffect(() => { onMapReady?.(map); }, [map, onMapReady]);
   return null;
 }
 
@@ -100,6 +102,35 @@ const CampusMapEditor: React.FC = () => {
 
   // Coord tooltip
   const [hoverLL, setHoverLL] = useState<L.LatLng | null>(null);
+  const mapRef = useRef<L.Map | null>(null);
+
+  // Search
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searching, setSearching] = useState(false);
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    setSearching(true);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(searchQuery)}`
+      );
+      const json = await res.json();
+      if (json && json[0]) {
+        const lat = parseFloat(json[0].lat);
+        const lon = parseFloat(json[0].lon);
+        setCenter([lat, lon]);
+        setZoom(17);
+        toast.success(`Centered on ${json[0].display_name.split(',')[0]}`);
+      } else {
+        toast.error('No results found');
+      }
+    } catch {
+      toast.error('Search failed');
+    } finally {
+      setSearching(false);
+    }
+  };
 
   // Last edit info
   const [lastEdit, setLastEdit] = useState<{ at: string; by: string } | null>(null);
@@ -214,8 +245,21 @@ const CampusMapEditor: React.FC = () => {
       setTool('select');
       return;
     }
+    // Auto-close polygon when clicking near the start point
+    const minPts = tool === 'path' ? 2 : 3;
+    if (drafting.length >= minPts && mapRef.current) {
+      const startPx = mapRef.current.latLngToContainerPoint(drafting[0] as any);
+      const clickPx = mapRef.current.latLngToContainerPoint(ll);
+      const dx = startPx.x - clickPx.x;
+      const dy = startPx.y - clickPx.y;
+      if (Math.sqrt(dx * dx + dy * dy) < 14) {
+        // Trigger finish on next tick using current draft
+        setTimeout(() => finishDraft(), 0);
+        return;
+      }
+    }
     setDrafting((d) => [...d, [ll.lat, ll.lng]]);
-  }, [tool, cornerStage, refNW, shapes.length, pushHistory]);
+  }, [tool, cornerStage, refNW, shapes.length, pushHistory, drafting, finishDraft]);
 
   // Keyboard
   useEffect(() => {
@@ -361,7 +405,13 @@ const CampusMapEditor: React.FC = () => {
     toast.info('Click "Set NW corner" then click the map to anchor.');
   };
 
-  const cursorClass = tool === 'select' ? '' : 'cursor-crosshair';
+  const cursorClass =
+    cornerStage > 0 ? 'campus-cursor-corner' :
+    tool === 'select' ? 'campus-cursor-select' :
+    tool === 'landmark' ? 'campus-cursor-pin' :
+    tool === 'path' ? 'campus-cursor-path' :
+    tool === 'boundary' ? 'campus-cursor-boundary' :
+    'campus-cursor-draw';
 
   return (
     <div className="flex h-[calc(100vh-60px)] w-full overflow-hidden bg-background">
@@ -521,6 +571,32 @@ const CampusMapEditor: React.FC = () => {
 
       {/* MAP */}
       <div className={`flex-1 relative ${cursorClass}`}>
+        <style>{`
+          .campus-cursor-select .leaflet-container { cursor: grab; }
+          .campus-cursor-select .leaflet-container:active { cursor: grabbing; }
+          .campus-cursor-draw .leaflet-container,
+          .campus-cursor-path .leaflet-container,
+          .campus-cursor-boundary .leaflet-container,
+          .campus-cursor-corner .leaflet-container { cursor: crosshair; }
+          .campus-cursor-pin .leaflet-container { cursor: cell; }
+          .leaflet-interactive { cursor: pointer !important; }
+        `}</style>
+        {/* Search bar */}
+        <form
+          onSubmit={handleSearch}
+          className="absolute top-3 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-1 bg-background/90 backdrop-blur border border-border/60 rounded-full pl-3 pr-1 py-1 shadow-lg w-[min(420px,60%)]"
+        >
+          <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search a place to center the map…"
+            className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/70 py-1"
+          />
+          <Button type="submit" size="sm" className="h-7 rounded-full px-3 text-xs" disabled={searching}>
+            {searching ? '…' : 'Go'}
+          </Button>
+        </form>
         {mobileWarn && (
           <div className="absolute top-0 inset-x-0 z-[1000] bg-amber-500/15 border-b border-amber-500/40 text-amber-200 text-xs text-center py-1.5 px-2">
             Campus Map Editor works best on desktop. Some drawing tools may not work on mobile.
@@ -539,7 +615,7 @@ const CampusMapEditor: React.FC = () => {
           />
           <MapCenterer center={center} zoom={zoom} />
           <CoordTooltip onMove={setHoverLL} />
-          <MapClickHandler tool={tool} drafting={drafting} onClick={onMapClick} onDblClick={finishDraft} />
+          <MapClickHandler tool={tool} drafting={drafting} onClick={onMapClick} onDblClick={finishDraft} onMapReady={(m) => { mapRef.current = m; }} />
 
           {refImageUrl && refBounds && (
             <ImageOverlay url={refImageUrl} bounds={refBounds as L.LatLngBoundsExpression} opacity={refOpacity / 100} />
