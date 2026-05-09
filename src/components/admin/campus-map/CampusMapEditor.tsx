@@ -579,8 +579,10 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
           .campus-cursor-select .leaflet-container:active { cursor: grabbing; }
           .campus-cursor-draw .leaflet-container,
           .campus-cursor-path .leaflet-container,
-          .campus-cursor-boundary .leaflet-container,
           .campus-cursor-corner .leaflet-container { cursor: crosshair; }
+          .campus-cursor-boundary .leaflet-container {
+            cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'><rect x='4' y='4' width='20' height='20' fill='none' stroke='%234f8eff' stroke-width='2' stroke-dasharray='3 3'/><circle cx='14' cy='14' r='1.5' fill='%234f8eff'/></svg>") 14 14, crosshair;
+          }
           .campus-cursor-pin .leaflet-container { cursor: cell; }
           .leaflet-interactive { cursor: pointer !important; }
         `}</style>
