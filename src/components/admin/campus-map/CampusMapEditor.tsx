@@ -604,7 +604,7 @@ const CampusMapEditor: React.FC = () => {
         )}
         {tool !== 'select' && (
           <div className="absolute top-2 right-2 z-[1000] px-2 py-1 rounded bg-[#4f8eff]/20 border border-[#4f8eff]/40 text-[10px] font-mono text-[#cfe1ff]">
-            Drawing: {tool} {tool !== 'landmark' && tool !== 'select' ? '(double-click or "Finish" to close)' : ''}
+            Drawing: {tool} {tool !== 'landmark' ? '(double-click or "Finish" to close)' : ''}
           </div>
         )}
       </div>
