@@ -2,13 +2,14 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, Users, Clock, ShieldCheck, Flag, Settings,
-  Bell, BarChart3, GraduationCap, UserCheck, X, Users2, BookOpen, Mail, Heart, Megaphone, Layers, BadgeCheck, Coins, Sparkles, Map as MapIcon
+  Bell, BarChart3, GraduationCap, UserCheck, X, Users2, BookOpen, Mail, Heart, Megaphone, Layers, BadgeCheck, Coins, Sparkles, Map as MapIcon, MapPinned
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export type AdminSection =
   | 'overview'
   | 'map'
+  | 'campus_maps'
   | 'pending'
   | 'waitlist'
   | 'users'
@@ -47,6 +48,7 @@ const nav: { key: AdminSection; label: string; icon: React.ElementType; group?: 
   { key: 'auth', label: 'Authenticated', icon: ShieldCheck, group: 'Users' },
   { key: 'university', label: 'University Features', icon: GraduationCap, group: 'Config' },
   { key: 'courses', label: 'Course Listing', icon: BookOpen, group: 'Config' },
+  { key: 'campus_maps', label: 'Campus Maps', icon: MapPinned, group: 'Config' },
   { key: 'flags', label: 'Feature Flags', icon: Flag, group: 'Config' },
   { key: 'config', label: 'App Config', icon: Settings, group: 'Config' },
   { key: 'dating', label: 'Dating Module', icon: Heart, group: 'Features' },
