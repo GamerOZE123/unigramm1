@@ -109,6 +109,99 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
 
+    // ── Server-side action authorization ──────────────────────
+    // Map every action to the admin sidebar section that owns it. Team members
+    // may only invoke actions belonging to a section in their allowedSections.
+    // Main admin (allowedSections === null) bypasses this check.
+    const ACTION_SECTION_MAP: Record<string, string> = {
+      // Waitlist
+      fetch: 'waitlist',
+      invite: 'waitlist',
+      delete_waitlist_entry: 'waitlist',
+      add_waitlist_entry: 'waitlist',
+      update_waitlist_entry: 'waitlist',
+      // Pending accounts
+      fetch_pending_accounts: 'pending',
+      // User management
+      fetch_users: 'users',
+      set_approved: 'users',
+      set_profile_completed: 'users',
+      delete_user: 'users',
+      change_user_role: 'users',
+      change_university: 'users',
+      fetch_subscriptions: 'users',
+      fetch_user_subscription: 'users',
+      set_user_subscription: 'users',
+      cancel_user_subscription: 'users',
+      confirm_email: 'users',
+      fetch_user_full_details: 'users',
+      update_profile_fields: 'users',
+      clear_user_data: 'users',
+      notify_user: 'users',
+      // Authenticated users
+      fetch_auth_users: 'auth',
+      force_delete_auth_user: 'auth',
+      // Feature flags
+      fetch_flags: 'flags',
+      toggle_flag: 'flags',
+      // App config
+      fetch_configs: 'config',
+      update_config: 'config',
+      // Broadcast
+      fetch_all_user_ids: 'broadcast',
+      broadcast_batch: 'broadcast',
+      fetch_broadcast_logs: 'broadcast',
+      delete_broadcast_log: 'broadcast',
+      // Dating module
+      update_dating_config: 'dating',
+      add_dating_icebreaker: 'dating',
+      update_dating_icebreaker: 'dating',
+      update_dating_icebreaker_order: 'dating',
+      toggle_dating_icebreaker: 'dating',
+      delete_dating_icebreaker: 'dating',
+      add_dating_prompt: 'dating',
+      update_dating_prompt: 'dating',
+      update_dating_prompt_order: 'dating',
+      toggle_dating_prompt: 'dating',
+      delete_dating_prompt: 'dating',
+      fetch_dating_preferences: 'dating',
+      search_profiles_for_dating_prefs: 'dating',
+      fetch_dating_preference_one: 'dating',
+      upsert_dating_preference: 'dating',
+      delete_dating_preference: 'dating',
+      upsert_dating_profile: 'dating',
+      create_synthetic_profile: 'dating',
+      clear_dating_user_chats: 'dating',
+      reset_dating_user: 'dating',
+      delete_dating_profile: 'dating',
+      sync_dating_enrolled_count: 'dating',
+      // Overflow / admin notes
+      fetch_admin_notes: 'overflow',
+      create_admin_note: 'overflow',
+      toggle_pin_admin_note: 'overflow',
+      delete_admin_note: 'overflow',
+      // Points & rewards
+      create_reward: 'points',
+      toggle_reward_active: 'points',
+      delete_reward: 'points',
+      // Applicants (contributors)
+      fetch_contributor_applications: 'applicants',
+      delete_contributor_application: 'applicants',
+      set_application_status: 'applicants',
+      // Team management — guarded inside handlers via isMainAdmin too
+      fetch_team_members: 'team',
+      add_team_member: 'team',
+      update_team_member: 'team',
+      delete_team_member: 'team',
+    };
+
+    if (!isMainAdmin && action) {
+      const requiredSection = ACTION_SECTION_MAP[action];
+      if (!requiredSection || !Array.isArray(allowedSections) || !allowedSections.includes(requiredSection)) {
+        return json({ valid: true, error: 'Forbidden: action not permitted for this team member' }, 403);
+      }
+    }
+
     // ── Waitlist ──────────────────────────────────────────────
     if (action === 'fetch') {
       const { data, error } = await supabaseAdmin
