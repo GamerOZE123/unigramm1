@@ -381,11 +381,11 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
       last_edited_by: editor,
       last_edited_at: new Date().toISOString(),
     };
-    const { error } = await supabase
-      .from('campus_svg_data' as any)
-      .upsert(payload, { onConflict: 'university_id' });
-    if (error) {
-      toast.error('Save failed: ' + error.message);
+    const { data: resp, error } = await supabase.functions.invoke('verify-admin', {
+      body: { password, action: 'save_campus_map', payload },
+    });
+    if (error || resp?.error || !resp?.success) {
+      toast.error('Save failed: ' + (error?.message || resp?.error || 'unknown'));
       return;
     }
     setLastEdit({ at: payload.last_edited_at, by: editor });
