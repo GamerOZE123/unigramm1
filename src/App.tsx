@@ -99,6 +99,7 @@ function App() {
               <Route path="/child-safety" element={<ChildSafety />} />
               <Route path="/email-confirmed" element={<EmailConfirmed />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/admin/campus-maps" element={<Admin />} />
               <Route path="/waitlist" element={<Waitlist />} />
               <Route path="/android-beta" element={<AndroidBeta />} />
               <Route path="/:username" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

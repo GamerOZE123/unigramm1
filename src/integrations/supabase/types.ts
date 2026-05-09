@@ -733,6 +733,48 @@ export type Database = {
         }
         Relationships: []
       }
+      campus_svg_data: {
+        Row: {
+          boundary_coordinates: Json | null
+          center_lat: number | null
+          center_lng: number | null
+          created_at: string | null
+          id: string
+          last_edited_at: string | null
+          last_edited_by: string | null
+          shapes: Json
+          svg_content: string
+          university_id: string
+          zoom_level: number | null
+        }
+        Insert: {
+          boundary_coordinates?: Json | null
+          center_lat?: number | null
+          center_lng?: number | null
+          created_at?: string | null
+          id?: string
+          last_edited_at?: string | null
+          last_edited_by?: string | null
+          shapes?: Json
+          svg_content?: string
+          university_id: string
+          zoom_level?: number | null
+        }
+        Update: {
+          boundary_coordinates?: Json | null
+          center_lat?: number | null
+          center_lng?: number | null
+          created_at?: string | null
+          id?: string
+          last_edited_at?: string | null
+          last_edited_by?: string | null
+          shapes?: Json
+          svg_content?: string
+          university_id?: string
+          zoom_level?: number | null
+        }
+        Relationships: []
+      }
       campus_zones: {
         Row: {
           center_lat: number

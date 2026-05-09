@@ -29,6 +29,7 @@ import AdminOfficials from '@/components/admin/AdminOfficials';
 import AdminPointsManagement from '@/components/admin/AdminPointsManagement';
 import AdminApplicants from '@/components/admin/AdminApplicants';
 import AdminUniversityMap from '@/components/admin/AdminUniversityMap';
+import CampusMapEditor from '@/components/admin/campus-map/CampusMapEditor';
 import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
@@ -563,6 +564,9 @@ const Admin: React.FC = () => {
 
         {/* Full-bleed: University Map (renders outside the max-w container) */}
         {section === 'map' && <AdminUniversityMap />}
+
+        {/* Full-bleed: Campus Map Editor */}
+        {section === 'campus_maps' && <CampusMapEditor />}
       </main>
     </div>
   );
