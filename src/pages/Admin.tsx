@@ -60,7 +60,10 @@ const Admin: React.FC = () => {
   const [adminRole, setAdminRole] = useState<'admin' | 'team'>('admin');
   const [allowedSections, setAllowedSections] = useState<string[] | null>(null);
 
-  const [section, setSection] = useState<AdminSection>('overview');
+  const initialSection: AdminSection = typeof window !== 'undefined' && window.location.pathname.includes('/admin/campus-maps')
+    ? 'campus_maps'
+    : 'overview';
+  const [section, setSection] = useState<AdminSection>(initialSection);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Access control state
