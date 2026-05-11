@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Polygon, Polyline, CircleMarker, ImageOverlay, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Polyline, CircleMarker, Marker, ImageOverlay, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,6 +31,21 @@ const TOOLS: { id: Tool; label: string; icon: React.ElementType }[] = [
 ];
 
 const DEFAULT_CENTER: [number, number] = [28.4595, 77.4977]; // SNU
+
+// Quick-pick icons for landmarks (mobile renders the same emoji)
+const ICON_PRESETS = ['📚','🏛️','☕','⚽','🏠','🔬','🚗','🏢','🏥','🎓','🅿️','🏟️','🎭','🛒','💧','🚻','📍'];
+const LABEL_ICON_MAP: Record<string, string> = {
+  library: '📚', 'main building': '🏛️', cafeteria: '☕', canteen: '☕', mess: '☕',
+  sports: '⚽', stadium: '🏟️', hostel: '🏠', dorm: '🏠', labs: '🔬', lab: '🔬',
+  parking: '🚗', clinic: '🏥', hospital: '🏥', auditorium: '🎭',
+};
+function iconForLabel(label = ''): string | undefined {
+  const k = label.toLowerCase().trim();
+  if (!k) return undefined;
+  if (LABEL_ICON_MAP[k]) return LABEL_ICON_MAP[k];
+  const hit = Object.entries(LABEL_ICON_MAP).find(([key]) => k.includes(key));
+  return hit?.[1];
+}
 
 function genId() { return crypto.randomUUID(); }
 
@@ -248,6 +263,7 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
         coordinates: [[ll.lat, ll.lng]],
         style: { ...DEFAULT_STYLES.landmark },
         order: shapes.length,
+        icon: iconForLabel(name) ?? '📍',
       };
       setShapes((p) => [...p, newShape]);
       setSelectedId(newShape.id);
@@ -538,6 +554,28 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
                 />
               ))}
             </div>
+            {selectedShape.type === 'landmark' && (
+              <>
+                <Label className="text-[10px] uppercase tracking-wider mt-3">Icon</Label>
+                <div className="grid grid-cols-8 gap-1">
+                  {ICON_PRESETS.map((emo) => (
+                    <button
+                      key={emo}
+                      onClick={() => updateSelected({ icon: emo })}
+                      className={`h-7 rounded border text-base leading-none flex items-center justify-center transition-colors ${selectedShape.icon === emo ? 'border-[#4f8eff] bg-[#4f8eff]/10' : 'border-border/40 hover:bg-muted'}`}
+                    >
+                      {emo}
+                    </button>
+                  ))}
+                </div>
+                <Input
+                  value={selectedShape.icon ?? ''}
+                  onChange={(e) => updateSelected({ icon: e.target.value.slice(0, 4) || undefined })}
+                  placeholder="Or paste a custom emoji"
+                  className="mt-2"
+                />
+              </>
+            )}
             <Button size="sm" variant="destructive" className="mt-3 w-full" onClick={() => deleteShape(selectedShape.id)}>
               <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete shape
             </Button>
@@ -661,6 +699,22 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
             if (s.type === 'landmark') {
               const c = s.coordinates[0];
               if (!c) return null;
+              if (s.icon) {
+                const iconEl = L.divIcon({
+                  className: 'campus-emoji-icon',
+                  html: `<div style="font-size:${isSel ? 26 : 22}px;line-height:1;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,0.6);">${s.icon}</div>`,
+                  iconSize: [28, 28],
+                  iconAnchor: [14, 14],
+                });
+                return (
+                  <Marker
+                    key={s.id}
+                    position={c as any}
+                    icon={iconEl}
+                    eventHandlers={{ click: onClick }}
+                  />
+                );
+              }
               return (
                 <CircleMarker
                   key={s.id}

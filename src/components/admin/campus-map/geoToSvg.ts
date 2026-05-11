@@ -16,6 +16,7 @@ export interface Shape {
   style: ShapeStyle;
   order: number;
   hidden?: boolean;
+  icon?: string; // emoji shown for landmarks (and optional polygon center)
 }
 
 export interface Bounds {
@@ -95,8 +96,12 @@ export function buildSvg(opts: { shapes: Shape[]; boundary: LatLng[] | null; siz
       const c = s.coordinates[0];
       if (!c) continue;
       const { x, y } = geoToSvg(c[0], c[1], bounds, size);
-      parts.push(`<polygon points="${x},${y - 6} ${x + 6},${y} ${x},${y + 6} ${x - 6},${y}" fill="${st.fillColor}" fill-opacity="${st.fillOpacity}" stroke="${st.strokeColor}" stroke-opacity="${st.strokeOpacity}" stroke-width="${st.strokeWidth}"/>`);
-      if (s.label) labels.push(`<text x="${x + 9}" y="${y + 3}" font-size="8" fill="#9bbcff" font-family="monospace">${escapeXml(s.label)}</text>`);
+      if (s.icon) {
+        parts.push(`<text x="${x}" y="${y + 5}" font-size="16" text-anchor="middle" font-family="Apple Color Emoji,Segoe UI Emoji,Noto Color Emoji,sans-serif">${escapeXml(s.icon)}</text>`);
+      } else {
+        parts.push(`<polygon points="${x},${y - 6} ${x + 6},${y} ${x},${y + 6} ${x - 6},${y}" fill="${st.fillColor}" fill-opacity="${st.fillOpacity}" stroke="${st.strokeColor}" stroke-opacity="${st.strokeOpacity}" stroke-width="${st.strokeWidth}"/>`);
+      }
+      if (s.label) labels.push(`<text x="${x + (s.icon ? 12 : 9)}" y="${y + 3}" font-size="8" fill="#9bbcff" font-family="monospace">${escapeXml(s.label)}</text>`);
     } else {
       const pts = pointsAttr(s.coordinates, bounds, size);
       parts.push(`<polygon points="${pts}" fill="${st.fillColor}" fill-opacity="${st.fillOpacity}" stroke="${st.strokeColor}" stroke-opacity="${st.strokeOpacity}" stroke-width="${st.strokeWidth}"${dash}/>`);
