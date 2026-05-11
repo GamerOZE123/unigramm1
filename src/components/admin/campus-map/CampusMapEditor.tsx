@@ -684,6 +684,15 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
           >
             Set Campus Boundary
           </button>
+          <button
+            onClick={runAnalyse}
+            disabled={!boundary || boundary.length < 3 || analysing}
+            className="mt-2 w-full flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-xs font-medium border border-[#22d3ee]/40 bg-[#22d3ee]/5 text-[#22d3ee] hover:bg-[#22d3ee]/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title={!boundary || boundary.length < 3 ? 'Draw the campus boundary first' : 'Auto-detect places inside boundary from OpenStreetMap'}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            {analysing ? 'Analysing…' : 'Analyse places (OSM)'}
+          </button>
           {tool !== 'select' && tool !== 'landmark' && drafting.length > 0 && (
             <div className="mt-2 flex gap-2">
               <Button size="sm" className="flex-1" onClick={finishDraft}>Finish ({drafting.length})</Button>
