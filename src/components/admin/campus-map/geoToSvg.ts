@@ -16,6 +16,7 @@ export interface Shape {
   style: ShapeStyle;
   order: number;
   hidden?: boolean;
+  icon?: string; // emoji shown for landmarks (and optional polygon center)
 }
 
 export interface Bounds {
