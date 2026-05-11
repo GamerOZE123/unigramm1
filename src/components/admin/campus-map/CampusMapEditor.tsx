@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Polygon, Polyline, CircleMarker, ImageOverlay, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Polyline, CircleMarker, Marker, ImageOverlay, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '@/integrations/supabase/client';
@@ -699,6 +699,22 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
             if (s.type === 'landmark') {
               const c = s.coordinates[0];
               if (!c) return null;
+              if (s.icon) {
+                const iconEl = L.divIcon({
+                  className: 'campus-emoji-icon',
+                  html: `<div style="font-size:${isSel ? 26 : 22}px;line-height:1;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,0.6);">${s.icon}</div>`,
+                  iconSize: [28, 28],
+                  iconAnchor: [14, 14],
+                });
+                return (
+                  <Marker
+                    key={s.id}
+                    position={c as any}
+                    icon={iconEl}
+                    eventHandlers={{ click: onClick }}
+                  />
+                );
+              }
               return (
                 <CircleMarker
                   key={s.id}
