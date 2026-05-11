@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import {
   Building2, Hexagon, Minus, Diamond, Square, MousePointer2, Trash2, Eye, EyeOff,
   Image as ImageIcon, Download, Copy, Save, Eye as PreviewIcon, MoveUp, MoveDown, Search,
-  ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
+  ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Sparkles,
 } from 'lucide-react';
 import {
   buildSvg, DEFAULT_STYLES, COLOR_PRESETS,
@@ -188,6 +188,139 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
 
   // Preview modal
   const [previewOpen, setPreviewOpen] = useState(false);
+
+  // ----- OSM Analyse (auto-import POIs) -----
+  type OsmCandidate = {
+    osmId: string;
+    label: string;
+    lat: number;
+    lng: number;
+    kind: string; // e.g. "amenity:cafe"
+    icon?: string;
+    selected: boolean;
+  };
+  const [analyseOpen, setAnalyseOpen] = useState(false);
+  const [analysing, setAnalysing] = useState(false);
+  const [candidates, setCandidates] = useState<OsmCandidate[]>([]);
+
+  const iconForOsm = (tags: Record<string, string>, label: string): string | undefined => {
+    const a = tags.amenity, s = tags.shop, l = tags.leisure, t = tags.tourism, b = tags.building;
+    if (a === 'cafe' || a === 'restaurant' || a === 'fast_food' || a === 'food_court') return '☕';
+    if (a === 'library') return '📚';
+    if (a === 'parking') return '🅿️';
+    if (a === 'hospital' || a === 'clinic' || a === 'pharmacy') return '🏥';
+    if (a === 'bank' || a === 'atm') return '🏦';
+    if (a === 'place_of_worship') return '🛐';
+    if (a === 'toilets') return '🚻';
+    if (a === 'drinking_water') return '💧';
+    if (a === 'fuel') return '⛽';
+    if (a === 'bus_station' || tags.highway === 'bus_stop') return '🚌';
+    if (l === 'stadium' || l === 'pitch' || l === 'sports_centre') return '⚽';
+    if (l === 'park' || l === 'garden') return '🌳';
+    if (t) return '🏛️';
+    if (s) return '🛒';
+    if (b === 'dormitory' || b === 'residential') return '🏠';
+    if (b) return '🏢';
+    return iconForLabel(label);
+  };
+
+  const runAnalyse = useCallback(async () => {
+    if (!boundary || boundary.length < 3) {
+      toast.error('Draw the campus boundary first');
+      return;
+    }
+    setAnalysing(true);
+    try {
+      let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+      for (const [la, ln] of boundary) {
+        if (la < minLat) minLat = la; if (la > maxLat) maxLat = la;
+        if (ln < minLng) minLng = ln; if (ln > maxLng) maxLng = ln;
+      }
+      const bbox = `${minLat},${minLng},${maxLat},${maxLng}`;
+      const q = `[out:json][timeout:25];(
+        node["name"]["amenity"](${bbox});
+        node["name"]["shop"](${bbox});
+        node["name"]["leisure"](${bbox});
+        node["name"]["tourism"](${bbox});
+        way["name"]["amenity"](${bbox});
+        way["name"]["shop"](${bbox});
+        way["name"]["building"~"university|school|dormitory|college|public|civic|hospital"](${bbox});
+      );out center tags;`;
+      const res = await fetch('https://overpass-api.de/api/interpreter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'data=' + encodeURIComponent(q),
+      });
+      if (!res.ok) throw new Error('Overpass ' + res.status);
+      const json = await res.json();
+      const els: any[] = json.elements || [];
+      const seen = new Set<string>();
+      // Skip if a landmark already exists within ~15m of same name
+      const isDup = (lat: number, lng: number, label: string) => {
+        const key = label.toLowerCase().trim();
+        return shapes.some((s) => {
+          if (s.type !== 'landmark') return false;
+          if (s.label.toLowerCase().trim() === key) return true;
+          const [sla, sln] = s.coordinates[0] ?? [0, 0];
+          const d = Math.hypot(sla - lat, sln - lng);
+          return d < 0.00015; // ~15m
+        });
+      };
+      const cands: OsmCandidate[] = [];
+      for (const el of els) {
+        const lat = el.lat ?? el.center?.lat;
+        const lng = el.lon ?? el.center?.lon;
+        if (lat == null || lng == null) continue;
+        if (!pointInPolygon([lat, lng], boundary)) continue;
+        const tags = el.tags || {};
+        const label = (tags.name as string)?.trim();
+        if (!label) continue;
+        const osmId = `${el.type}/${el.id}`;
+        if (seen.has(osmId)) continue;
+        seen.add(osmId);
+        if (isDup(lat, lng, label)) continue;
+        const kind =
+          tags.amenity ? `amenity:${tags.amenity}` :
+          tags.shop ? `shop:${tags.shop}` :
+          tags.leisure ? `leisure:${tags.leisure}` :
+          tags.tourism ? `tourism:${tags.tourism}` :
+          tags.building ? `building:${tags.building}` : 'place';
+        cands.push({
+          osmId, label, lat, lng, kind,
+          icon: iconForOsm(tags, label),
+          selected: true,
+        });
+      }
+      cands.sort((a, b) => a.label.localeCompare(b.label));
+      setCandidates(cands);
+      setAnalyseOpen(true);
+      if (!cands.length) toast.info('No new OSM places found inside the boundary');
+      else toast.success(`Found ${cands.length} place${cands.length === 1 ? '' : 's'} inside boundary`);
+    } catch (e: any) {
+      toast.error('Analyse failed: ' + (e?.message || 'unknown'));
+    } finally {
+      setAnalysing(false);
+    }
+  }, [boundary, shapes]);
+
+  const importSelectedCandidates = () => {
+    const picked = candidates.filter((c) => c.selected);
+    if (!picked.length) { setAnalyseOpen(false); return; }
+    pushHistory();
+    const baseOrder = shapes.length;
+    const newShapes: Shape[] = picked.map((c, i) => ({
+      id: genId(),
+      type: 'landmark',
+      label: c.label,
+      coordinates: [[c.lat, c.lng]],
+      style: { ...DEFAULT_STYLES.landmark },
+      order: baseOrder + i,
+      icon: c.icon,
+    }));
+    setShapes((s) => [...s, ...newShapes]);
+    setAnalyseOpen(false);
+    toast.success(`Imported ${picked.length} landmark${picked.length === 1 ? '' : 's'}`);
+  };
 
   // Mobile warning
   const [mobileWarn, setMobileWarn] = useState(false);
@@ -550,6 +683,15 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
             className={`mt-2 w-full px-2 py-2 rounded-md text-xs font-medium border transition-colors ${tool === 'boundary' ? 'border-[#4f8eff] bg-[#4f8eff]/10 text-[#4f8eff]' : 'border-dashed border-border/60 text-muted-foreground hover:bg-muted'}`}
           >
             Set Campus Boundary
+          </button>
+          <button
+            onClick={runAnalyse}
+            disabled={!boundary || boundary.length < 3 || analysing}
+            className="mt-2 w-full flex items-center justify-center gap-1.5 px-2 py-2 rounded-md text-xs font-medium border border-[#22d3ee]/40 bg-[#22d3ee]/5 text-[#22d3ee] hover:bg-[#22d3ee]/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title={!boundary || boundary.length < 3 ? 'Draw the campus boundary first' : 'Auto-detect places inside boundary from OpenStreetMap'}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            {analysing ? 'Analysing…' : 'Analyse places (OSM)'}
           </button>
           {tool !== 'select' && tool !== 'landmark' && drafting.length > 0 && (
             <div className="mt-2 flex gap-2">
@@ -1002,6 +1144,59 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
           <DialogFooter>
             <Button variant="ghost" onClick={() => setPreviewOpen(false)}>Back to editing</Button>
             <Button onClick={() => { setPreviewOpen(false); save(); }}>Looks good → Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* OSM Analyse import dialog */}
+      <Dialog open={analyseOpen} onOpenChange={setAnalyseOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#22d3ee]" />
+              Auto-detected places inside boundary
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-xs text-muted-foreground mb-2">
+            {candidates.length} place{candidates.length === 1 ? '' : 's'} found from OpenStreetMap. Already-existing landmarks (by name or location) were skipped. Toggle the ones you want to import as pins.
+          </div>
+          <div className="flex items-center gap-2 mb-2">
+            <Button size="sm" variant="outline" onClick={() => setCandidates((cs) => cs.map((c) => ({ ...c, selected: true })))}>Select all</Button>
+            <Button size="sm" variant="ghost" onClick={() => setCandidates((cs) => cs.map((c) => ({ ...c, selected: false })))}>Clear</Button>
+            <span className="ml-auto text-xs text-muted-foreground">
+              {candidates.filter((c) => c.selected).length} selected
+            </span>
+          </div>
+          <div className="max-h-[55vh] overflow-y-auto border border-border/40 rounded-md divide-y divide-border/30">
+            {candidates.map((c, idx) => (
+              <label key={c.osmId} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/40 cursor-pointer text-sm">
+                <input
+                  type="checkbox"
+                  checked={c.selected}
+                  onChange={(e) => {
+                    const v = e.target.checked;
+                    setCandidates((cs) => cs.map((x, i) => i === idx ? { ...x, selected: v } : x));
+                  }}
+                />
+                <span className="text-lg w-6 text-center">{c.icon || '📍'}</span>
+                <span className="flex-1 truncate">{c.label}</span>
+                <span className="text-[10px] font-mono text-muted-foreground">{c.kind}</span>
+                <span className="text-[10px] font-mono text-muted-foreground/70 w-32 text-right">
+                  {c.lat.toFixed(5)}, {c.lng.toFixed(5)}
+                </span>
+              </label>
+            ))}
+            {!candidates.length && (
+              <div className="text-center text-xs text-muted-foreground py-8">
+                No new places to import.
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAnalyseOpen(false)}>Cancel</Button>
+            <Button onClick={importSelectedCandidates} disabled={!candidates.some((c) => c.selected)}>
+              Import {candidates.filter((c) => c.selected).length || ''} as landmarks
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
