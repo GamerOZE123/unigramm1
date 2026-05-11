@@ -32,6 +32,21 @@ const TOOLS: { id: Tool; label: string; icon: React.ElementType }[] = [
 
 const DEFAULT_CENTER: [number, number] = [28.4595, 77.4977]; // SNU
 
+// Quick-pick icons for landmarks (mobile renders the same emoji)
+const ICON_PRESETS = ['📚','🏛️','☕','⚽','🏠','🔬','🚗','🏢','🏥','🎓','🅿️','🏟️','🎭','🛒','💧','🚻','📍'];
+const LABEL_ICON_MAP: Record<string, string> = {
+  library: '📚', 'main building': '🏛️', cafeteria: '☕', canteen: '☕', mess: '☕',
+  sports: '⚽', stadium: '🏟️', hostel: '🏠', dorm: '🏠', labs: '🔬', lab: '🔬',
+  parking: '🚗', clinic: '🏥', hospital: '🏥', auditorium: '🎭',
+};
+function iconForLabel(label = ''): string | undefined {
+  const k = label.toLowerCase().trim();
+  if (!k) return undefined;
+  if (LABEL_ICON_MAP[k]) return LABEL_ICON_MAP[k];
+  const hit = Object.entries(LABEL_ICON_MAP).find(([key]) => k.includes(key));
+  return hit?.[1];
+}
+
 function genId() { return crypto.randomUUID(); }
 
 function CoordTooltip({ onMove }: { onMove: (ll: L.LatLng) => void }) {
@@ -248,6 +263,7 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
         coordinates: [[ll.lat, ll.lng]],
         style: { ...DEFAULT_STYLES.landmark },
         order: shapes.length,
+        icon: iconForLabel(name) ?? '📍',
       };
       setShapes((p) => [...p, newShape]);
       setSelectedId(newShape.id);
