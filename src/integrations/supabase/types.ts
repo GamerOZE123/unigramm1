@@ -733,6 +733,53 @@ export type Database = {
         }
         Relationships: []
       }
+      campus_map_events: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          expires_at: string
+          icon: string | null
+          id: string
+          latitude: number
+          longitude: number
+          title: string
+          university_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          expires_at: string
+          icon?: string | null
+          id?: string
+          latitude: number
+          longitude: number
+          title: string
+          university_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          expires_at?: string
+          icon?: string | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          title?: string
+          university_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campus_map_events_university_id_fkey"
+            columns: ["university_id"]
+            isOneToOne: false
+            referencedRelation: "universities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campus_svg_data: {
         Row: {
           boundary_coordinates: Json | null
