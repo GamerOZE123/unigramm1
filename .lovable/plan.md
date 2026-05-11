@@ -1,126 +1,71 @@
-# Campus Map SVG Editor
+## Goal
 
-A new admin-only page that lets admins trace a campus on a Leaflet dark map, draw buildings/zones/paths/landmarks/restricted areas + a campus boundary, and export everything as an SVG saved to Supabase. The mobile app then fetches `svg_content` and renders it with `react-native-svg`'s `SvgXml`.
+Turn the existing **Layers** strip in the Campus Map editor into a proper side directory of everything drawn inside the university's boundary — so you can scan all buildings / zones / paths / landmarks / restricted areas at a glance, toggle each one's visibility, and nudge a landmark's marker without redrawing it.
 
-## 1. Database (migration)
+## What changes (admin editor only)
 
-New table `campus_svg_data`:
-- `university_id` (uuid, unique, FK to `universities`)
-- `svg_content` (text)
-- `shapes` (jsonb) — array of `{id, type, label, coordinates, style, order}`
-- `boundary_coordinates` (jsonb)
-- `center_lat`, `center_lng`, `zoom_level`
-- `last_edited_by` (text), `last_edited_at`, `created_at`
-- RLS: only admins (via existing `is_admin(auth.uid())` / `user_roles` pattern) can SELECT/INSERT/UPDATE/DELETE. Public read **disabled** here — the mobile app reads via an `anon`-allowed SELECT policy on `svg_content, boundary_coordinates, center_lat, center_lng, zoom_level, university_id` only? Simpler: allow `authenticated` SELECT for all rows so any logged-in app user can fetch their university's map. Admins do writes.
+All work happens in `src/components/admin/campus-map/CampusMapEditor.tsx`. No DB schema changes — `shapes` JSONB already stores everything we need.
 
-Activity log entry on save reuses existing admin activity log table (insert row `"Campus map updated for {uni} by {admin}"`).
+### 1. Group the list by type
 
-## 2. Admin sidebar
+Replace the flat list with collapsible groups in this order:
 
-Add `'campus_maps'` to `AdminSection` union and to the `nav` array in `src/components/admin/AdminSidebar.tsx` under group `Config` (icon: `MapIcon` already imported, use `Map` from lucide for distinction → use `MapPinned`). Add to `verify-admin` `ACTION_SECTION_MAP` if any new server actions are added (not needed — direct DB writes via RLS).
-
-Wire into `src/pages/Admin.tsx` section switcher to render the new editor component when `current === 'campus_maps'`. Also add route `/admin/campus-maps` in `App.tsx` that mounts `Admin` with the section preselected (use query param or a new wrapper).
-
-## 3. Dependencies
-
-```
-bun add leaflet react-leaflet leaflet-draw react-leaflet-draw @turf/turf
-bun add -d @types/leaflet @types/leaflet-draw
+```text
+🏛 Buildings (n)
+🟦 Zones (n)
+🚶 Paths (n)
+📍 Landmarks (n)
+⛔ Restricted (n)
 ```
 
-Import `leaflet/dist/leaflet.css` and `leaflet-draw/dist/leaflet.draw.css` in the editor component.
+Each row keeps the existing controls (select, reorder ↑/↓, hide 👁) and adds:
+- A tiny color swatch from `style.strokeColor` for quick visual ID.
+- For landmarks: the emoji icon next to the label.
 
-## 4. New files
+### 2. "Inside boundary only" filter
 
-```
-src/components/admin/campus-map/
-  CampusMapEditor.tsx        # main page; layout + state
-  EditorSidebar.tsx          # left 280px: tools, properties, layers, export
-  MapCanvas.tsx              # react-leaflet MapContainer + draw + reference image overlay
-  ToolPalette.tsx            # tool buttons + active highlight
-  PropertiesPanel.tsx        # selected shape editor
-  LayersPanel.tsx            # reorderable list, visibility toggle
-  ExportPanel.tsx            # preview / copy / save / download
-  PreviewModal.tsx           # 400x400 SVG preview with sample pins
-  ReferenceImageOverlay.tsx  # Leaflet ImageOverlay with corner setter + opacity
-  useEditorState.ts          # shapes[], selectedId, history (undo/redo), tool, boundary
-  useKeyboardShortcuts.ts
-  geoToSvg.ts                # projection helpers + SVG string builder
-  styles.ts                  # tool color presets, default styles
-src/pages/AdminCampusMaps.tsx  # thin wrapper that renders <CampusMapEditor /> inside admin shell
-```
+A toggle at the top of the panel: **"Only show items inside boundary"**.
 
-## 5. Editor behavior
+When ON and a boundary polygon exists, run a point-in-polygon check (ray-casting, no new dep) against `boundary_coordinates`:
+- Landmark → test its single point.
+- Polygon/polyline → test the centroid.
 
-State shape (in `useEditorState`):
-```ts
-type Shape = {
-  id: string;
-  type: 'building' | 'zone' | 'path' | 'landmark' | 'restricted';
-  label: string;
-  coordinates: [number, number][]; // [lat,lng]
-  style: { fillColor; fillOpacity; strokeColor; strokeOpacity; strokeWidth; strokeDash };
-  order: number;
-  hidden?: boolean;
-};
+Items outside the boundary are shown dimmed under a collapsed **"Outside boundary"** group so nothing is lost.
+
+### 3. Quick search
+
+A small search input filters the list by `label` (case-insensitive) across all groups.
+
+### 4. Nudge a marker (landmarks only)
+
+When a landmark is selected, the Properties panel gets a 4-direction nudge pad:
+
+```text
+        ▲
+    ◀  •  ▶
+        ▼
 ```
 
-- Tool palette buttons set `activeTool`. `react-leaflet-draw` `EditControl` is configured per tool (polygon for building/zone/restricted, polyline for path, marker for landmark, polygon for boundary).
-- On `created`, push shape into state with the right default style preset; clear active tool.
-- Selection: clicking a rendered `Polygon`/`Polyline`/`Marker` sets `selectedId`; vertex editing via Leaflet's edit mode toggles per shape.
-- Undo/redo: history stack of shape arrays, capped at 50.
-- Keyboard shortcuts via `useKeyboardShortcuts`: V/B/Z/P/L/R, Delete, Ctrl+Z, Ctrl+Y, Ctrl+S, Esc.
-- Coordinate tooltip: `useMapEvents({ mousemove })` updates a small monospace pill at bottom-left.
-- Mobile warning: show top banner when `window.innerWidth < 768`.
+Each press shifts `coordinates[0]` by a small delta (default ≈ 0.00002° ≈ 2 m). A step selector lets you switch between 1 m / 5 m / 20 m. Holding Shift uses the larger step.
 
-## 6. Reference image overlay
+Polygons/paths are not nudgeable here — those still use Leaflet's existing vertex-edit mode.
 
-- "Upload Reference Image" button reads file → `URL.createObjectURL`.
-- Admin places it: button "Set NW corner" then "Set SE corner" → on next two map clicks captures latlngs → `<ImageOverlay url bounds opacity>`.
-- Opacity slider 0–100. Stored only in component state.
+### 5. Bulk visibility
 
-## 7. SVG export
+Each group header gets a single 👁 toggle that hides/shows all items in that group at once (sets `hidden` on every shape of that type).
 
-`geoToSvg.ts`:
-- `getBounds(boundary, shapes)` — fall back to shapes' bbox if no boundary.
-- `projectShape(shape, bounds, size=800)` returns SVG points string.
-- `buildSvg({ shapes, boundary, size=800 })` returns string:
-  ```
-  <svg viewBox="0 0 800 800" xmlns="http://www.w3.org/2000/svg">
-    <rect width=800 height=800 fill="#080c17"/>
-    <g class="grid">…faint grid lines…</g>
-    <path class="boundary" d=… stroke=#4f8eff stroke-dasharray="4 4" fill="none"/>
-    {polygons / polylines / landmark diamonds in shape.order}
-    {labels as <text>}
-  </svg>
-  ```
-- "Copy SVG", "Download .svg" (Blob → download), "Save to Database" upserts `campus_svg_data` row; "Preview" renders the same string in `<div dangerouslySetInnerHTML>` inside `PreviewModal` with a few example student/event pins drawn as additional SVG overlays.
+### 6. Click-to-focus
 
-## 8. Loading existing data
-
-On university select: `select * from campus_svg_data where university_id = …`. If row exists, hydrate `shapes`, `boundary`, center/zoom, and show "Last edited {ts} by {name}". Otherwise empty editor, center on university coords (fall back to SNU `28.4595, 77.4977`).
-
-## 9. RN app integration
-
-Documented only — no RN code in this repo. The mobile team will:
-```ts
-const { data } = await supabase.from('campus_svg_data')
-  .select('svg_content, boundary_coordinates, center_lat, center_lng')
-  .eq('university_id', uniId).single();
-```
-and render with `<SvgXml xml={data.svg_content} … />`. Pins overlay separately.
-
-## 10. Verification
-
-- Build passes (Vite typecheck via harness).
-- Admin sidebar shows "Campus Maps"; route `/admin/campus-maps` opens editor.
-- Drawing tools all create shapes with correct default styles.
-- Save → row appears in `campus_svg_data`; reopening reloads shapes.
-- Activity log row inserted on save.
-- Mobile viewport shows the warning banner.
+Clicking a row already selects the shape. Add: also pan the Leaflet map to its centroid (use the existing `mapRef` and `map.panTo`). For landmarks, also bump the zoom to at least 18.
 
 ## Out of scope
 
-- React Native code (this repo is web-only).
-- Multi-floor / 3D buildings.
-- Versioning history beyond `last_edited_at`.
+- Mobile app rendering (the existing `shapes` payload is already complete; mobile can group by `type` on its side).
+- Drag-to-move on the map itself (only nudge buttons in this pass).
+- Renaming the saved DB shape order — `order` field still drives layering via the existing ↑/↓ buttons.
+
+## Files touched
+
+- `src/components/admin/campus-map/CampusMapEditor.tsx` — replace the Layers `<Section>` block (around lines 585–606), add the nudge pad inside the landmark properties block (around lines 557–578), add a small `pointInPolygon` helper.
+
+No new packages, no migration, no edge-function changes.
