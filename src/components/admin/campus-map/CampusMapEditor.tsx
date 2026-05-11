@@ -1147,6 +1147,59 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* OSM Analyse import dialog */}
+      <Dialog open={analyseOpen} onOpenChange={setAnalyseOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-[#22d3ee]" />
+              Auto-detected places inside boundary
+            </DialogTitle>
+          </DialogHeader>
+          <div className="text-xs text-muted-foreground mb-2">
+            {candidates.length} place{candidates.length === 1 ? '' : 's'} found from OpenStreetMap. Already-existing landmarks (by name or location) were skipped. Toggle the ones you want to import as pins.
+          </div>
+          <div className="flex items-center gap-2 mb-2">
+            <Button size="sm" variant="outline" onClick={() => setCandidates((cs) => cs.map((c) => ({ ...c, selected: true })))}>Select all</Button>
+            <Button size="sm" variant="ghost" onClick={() => setCandidates((cs) => cs.map((c) => ({ ...c, selected: false })))}>Clear</Button>
+            <span className="ml-auto text-xs text-muted-foreground">
+              {candidates.filter((c) => c.selected).length} selected
+            </span>
+          </div>
+          <div className="max-h-[55vh] overflow-y-auto border border-border/40 rounded-md divide-y divide-border/30">
+            {candidates.map((c, idx) => (
+              <label key={c.osmId} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/40 cursor-pointer text-sm">
+                <input
+                  type="checkbox"
+                  checked={c.selected}
+                  onChange={(e) => {
+                    const v = e.target.checked;
+                    setCandidates((cs) => cs.map((x, i) => i === idx ? { ...x, selected: v } : x));
+                  }}
+                />
+                <span className="text-lg w-6 text-center">{c.icon || '📍'}</span>
+                <span className="flex-1 truncate">{c.label}</span>
+                <span className="text-[10px] font-mono text-muted-foreground">{c.kind}</span>
+                <span className="text-[10px] font-mono text-muted-foreground/70 w-32 text-right">
+                  {c.lat.toFixed(5)}, {c.lng.toFixed(5)}
+                </span>
+              </label>
+            ))}
+            {!candidates.length && (
+              <div className="text-center text-xs text-muted-foreground py-8">
+                No new places to import.
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setAnalyseOpen(false)}>Cancel</Button>
+            <Button onClick={importSelectedCandidates} disabled={!candidates.some((c) => c.selected)}>
+              Import {candidates.filter((c) => c.selected).length || ''} as landmarks
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
