@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Polygon, Polyline, CircleMarker, Marker, ImageOverlay, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Polyline, CircleMarker, Marker, ImageOverlay, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '@/integrations/supabase/client';
@@ -902,7 +902,15 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
               setSelectedId(s.id);
             };
             if (s.type === 'path') {
-              return <Polyline key={s.id} positions={s.coordinates as any} pathOptions={opts} eventHandlers={{ click: onClick }} />;
+              return (
+                <Polyline key={s.id} positions={s.coordinates as any} pathOptions={opts} eventHandlers={{ click: onClick }}>
+                  {s.label && (
+                    <Tooltip permanent direction="center" className="campus-map-label">
+                      {s.label}
+                    </Tooltip>
+                  )}
+                </Polyline>
+              );
             }
             if (s.type === 'landmark') {
               const c = s.coordinates[0];
@@ -920,7 +928,13 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
                     position={c as any}
                     icon={iconEl}
                     eventHandlers={{ click: onClick }}
-                  />
+                  >
+                    {s.label && (
+                      <Tooltip permanent direction="bottom" offset={[0, 8]} className="campus-map-label">
+                        {s.label}
+                      </Tooltip>
+                    )}
+                  </Marker>
                 );
               }
               return (
@@ -930,10 +944,24 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
                   radius={isSel ? 8 : 6}
                   pathOptions={{ color: s.style.strokeColor, fillColor: s.style.fillColor, fillOpacity: s.style.fillOpacity, weight: 2 }}
                   eventHandlers={{ click: onClick }}
-                />
+                >
+                  {s.label && (
+                    <Tooltip permanent direction="bottom" offset={[0, 8]} className="campus-map-label">
+                      {s.label}
+                    </Tooltip>
+                  )}
+                </CircleMarker>
               );
             }
-            return <Polygon key={s.id} positions={s.coordinates as any} pathOptions={opts} eventHandlers={{ click: onClick }} />;
+            return (
+              <Polygon key={s.id} positions={s.coordinates as any} pathOptions={opts} eventHandlers={{ click: onClick }}>
+                {s.label && (
+                  <Tooltip permanent direction="center" className="campus-map-label">
+                    {s.label}
+                  </Tooltip>
+                )}
+              </Polygon>
+            );
           })}
 
           {/* Drafting preview */}
