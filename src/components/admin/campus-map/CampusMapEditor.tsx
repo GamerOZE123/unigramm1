@@ -1053,13 +1053,7 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
             };
             if (s.type === 'path') {
               return (
-                <Polyline key={s.id} positions={s.coordinates as any} pathOptions={opts} eventHandlers={{ click: onClick }}>
-                  {s.label && (
-                    <Tooltip permanent direction="center" className="campus-map-label">
-                      {s.label}
-                    </Tooltip>
-                  )}
-                </Polyline>
+                <Polyline key={s.id} positions={s.coordinates as any} pathOptions={opts} eventHandlers={{ click: onClick }} />
               );
             }
             if (s.type === 'landmark') {
@@ -1078,13 +1072,7 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
                     position={c as any}
                     icon={iconEl}
                     eventHandlers={{ click: onClick }}
-                  >
-                    {s.label && (
-                      <Tooltip permanent direction="bottom" offset={[0, 8]} className="campus-map-label">
-                        {s.label}
-                      </Tooltip>
-                    )}
-                  </Marker>
+                  />
                 );
               }
               return (
@@ -1094,23 +1082,33 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
                   radius={isSel ? 8 : 6}
                   pathOptions={{ color: s.style.strokeColor, fillColor: s.style.fillColor, fillOpacity: s.style.fillOpacity, weight: 2 }}
                   eventHandlers={{ click: onClick }}
-                >
-                  {s.label && (
-                    <Tooltip permanent direction="bottom" offset={[0, 8]} className="campus-map-label">
-                      {s.label}
-                    </Tooltip>
-                  )}
-                </CircleMarker>
+                />
               );
             }
             return (
-              <Polygon key={s.id} positions={s.coordinates as any} pathOptions={opts} eventHandlers={{ click: onClick }}>
-                {s.label && (
-                  <Tooltip permanent direction="center" className="campus-map-label">
-                    {s.label}
-                  </Tooltip>
-                )}
-              </Polygon>
+              <Polygon key={s.id} positions={s.coordinates as any} pathOptions={opts} eventHandlers={{ click: onClick }} />
+            );
+          })}
+
+          {/* Permanent label overlay (matches mobile rendering) */}
+          {showLabels && shapes.filter((s) => !s.hidden && s.label).map((s) => {
+            const c = shapeCentroid(s);
+            if (!c || (c[0] === 0 && c[1] === 0)) return null;
+            const offsetY = s.type === 'landmark' ? 18 : 0;
+            const labelIcon = L.divIcon({
+              className: 'campus-map-label-icon',
+              html: `<div class="campus-map-label-pill">${escapeHtml(s.label)}</div>`,
+              iconSize: [0, 0],
+              iconAnchor: [0, -offsetY],
+            });
+            return (
+              <Marker
+                key={`label-${s.id}`}
+                position={c as any}
+                icon={labelIcon}
+                interactive={false}
+                keyboard={false}
+              />
             );
           })}
 
