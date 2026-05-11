@@ -538,6 +538,7 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
   const [insideOnly, setInsideOnly] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [nudgeStep, setNudgeStep] = useState<number>(0.00002); // ~2m
+  const [showLabels, setShowLabels] = useState<boolean>(true);
 
   const toggleGroup = (key: string) =>
     setCollapsedGroups((g) => ({ ...g, [key]: !g[key] }));
