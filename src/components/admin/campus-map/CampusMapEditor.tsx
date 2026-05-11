@@ -642,6 +642,46 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
                   placeholder="Or paste a custom emoji"
                   className="mt-2"
                 />
+                <Label className="text-[10px] uppercase tracking-wider mt-3">Nudge marker</Label>
+                <div className="flex items-center gap-2">
+                  <div className="grid grid-cols-3 gap-1 w-[96px]">
+                    <div />
+                    <button
+                      onClick={(e) => nudgeSelected((e.shiftKey ? nudgeStep * 5 : nudgeStep), 0)}
+                      className="h-7 rounded border border-border/40 hover:bg-muted flex items-center justify-center"
+                      title="North (Shift = 5x)"
+                    ><ArrowUp className="w-3.5 h-3.5" /></button>
+                    <div />
+                    <button
+                      onClick={(e) => nudgeSelected(0, -(e.shiftKey ? nudgeStep * 5 : nudgeStep))}
+                      className="h-7 rounded border border-border/40 hover:bg-muted flex items-center justify-center"
+                      title="West"
+                    ><ArrowLeft className="w-3.5 h-3.5" /></button>
+                    <div className="h-7 rounded border border-dashed border-border/40" />
+                    <button
+                      onClick={(e) => nudgeSelected(0, (e.shiftKey ? nudgeStep * 5 : nudgeStep))}
+                      className="h-7 rounded border border-border/40 hover:bg-muted flex items-center justify-center"
+                      title="East"
+                    ><ArrowRight className="w-3.5 h-3.5" /></button>
+                    <div />
+                    <button
+                      onClick={(e) => nudgeSelected(-(e.shiftKey ? nudgeStep * 5 : nudgeStep), 0)}
+                      className="h-7 rounded border border-border/40 hover:bg-muted flex items-center justify-center"
+                      title="South"
+                    ><ArrowDown className="w-3.5 h-3.5" /></button>
+                    <div />
+                  </div>
+                  <Select value={String(nudgeStep)} onValueChange={(v) => setNudgeStep(parseFloat(v))}>
+                    <SelectTrigger className="h-7 text-[11px] flex-1"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0.00001">~1 m</SelectItem>
+                      <SelectItem value="0.00002">~2 m</SelectItem>
+                      <SelectItem value="0.00005">~5 m</SelectItem>
+                      <SelectItem value="0.0002">~20 m</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-1">Hold Shift while clicking to move 5× faster.</p>
               </>
             )}
             <Button size="sm" variant="destructive" className="mt-3 w-full" onClick={() => deleteShape(selectedShape.id)}>
@@ -650,26 +690,126 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
           </Section>
         )}
 
-        {/* Layers */}
+        {/* Layers / Directory */}
         <Section title={`Layers (${shapes.length})`}>
-          <div className="space-y-1 max-h-56 overflow-y-auto">
-            {shapes.map((s) => {
-              const active = s.id === selectedId;
+          <div className="space-y-2">
+            <Input
+              value={layerSearch}
+              onChange={(e) => setLayerSearch(e.target.value)}
+              placeholder="Search by label…"
+              className="h-8 text-xs"
+            />
+            <label className="flex items-center gap-2 text-[11px] text-muted-foreground select-none cursor-pointer">
+              <input
+                type="checkbox"
+                checked={insideOnly}
+                onChange={(e) => setInsideOnly(e.target.checked)}
+                disabled={!boundary || boundary.length < 3}
+                className="accent-[#4f8eff]"
+              />
+              Only inside campus boundary
+              {(!boundary || boundary.length < 3) && <span className="opacity-60">(draw boundary first)</span>}
+            </label>
+          </div>
+
+          <div className="space-y-2 max-h-[420px] overflow-y-auto mt-2">
+            {(() => {
+              const q = layerSearch.trim().toLowerCase();
+              const matchesSearch = (s: Shape) => !q || s.label.toLowerCase().includes(q);
+              const isInside = (s: Shape) =>
+                !boundary || boundary.length < 3 ? true : pointInPolygon(shapeCentroid(s), boundary);
+
+              const inScope = shapes.filter(matchesSearch).filter((s) => !insideOnly || isInside(s));
+              const outside = boundary && boundary.length >= 3
+                ? shapes.filter(matchesSearch).filter((s) => !isInside(s))
+                : [];
+
+              const renderRow = (s: Shape, dim = false) => {
+                const active = s.id === selectedId;
+                return (
+                  <div
+                    key={s.id}
+                    className={`flex items-center gap-1 px-2 py-1.5 rounded text-xs ${active ? 'bg-[#4f8eff]/10 text-[#4f8eff]' : 'hover:bg-muted text-foreground'} ${dim ? 'opacity-50' : ''}`}
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-sm shrink-0 border border-border/40"
+                      style={{ background: s.style.strokeColor }}
+                    />
+                    {s.type === 'landmark' && s.icon && (
+                      <span className="text-sm leading-none">{s.icon}</span>
+                    )}
+                    <button onClick={() => focusShape(s)} className="flex-1 text-left truncate">
+                      {s.label || <em className="opacity-50">untitled</em>}
+                    </button>
+                    <button onClick={() => reorder(s.id, -1)} className="opacity-60 hover:opacity-100" title="Move up"><MoveUp className="w-3 h-3" /></button>
+                    <button onClick={() => reorder(s.id, 1)} className="opacity-60 hover:opacity-100" title="Move down"><MoveDown className="w-3 h-3" /></button>
+                    <button onClick={() => toggleHidden(s.id)} className="opacity-60 hover:opacity-100" title={s.hidden ? 'Show' : 'Hide'}>
+                      {s.hidden ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                    </button>
+                  </div>
+                );
+              };
+
               return (
-                <div key={s.id} className={`flex items-center gap-1 px-2 py-1.5 rounded text-xs ${active ? 'bg-[#4f8eff]/10 text-[#4f8eff]' : 'hover:bg-muted text-foreground'}`}>
-                  <button onClick={() => setSelectedId(s.id)} className="flex-1 text-left truncate">
-                    <span className="font-mono opacity-60 mr-1">{s.type[0].toUpperCase()}</span>
-                    {s.label || <em className="opacity-50">untitled</em>}
-                  </button>
-                  <button onClick={() => reorder(s.id, -1)} className="opacity-60 hover:opacity-100"><MoveUp className="w-3 h-3" /></button>
-                  <button onClick={() => reorder(s.id, 1)} className="opacity-60 hover:opacity-100"><MoveDown className="w-3 h-3" /></button>
-                  <button onClick={() => toggleHidden(s.id)} className="opacity-60 hover:opacity-100">
-                    {s.hidden ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                  </button>
-                </div>
+                <>
+                  {GROUP_ORDER.map((g) => {
+                    const items = inScope.filter((s) => s.type === g.type);
+                    if (!items.length) return null;
+                    const collapsed = collapsedGroups[g.type];
+                    const allHidden = items.every((x) => x.hidden);
+                    return (
+                      <div key={g.type} className="border border-border/30 rounded">
+                        <div className="flex items-center gap-1 px-2 py-1.5 bg-muted/30">
+                          <button onClick={() => toggleGroup(g.type)} className="flex items-center gap-1 flex-1 text-left">
+                            {collapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                            <span className="text-[11px] font-mono uppercase tracking-wider">
+                              {g.emoji} {g.label} ({items.length})
+                            </span>
+                          </button>
+                          <button
+                            onClick={() => setGroupHidden(g.type, !allHidden)}
+                            className="opacity-60 hover:opacity-100"
+                            title={allHidden ? 'Show group' : 'Hide group'}
+                          >
+                            {allHidden ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                          </button>
+                        </div>
+                        {!collapsed && (
+                          <div className="space-y-0.5 p-1">
+                            {items.map((s) => renderRow(s))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {outside.length > 0 && !insideOnly && (
+                    <div className="border border-dashed border-border/30 rounded">
+                      <button
+                        onClick={() => toggleGroup('__outside')}
+                        className="flex items-center gap-1 w-full px-2 py-1.5 bg-muted/20 text-left"
+                      >
+                        {collapsedGroups['__outside'] ? <ChevronRight className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                        <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+                          ⚠ Outside boundary ({outside.length})
+                        </span>
+                      </button>
+                      {!collapsedGroups['__outside'] && (
+                        <div className="space-y-0.5 p-1">
+                          {outside.map((s) => renderRow(s, true))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {!inScope.length && !outside.length && (
+                    <p className="text-xs text-muted-foreground italic px-2">
+                      {shapes.length ? 'No matches.' : 'No shapes drawn yet.'}
+                    </p>
+                  )}
+                </>
               );
-            })}
-            {!shapes.length && <p className="text-xs text-muted-foreground italic px-2">No shapes drawn yet.</p>}
+            })()}
           </div>
         </Section>
 
