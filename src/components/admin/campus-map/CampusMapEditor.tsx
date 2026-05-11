@@ -694,6 +694,13 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
             <Sparkles className="w-3.5 h-3.5" />
             {analysing ? 'Analysing…' : 'Analyse places (OSM)'}
           </button>
+          <button
+            onClick={() => setShowLabels((v) => !v)}
+            className={`mt-2 w-full px-2 py-2 rounded-md text-xs font-medium border transition-colors ${showLabels ? 'border-[#4f8eff] bg-[#4f8eff]/10 text-[#4f8eff]' : 'border-border/60 text-muted-foreground hover:bg-muted'}`}
+            title="Toggle permanent shape labels on the map"
+          >
+            {showLabels ? 'Labels: ON' : 'Labels: OFF'}
+          </button>
           {tool !== 'select' && tool !== 'landmark' && drafting.length > 0 && (
             <div className="mt-2 flex gap-2">
               <Button size="sm" className="flex-1" onClick={finishDraft}>Finish ({drafting.length})</Button>
