@@ -73,6 +73,10 @@ function shapeCentroid(s: Shape): LatLng {
   return [lat / s.coordinates.length, lng / s.coordinates.length];
 }
 
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+}
+
 const GROUP_ORDER: { type: ShapeType; label: string; emoji: string }[] = [
   { type: 'building',   label: 'Buildings',   emoji: '🏛' },
   { type: 'zone',       label: 'Zones',       emoji: '🟦' },
