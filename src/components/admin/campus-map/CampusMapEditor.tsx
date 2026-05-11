@@ -554,6 +554,28 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
                 />
               ))}
             </div>
+            {selectedShape.type === 'landmark' && (
+              <>
+                <Label className="text-[10px] uppercase tracking-wider mt-3">Icon</Label>
+                <div className="grid grid-cols-8 gap-1">
+                  {ICON_PRESETS.map((emo) => (
+                    <button
+                      key={emo}
+                      onClick={() => updateSelected({ icon: emo })}
+                      className={`h-7 rounded border text-base leading-none flex items-center justify-center transition-colors ${selectedShape.icon === emo ? 'border-[#4f8eff] bg-[#4f8eff]/10' : 'border-border/40 hover:bg-muted'}`}
+                    >
+                      {emo}
+                    </button>
+                  ))}
+                </div>
+                <Input
+                  value={selectedShape.icon ?? ''}
+                  onChange={(e) => updateSelected({ icon: e.target.value.slice(0, 4) || undefined })}
+                  placeholder="Or paste a custom emoji"
+                  className="mt-2"
+                />
+              </>
+            )}
             <Button size="sm" variant="destructive" className="mt-3 w-full" onClick={() => deleteShape(selectedShape.id)}>
               <Trash2 className="w-3.5 h-3.5 mr-1" /> Delete shape
             </Button>
