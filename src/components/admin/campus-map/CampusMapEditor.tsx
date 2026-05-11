@@ -400,6 +400,42 @@ const CampusMapEditor: React.FC<CampusMapEditorProps> = ({ password = '' }) => {
     setShapes((s) => s.map((x) => x.id === id ? { ...x, hidden: !x.hidden } : x));
   };
 
+  // ----- Directory (Layers panel) state -----
+  const [layerSearch, setLayerSearch] = useState('');
+  const [insideOnly, setInsideOnly] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [nudgeStep, setNudgeStep] = useState<number>(0.00002); // ~2m
+
+  const toggleGroup = (key: string) =>
+    setCollapsedGroups((g) => ({ ...g, [key]: !g[key] }));
+
+  const setGroupHidden = (type: ShapeType, hidden: boolean) => {
+    setShapes((s) => s.map((x) => x.type === type ? { ...x, hidden } : x));
+  };
+
+  const focusShape = (s: Shape) => {
+    setSelectedId(s.id);
+    const m = mapRef.current;
+    if (!m) return;
+    const [lat, lng] = shapeCentroid(s);
+    if (!lat && !lng) return;
+    if (s.type === 'landmark') {
+      m.setView([lat, lng], Math.max(m.getZoom(), 18), { animate: true });
+    } else {
+      m.panTo([lat, lng], { animate: true });
+    }
+  };
+
+  const nudgeSelected = (dLat: number, dLng: number) => {
+    if (!selectedShape || selectedShape.type !== 'landmark') return;
+    pushHistory();
+    setShapes((arr) => arr.map((x) => {
+      if (x.id !== selectedShape.id) return x;
+      const [lat, lng] = x.coordinates[0] ?? [0, 0];
+      return { ...x, coordinates: [[lat + dLat, lng + dLng]] };
+    }));
+  };
+
   // ----- Export -----
   const svgString = useMemo(() => buildSvg({ shapes, boundary }), [shapes, boundary]);
 
