@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import {
   Building2, Hexagon, Minus, Diamond, Square, MousePointer2, Trash2, Eye, EyeOff,
   Image as ImageIcon, Download, Copy, Save, Eye as PreviewIcon, MoveUp, MoveDown, Search,
+  ChevronDown, ChevronRight, ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
 } from 'lucide-react';
 import {
   buildSvg, DEFAULT_STYLES, COLOR_PRESETS,
@@ -48,6 +49,37 @@ function iconForLabel(label = ''): string | undefined {
 }
 
 function genId() { return crypto.randomUUID(); }
+
+// Ray-casting point-in-polygon. poly is [lat,lng][].
+function pointInPolygon(pt: LatLng, poly: LatLng[]): boolean {
+  if (!poly || poly.length < 3) return true;
+  const [lat, lng] = pt;
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [ai, bi] = poly[i];
+    const [aj, bj] = poly[j];
+    const intersect = ((bi > lng) !== (bj > lng)) &&
+      (lat < ((aj - ai) * (lng - bi)) / ((bj - bi) || 1e-12) + ai);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function shapeCentroid(s: Shape): LatLng {
+  if (!s.coordinates.length) return [0, 0];
+  if (s.type === 'landmark') return s.coordinates[0];
+  let lat = 0, lng = 0;
+  for (const [a, b] of s.coordinates) { lat += a; lng += b; }
+  return [lat / s.coordinates.length, lng / s.coordinates.length];
+}
+
+const GROUP_ORDER: { type: ShapeType; label: string; emoji: string }[] = [
+  { type: 'building',   label: 'Buildings',   emoji: '🏛' },
+  { type: 'zone',       label: 'Zones',       emoji: '🟦' },
+  { type: 'path',       label: 'Paths',       emoji: '🚶' },
+  { type: 'landmark',   label: 'Landmarks',   emoji: '📍' },
+  { type: 'restricted', label: 'Restricted',  emoji: '⛔' },
+];
 
 function CoordTooltip({ onMove }: { onMove: (ll: L.LatLng) => void }) {
   useMapEvents({ mousemove: (e) => onMove(e.latlng) });
