@@ -30,6 +30,7 @@ import AdminPointsManagement from '@/components/admin/AdminPointsManagement';
 import AdminApplicants from '@/components/admin/AdminApplicants';
 import AdminUniversityMap from '@/components/admin/AdminUniversityMap';
 import CampusMapEditor from '@/components/admin/campus-map/CampusMapEditor';
+import AdminLocationHistory from '@/components/admin/AdminLocationHistory';
 import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
@@ -570,6 +571,13 @@ const Admin: React.FC = () => {
 
         {/* Full-bleed: Campus Map Editor */}
         {section === 'campus_maps' && <CampusMapEditor password={storedPassword} />}
+
+        {/* Location History */}
+        {section === 'location_history' && (
+          <div className="max-w-7xl mx-auto px-4 lg:px-8 py-6">
+            <AdminLocationHistory />
+          </div>
+        )}
       </main>
     </div>
   );
