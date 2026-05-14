@@ -5452,6 +5452,36 @@ export type Database = {
           },
         ]
       }
+      user_location_history: {
+        Row: {
+          created_at: string
+          id: string
+          latitude: number
+          location_name: string | null
+          longitude: number
+          recorded_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          latitude: number
+          location_name?: string | null
+          longitude: number
+          recorded_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          latitude?: number
+          location_name?: string | null
+          longitude?: number
+          recorded_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_page_analytics: {
         Row: {
           chat_sec: number | null
