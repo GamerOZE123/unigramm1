@@ -1,51 +1,32 @@
-## Findings
+## Goal
 
-- The exact P0001 source is `public.create_notification(...)`:
-  - It raises: `RAISE EXCEPTION 'Notification type % cannot be created from client', notification_type;`
-  - With `notification_type = 'message'`, this becomes: `Notification type message cannot be created from client`.
+Produce a complete, developer-facing reference document of the Supabase database schema and deliver it as a downloadable markdown artifact at `/mnt/documents/unigramm-db-schema.md`.
 
-- The failing path for DM sends is:
-  ```text
-  supabase.from('messages').insert(...)
-    -> AFTER INSERT trigger: trigger_notify_message
-    -> function: public.notify_message()
-    -> calls public.create_notification(..., 'message', ...)
-    -> create_notification sees auth.uid() from the original client insert
-    -> raises P0001
-  ```
+## Approach
 
-- `sync_messages` is read-only for message fetching. It does not create notifications or write side effects.
-- `get_or_create_conversation` does not create notifications. It creates/resurrects conversations and participants only.
-- `messages` currently has this check constraint:
-  ```sql
-  CHECK (message_type = ANY (ARRAY['text', 'image', 'file', 'reply']))
-  ```
+1. Run a series of read-only SQL queries against `information_schema` / `pg_catalog` to extract:
+   - All tables in `public` (columns, defaults, nullability, PK/UNIQUE/CHECK constraints with full expressions)
+   - All foreign keys with `ON DELETE` / `ON UPDATE` behavior
+   - All indexes (name, columns, method, unique flag)
+   - RLS status per table + every policy with raw `USING` and `WITH CHECK` expressions
+   - All triggers per table (timing, event, function called)
+   - All `public` functions / RPCs (args, return type, security mode, language, leading-comment description)
+   - All custom enum types and their values
+   - All installed extensions
 
-## Plan
+2. Dump the raw query results to JSON in `/tmp/`, then run a Python script to render the markdown reference document with:
+   - One section per table in the format requested (Columns / Indexes / RLS / Policies / Triggers / Foreign Keys)
+   - Core tables (profiles, posts, messages, conversations, etc.) ordered first, then everything else alphabetically
+   - Dedicated appendix sections for:
+     - All RPCs / Functions
+     - All Triggers (cross-table table)
+     - Enum types
+     - Extensions
 
-1. **Fix the broken notification trigger path**
-   - Update `public.notify_message()` so it no longer calls `public.create_notification()` for auto-generated message notifications.
-   - Keep the existing `trigger_notify_message` trigger in place.
-   - Insert the notification directly from the trigger function as a trusted server-side side effect.
-   - Add a safe `EXCEPTION WHEN others THEN RAISE WARNING ...; RETURN NEW;` block so notification failures cannot block the actual DM message insert again.
-   - Add a `NOT EXISTS` guard to avoid duplicate message notifications when `handle_new_message()` has already inserted one in the same transaction.
+3. Save the final file to `/mnt/documents/unigramm-db-schema.md` and surface it via a `presentation-artifact` tag so it can be downloaded.
 
-2. **Keep `create_notification()` protected for direct client calls**
-   - Do not loosen `create_notification()` to allow arbitrary client-created `message` notifications, because that would let authenticated users spoof message notifications to other users.
-   - The fix will be isolated to the trusted message trigger path instead.
+## Notes
 
-3. **Expand the `messages.message_type` check constraint**
-   - Replace the current constraint with one that allows:
-     ```text
-     text, image, video, audio, shared_post, system, file
-     ```
-   - Preserve the currently allowed `reply` type too, so existing functionality does not regress:
-     ```text
-     text, image, video, audio, shared_post, system, file, reply
-     ```
-
-4. **Do not modify protected RPC behavior**
-   - Leave `sync_messages` unchanged.
-   - Leave `get_or_create_conversation` unchanged.
-   - Do not change `message_type` defaults.
-   - Do not remove existing triggers.
+- This is a read-only documentation task. No database changes will be made and no project source files will be modified.
+- The document is generated from live database state, so it will reflect the current schema exactly (including the recent `messages` / `notify_message` / `device_tokens` fixes).
+- Expected size: large (likely 100KB+ markdown given the breadth of the schema). Will be delivered as a single file for easy search.
