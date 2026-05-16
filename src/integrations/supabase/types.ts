@@ -3104,7 +3104,6 @@ export type Database = {
           media_url: string[] | null
           message_type: string | null
           reply_to_id: string | null
-          reply_to_message_id: string | null
           sender_id: string
         }
         Insert: {
@@ -3116,7 +3115,6 @@ export type Database = {
           media_url?: string[] | null
           message_type?: string | null
           reply_to_id?: string | null
-          reply_to_message_id?: string | null
           sender_id: string
         }
         Update: {
@@ -3128,7 +3126,6 @@ export type Database = {
           media_url?: string[] | null
           message_type?: string | null
           reply_to_id?: string | null
-          reply_to_message_id?: string | null
           sender_id?: string
         }
         Relationships: [
@@ -3142,13 +3139,6 @@ export type Database = {
           {
             foreignKeyName: "messages_reply_to_id_fkey"
             columns: ["reply_to_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_reply_to_message_id_fkey"
-            columns: ["reply_to_message_id"]
             isOneToOne: false
             referencedRelation: "messages"
             referencedColumns: ["id"]
@@ -6469,7 +6459,6 @@ export type Database = {
           media_url: string[] | null
           message_type: string | null
           reply_to_id: string | null
-          reply_to_message_id: string | null
           sender_id: string
         }[]
         SetofOptions: {
