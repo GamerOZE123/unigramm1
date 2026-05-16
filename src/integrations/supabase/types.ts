@@ -2435,6 +2435,7 @@ export type Database = {
           created_at: string
           group_id: string
           id: string
+          media_url: string[] | null
           message_type: string | null
           metadata: Json | null
           reply_to_message_id: string | null
@@ -2445,6 +2446,7 @@ export type Database = {
           created_at?: string
           group_id: string
           id?: string
+          media_url?: string[] | null
           message_type?: string | null
           metadata?: Json | null
           reply_to_message_id?: string | null
@@ -2455,6 +2457,7 @@ export type Database = {
           created_at?: string
           group_id?: string
           id?: string
+          media_url?: string[] | null
           message_type?: string | null
           metadata?: Json | null
           reply_to_message_id?: string | null
