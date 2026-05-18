@@ -205,6 +205,11 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ── Lightweight login verification (any authenticated admin/team) ──
+    if (action === 'verify_login') {
+      return json({ valid: true, role, allowed_sections: allowedSections });
+    }
+
     // ── Waitlist ──────────────────────────────────────────────
     if (action === 'fetch') {
       const { data, error } = await supabaseAdmin
