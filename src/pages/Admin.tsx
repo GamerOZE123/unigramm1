@@ -168,18 +168,20 @@ const Admin: React.FC = () => {
     setVerifying(true);
     try {
       const { data, error } = await supabase.functions.invoke('verify-admin', {
-        body: { password, action: 'fetch' },
+        body: { password, action: 'verify_login' },
       });
       if (error || !data?.valid) {
         toast.error('Invalid password');
       } else {
         setAuthenticated(true);
         setStoredPassword(password);
-        setSignups(data.signups || []);
         setAdminRole(data.role || 'admin');
         setAllowedSections(data.allowed_sections ?? null);
         if (data.role === 'team' && data.allowed_sections?.length > 0) {
           setSection(data.allowed_sections[0] as AdminSection);
+        } else if (data.role === 'admin') {
+          // Main admin: prefetch waitlist for default overview/waitlist sections
+          fetchSignups();
         }
         fetchAccessConfig();
       }
