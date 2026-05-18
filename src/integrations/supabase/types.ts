@@ -3145,86 +3145,6 @@ export type Database = {
           },
         ]
       }
-      moment_views: {
-        Row: {
-          id: string
-          moment_id: string
-          viewed_at: string | null
-          viewer_id: string
-        }
-        Insert: {
-          id?: string
-          moment_id: string
-          viewed_at?: string | null
-          viewer_id: string
-        }
-        Update: {
-          id?: string
-          moment_id?: string
-          viewed_at?: string | null
-          viewer_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "moment_views_moment_id_fkey"
-            columns: ["moment_id"]
-            isOneToOne: false
-            referencedRelation: "moments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      moments: {
-        Row: {
-          created_at: string | null
-          excluded_user_ids: string[]
-          expires_at: string
-          id: string
-          is_one_time_view: boolean | null
-          media_type: string
-          media_url: string
-          thumbnail_url: string | null
-          university_id: string
-          user_id: string
-          view_count: number | null
-          visible_to_followers: boolean
-          visible_to_following: boolean
-          visible_to_university: boolean
-        }
-        Insert: {
-          created_at?: string | null
-          excluded_user_ids?: string[]
-          expires_at?: string
-          id?: string
-          is_one_time_view?: boolean | null
-          media_type: string
-          media_url: string
-          thumbnail_url?: string | null
-          university_id: string
-          user_id: string
-          view_count?: number | null
-          visible_to_followers?: boolean
-          visible_to_following?: boolean
-          visible_to_university?: boolean
-        }
-        Update: {
-          created_at?: string | null
-          excluded_user_ids?: string[]
-          expires_at?: string
-          id?: string
-          is_one_time_view?: boolean | null
-          media_type?: string
-          media_url?: string
-          thumbnail_url?: string | null
-          university_id?: string
-          user_id?: string
-          view_count?: number | null
-          visible_to_followers?: boolean
-          visible_to_following?: boolean
-          visible_to_university?: boolean
-        }
-        Relationships: []
-      }
       muted_chats: {
         Row: {
           chat_id: string
@@ -3751,10 +3671,7 @@ export type Database = {
           is_approved_for_startup: boolean | null
           is_hidden: boolean
           is_pinned: boolean
-          latitude: number | null
           likes_count: number | null
-          location_name: string | null
-          longitude: number | null
           mux_asset_id: string | null
           poll_ends_at: string | null
           poll_options: Json | null
@@ -3788,10 +3705,7 @@ export type Database = {
           is_approved_for_startup?: boolean | null
           is_hidden?: boolean
           is_pinned?: boolean
-          latitude?: number | null
           likes_count?: number | null
-          location_name?: string | null
-          longitude?: number | null
           mux_asset_id?: string | null
           poll_ends_at?: string | null
           poll_options?: Json | null
@@ -3825,10 +3739,7 @@ export type Database = {
           is_approved_for_startup?: boolean | null
           is_hidden?: boolean
           is_pinned?: boolean
-          latitude?: number | null
           likes_count?: number | null
-          location_name?: string | null
-          longitude?: number | null
           mux_asset_id?: string | null
           poll_ends_at?: string | null
           poll_options?: Json | null
@@ -6499,10 +6410,6 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
-      }
-      increment_moment_views: {
-        Args: { p_moment_id: string }
-        Returns: undefined
       }
       increment_post_views: {
         Args: { post_id_input: string }
